@@ -1,4 +1,4 @@
-# 🚀 **App Boilerplate**
+# 🚀 App Boilerplate
 
 ![Nx Logo](https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png)
 
