@@ -2,9 +2,15 @@
   "name": "app-boilerplate",
   "version": "0.0.1",
   "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start -p 3005",
+    "app1:start": "npm run start --workspace=APP1",
+    "app2:start": "npm run start --workspace=APP2",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
