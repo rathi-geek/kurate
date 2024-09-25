@@ -62,7 +62,7 @@ To manage the backend apps easily, update the workspace-level `package.json` scr
 ```json
 {
   "docker:up": "npm run db:dev:up --workspace=nestjs-app", // Replace 'nestjs-app' with your app name
-  "nestjs:start": "npm run start --workspace=nestjs-app", // Replace 'nestjs-app' with your app name
+  "nestjs:dev": "npm run start:dev --workspace=nestjs-app", // Replace 'nestjs-app' with your app name
   "laravel:start": "npm run start --workspace=laravel-app"  // Replace 'laravel-app' with your app name
 }
 ```
@@ -91,10 +91,8 @@ Once you've added your backend applications to the workspace, follow these steps
    Run the Docker services needed for your backend by executing:
 
    ```bash
-   npm run docker:up --workspace={your-app-name}
+   npm run docker:up
    ```
-
-   > Replace `{your-app-name}` with the name of your backend application.
 
 3. **Provide Necessary Permissions** (If you face permission issues):
    If you encounter permission errors, run the following command to grant necessary permissions:
@@ -107,7 +105,7 @@ Once you've added your backend applications to the workspace, follow these steps
    Once Docker is up, start your backend service:
 
    ```bash
-   npm run start --workspace={your-app-name}
+   npm run nestjs:dev
    ```
 
 5. **Access Swagger & GraphQL**:

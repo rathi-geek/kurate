@@ -47,8 +47,8 @@ We provide boilerplates for various frontend frameworks to make your integration
 
    ```json
    {
-     "frontend:start": "npm run start --workspace=frontend-app", // Replace frontend-app with your actual app name
-     "dashboard:start": "npm run start --workspace=dashboard-app"  // Replace dashboard-app with your actual app name
+     "frontend:dev": "npm run dev --workspace=frontend-app", // Replace frontend-app with your actual app name
+     "dashboard:dev": "npm run dev --workspace=dashboard-app"  // Replace dashboard-app with your actual app name
    }
    ```
 
@@ -73,12 +73,10 @@ Once you've added your frontend applications to the workspace, follow these step
    Once dependencies are installed, start your frontend application by running:
 
    ```bash
-   npm run start --workspace={your-app-name}
+   npm run frontend:dev
    ```
 
-   > Replace `{your-app-name}` with the actual name of your frontend application.
-
 3. **Access the Frontend Application**:
-   Your frontend application will be running at its respective URL, typically something like `http://localhost:3000` unless otherwise configured.
+   Your frontend application will be running at its respective URL, typically something like `http://localhost:3002` unless otherwise configured.
 
 Your frontend application should now be up and running! 🚀

@@ -27,8 +27,6 @@ cd {project-name}
 
 ### Step 2: 🚀 Running the Applications
 
-Install Nx globally if you haven't already:
-
 ```bash
 # Install nx (If not existing)
 npm install -g nx
