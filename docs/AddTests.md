@@ -1,4 +1,8 @@
-# 🧪 Tests Folder
+---
+sidebar_position: 4
+---
+
+# 🧪 Add Tests
 
 This folder contains all end-to-end (E2E) and integration tests for your workspace, powered by **Playwright**.
 

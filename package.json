@@ -15,9 +15,7 @@
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
-    "write-heading-ids": "docusaurus write-heading-ids",
-    "app1:start": "npm run start --workspace=APP1",
-    "app2:start": "npm run start --workspace=APP2"
+    "write-heading-ids": "docusaurus write-heading-ids"
   },
   "private": true,
   "dependencies": {

@@ -1,15 +1,19 @@
-# 🗂️ **Backend App**
+---
+sidebar_position: 1
+---
 
-This folder contains backend application code. You can use different backend frameworks such as **NestJS**, **ExpressJS**, **Laravel**, **Spring Boot**, and others.
+# 🗂️ Add Backend Apps
+
+You can use different backend frameworks such as **NestJS**, **ExpressJS**, **Laravel**, **Spring Boot**, and others.
 
 ## 📋 **Guidelines**
 
-- Rename this folder with your chosen backend application name.
-- Examples:
-  - `nestjs-app` for NestJS
-  - `laravel-app` for Laravel
-  - `expressjs-app` for ExpressJS
-  - `springboot-app` for Spring Boot
+- You can name your backend application(s) with relevant names, like:
+  - Examples:
+    - `nestjs-app` for NestJS
+    - `laravel-app` for Laravel
+    - `expressjs-app` for ExpressJS
+    - `springboot-app` for Spring Boot
 - For multiple backend applications, create separate folders inside the `apps/` directory with relevant names, like:
   - `nest-dashboard-app`
   - `laravel-auth-app`
@@ -23,7 +27,7 @@ You can follow the detailed documentation provided in this workspace to integrat
 
 ### 🔄 **Adding Backend Applications to Your Workspace**
 
-We provide boilerplates for various backend frameworks to make your integration process smoother. You can download and add these frameworks to your workspace as follows:
+We provide boilerplates for various backend frameworks to make your integration process smoother. You can download and add these frameworks to your workspace `apps/` folder.
 
 #### 🚀 **Available Backend Boilerplates**
 
@@ -61,6 +65,8 @@ To manage the backend apps easily, update the workspace-level `package.json` scr
   "laravel:start": "npm run start --workspace=laravel-app"  // Replace 'laravel-app' with your app name
 }
 ```
+
+> **Note**: Application name is present in `package.json` of your backedn application (It's not the folder-name)
 
 ### 📝 **Configuring `project.json`**
 

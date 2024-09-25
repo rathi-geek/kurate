@@ -1,4 +1,8 @@
-# 📚 **Libs Directory**
+---
+sidebar_position: 3
+---
+
+# 📚 Add Shared Libraries
 
 The `libs` folder serves as the central hub for **shared libraries** and **reusable code** that can be utilized across multiple applications in your workspace. This makes it easy to maintain a clean, modular, and efficient codebase.
 

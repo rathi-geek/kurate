@@ -14,7 +14,7 @@ export default function WelcomePage() {
           Please click on the <strong>Docs</strong> button in the navbar to
           access the documentation.
         </p>
-        <Link to="/Intro" style={{ textDecoration: 'none' }}>
+        <Link to="/AddBackend" style={{ textDecoration: 'none' }}>
           <button
             style={{
               marginTop: '20px',

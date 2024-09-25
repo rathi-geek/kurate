@@ -1,6 +1,10 @@
-# 🌐 Frontend App
+---
+sidebar_position: 2
+---
 
-This folder contains frontend application code. You can add different frontend frameworks such as **Next.js**, **Vue.js**, **React** or any other frontend frameworks.
+# 🌐 Add Frontend Apps
+
+You can add different frontend frameworks such as **Next.js**, **Vue.js**, **React** or any other frontend frameworks.
 
 ## 📝 Guidelines
 
@@ -10,21 +14,23 @@ This folder contains frontend application code. You can add different frontend f
 
 **📖 Quick Start:**
 
-Refer to the documentation provided in this workspace for integrating frontend frameworks.
+You can follow the detailed documentation provided in this workspace to integrate your preferred frontend framework seamlessly.
 
----
+### 🔄 **Adding Frontend Applications to Your Workspace**
 
-**🔗 Adding Frontend Applications:**
+We provide boilerplates for various frontend frameworks to make your integration process smoother. You can download and add these frameworks to your workspace `apps/` folder.
 
-You can find detailed boilerplates for different frontend frameworks here:
+#### 🔗 **Available Frontend Boilerplates**
 
-- 🌐 [Next.js Boilerplate](https://git.geekyants.com/geekyants/coe-grp/boilerplates/frontend/nextjs)
-- 🌐 [React Boilerplate](https://git.geekyants.com/geekyants/coe-grp/boilerplates/frontend) - (Link to be added)
-- 🌐 [Vue.js Boilerplate](https://git.geekyants.com/geekyants/coe-grp/boilerplates/frontend) - (Link to be added)
+- **Next.js**: [Download Next.js Boilerplate](https://git.geekyants.com/geekyants/coe-grp/boilerplates/frontend/nextjs)
+- **React**: [To be added](https://git.geekyants.com/geekyants/coe-grp/boilerplates/frontend)
+- **Vue.js**: [To be added](https://git.geekyants.com/geekyants/coe-grp/boilerplates/frontend)
+
+> **Note**: Download the repositories as a **ZIP file** to avoid git reference issues.
 
 ### 🚀 Integrating into the Workspace
 
-1. **Download the required boilerplate**: Download the boilerplate(s) as a **zip file** to avoid git refeerence issues.
+1. **Download the required boilerplate**: Download the boilerplate(s) as a **zip file**.
 
 2. **Update `tsconfig.json`**: Make sure to extend the workspace-level `tsconfig.base.json` in your frontend apps.
 
@@ -45,5 +51,7 @@ You can find detailed boilerplates for different frontend frameworks here:
      "dashboard:start": "npm run start --workspace=dashboard-app"  // Replace dashboard-app with your actual app name
    }
    ```
+
+   > **Note**: Application name is present in `package.json` of your Frontend application (It's not the folder-name)
 
 4. **Modify `project.json`**: Ensure your `project.json` file within each frontend application contains the necessary configurations to utilize Nx effectively.
