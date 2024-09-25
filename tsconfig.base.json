@@ -8,13 +8,20 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "es2015",
-    "module": "esnext",
+    "target": "es2020",
+    "module": "commonjs",
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@libs/*": ["libs/*"],
+      "@apps/*": ["apps/*"]
+    },
+    "esModuleInterop": true, // For better interoperability between commonjs and esmodules
+    "resolveJsonModule": true, // If JSON imports are required
+    "types": ["node"] // Ensures Node.js types are always included
   },
-  "exclude": ["node_modules", "tmp"]
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "exclude": ["node_modules", "tmp", "dist", "build", "**/*.spec.ts"]
 }

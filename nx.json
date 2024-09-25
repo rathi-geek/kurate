@@ -1,46 +1,47 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "npmScope": "project-name",
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
-      "!{projectRoot}/.eslintrc.json",
-      "!{projectRoot}/eslint.config.js",
-      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
-      "!{projectRoot}/tsconfig.spec.json",
-      "!{projectRoot}/jest.config.[jt]s",
-      "!{projectRoot}/src/test-setup.[jt]s",
-      "!{projectRoot}/test-setup.[jt]s"
+      "!{projectRoot}/**/*.{spec,test}.{js,ts,jsx,tsx}",
+      "!{projectRoot}/**/__tests__/**/*",
+      "!{projectRoot}/src/test-setup.{js,ts}",
+      "!{projectRoot}/test-setup.{js,ts}"
     ],
-    "sharedGlobals": []
+    "sharedGlobals": [
+      "{workspaceRoot}/.prettierrc",
+      "{workspaceRoot}/.eslintrc.js",
+      "{workspaceRoot}/tsconfig.base.json"
+    ]
   },
-  "nxCloudId": "66f23cf1bb580d02cfc1915e",
-  "plugins": [
-    {
-      "plugin": "@nx/webpack/plugin",
-      "options": {
-        "buildTargetName": "build",
-        "serveTargetName": "serve",
-        "previewTargetName": "preview"
-      }
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"]
     },
-    {
-      "plugin": "@nx/eslint/plugin",
-      "options": {
-        "targetName": "lint"
-      }
-    },
-    {
-      "plugin": "@nx/jest/plugin",
-      "options": {
-        "targetName": "test"
-      },
-      "exclude": [
-        "apps/backend-boilerplate-e2e/**/*"
-      ]
+    "test": {
+      "dependsOn": ["^test"]
     }
-  ]
+  },
+  "plugins": [
+    "@nx/eslint",
+    "@nx/playwright",
+    "@nx/webpack",
+    "@nx/js",
+    "@nx/node",
+    "@nx/web"
+  ],
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "@nx/workspace/tasks-runners/default",
+      "options": {
+        "cacheableOperations": ["build", "test", "lint", "e2e"]
+      }
+    }
+  },
+  "workspaceLayout": {
+    "appsDir": "apps",
+    "libsDir": "libs"
+  }
 }

@@ -1,35 +1,39 @@
-const nx = require("@nx/eslint-plugin");
+const nx = require('@nx/eslint-plugin');
 
 module.exports = [
-...nx.configs["flat/base"],
-...nx.configs["flat/typescript"],
-...nx.configs["flat/javascript"],
-{
-    files: [
-        "**/*.ts",
-        "**/*.tsx",
-        "**/*.js",
-        "**/*.jsx"
+  ...nx.configs['flat/base'],
+  ...nx.configs['flat/typescript'], // For TS Projects
+  ...nx.configs['flat/javascript'], // For JS Projects
+  {
+    files: ['**/*.{js,jsx,ts,tsx}'],
+    extends: [
+      'eslint:recommended',
+      'plugin:@typescript-eslint/recommended',
+      'plugin:react/recommended',
+      'plugin:react-hooks/recommended',
+      'plugin:prettier/recommended',
     ],
-    rules: { "@nx/enforce-module-boundaries": [
-            "error",
-            {
-                enforceBuildableLibDependency: true,
-                allow: ["^.*/eslint(\\.base)?\\.config\\.[cm]?js$"],
-                depConstraints: [{
-                        sourceTag: "*",
-                        onlyDependOnLibsWithTags: ["*"]
-                    }]
-            }
-        ] }
-},
-{
-    files: [
-        "**/*.ts",
-        "**/*.tsx",
-        "**/*.js",
-        "**/*.jsx"
-    ],
-    // Override or add rules here
-    rules: {}
-},];
+    parserOptions: {
+      ecmaVersion: 2021,
+      sourceType: 'module',
+      ecmaFeatures: {
+        jsx: true,
+      },
+    },
+    rules: {
+      '@nx/enforce-module-boundaries': [
+        'error',
+        {
+          enforceBuildableLibDependency: true,
+          depConstraints: [{ sourceTag: '*', onlyDependOnLibsWithTags: ['*'] }],
+        },
+      ],
+      // Add/Override any rules here
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
+  }
+];
