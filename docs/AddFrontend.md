@@ -55,3 +55,30 @@ We provide boilerplates for various frontend frameworks to make your integration
    > **Note**: Application name is present in `package.json` of your Frontend application (It's not the folder-name)
 
 4. **Modify `project.json`**: Ensure your `project.json` file within each frontend application contains the necessary configurations to utilize Nx effectively.
+
+### 🚀 **Running Your Frontend Applications**
+
+Once you've added your frontend applications to the workspace, follow these steps to run them:
+
+1. **Install Dependencies**:
+   Make sure you are in the workspace (root) level and run:
+
+   ```bash
+   $ yarn install
+   // or
+   $ npm install
+   ```
+
+2. **Start the Frontend Application**:
+   Once dependencies are installed, start your frontend application by running:
+
+   ```bash
+   npm run start --workspace={your-app-name}
+   ```
+
+   > Replace `{your-app-name}` with the actual name of your frontend application.
+
+3. **Access the Frontend Application**:
+   Your frontend application will be running at its respective URL, typically something like `http://localhost:3000` unless otherwise configured.
+
+Your frontend application should now be up and running! 🚀

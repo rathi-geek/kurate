@@ -61,6 +61,7 @@ To manage the backend apps easily, update the workspace-level `package.json` scr
 
 ```json
 {
+  "docker:up": "npm run db:dev:up --workspace=nestjs-app", // Replace 'nestjs-app' with your app name
   "nestjs:start": "npm run start --workspace=nestjs-app", // Replace 'nestjs-app' with your app name
   "laravel:start": "npm run start --workspace=laravel-app"  // Replace 'laravel-app' with your app name
 }
@@ -72,3 +73,47 @@ To manage the backend apps easily, update the workspace-level `package.json` scr
 
 - Ensure that each backend application has its own `project.json` file configured with necessary scripts and settings.
 - This will allow you to leverage Nx for running your applications effectively from the workspace level.
+
+### 🚀 **Running Your Backend Applications**
+
+Once you've added your backend applications to the workspace, follow these steps to run them:
+
+1. **Install Dependencies**:
+   Make sure you are in the workspace (root) level and run:
+
+   ```bash
+   $ yarn install
+   // or
+   $ npm install
+   ```
+
+2. **Start Docker Services**:
+   Run the Docker services needed for your backend by executing:
+
+   ```bash
+   npm run docker:up --workspace={your-app-name}
+   ```
+
+   > Replace `{your-app-name}` with the name of your backend application.
+
+3. **Provide Necessary Permissions** (If you face permission issues):
+   If you encounter permission errors, run the following command to grant necessary permissions:
+
+   ```bash
+   sudo chmod -R 777 /{path-to-project-repo}/data/prometheus
+   ```
+
+4. **Start the Backend Service**:
+   Once Docker is up, start your backend service:
+
+   ```bash
+   npm run start --workspace={your-app-name}
+   ```
+
+5. **Access Swagger & GraphQL**:
+   - **Swagger Docs**: Accessible at `{BASE_URL}/api`
+   - **GraphQL Playground**: Accessible at `{BASE_URL}/graphql`
+
+> Replace `{BASE_URL}` with your application’s running URL (e.g., `http://localhost:3000`).
+
+Now your backend apps should be up and running! 🚀
