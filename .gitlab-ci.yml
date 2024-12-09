@@ -1,0 +1,89 @@
+stages:
+  - test
+  - deploy
+
+build_test_backend:
+  tags:
+    - staging
+  stage: test
+  script:
+    - yarn
+    - yarn workspace nestjs-boilerplate run prisma:setup
+    - yarn run backend:build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - apps/backend/**/*
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+      changes:
+        - apps/backend/**/*
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/backend/**/*
+
+build_test_frontend:
+  tags:
+    - staging
+  stage: test
+  script:
+    - yarn
+    - yarn run frontend:build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - apps/frontend/**/*
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+      changes:
+        - apps/frontend/**/*
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/frontend/**/*
+
+build_test_both:
+  tags:
+    - staging
+  stage: test
+  script:
+    - yarn
+    - yarn workspace pagestreet-backend run prisma:setup
+    - yarn run backend:build
+    - yarn run frontend:build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - '!apps/frontend/**/*'
+        - '!apps/backend/**/*'
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+      changes:
+        - '!apps/frontend/**/*'
+        - '!apps/backend/**/*'
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - '*'
+        - '**/*'
+        - '!apps/frontend/**/*'
+        - '!apps/backend/**/*'
+
+deploy_backend:
+  tags:
+    - staging
+  stage: deploy
+  script:
+    - echo "The backend job triggered"
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/backend/**/*
+
+deploy_frontend:
+  tags:
+    - staging
+  stage: deploy
+  script:
+    - echo "The frontend job triggered"
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/frontend/**/*

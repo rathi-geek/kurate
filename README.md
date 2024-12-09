@@ -107,3 +107,5 @@ Here’s a brief overview of the folder structure:
 ---
 
 ✨ We hope this Nx-powered app boilerplate serves as an effective foundation for your project. Enjoy building! 🎉
+
+Also, Refer to the [PipeLineChanges](./docs/PipeLineChanges.md) document for making sure the CI/CD pipeline works from the very beginning of the project.
