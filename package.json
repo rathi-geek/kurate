@@ -2,70 +2,45 @@
   "name": "app-boilerplate",
   "version": "1.0.0",
   "license": "MIT",
-  "workspaces": [
-    "apps/*",
-    "libs/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "libs/*"
+    ],
+    "nohoist": [
+      "**/eslint",
+      "**/eslint/**"
+    ]
+  },
   "scripts": {
-    "docusaurus": "docusaurus",
-    "start": "docusaurus start -p 3005",
-    "build": "docusaurus build",
-    "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy",
-    "clear": "docusaurus clear",
-    "serve": "docusaurus serve",
-    "write-translations": "docusaurus write-translations",
-    "write-heading-ids": "docusaurus write-heading-ids"
+    "docs:dev": "npm run start --workspace=documentation",
+    "docs:build": "npm run build --workspace=documentation"
   },
   "private": true,
   "dependencies": {
-    "@docusaurus/core": "3.5.2",
-    "@docusaurus/preset-classic": "3.5.2",
-    "@docusaurus/theme-mermaid": "^3.5.2",
-    "@mdx-js/react": "^3.0.0",
-    "axios": "^1.6.0",
-    "clsx": "^2.0.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "tslib": "^2.3.0"
+    "@mdx-js/react": "^3.1.0",
+    "axios": "^1.9.0",
+    "clsx": "^2.1.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.5.2",
-    "@docusaurus/types": "3.5.2",
-    "@eslint/js": "^9.8.0",
-    "@nx/eslint": "19.8.0",
-    "@nx/js": "19.8.0",
-    "@nx/node": "19.8.0",
-    "@nx/playwright": "19.8.0",
-    "@nx/web": "19.8.0",
-    "@nx/workspace": "19.8.0",
-    "@playwright/test": "^1.36.0",
-    "@swc-node/register": "~1.9.1",
-    "@swc/core": "~1.5.7",
-    "@swc/helpers": "~0.5.11",
-    "@types/node": "~18.16.9",
-    "eslint": "^9.8.0",
-    "eslint-config-prettier": "^9.0.0",
-    "nx": "19.8.0",
-    "prettier": "^2.6.2",
-    "ts-node": "10.9.1",
-    "typescript": "~5.5.2",
-    "typescript-eslint": "^8.0.0",
-    "webpack-cli": "^5.1.4"
-  },
-  "browserslist": {
-    "production": [
-      ">0.5%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 3 chrome version",
-      "last 3 firefox version",
-      "last 5 safari version"
-    ]
+    "@eslint/js": "^9.28.0",
+    "@playwright/test": "^1.52.0",
+    "@swc-node/register": "~1.10.10",
+    "@swc/core": "~1.11.29",
+    "@swc/helpers": "~0.5.17",
+    "@types/node": "~22.15.29",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.0",
+    "webpack-cli": "^6.0.1"
   },
   "engines": {
-    "node": ">=18.0"
+    "node": ">=20.0"
   }
 }

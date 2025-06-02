@@ -1,16 +1,16 @@
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'App Boilerplate',
-  tagline: 'Forked from CoE, GeekyAnts',
-  favicon: 'img/geekyants.jpg',
+  title: 'Company Name',
+  tagline: '',
+  favicon: 'img/logo.png',
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://geekyants.com',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
-  organizationName: 'geekyants',
-  projectName: 'app-boilerplate',
+  organizationName: 'Sample Company Name',
+  projectName: 'product-docs',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   i18n: {
@@ -42,7 +42,7 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'App Boilerplate',
+        title: 'Product Name Docs',
         items: [
           {
             type: 'docSidebar',
@@ -54,7 +54,7 @@ const config = {
       },
       footer: {
         style: 'dark',
-        copyright: `Copyright © ${new Date().getFullYear()} GeekyAnts`,
+        copyright: `Copyright © ${new Date().getFullYear()} Sample Company Name.`,
       },
     }),
 };

@@ -108,9 +108,8 @@ Once you've added your backend applications to the workspace, follow these steps
    npm run nestjs:dev
    ```
 
-5. **Access Swagger & GraphQL**:
+5. **Access Swagger**:
    - **Swagger Docs**: Accessible at `{BASE_URL}/api`
-   - **GraphQL Playground**: Accessible at `{BASE_URL}/graphql`
 
 > Replace `{BASE_URL}` with your application’s running URL (e.g., `http://localhost:3000`).
 

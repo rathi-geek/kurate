@@ -51,7 +51,7 @@ test.describe('Homepage', () => {
   // Individual test case
   test('should display the correct title', async ({ page }) => {
     // Go to the homepage URL
-    await page.goto('http://localhost:3000'); // Replace with your actual app URL
+    await page.goto('http://localhost:3005'); // Replace with your actual app URL
 
     // Verify that the page title is correct
     await expect(page).toHaveTitle(/App Boilerplate/);
@@ -59,7 +59,7 @@ test.describe('Homepage', () => {
 
   // Another test case example
   test('should navigate to About page', async ({ page }) => {
-    await page.goto('http://localhost:3000');
+    await page.goto('http://localhost:3005');
     
     // Click on the 'About' link
     await page.click('text=About');

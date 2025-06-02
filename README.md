@@ -1,6 +1,6 @@
 # 🚀 App Boilerplate
 
-Welcome to the **App Boilerplate**! This template serves as a robust foundation for building applications using a **monorepo** structure managed by Nx workspace. It integrates seamlessly with **Backend** and **Frontend** applications while offering a shared workspace for common packages, documentation using **Docusaurus**, and pre-configured setups for **ESLint**, **Prettier**, and **PlayWright**.
+Welcome to the **App Boilerplate**! This template serves as a robust foundation for building applications using a **monorepo** structure. It integrates seamlessly with **Backend** and **Frontend** applications while offering a shared workspace for common packages, documentation using **Docusaurus**, and pre-configured setups for **ESLint**, **Prettier**, and **PlayWright**.
 
 ## 🎯 **Overview**
 
@@ -11,7 +11,6 @@ This boilerplate is designed to:
 - ✅ Integrate **Docusaurus** for centralized documentation.
 - ✅ Offer pre-configured **PlayWright**, **ESLint**, and **Prettier** setups for consistent code quality.
 - ✅ Set up base TypeScript configurations for all projects.
-- ✅ Ensure that the `src` folder is used only for documentation purposes, avoiding usage for actual projects.
 
 ## 🛠️ **Getting Started**
 
@@ -28,25 +27,22 @@ cd {project-name}
 ### Step 2: 🚀 Running the Applications
 
 ```bash
-# Install nx (If not existing)
-npm install -g nx
-
 # Install the dependencies
 yarn install
 # or
 npm install
 
 # For docs
-yarn start
+yarn docs:dev
 # or
-npm run start
+npm run docs:dev
 ```
 
 Refer to the documentation in each folder to understand what need to be added in `apps/`, `libs/` and `tests/`
 
 ## 📚 **Documentation with Docusaurus**
 
-This boilerplate includes **Docusaurus** for maintaining project documentation.
+This boilerplate includes **Docusaurus** for maintaining project documentation under `apps/documentation`.
 
 ### 📝 Starting Docusaurus
 
@@ -54,7 +50,7 @@ Start the documentation server using:
 
 ```bash
 yarn
-yarn start
+yarn docs:dev
 ```
 
 ### 📄 Creating New Documentation Pages
@@ -89,14 +85,12 @@ Here’s a brief overview of the folder structure:
 
 ```bash
 /apps
-  /backend    # Contains the NestJS application (APP1)
-  /frontend   # Contains the Next.js application (APP2)
-  /...        # Other apps...
+  /documentation  # Documentation files for Docusaurus
+  /backend        # Contains the NestJS application (APP1)
+  /frontend       # Contains the Next.js application (APP2)
+  /...            # Other apps...
 /libs
-  /shared     # Shared code between apps (utils, models, services, etc.)
-/docs         # Documentation files for Docusaurus
-/src          # Reserved for Docusaurus only (avoid using it for projects)
-/nx.json              # Nx workspace configuration
+  /shared             # Shared code between apps (utils, models, services, etc.)
 /package.json         # Root package.json for managing dependencies
 /tsconfig.base.json   # Shared TypeScript configuration
 /.prettierrc          # Prettier configuration
@@ -106,6 +100,6 @@ Here’s a brief overview of the folder structure:
 
 ---
 
-✨ We hope this Nx-powered app boilerplate serves as an effective foundation for your project. Enjoy building! 🎉
+✨ We hope this app boilerplate serves as an effective foundation for your project. Enjoy building! 🎉
 
-Also, Refer to the [PipeLineChanges](./docs/PipeLineChanges.md) document for making sure the CI/CD pipeline works from the very beginning of the project.
+Also, Refer to the [PipeLineChanges](./apps/documentation/docs/PipeLineChanges.md) document for making sure the CI/CD pipeline works from the very beginning of the project.

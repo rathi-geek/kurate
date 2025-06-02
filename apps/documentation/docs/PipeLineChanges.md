@@ -1,4 +1,10 @@
-# Updates to `.gitlab-ci.yml` After Adding an App
+---
+sidebar_position: 2
+---
+
+# PipeLine Changes
+
+**Updates to `.gitlab-ci.yml` After Adding an App**
 
 When adding new applications to the monorepo, you need to make corresponding changes to the `.gitlab-ci.yml` file to ensure the CI/CD pipeline recognizes and processes the new apps correctly. Below are the changes you need to implement:
 
@@ -36,7 +42,7 @@ When adding new applications to the monorepo, you need to make corresponding cha
 
 ### **1. Rename Existing App References**
 
-- Wherever `nestjs-boilerplate` is referenced, replace it with the name of your new backend app as defined in its `package.json`.
+- Wherever `backend` is referenced, replace it with the name of your new backend app as defined in its `package.json`.
 - Similarly, update `apps/backend/**/*` or `apps/frontend/**/*` with the correct folder name inside the `apps` directory.
 
 ### **2. Add Steps for New Apps**
