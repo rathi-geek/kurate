@@ -1,105 +1,181 @@
 # 🚀 App Boilerplate
 
-Welcome to the **App Boilerplate**! This template serves as a robust foundation for building applications using a **monorepo** structure. It integrates seamlessly with **Backend** and **Frontend** applications while offering a shared workspace for common packages, documentation using **Docusaurus**, and pre-configured setups for **ESLint**, **Prettier**, and **PlayWright**.
+Welcome to the **App Boilerplate**! 👋 This modern template provides a powerful foundation for b## 🗂️ **Project Structure**
 
-## 🎯 **Overview**
+Here's how this monorepo is organized:
 
-This boilerplate is designed to:
-
-- ✅ Support multiple **Backend** and **Frontend** applications within the same workspace (Next.js, NestJS etc.).
-- ✅ Provide a shared **libs** & **utils** folder for reusable code across different apps.
-- ✅ Integrate **Docusaurus** for centralized documentation.
-- ✅ Offer pre-configured **PlayWright**, **ESLint**, and **Prettier** setups for consistent code quality.
-- ✅ Set up base TypeScript configurations for all projects.
-
-## 🛠️ **Getting Started**
-
-### Step 1: 🔧 Fork and Clone the Boilerplate
-
-- Start by forking [this repository](https://git.geekyants.com/geekyants/coe-grp/boilerplates/base-template/app) to your git & give a name to your project.
-- Clone the repo that's created by forking the base-template.
-
-```bash
-git clone {your-git-repo-link-which-is-forked-from-base-template}
-cd {project-name}
+```plaintext
+app-boilerplate/
+├── 📁 apps/                    # Your applications live here
+│   └── 📄 documentation/       # Docusaurus documentation site
+│       ├── docs/               # Markdown documentation files
+│       └── package.json        # App-specific dependencies
+│
+├── 📁 libs/                    # Shared libraries and utilities
+│   └── (coming soon)           # Add your shared code here
+│
+├── 📄 package.json             # Root workspace configuration
+├── 📄 pnpm-workspace.yaml      # pnpm workspace definition
+├── 📄 pnpm-lock.yaml           # Locked dependency versions
+├── 📄 claude.md                # AI assistant context file
+├── 📄 .nvmrc                   # Node.js version specification
+│
+├── 🔧 Config Files
+├── 📄 tsconfig.base.json       # Shared TypeScript configuration
+├── 📄 eslint.config.js         # Code linting rules
+├── 📄 .prettierrc              # Code formatting rules
+├── 📄 .prettierignore          # Prettier ignore patterns
+├── 📄 playwright.config.js     # E2E testing configuration
+├── 📄 .editorconfig            # Editor consistency settings
+├── 📄 .pnpmrc                  # pnpm configuration
+└── 📄 .gitignore               # Git ignore patterns
 ```
 
-### Step 2: 🚀 Running the Applications
+## 📋 Key Files Explained
+
+- **`claude.md`**: Comprehensive context for AI assistants working on this project
+- **`pnpm-workspace.yaml`**: Defines which directories contain packages  
+- **`package.json`**: Root configuration with workspace scripts and shared dependencies
+- **`.nvmrc`**: Ensures everyone uses Node.js 20+ for consistencypplications using a **pnpm monorepo** structure. Whether you're a developer, AI assistant, or team lead, this boilerplate is designed to accelerate your development workflow with best practices built-in.
+
+## 🤖 AI & Human Friendly
+
+This project is optimized for both human developers and AI assistants:
+
+- 📋 **AI Context Files**: `claude.md` and app-specific `AGENT.md` files provide comprehensive context for AI assistants
+- 📚 **Rich Documentation**: Docusaurus-powered docs with detailed guides and examples
+- 🔧 **Automated Workflows**: Pre-configured tools reduce manual setup and maintenance
+- 🎯 **Clear Structure**: Intuitive folder organization that both humans and AI can navigate easily
+
+## 🎯 **What's Inside**
+
+This modern boilerplate includes:
+
+- ✅ **pnpm Workspaces**: Fast, efficient package management with frozen dependencies
+- ✅ **Multi-App Support**: Ready for Backend (NestJS), Frontend (Next.js), Mobile (Expo), and more
+- ✅ **Shared Libraries**: Centralized `libs/` folder for reusable code and utilities
+- ✅ **Documentation Hub**: Integrated **Docusaurus** site for project documentation
+- ✅ **Quality Tools**: Pre-configured **Playwright**, **ESLint**, **Prettier**, and **TypeScript**
+- ✅ **AI-Ready**: Context files and clear structure for seamless AI collaboration
+
+## � **Quick Start**
+
+### Prerequisites
+
+- **Node.js**: >= 20.0 (check with `node --version`)
+- **pnpm**: This project uses pnpm workspaces (installed automatically via `packageManager` field)
+
+### Step 1: 📥 Clone and Setup
 
 ```bash
-# Install the dependencies
-yarn install
-# or
-npm install
+# Clone your repository
+git clone <your-repo-url>
+cd <your-project-name>
 
-# For docs
-yarn docs:dev
-# or
-npm run docs:dev
+# Install dependencies (pnpm will be used automatically)
+pnpm install
 ```
 
-Refer to the documentation in each folder to understand what need to be added in `apps/`, `libs/` and `tests/`
-
-## 📚 **Documentation with Docusaurus**
-
-This boilerplate includes **Docusaurus** for maintaining project documentation under `apps/documentation`.
-
-### 📝 Starting Docusaurus
-
-Start the documentation server using:
+### Step 2: 🎯 Start Development
 
 ```bash
-yarn
-yarn docs:dev
+# Start the documentation site (recommended first step)
+pnpm docs:dev
+# Visit: http://localhost:3005
+
+# Other available commands:
+pnpm docs:build    # Build documentation for production
+pnpm docs:clear    # Clear Docusaurus cache
+pnpm docs:serve    # Serve built documentation
 ```
 
-### 📄 Creating New Documentation Pages
+### Step 3: 📱 Add Your Applications
 
-Add your markdown files inside the `docs` folder, and they will automatically appear on the documentation site.
+Ready to add your first app? Check out our guides:
 
-## 🛠️ **Common Setup**
+- 📖 **Documentation**: Visit the running docs at `http://localhost:3005`
+- 🔍 **App-Specific Setup**: Each app in `apps/` has its own README with detailed instructions
+- 🤖 **AI Assistance**: Reference `claude.md` for AI context and development guidelines
 
-### 🎨 Prettier Setup
+## 📚 **Documentation Hub**
 
-- Prettier is configured at the root of the workspace using a `.prettierrc` file.
-- Modify Prettier settings globally, and they will apply to all apps/libraries within the workspace.
+Your project includes a powerful **Docusaurus** documentation site at `apps/documentation/` that serves as:
 
-### 🧹 ESLint Setup
+- 🏠 **Central Knowledge Base**: All project documentation in one place
+- 🔄 **Live Development**: Hot-reload during development for instant feedback  
+- 🌐 **Production Ready**: Builds to static files for deployment anywhere
 
-- The boilerplate includes a centralized ESLint configuration located in `.eslintrc`.
-- All apps and libraries inherit these ESLint rules. Feel free to adjust configurations as needed.
-
-### 🧪 PlayWright Setup
-
-- PlayWright is pre-configured for functional tests.
-- Each application/library can maintain its own testing framework like `jest` for both unit and integration tests.
-- Run all tests using:
+### 📝 Managing Documentation
 
 ```bash
-nx test
+# Start the docs development server
+pnpm docs:dev
+# Access at: http://localhost:3005
+
+# Add new pages by creating .md files in:
+apps/documentation/docs/
 ```
 
-## 🗂️ **Folder Structure**
+### 📄 Documentation Structure
 
-Here’s a brief overview of the folder structure:
+- `/docs/welcome.md` - Project welcome and overview
+- `/docs/new/` - Guides for adding backends, frontends, libs, and tests
+- `/docs/PipeLineChanges.md` - CI/CD pipeline configuration guide
 
-```bash
-/apps
-  /documentation  # Documentation files for Docusaurus
-  /backend        # Contains the NestJS application (APP1)
-  /frontend       # Contains the Next.js application (APP2)
-  /...            # Other apps...
-/libs
-  /shared             # Shared code between apps (utils, models, services, etc.)
-/package.json         # Root package.json for managing dependencies
-/tsconfig.base.json   # Shared TypeScript configuration
-/.prettierrc          # Prettier configuration
-/.eslintrc            # ESLint configuration
-/playwright.config.js # Jest configuration
-```
+> **💡 Pro Tip**: Always document your changes! Both human developers and AI assistants rely on up-to-date documentation.
+
+## 🛠️ **Development Tools**
+
+This boilerplate comes with a carefully curated set of development tools:
+
+### 📦 Package Management
+
+- **pnpm Workspaces**: Fast, efficient package management with shared dependencies
+- **Frozen Versions**: All dependencies are pinned to specific versions for reproducible builds
+- **Automatic Setup**: `packageManager` field ensures everyone uses the same pnpm version
+
+### 🎨 Code Quality & Formatting
+
+- **Prettier**: Consistent code formatting across all apps and libraries (`.prettierrc`)
+- **ESLint**: Modern linting with TypeScript support (`eslint.config.js`)
+- **EditorConfig**: Consistent editor settings (`.editorconfig`)
+
+### 🧪 Testing & Quality Assurance
+
+- **Playwright**: Pre-configured for E2E testing (`playwright.config.js`)
+- **TypeScript**: Shared base configuration (`tsconfig.base.json`)
+- **VS Code**: Workspace settings for optimal development experience
+
+### 🔧 AI Development Support
+
+- **Context Files**: `claude.md` provides comprehensive project context for AI assistants
+- **Structured Documentation**: Clear, searchable documentation for both humans and AI
+- **Standard Patterns**: Consistent project structure that AI can understand and work with
+
+## 🚀 **Next Steps**
+
+Ready to start building? Here's what to do next:
+
+1. **📖 Read the Docs**: Start the documentation site with `pnpm docs:dev`
+2. **🔍 Explore Examples**: Check out the existing documentation structure
+3. **➕ Add Your First App**: Follow the guides in `/docs/new/` to add backends, frontends, or libs
+4. **🤖 AI Collaboration**: Reference `claude.md` when working with AI assistants
+5. **🔄 CI/CD Setup**: See [PipeLineChanges](./apps/documentation/docs/PipeLineChanges.md) for deployment configuration
+
+## 💡 **Tips for Success**
+
+- **🔄 Keep Documentation Updated**: Both humans and AI rely on accurate docs
+- **📱 Follow App Patterns**: Each app should have its own README and AGENT.md files
+- **🎯 Use pnpm Commands**: Leverage workspace filtering for efficient development
+- **🤝 Collaborate with AI**: The project structure is optimized for AI assistance
+
+## 🆘 **Need Help?**
+
+- 📚 **Documentation**: Visit your local docs at `http://localhost:3005`
+- 🤖 **AI Context**: Reference `claude.md` for comprehensive project context
+- 📝 **App-Specific Help**: Check individual `apps/{app-name}/README.md` files
+- 🔧 **Configuration**: All config files are documented and ready to customize
 
 ---
 
-✨ We hope this app boilerplate serves as an effective foundation for your project. Enjoy building! 🎉
-
-Also, Refer to the [PipeLineChanges](./apps/documentation/docs/PipeLineChanges.md) document for making sure the CI/CD pipeline works from the very beginning of the project.
+✨ **Happy Building!** This boilerplate is designed to grow with your project, whether you're working solo, with a team, or collaborating with AI assistants. 🎉
