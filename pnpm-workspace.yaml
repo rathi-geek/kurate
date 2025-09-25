@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - libs/*
+
+ignoredBuiltDependencies:
+  - '@swc/core'
+  - core-js
+  - core-js-pure
+  - oxc-resolver
