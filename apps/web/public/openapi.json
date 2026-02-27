@@ -181,6 +181,44 @@
     }
   },
   "paths": {
+    "/ai/chat": {
+      "post": {
+        "operationId": "post-ai-chat",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Ai"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/extract": {
+      "post": {
+        "operationId": "post-extract",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Extract"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "operationId": "get-health",

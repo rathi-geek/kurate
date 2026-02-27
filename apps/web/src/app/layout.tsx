@@ -7,7 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import GoogleAnalyticsScripts from "@/app/_components/google-analytics";
 import SonnarToaster from "@/app/_components/sonner-toaster";
-import { geologica } from "@/app/_config/fonts";
+import { dmSans, dmMono } from "@/app/_config/fonts";
 import { getJsonLd } from "@/app/_config/jsonId";
 import { metadata } from "@/app/_config/metadata";
 import { viewport } from "@/app/_config/viewport";
@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geologica.variable} font-sans antialiased bg-cream text-foreground`}>
+      <body className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased bg-cream text-foreground`}>
         {children}
         <SonnarToaster />
         <GoogleAnalyticsScripts />

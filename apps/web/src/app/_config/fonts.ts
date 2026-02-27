@@ -1,19 +1,21 @@
-import { Fira_Code, Geologica } from "next/font/google";
+import { DM_Sans, DM_Mono } from "next/font/google";
 
 /**
- * @description Geologica font
- * @returns {Geologica} Geologica font
+ * @description DM Sans font - Primary UI font
  */
-export const geologica = Geologica({
+export const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-geologica",
+  weight: ["400", "500", "600", "700", "900"],
+  variable: "--font-dm-sans",
+  display: "swap",
 });
 
 /**
- * @description Fira Code font
- * @returns {Fira_Code} Fira Code font
+ * @description DM Mono font - For metadata and code
  */
-export const firacode = Fira_Code({
+export const dmMono = DM_Mono({
   subsets: ["latin"],
-  variable: "--font-firacode",
+  weight: ["400"],
+  variable: "--font-dm-mono",
+  display: "swap",
 });
