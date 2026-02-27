@@ -1,0 +1,177 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+function getYouTubeVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("youtube.com") && parsed.searchParams.has("v")) {
+      return parsed.searchParams.get("v");
+    }
+    if (parsed.hostname === "youtu.be" || parsed.hostname === "www.youtu.be") {
+      return parsed.pathname.slice(1).split("/")[0] || null;
+    }
+  } catch {}
+  return null;
+}
+
+function isXUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "x.com" || host === "twitter.com" || host === "www.x.com" || host === "www.twitter.com";
+  } catch {
+    return false;
+  }
+}
+
+function titleFromUrl(url: string): string {
+  const parsed = new URL(url);
+  const hostname = parsed.hostname.replace(/^www\./, "");
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  const skip = new Set(["index", "p", "post", "posts", "blog", "article", "articles", "a", "s"]);
+  const slug = [...segments].reverse().find((s) => !skip.has(s) && s.length > 2);
+
+  if (slug) {
+    return slug
+      .replace(/[-_]/g, " ")
+      .replace(/\.[^.]+$/, "")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return hostname;
+}
+
+function fallbackMeta(url: string) {
+  const hostname = new URL(url).hostname.replace(/^www\./, "");
+  return {
+    url,
+    title: titleFromUrl(url),
+    source: hostname,
+    contentType: "article" as const,
+  };
+}
+
+function detectContentType(url: string): "video" | "podcast" | "article" {
+  const host = new URL(url).hostname.toLowerCase();
+  if (host.includes("youtube.com") || host.includes("youtu.be") || host.includes("vimeo.com")) {
+    return "video";
+  }
+  if (host.includes("spotify.com") || host.includes("podcasts.apple.com")) {
+    return "podcast";
+  }
+  return "article";
+}
+
+function cleanSource(url: string): string {
+  try {
+    const host = new URL(url).hostname;
+    return host.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+function estimateReadTime(wordCount: number): string {
+  const minutes = Math.ceil(wordCount / 250);
+  return `${minutes} min read`;
+}
+
+function getMeta(html: string, property: string): string | undefined {
+  const esc = property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patterns = [
+    new RegExp(`<meta[^>]+(?:property|name)=["']${esc}["'][^>]+content=["']([^"'<>]+)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"'<>]+["'])[^>]+(?:property|name)=["']${esc}["']`, "i"),
+  ];
+  for (const p of patterns) {
+    const match = html.match(p);
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+  return undefined;
+}
+
+function parseMetadata(html: string, url: string) {
+  const title = getMeta(html, "og:title") || getMeta(html, "twitter:title") || cleanSource(url);
+  const author = getMeta(html, "og:author") || getMeta(html, "article:author");
+  const rawImage = getMeta(html, "og:image") || getMeta(html, "twitter:image");
+  let previewImage: string | undefined;
+  if (rawImage) {
+    try {
+      previewImage = new URL(rawImage, url).href;
+    } catch {
+      previewImage = rawImage;
+    }
+  }
+  const description = getMeta(html, "og:description") || getMeta(html, "twitter:description");
+  const contentType = detectContentType(url);
+  let readTime: string | undefined;
+  if (contentType === "article") {
+    const bodyText = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const wordCount = bodyText.split(/\s+/).length;
+    if (wordCount > 100) {
+      readTime = estimateReadTime(wordCount);
+    }
+  }
+  return { url, title, source: cleanSource(url), author, previewImage, contentType, readTime, description };
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { url } = await req.json();
+    if (!url || typeof url !== "string") {
+      return NextResponse.json({ error: "INVALID_URL", message: "Please provide a valid URL." }, { status: 400 });
+    }
+    try {
+      new URL(url);
+    } catch {
+      return NextResponse.json({ error: "INVALID_URL", message: "Please provide a valid URL." }, { status: 400 });
+    }
+
+    const ytVideoId = getYouTubeVideoId(url);
+    if (ytVideoId) {
+      let ytTitle = "YouTube Video";
+      let ytAuthor: string | undefined;
+      let ytThumbnail = `https://img.youtube.com/vi/${ytVideoId}/hqdefault.jpg`;
+      try {
+        const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, {
+          headers: { "User-Agent": BROWSER_UA },
+        });
+        if (oembedRes.ok) {
+          const oembed = await oembedRes.json();
+          if (oembed.title) ytTitle = oembed.title;
+          if (oembed.author_name) ytAuthor = oembed.author_name;
+          if (oembed.thumbnail_url) ytThumbnail = oembed.thumbnail_url;
+        }
+      } catch {}
+      return NextResponse.json({ url, title: ytTitle, source: "youtube.com", author: ytAuthor, contentType: "video" as const, previewImage: ytThumbnail });
+    }
+
+    if (isXUrl(url) || url.includes("t.co/")) {
+      return NextResponse.json({ url, title: "Tweet", source: "x.com", contentType: "article" as const });
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    let html: string;
+    try {
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { "User-Agent": BROWSER_UA, Accept: "text/html,application/xhtml+xml" },
+        redirect: "follow",
+      });
+      clearTimeout(timeout);
+      if (!res.ok) return NextResponse.json(fallbackMeta(url));
+      html = await res.text();
+    } catch {
+      clearTimeout(timeout);
+      return NextResponse.json(fallbackMeta(url));
+    }
+
+    const meta = parseMetadata(html, url);
+    return NextResponse.json(meta);
+  } catch {
+    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Something went wrong." }, { status: 500 });
+  }
+}
