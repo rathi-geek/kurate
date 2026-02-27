@@ -18,11 +18,6 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      // Homepage rewrite
-      {
-        source: "/",
-        destination: "/home",
-      },
       // Google Tag Manager Proxy
       {
         source: "/gm",
