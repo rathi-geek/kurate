@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${geologica.variable} font-sans antialiased`}>
+    <html lang="en">
+      <body className={`${geologica.variable} font-sans antialiased bg-cream text-foreground`}>
         {children}
         <SonnarToaster />
         <GoogleAnalyticsScripts />
