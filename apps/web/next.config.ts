@@ -97,7 +97,7 @@ const withSentry = env.SENTRY_AUTH_TOKEN
       project: "create-next-coe",
       silent: !process.env.CI,
       widenClientFileUpload: true,
-      tunnelRoute: "/monitoring", // ?!monitoring in next.config.ts when using middleware.ts file
+      tunnelRoute: "/monitoring", // ?!monitoring in next.config.ts when using proxy.ts file
       disableLogger: true,
       automaticVercelMonitors: true,
       authToken: env.SENTRY_AUTH_TOKEN,
