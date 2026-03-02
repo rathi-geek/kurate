@@ -12,6 +12,9 @@ import { ThreadInfoPanel } from "@/app/_components/threads/ThreadInfoPanel";
 import { PersonChatView } from "@/app/_components/person/PersonChatView";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import { MobileTabBar } from "@/app/_components/chat/MobileTabBar";
+import { DiscoverFeed } from "@/app/_components/feed/discover-feed";
+import { ArticleReader } from "@/app/_components/reader/article-reader";
+import type { FeedItem } from "@/app/_libs/mock-data";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import { MOCK_THREADS } from "@/app/_libs/mockThreadData";
 import { createClient } from "@/app/_libs/supabase/client";
@@ -55,6 +58,8 @@ function ChatPageInner() {
   const [isTyping, setIsTyping] = useState(false);
   const [vaultRefreshKey, setVaultRefreshKey] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [readerUrl, setReaderUrl] = useState<string | null>(null);
+  const [readerItem, setReaderItem] = useState<FeedItem | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isStreamingRef = useRef(false);
 
@@ -92,6 +97,33 @@ function ChatPageInner() {
 
   function handleOpenArticle(url: string) {
     window.open(url, "_blank", "noopener");
+  }
+
+  function handleFeedItemClick(item: FeedItem) {
+    setReaderUrl(item.url);
+    setReaderItem(item);
+  }
+
+  async function handleFeedSave(item: FeedItem) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("logged_items").upsert(
+      {
+        user_id: user.id,
+        url: item.url,
+        title: item.title,
+        source: item.hostname ?? null,
+        author: null,
+        preview_image: item.imageUrl ?? null,
+        content_type: item.contentType,
+        read_time: item.readTime ?? null,
+        save_source: "feed",
+        shared_to_groups: [],
+      },
+      { onConflict: "user_id,url" }
+    );
+    setVaultRefreshKey((k) => k + 1);
   }
 
   const handleSend = useCallback(
@@ -323,13 +355,11 @@ function ChatPageInner() {
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
                 <div className="max-w-2xl mx-auto space-y-4">
                   {messages.length === 0 ? (
-                    <div className="py-12">
-                      <div className="text-center mb-8">
-                        <h2 className="text-xl font-semibold mb-2">Discover</h2>
-                        <p className="text-muted-foreground">
-                          Ask me about any topic to get personalized recommendations.
-                        </p>
-                      </div>
+                    <div className="space-y-10">
+                      <DiscoverFeed
+                        onItemClick={handleFeedItemClick}
+                        onSave={handleFeedSave}
+                      />
                       <div className="max-w-md mx-auto">
                         <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
                           Recent threads
@@ -409,6 +439,16 @@ function ChatPageInner() {
           />
         </div>
       )}
+      <ArticleReader
+        url={readerUrl}
+        title={readerItem?.title}
+        hostname={readerItem?.hostname}
+        readTime={readerItem?.readTime}
+        onClose={() => {
+          setReaderUrl(null);
+          setReaderItem(null);
+        }}
+      />
     </div>
   );
 }
