@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { env } from "env";
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -7,8 +8,8 @@ export async function proxy(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -37,8 +38,7 @@ export async function proxy(request: NextRequest) {
   // Protected routes: redirect to login if not authenticated
   // DEV BYPASS: skip auth redirect for local development when BYPASS_AUTH=true
   const bypassAuth =
-    process.env.NODE_ENV === "development" &&
-    process.env.BYPASS_AUTH === "true";
+    env.NODE_ENV === "development" && env.BYPASS_AUTH === "true";
 
   const pathname = request.nextUrl.pathname;
   const isProtectedRoute =

@@ -8,6 +8,8 @@ export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "production"]).default("development"),
     ANALYZE: z.enum(["true", "false"]).default("false"),
+    /** When "true" in development, skip auth redirect for protected routes. */
+    BYPASS_AUTH: z.enum(["true", "false"]).optional(),
     // Analytics keys - optional for development, required for production
     POSTHOG_API_KEY: z.string().min(51, "PostHog personal API key is required").optional(),
     POSTHOG_ENV_ID: z.string().min(5, "PostHog environment ID is required").optional(),
@@ -43,6 +45,9 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_ENVIRONMENT: z
       .enum(["development", "staging", "production"])
       .default("development"),
+    // Supabase (required for auth)
+    NEXT_PUBLIC_SUPABASE_URL: z.string().url("Supabase URL is required"),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, "Supabase anon key is required"),
   },
   runtimeEnv: {
     // Private
@@ -51,6 +56,7 @@ export const env = createEnv({
     POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
     POSTHOG_ENV_ID: process.env.POSTHOG_ENV_ID,
     SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+    BYPASS_AUTH: process.env.BYPASS_AUTH,
     DB_DIALECT: process.env.DB_DIALECT,
     DATABASE_URL: process.env.DATABASE_URL,
     // Public
@@ -66,5 +72,7 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_POSTHOG_INGEST: process.env.NEXT_PUBLIC_POSTHOG_INGEST,
     NEXT_PUBLIC_POSTHOG_ENVIRONMENT: process.env.NEXT_PUBLIC_POSTHOG_ENVIRONMENT,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
 });
