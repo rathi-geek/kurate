@@ -60,7 +60,6 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     authInterrupts: true,
-    inlineCss: true,
     optimizePackageImports: [
       "date-fns",
       "react-hook-form",

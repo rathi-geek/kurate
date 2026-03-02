@@ -208,7 +208,7 @@ export default function LandingPage() {
           {FEATURES.map((feature, i) => (
             <motion.div
               key={i}
-              initial={false}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.1 }}
               viewport={{ once: true }}
@@ -256,7 +256,7 @@ export default function LandingPage() {
           {STATS.map((card, i) => (
             <motion.div
               key={i}
-              initial={false}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.15 }}
               viewport={{ once: true }}
@@ -286,8 +286,9 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="px-6 py-20 bg-cream">
         <motion.div
-          initial={false}
+          initial={{ opacity: 0, scale: 0.97 }}
           whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 25 }}
           viewport={{ once: true }}
           className="max-w-[800px] mx-auto border-2 border-ink/[0.08] p-8 md:p-12 text-center relative overflow-hidden rounded-2xl"
           style={{ animation: "ctaBreathe 3s ease-in-out infinite" }}

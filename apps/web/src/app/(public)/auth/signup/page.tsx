@@ -2,17 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { createClient } from "@/app/_libs/supabase/client";
 import { BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Arrow } from "@/components/brand";
-
-const pageVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
 
 export default function SignupPage() {
   const router = useRouter();
@@ -54,12 +48,7 @@ export default function SignupPage() {
         <BrandSunburst s={80} />
       </FloatDeco>
 
-      <motion.div
-        variants={pageVariants}
-        initial={false}
-        animate="visible"
-        className="w-full max-w-[440px] px-8 relative z-10"
-      >
+      <div className="w-full max-w-[440px] px-8 relative z-10">
         <div className="flex items-center gap-2 mb-12">
           <BrandStar s={20} />
           <span className="font-sans font-black text-lg tracking-tight">
@@ -131,7 +120,7 @@ export default function SignupPage() {
             </span>
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

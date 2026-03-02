@@ -1,17 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { motion } from "framer-motion";
-import { createClient } from "@/app/_libs/supabase/client";
-import { BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Arrow } from "@/components/brand";
 
-const pageVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
+import { createClient } from "@/app/_libs/supabase/client";
+import { Arrow, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 28, delay: i * 0.07 },
+  }),
 };
 
 export default function LoginPage() {
@@ -42,38 +48,43 @@ export default function LoginPage() {
       }
     }
 
-    router.push("/chat" as never);
+    router.replace("/chat");
+    router.refresh();
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center relative overflow-hidden">
+    <div className="bg-cream relative flex min-h-screen items-center justify-center overflow-hidden">
       <FloatDeco top={50} right={50} opacity={0.04}>
         <BrandSunburst s={100} />
       </FloatDeco>
 
-      <motion.div
-        variants={pageVariants}
-        initial={false}
-        animate="visible"
-        className="w-full max-w-[440px] px-8 relative z-10"
-      >
-        <div className="flex items-center gap-2 mb-12">
+      <div className="relative z-10 w-full max-w-[440px] px-8">
+        <motion.div
+          custom={0}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="mb-12 flex items-center gap-2"
+        >
           <BrandStar s={20} />
-          <span className="font-sans font-black text-lg tracking-tight">
-            KURATE
-          </span>
-        </div>
+          <span className="font-sans text-lg font-black tracking-tight">KURATE</span>
+        </motion.div>
 
-        <h2 className="font-serif text-[32px] font-normal mb-1.5 tracking-tight">
-          Welcome back
-        </h2>
-        <p className="font-sans text-sm text-muted-foreground mb-8">
-          Log in to your account.
-        </p>
+        <motion.div custom={1} initial="hidden" animate="visible" variants={fadeUp}>
+          <h2 className="mb-1.5 font-serif text-[32px] font-normal tracking-tight">Welcome back</h2>
+          <p className="text-muted-foreground mb-8 font-sans text-sm">Log in to your account.</p>
+        </motion.div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <motion.form
+          custom={2}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          onSubmit={handleLogin}
+          className="space-y-4"
+        >
           <div>
-            <label className="block mb-2 font-sans text-[11px] font-bold uppercase tracking-[0.08em] text-foreground">
+            <label className="text-foreground mb-2 block font-sans text-[11px] font-bold tracking-[0.08em] uppercase">
               Email
             </label>
             <Input
@@ -85,7 +96,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block mb-2 font-sans text-[11px] font-bold uppercase tracking-[0.08em] text-foreground">
+            <label className="text-foreground mb-2 block font-sans text-[11px] font-bold tracking-[0.08em] uppercase">
               Password
             </label>
             <Input
@@ -95,15 +106,10 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            {error && (
-              <p className="mt-1.5 font-sans text-[13px] text-destructive">
-                {error}
-              </p>
-            )}
+            {error && <p className="text-destructive mt-1.5 font-sans text-[13px]">{error}</p>}
             <p
-              className="font-sans text-[13px] text-muted-foreground mt-2 text-right cursor-pointer hover:text-foreground transition-colors"
-              onClick={() => router.push("/auth/forgot-password")}
-            >
+              className="text-muted-foreground hover:text-foreground mt-2 cursor-pointer text-right font-sans text-[13px] transition-colors"
+              onClick={() => router.push("/auth/forgot-password")}>
               Forgot password?
             </p>
           </div>
@@ -120,20 +126,25 @@ export default function LoginPage() {
               )}
             </Button>
           </div>
-        </form>
+        </motion.form>
 
-        <div className="border-t border-border mt-8 pt-6 text-center">
-          <p className="font-sans text-[13px] text-muted-foreground">
+        <motion.div
+          custom={3}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="border-border mt-8 border-t pt-6 text-center"
+        >
+          <p className="text-muted-foreground font-sans text-[13px]">
             No account?{" "}
             <span
-              className="font-bold underline cursor-pointer"
-              onClick={() => router.push("/auth/signup")}
-            >
+              className="cursor-pointer font-bold underline"
+              onClick={() => router.push("/auth/signup")}>
               Sign up
             </span>
           </p>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import posthog from "posthog-js";
 /**
  * @description Initialize Sentry (only if auth token is available)
  */
-if (env.SENTRY_AUTH_TOKEN) {
+if (process.env.SENTRY_AUTH_TOKEN) {
   Sentry.init({
     dsn: "https://fd0bd6638651a9975e3b7809d12f5565@o1428761.ingest.us.sentry.io/4509809603772416",
 
