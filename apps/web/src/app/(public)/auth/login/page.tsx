@@ -10,13 +10,14 @@ import { Input } from "@/components/ui/input";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { Arrow, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import type { Variants } from "framer-motion";
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({
+  visible: (i?: number) => ({
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 300, damping: 28, delay: i * 0.07 },
+    transition: { type: "spring" as const, stiffness: 300, damping: 28, delay: (i ?? 0) * 0.07 },
   }),
 };
 

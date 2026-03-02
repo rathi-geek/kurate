@@ -43,9 +43,10 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isProtectedRoute =
     pathname.startsWith("/chat") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/shared") ||
     pathname.startsWith("/groups") ||
-    pathname === "/shared" ||
-    pathname === "/profile";
+    pathname.startsWith("/dashboard");
 
   if (!bypassAuth && !user && isProtectedRoute) {
     const url = request.nextUrl.clone();
@@ -71,13 +72,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico, images, etc.
-     * This ensures session is refreshed on every page request (including /).
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/chat/:path*",
+    "/profile/:path*",
+    "/shared/:path*",
+    "/groups/:path*",
+    "/dashboard/:path*",
+    "/auth/:path*",
   ],
 };

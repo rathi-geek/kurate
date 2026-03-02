@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AppSidebar } from "@/app/_components/app-sidebar";
 import { ChatBubble } from "@/app/_components/chat/chat-bubble";
 import { ChatInput } from "@/app/_components/chat/chat-input";
+import { QuickChips } from "@/app/_components/chat/quick-chips";
 import { ContentThreadPanel } from "@/app/_components/threads/ContentThreadPanel";
 import { ThreadInfoPanel } from "@/app/_components/threads/ThreadInfoPanel";
 import { PersonChatView } from "@/app/_components/person/PersonChatView";
@@ -387,11 +388,17 @@ function ChatPageInner() {
                   )}
                 </div>
               </div>
-              <ChatInput
-                onSend={handleSend}
-                placeholder="Ask me about any topic..."
-                disabled={isTyping}
-              />
+              <div className="shrink-0 px-4 pb-2 space-y-2">
+                <QuickChips
+                  visible={messages.length === 0}
+                  onSelect={(prompt) => handleSend(prompt)}
+                />
+                <ChatInput
+                  onSend={handleSend}
+                  placeholder="Ask me about any topic..."
+                  disabled={isTyping}
+                />
+              </div>
             </>
           )}
 
