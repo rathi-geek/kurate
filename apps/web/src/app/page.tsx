@@ -96,7 +96,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="px-6 py-20 md:py-32 text-center relative">
         <motion.div
-          initial="hidden"
+          initial={false}
           animate="visible"
           variants={staggerContainer}
           className="max-w-[800px] mx-auto relative z-10"
@@ -208,7 +208,7 @@ export default function LandingPage() {
           {FEATURES.map((feature, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.1 }}
               viewport={{ once: true }}
@@ -256,7 +256,7 @@ export default function LandingPage() {
           {STATS.map((card, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.15 }}
               viewport={{ once: true }}
@@ -286,7 +286,7 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="px-6 py-20 bg-cream">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={false}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           className="max-w-[800px] mx-auto border-2 border-ink/[0.08] p-8 md:p-12 text-center relative overflow-hidden rounded-2xl"

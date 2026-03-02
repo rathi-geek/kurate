@@ -56,7 +56,7 @@ export default function SignupPage() {
 
       <motion.div
         variants={pageVariants}
-        initial="hidden"
+        initial={false}
         animate="visible"
         className="w-full max-w-[440px] px-8 relative z-10"
       >
