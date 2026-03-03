@@ -190,13 +190,6 @@
           "Ai"
         ],
         "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {}
-            }
-          }
-        },
         "responses": {
           "400": {
             "$ref": "#/components/responses/400"
@@ -216,13 +209,6 @@
           "Extract"
         ],
         "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {}
-            }
-          }
-        },
         "responses": {
           "400": {
             "$ref": "#/components/responses/400"
@@ -279,28 +265,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "description": "OpenApi ID"
-                    },
-                    "name": {
-                      "type": "string",
-                      "description": "OpenApi name"
-                    },
-                    "price": {
-                      "type": "number",
-                      "minimum": 0,
-                      "exclusiveMinimum": true,
-                      "description": "OpenApi price"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "price"
-                  ]
+                  "$ref": "#/components/schemas/OpenApiResponse"
                 }
               }
             }
@@ -395,13 +360,6 @@
           "Users"
         ],
         "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {}
-            }
-          }
-        },
         "responses": {
           "400": {
             "$ref": "#/components/responses/400"
