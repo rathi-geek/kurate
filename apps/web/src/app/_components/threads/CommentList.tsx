@@ -13,7 +13,6 @@ interface CommentListProps {
 export function CommentList({
   comments,
   currentUserHandle,
-  onReply,
 }: CommentListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 

@@ -41,9 +41,16 @@ function ContentTypeBadge({ type }: { type: FeedItem["contentType"] }) {
 export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
   const [filter, setFilter] = useState<ContentFilter>("all");
 
+  const filterToContentType: Record<Exclude<ContentFilter, "all">, FeedItem["contentType"]> = {
+    articles: "article",
+    videos: "video",
+    podcasts: "podcast",
+  };
+
   const forYouItems = useMemo(() => {
     if (filter === "all") return MOCK_FEED_ITEMS;
-    return MOCK_FEED_ITEMS.filter((item) => item.contentType === filter);
+    const contentType = filterToContentType[filter];
+    return MOCK_FEED_ITEMS.filter((item) => item.contentType === contentType);
   }, [filter]);
 
   const isEmpty = MOCK_FEED_ITEMS.length === 0;
