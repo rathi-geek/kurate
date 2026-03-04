@@ -1,4 +1,5 @@
 /* Single source of truth: all raw color values in :root */
+/* Brand color naming: single-word (cream, ink, teal, white, amber, danger) or compound (lavender-dark, amber-dark). @theme uses --color- prefix only and references :root vars. */
 :root {
   /* Base Colors */
   --background: #F5F0E8;
@@ -36,6 +37,7 @@
   --accent: #F5F0E8;
   --accent-foreground: #1A1A1A;
   --destructive: #B91C1C;
+  --destructive-foreground: #FFFFFF;
   --card: #FFFFFF;
   --card-foreground: #1A1A1A;
   --popover: #FFFFFF;
@@ -81,6 +83,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);

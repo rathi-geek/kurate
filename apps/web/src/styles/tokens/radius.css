@@ -1,6 +1,6 @@
 :root {
-  /* Radius */
-  --radius: 0.4rem;
+  /* Radius — base for size scale; component tokens below */
+  --radius-base: 0.4rem;
   --radius-button: 10px;
   --radius-card: 12px;
   --radius-input: 10px;
@@ -9,11 +9,11 @@
 }
 
 @theme inline {
-  /* Border Radius */
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* Border Radius — size scale (from --radius-base) and component tokens */
+  --radius-sm: calc(var(--radius-base) - 4px);
+  --radius-md: calc(var(--radius-base) - 2px);
+  --radius-lg: var(--radius-base);
+  --radius-xl: calc(var(--radius-base) + 4px);
   --radius-button: var(--radius-button);
   --radius-card: var(--radius-card);
   --radius-input: var(--radius-input);
