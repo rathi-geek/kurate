@@ -1,4 +1,5 @@
 import unusedImports from "eslint-plugin-unused-imports";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
@@ -19,6 +20,8 @@ const eslintConfig = [
   },
   ...nextCoreWebVitals,
   ...nextTypescript,
+  // Accessibility: aria rules, semantic HTML, keyboard navigation
+  jsxA11y.flatConfigs.recommended,
   {
     plugins: {
       "unused-imports": unusedImports,
@@ -64,6 +67,25 @@ const eslintConfig = [
 
       // Prevent import cycles
       "import/no-cycle": ["error", { ignoreExternal: true, maxDepth: Infinity }],
+
+      // Design system: no hardcoded route strings in href — use ROUTES constants
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "JSXAttribute[name.name='href'] > Literal[value=/^\\/(auth|chat|profile|groups|shared|about|blog|demo)/]",
+          message: "Use ROUTES constants from @/app/_libs/constants/routes instead of hardcoded paths.",
+        },
+        {
+          selector: "JSXAttribute[name.name='href'] > TemplateLiteral",
+          message: "Use ROUTES constants from @/app/_libs/constants/routes — avoid template literals for paths.",
+        },
+      ],
+
+      // Accessibility: downgrade some jsx-a11y rules from error to warn
+      // (strict rules that may need gradual adoption)
+      "jsx-a11y/no-static-element-interactions": "warn",
+      "jsx-a11y/click-events-have-key-events": "warn",
+      "jsx-a11y/no-noninteractive-element-interactions": "warn",
     },
   },
 ];
