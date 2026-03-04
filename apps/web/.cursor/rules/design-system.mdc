@@ -6,100 +6,76 @@ alwaysApply: true
 
 # Kurate Design System Rules
 
-You are working in the Kurate web app. This project uses Tailwind CSS v4 with a custom design token system.
+You are working in the Kurate web app. Full conventions are in AGENTS.md. This file is the quick-reference for inline code generation.
 
-## CRITICAL: Never Use These
+## NEVER Do These
 
-- ❌ Hardcoded hex values in className: `bg-[#1A5C4B]`, `text-[#F5F0E8]`
-- ❌ Tailwind default colors: `bg-blue-500`, `text-gray-600`, `border-slate-200`
-- ❌ Raw px in className for font sizes: `text-[14px]`, `text-[48px]`
-- ❌ Inline style for visuals: `style={{ color: "#...", boxShadow: "...", fontSize: "..." }}`
-- ❌ Default Tailwind radii: `rounded-2xl`, `rounded-xl`, `rounded-3xl`
-- ❌ Arbitrary container widths: `max-w-[800px]`, `max-w-[1280px]`
-- ❌ Arbitrary box shadows: `shadow-[0_4px_6px_rgba(0,0,0,0.1)]`
-
-## Colors — Always Use Semantic or Brand Tokens
-
-### Semantic (for all UI components)
-
-- `bg-background` / `text-foreground` — page/body
-- `bg-primary` / `text-primary-foreground` — primary actions
-- `bg-secondary` / `text-secondary-foreground` — secondary surfaces
-- `bg-muted` / `text-muted-foreground` — disabled/subtle
-- `bg-card` / `text-card-foreground` — cards (white surface)
-- `bg-destructive` / `text-destructive-foreground` — errors
-- `border-border` — all borders
-- `ring-ring` — focus rings
-
-### State Colors (for status indicators)
-
-- success: `bg-success-bg text-success-foreground`
-- warning: `bg-warning-bg text-warning-foreground`
-- info: `bg-info-bg text-info-foreground`
-
-### Brand (for brand moments only — landing page, logo areas)
-
-- `bg-cream`, `bg-ink`, `bg-teal`, `bg-lavender`, `bg-lavender-dark`, `bg-amber`, `bg-amber-dark`
-
-### Opacity
-
-Use Tailwind's opacity modifier: `text-ink/60`, `bg-teal/10`, `border-ink/[0.06]`
-
-## Border Radius — Use Named Tokens Only
-
-| Component     | Class           |
-|--------------|-----------------|
-| Button       | rounded-button  |
-| Card         | rounded-card    |
-| Input        | rounded-input   |
-| Badge/tag/chip | rounded-badge |
-| Full pill    | rounded-pill    |
-
-## Shadows — Use Shadow Scale
-
-`shadow-xs` → `shadow-sm` → `shadow-md` → `shadow-lg` → `shadow-xl` → `shadow-inner`
-
-Cards use `shadow-sm` at rest, `shadow-md` on hover.
-
-## Typography
-
-- **Font families:** font-sans (body), font-serif (headlines only), font-mono (metadata/code)
-- **Sizes:** text-xs text-sm text-base text-lg text-xl text-2xl text-3xl text-4xl text-5xl text-6xl text-7xl
-
-## Layout Containers
-
-- `container-page` — max-width 1280px, centered, with horizontal padding
-- `container-content` — max-width 800px, for readable prose/articles
-
-## Component Variants
-
-Always use CVA. Shared base variants are in src/lib/variants.ts:
-
-- buttonVariants — 5 variants × 4 sizes
-- badgeVariants — 5 variants
-- inputVariants — base input style
-
-```tsx
-import { buttonVariants } from "@/lib/variants";
-import { cn } from "@/app/_libs/utils/cn";
-
-<button className={cn(buttonVariants({ variant: "primary", size: "md" }), className)} />
+```
+❌ bg-[#1A5C4B]          → bg-teal
+❌ text-gray-600         → text-muted-foreground
+❌ text-[14px]           → text-sm
+❌ rounded-2xl           → rounded-card / rounded-button
+❌ max-w-[800px]         → container-content
+❌ shadow-[0_4px_6px...] → shadow-sm / shadow-md
+❌ style={{ color, boxShadow, fontSize }}  → use className
+❌ href="/auth/login"    → ROUTES.AUTH.LOGIN
+❌ <Link><Button>        → <Button asChild><Link href={ROUTES.x}>
+❌ import Link from "next/link"  → from "@/i18n"
+❌ useTranslations() in server component  → getTranslations()
+❌ "use client" on page.tsx  → extract client parts to sub-component
+❌ <div onClick>         → <button> or <a>
 ```
 
-## Animation
+## Colors
 
-Use Framer Motion spring presets from src/app/_libs/utils/motion.ts:
+- Semantic (UI): `bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `bg-muted`, `text-muted-foreground`, `bg-card`, `border-border`
+- State: `bg-success-bg text-success-foreground`, `bg-warning-bg text-warning-foreground`, `bg-info-bg text-info-foreground`
+- Brand (landing/logo only): `bg-cream`, `bg-ink`, `bg-teal`, `bg-lavender`, `bg-amber`
+- Opacity: `text-ink/75` (min for body text), `bg-teal/10`, `border-ink/[0.06]`
 
-- springSnappy — tab indicators, quick reveals
-- springGentle — most UI transitions
-- springBouncy — playful elements
-- springHeavy — panels, page entry
+## Tokens
 
-Never use CSS ease-in-out, linear, or transition-all alone.
+| What | Use |
+|------|-----|
+| Button radius | `rounded-button` |
+| Card radius | `rounded-card` |
+| Input radius | `rounded-input` |
+| Badge radius | `rounded-badge` |
+| Pill | `rounded-pill` |
+| Page width | `container-page` |
+| Content width | `container-content` |
+| Shadows | `shadow-xs` `shadow-sm` `shadow-md` `shadow-lg` `shadow-xl` |
+| Font | `font-sans` (body) `font-serif` (headlines) `font-mono` (code/meta) |
 
-## File Reference
+## Components
 
-- Token values: src/styles/TOKENS.md
-- Full token CSS: src/styles/tokens/
-- Shared variants: src/lib/variants.ts
-- Full conventions: AGENTS.md
+```ts
+import { buttonVariants, badgeVariants } from "@/lib/variants";  // shared CVA
+import { ROUTES } from "@/app/_libs/constants/routes";           // all paths
+import { Link } from "@/i18n";                                    // i18n-aware Link
+```
+
+## Localization
+
+```ts
+// Server component
+const t = await getTranslations("namespace");  // from "next-intl/server"
+
+// Client component ("use client")
+const t = useTranslations("namespace");        // from "next-intl"
+```
+
+## Accessibility
+
+- Framer Motion: `const prefersReducedMotion = useReducedMotion();` — disable `initial`/`whileHover`/`whileInView` when true
+- Decorative SVGs/icons: `aria-hidden="true"`
+- Marquee/auto-play containers: `aria-hidden="true"`
+- Every `<nav>`: `aria-label="Main navigation"`
+- Full pages: `<main id="main-content">`
+
+## Full Reference
+
+→ AGENTS.md (conventions, patterns, anti-patterns)
+→ src/styles/TOKENS.md (all token values)
+→ src/lib/variants.ts (buttonVariants, badgeVariants, inputVariants)
+→ src/app/_libs/constants/routes.ts (ROUTES)

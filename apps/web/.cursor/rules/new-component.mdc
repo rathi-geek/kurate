@@ -60,10 +60,22 @@ export { MyComponent };
 - [ ] Animation uses Framer Motion with spring presets
 - [ ] Responsive: mobile-first (base styles for mobile, md: for desktop)
 - [ ] Accessible: semantic HTML, aria-label on icon buttons, focus ring visible
+- [ ] Uses ROUTES constants, not hardcoded strings
+- [ ] Decorative icons have aria-hidden="true"
+- [ ] No `<Link><Button>` nesting — uses asChild pattern
+- [ ] If using Framer Motion: useReducedMotion() is imported and applied
+- [ ] Interactive elements are `<a>` or `<button>`, not `<div>`/`<span>`
+- [ ] If this is a full page: has `<main id="main-content">` wrapper
 - [ ] Imports use path aliases (@/, @/components/, @/app/)
-- [ ] If interactive → "use client" at top
+- [ ] `"use client"` only if component uses hooks, events, browser APIs, or Framer Motion
+- [ ] If this is a page.tsx — NO `"use client"` — extract animated parts to a sub-component
 - [ ] cn() used for all className merging
 - [ ] forwardRef used if this will be used as a primitive/reusable atom
+- [ ] All user-visible text goes through `t()` — no hardcoded English strings
+- [ ] Uses `useTranslations()` if client component, `getTranslations()` if server component
+- [ ] Link imported from `"@/i18n"`, not `"next/link"`
+- [ ] If public page (landing/about/blog/demo): metadata exported with `og:image`
+- [ ] If auth or app page: metadata has `robots: { index: false, follow: false }`
 
 ## Quick Color Reference
 

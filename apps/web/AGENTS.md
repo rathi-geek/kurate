@@ -588,6 +588,42 @@ test("should handle click events", async () => {
 - Provide `aria-label` for icon buttons: `<button aria-label="Delete user">`
 - Include focus indicators: `focus:ring-2 focus:ring-ring focus:ring-offset-2`
 
+## Accessibility & HTML
+- Never nest `<Link><Button>` — use `<Button asChild><Link href="...">` instead.
+- Every page must have a `<main id="main-content">` wrapping primary content.
+- All `<nav>` elements must have `aria-label="Main navigation"` (or a descriptive label).
+- Decorative SVGs and icons must have `aria-hidden="true"`; scrolling/marquee containers must have `aria-hidden="true"`.
+- Interactive elements must be `<a>` or `<button>` — never `<div onClick>` or `<span onClick>`.
+- Every component using Framer Motion must import `useReducedMotion` and, when `prefersReducedMotion` is true, disable `initial`, `animate`, `whileHover`, and `whileInView`. CSS animations must have `@media (prefers-reduced-motion: reduce)` overrides in animations.css.
+
+## Routing
+All route paths come from `ROUTES` in `@/app/_libs/constants/routes`. Never use string literals for paths. When adding a new route, add it to ROUTES first, then use the constant everywhere.
+
+## SEO
+- **Public marketing pages** (landing, about, blog, demo): export full metadata including title, description, openGraph, and twitter with og:image.
+- **Auth pages and (app)/\*** pages: export metadata with `robots: { index: false, follow: false }`. Do not add indexable SEO metadata to authenticated or private pages.
+
+## Localization
+All user-visible text goes through next-intl. Never hardcode English strings in JSX.
+
+- **Server Components**: `const t = await getTranslations("namespace")` — import from `"next-intl/server"`
+- **Client Components**: `const t = useTranslations("namespace")` — import from `"next-intl"`
+- **Link**: always import from `"@/i18n"`, never from `"next/link"` directly
+- **Dates/numbers**: `useFormatters()` in client components, `getServerFormatters(locale)` in server components
+- All new translation keys must be added to `messages/en-US.json` before use
+- ❌ Never use `useTranslations()` in a Server Component — use `getTranslations()`
+- ❌ Never use `getTranslations()` in a Client Component — use `useTranslations()`
+
+## Code Splitting
+- `page.tsx` is always a Server Component — **never add `"use client"` to a page file**
+- If a page needs Framer Motion or React hooks, extract those parts to a separate file:
+  ```
+  app/about/page.tsx          ← Server Component, async, fetches data
+  app/about/hero-section.tsx  ← "use client", Framer Motion animations
+  ```
+- `"use client"` is required for: Framer Motion, `useTranslations`, `useState`, `useEffect`, event handlers
+- `"use client"` is NOT required for: `getTranslations`, `getMessages`, `getLocale`, data fetching with `async/await`
+
 ## Key Utilities
 ```tsx
 // Class name utility
