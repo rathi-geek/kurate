@@ -1,0 +1,10 @@
+:root {
+  /* Z-Index */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-overlay: 1040;
+  --z-modal: 1060;
+  --z-popover: 1080;
+  --z-toast: 1100;
+  --z-tooltip: 1200;
+}

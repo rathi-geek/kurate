@@ -1,0 +1,96 @@
+/* Single source of truth: all raw color values in :root */
+:root {
+  /* Base Colors */
+  --background: #F5F0E8;
+  --foreground: #1A1A1A;
+
+  /* Brand Colors */
+  --cream: #F5F0E8;
+  --ink: #1A1A1A;
+  --white: #FFFFFF;
+  --teal: #1A5C4B;
+  --lavender: #D8C9F0;
+  --lavender-dark: #6B4FA0;
+  --amber: #F0C27A;
+  --amber-dark: #8B6914;
+  --danger: #B91C1C;
+
+  /* State Colors */
+  --success: #166534;
+  --success-bg: #DCFCE7;
+  --success-foreground: #14532D;
+  --warning: #92400E;
+  --warning-bg: #FEF3C7;
+  --warning-foreground: #78350F;
+  --info: #1E40AF;
+  --info-bg: #DBEAFE;
+  --info-foreground: #1E3A8A;
+
+  /* Semantic Colors */
+  --primary: #1A5C4B;
+  --primary-foreground: #F5F0E8;
+  --secondary: #F5F0E8;
+  --secondary-foreground: #1A1A1A;
+  --muted: #F5F0E8;
+  --muted-foreground: rgba(26, 26, 26, 0.6);
+  --accent: #F5F0E8;
+  --accent-foreground: #1A1A1A;
+  --destructive: #B91C1C;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  --border: rgba(26, 26, 26, 0.1);
+  --input: rgba(26, 26, 26, 0.1);
+  --ring: #1A5C4B;
+
+  /* Typography (font-dm-sans / font-dm-mono are set by Next.js in layout) */
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+@theme inline {
+  /* Kurate Brand Colors */
+  --color-cream: var(--cream);
+  --color-ink: var(--ink);
+  --color-white: var(--white);
+  --color-teal: var(--teal);
+  --color-lavender: var(--lavender);
+  --color-lavender-dark: var(--lavender-dark);
+  --color-amber: var(--amber);
+  --color-amber-dark: var(--amber-dark);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-foreground: var(--info-foreground);
+
+  /* Semantic Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Typography */
+  --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-dm-mono);
+}

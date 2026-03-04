@@ -1,0 +1,61 @@
+@layer components {
+  /* Container — centered content wrapper */
+  .container-content {
+    width: 100%;
+    max-width: var(--container-content);
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+
+  .container-page {
+    width: 100%;
+    max-width: var(--container-xl);
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+
+  /* Section spacing */
+  .section {
+    padding-block: 5rem;
+  }
+
+  .section-sm {
+    padding-block: 2.5rem;
+  }
+
+  /* Card base */
+  .card-base {
+    background-color: var(--card);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+  }
+
+  /* Semantic state badges */
+  .badge-success {
+    background-color: var(--success-bg);
+    color: var(--success-foreground);
+    border-radius: var(--radius-badge);
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-warning {
+    background-color: var(--warning-bg);
+    color: var(--warning-foreground);
+    border-radius: var(--radius-badge);
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-info {
+    background-color: var(--info-bg);
+    color: var(--info-foreground);
+    border-radius: var(--radius-badge);
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+}
