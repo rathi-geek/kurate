@@ -1,7 +1,19 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { ROUTES } from "@/app/_libs/constants/routes";
+
+export const metadata: Metadata = {
+  title: "Watch in action | Kurate",
+  description: "See Kurate in action — save, curate, and discover content with your trusted network.",
+  openGraph: {
+    title: "Watch in action | Kurate",
+    description: "See Kurate in action — save, curate, and discover content with your trusted network.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Kurate — Read smarter, curate better" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
+};
 
 export default async function DemoPage() {
   const t = await getTranslations("demo");

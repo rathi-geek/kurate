@@ -1,8 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function UnauthorizedPage() {
   const t = await getTranslations("errors");

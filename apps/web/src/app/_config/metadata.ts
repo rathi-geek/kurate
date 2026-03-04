@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   },
   description: env.NEXT_PUBLIC_APP_DESCRIPTION,
   keywords: env.NEXT_PUBLIC_APP_KEYWORDS,
+  robots: { index: true, follow: true },
   alternates: {
     canonical: env.NEXT_PUBLIC_APP_URL,
   },
