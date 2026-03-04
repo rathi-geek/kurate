@@ -27,7 +27,7 @@ pnpm db:migrate
 - **Supabase** — Postgres database + Auth. Client in `src/app/_libs/supabase/`
 - **shadcn/ui** — UI component library built on Radix UI
 - **Framer Motion** — All animations. Variants defined in component files
-- **Tailwind CSS v4** — Custom design tokens
+- **Tailwind CSS v4** — Design tokens in src/styles/tokens/. Reference: src/styles/TOKENS.md
 
 ## Code Conventions
 - **File naming:** kebab-case (`chat-bubble.tsx`, `user-profile.tsx`)
@@ -36,19 +36,36 @@ pnpm db:migrate
 - **Forms:** React Hook Form + Zod validation
 - **TypeScript:** Strict mode enabled
 
+## Design System
+- Token reference: src/styles/TOKENS.md
+- New components must use semantic color tokens (bg-primary, text-foreground) — never Tailwind defaults or hex values
+- CVA variants go in src/lib/variants.ts if reusable; local cva() otherwise
+- Cursor rules in .cursor/rules/ enforce this automatically
+- Run pnpm lint — the no-console and unused-imports rules are enforced
+
 ## Folder Structure
 ```
 src/
 ├── app/
 │   ├── _components/     # Shared components
-│   ├── _config/         # Configuration files
-│   ├── _libs/          # Utilities and libraries
-│   │   ├── supabase/   # Supabase client
-│   │   └── utils/      # Utility functions (cn, etc.)
+│   ├── _config/         # Configuration files (fonts.ts, etc.)
+│   ├── _libs/           # Utilities and libraries
+│   │   ├── supabase/    # Supabase client
+│   │   └── utils/       # Utility functions (cn, etc.)
 │   ├── _types/         # Type definitions
 │   └── (routes)/       # App pages
-└── components/
-    └── ui/             # shadcn/ui components
+├── components/
+│   ├── ui/             # shadcn/ui components
+│   └── brand/          # Brand SVG icons
+├── lib/
+│   └── variants.ts     # Shared CVA variant definitions
+└── styles/
+    ├── tokens/         # CSS design tokens (colors, typography, radius, shadows, spacing, z-index)
+    ├── base.css        # @layer base resets
+    ├── components.css  # @layer components utilities
+    ├── animations.css  # @keyframes
+    ├── globals.css     # Imports only — no styles
+    └── TOKENS.md       # Design token reference for developers
 ```
 
 ## Git Workflow

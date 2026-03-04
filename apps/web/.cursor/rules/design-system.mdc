@@ -1,0 +1,105 @@
+---
+description: Kurate design system — enforces token usage, color conventions, and component patterns
+globs: ["src/**/*.tsx", "src/**/*.ts", "src/**/*.css"]
+alwaysApply: true
+---
+
+# Kurate Design System Rules
+
+You are working in the Kurate web app. This project uses Tailwind CSS v4 with a custom design token system.
+
+## CRITICAL: Never Use These
+
+- ❌ Hardcoded hex values in className: `bg-[#1A5C4B]`, `text-[#F5F0E8]`
+- ❌ Tailwind default colors: `bg-blue-500`, `text-gray-600`, `border-slate-200`
+- ❌ Raw px in className for font sizes: `text-[14px]`, `text-[48px]`
+- ❌ Inline style for visuals: `style={{ color: "#...", boxShadow: "...", fontSize: "..." }}`
+- ❌ Default Tailwind radii: `rounded-2xl`, `rounded-xl`, `rounded-3xl`
+- ❌ Arbitrary container widths: `max-w-[800px]`, `max-w-[1280px]`
+- ❌ Arbitrary box shadows: `shadow-[0_4px_6px_rgba(0,0,0,0.1)]`
+
+## Colors — Always Use Semantic or Brand Tokens
+
+### Semantic (for all UI components)
+
+- `bg-background` / `text-foreground` — page/body
+- `bg-primary` / `text-primary-foreground` — primary actions
+- `bg-secondary` / `text-secondary-foreground` — secondary surfaces
+- `bg-muted` / `text-muted-foreground` — disabled/subtle
+- `bg-card` / `text-card-foreground` — cards (white surface)
+- `bg-destructive` / `text-destructive-foreground` — errors
+- `border-border` — all borders
+- `ring-ring` — focus rings
+
+### State Colors (for status indicators)
+
+- success: `bg-success-bg text-success-foreground`
+- warning: `bg-warning-bg text-warning-foreground`
+- info: `bg-info-bg text-info-foreground`
+
+### Brand (for brand moments only — landing page, logo areas)
+
+- `bg-cream`, `bg-ink`, `bg-teal`, `bg-lavender`, `bg-lavender-dark`, `bg-amber`, `bg-amber-dark`
+
+### Opacity
+
+Use Tailwind's opacity modifier: `text-ink/60`, `bg-teal/10`, `border-ink/[0.06]`
+
+## Border Radius — Use Named Tokens Only
+
+| Component     | Class           |
+|--------------|-----------------|
+| Button       | rounded-button  |
+| Card         | rounded-card    |
+| Input        | rounded-input   |
+| Badge/tag/chip | rounded-badge |
+| Full pill    | rounded-pill    |
+
+## Shadows — Use Shadow Scale
+
+`shadow-xs` → `shadow-sm` → `shadow-md` → `shadow-lg` → `shadow-xl` → `shadow-inner`
+
+Cards use `shadow-sm` at rest, `shadow-md` on hover.
+
+## Typography
+
+- **Font families:** font-sans (body), font-serif (headlines only), font-mono (metadata/code)
+- **Sizes:** text-xs text-sm text-base text-lg text-xl text-2xl text-3xl text-4xl text-5xl text-6xl text-7xl
+
+## Layout Containers
+
+- `container-page` — max-width 1280px, centered, with horizontal padding
+- `container-content` — max-width 800px, for readable prose/articles
+
+## Component Variants
+
+Always use CVA. Shared base variants are in src/lib/variants.ts:
+
+- buttonVariants — 5 variants × 4 sizes
+- badgeVariants — 5 variants
+- inputVariants — base input style
+
+```tsx
+import { buttonVariants } from "@/lib/variants";
+import { cn } from "@/app/_libs/utils/cn";
+
+<button className={cn(buttonVariants({ variant: "primary", size: "md" }), className)} />
+```
+
+## Animation
+
+Use Framer Motion spring presets from src/app/_libs/utils/motion.ts:
+
+- springSnappy — tab indicators, quick reveals
+- springGentle — most UI transitions
+- springBouncy — playful elements
+- springHeavy — panels, page entry
+
+Never use CSS ease-in-out, linear, or transition-all alone.
+
+## File Reference
+
+- Token values: src/styles/TOKENS.md
+- Full token CSS: src/styles/tokens/
+- Shared variants: src/lib/variants.ts
+- Full conventions: AGENTS.md

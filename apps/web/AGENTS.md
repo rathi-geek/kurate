@@ -304,6 +304,157 @@ Always design for mobile first, then scale up:
 )}>
 ```
 
+## Design System (CRITICAL — Read Before Touching Any className)
+
+This project uses Tailwind CSS v4 with a custom design token system defined in `src/styles/`.
+All tokens are CSS custom properties mapped into Tailwind via `@theme inline`.
+**Never use hardcoded hex values, Tailwind default color names (blue-500, green-600, etc.), or raw pixel values for anything visual.**
+
+### Token Files Reference
+
+| File | What it controls |
+|------|-----------------|
+| `src/styles/tokens/colors.css` | All colors — brand, semantic, state |
+| `src/styles/tokens/typography.css` | Font sizes, line heights, font families |
+| `src/styles/tokens/radius.css` | All border-radius values |
+| `src/styles/tokens/shadows.css` | Box shadows |
+| `src/styles/tokens/spacing.css` | Container widths |
+| `src/styles/tokens/z-index.css` | Z-index stacking |
+| `src/styles/TOKENS.md` | Human-readable token reference |
+
+### Color Usage Rules
+
+**Brand palette — use only for brand moments (logo, landing page accents):**
+- `bg-cream` / `text-cream` — warm off-white background
+- `bg-ink` / `text-ink` — near-black text
+- `bg-teal` / `text-teal` — primary brand green
+- `bg-lavender` / `text-lavender` — secondary brand purple-tint
+- `bg-lavender-dark` / `text-lavender-dark`
+- `bg-amber` / `text-amber` — warm accent
+- `bg-amber-dark` / `text-amber-dark`
+
+**Semantic palette — use for ALL UI components:**
+- `bg-background` / `text-foreground` — page background and body text
+- `bg-primary` / `text-primary-foreground` — primary actions (buttons, links)
+- `bg-secondary` / `text-secondary-foreground` — secondary surfaces
+- `bg-muted` / `text-muted-foreground` — disabled, placeholder, subtle text
+- `bg-card` / `text-card-foreground` — card surfaces (white)
+- `bg-popover` / `text-popover-foreground` — dropdowns, tooltips
+- `border-border` — all borders
+- `ring-ring` — focus rings
+- `bg-destructive` / `text-destructive-foreground` — errors, deletes
+
+**State palette — use for status indicators:**
+- `bg-success-bg text-success-foreground` — success states
+- `bg-warning-bg text-warning-foreground` — warnings
+- `bg-info-bg text-info-foreground` — info messages
+- `text-destructive` / `bg-destructive/15` — inline error text
+
+**Opacity modifier syntax:**
+```tsx
+// ✅ Correct — Tailwind v4 opacity modifier
+<p className="text-ink/60" />        // 60% opacity ink
+<div className="bg-teal/10" />       // 10% opacity teal
+<div className="border-ink/[0.06]" /> // arbitrary opacity
+
+// ❌ Wrong — never do this
+<p style={{ color: "rgba(26,26,26,0.6)" }} />
+<div className="bg-[#1A5C4B]" />
+```
+
+### Typography Rules
+
+**Font families:**
+- font-sans — DM Sans — all body text, UI labels, buttons (DEFAULT)
+- font-serif — Georgia — article headlines, editorial moments only
+- font-mono — DM Mono — metadata, timestamps, code snippets
+
+**Font sizes — use text-{size} utilities only:**
+```tsx
+// ✅ Use scale tokens
+<p className="text-sm" />      // 0.875rem / 1.25rem line-height
+<h2 className="text-2xl" />    // 1.5rem / 2rem line-height
+<h1 className="text-5xl" />    // 3rem / 1 line-height
+
+// ❌ Never do this
+<p className="text-[14px]" />
+<h1 style={{ fontSize: "48px" }} />
+```
+
+### Border Radius Rules
+
+Always use named radius tokens, never Tailwind's default scale:
+
+| Token | Class | Use |
+|-------|-------|-----|
+| --radius-button (10px) | rounded-button | All buttons |
+| --radius-card (12px) | rounded-card | All card surfaces |
+| --radius-input (10px) | rounded-input | All inputs, textareas |
+| --radius-badge (6px) | rounded-badge | All badges, chips, tags |
+| --radius-pill (999px) | rounded-pill | Pills, avatars, toggles |
+| --radius-sm | rounded-sm | Subtle rounding |
+| --radius-md | rounded-md | Medium rounding |
+| --radius-lg | rounded-lg | Large rounding |
+
+```tsx
+// ✅ Correct
+<button className="rounded-button" />
+<div className="rounded-card" />
+<input className="rounded-input" />
+
+// ❌ Never do this
+<button className="rounded-2xl" />
+<div className="rounded-[12px]" />
+```
+
+### Shadow Rules
+
+```tsx
+// ✅ Use shadow scale
+<div className="shadow-xs" />   // subtle depth
+<div className="shadow-sm" />   // card resting state
+<div className="shadow-md" />   // card hover / popover
+<div className="shadow-lg" />   // modals, sheets
+<div className="shadow-xl" />   // max elevation
+
+// ❌ Never do this
+<div style={{ boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }} />
+```
+
+### Container/Layout Rules
+
+```tsx
+// ✅ Use layout utilities
+<main className="container-page" />    // max-w 1280px (--container-xl), centered, px-6
+<article className="container-content" /> // max-w 800px (--container-content), reading width
+
+// ❌ Never do this
+<main className="max-w-[1280px] mx-auto px-6" />
+<article className="max-w-[800px]" />
+```
+
+### Component Variants
+
+All variant logic MUST use CVA from `src/lib/variants.ts`.
+Never write one-off variant ternaries inline.
+
+```tsx
+// ✅ Import shared variants
+import { buttonVariants, badgeVariants } from "@/lib/variants";
+
+// ✅ Or define local variants using cva()
+const cardVariants = cva("rounded-card border border-border bg-card", {
+  variants: {
+    size: { sm: "p-3", md: "p-6", lg: "p-8" },
+    shadow: { none: "", sm: "shadow-sm", md: "shadow-md" },
+  },
+  defaultVariants: { size: "md", shadow: "sm" },
+});
+
+// ❌ Never do this
+<div className={isLarge ? "p-8 rounded-[12px] shadow-[0_4px_6px...]" : "p-4 rounded-[12px]"} />
+```
+
 ## Form Patterns
 
 ### React Hook Form + Zod
@@ -468,6 +619,13 @@ export function isDefined<T>(value: T | null | undefined): value is T {
 - Don't commit environment files with secrets
 - Don't skip forwardRef for reusable components
 - Don't use hardcoded colors instead of semantic classes
+- Don't use Tailwind default color names (blue-500, green-600, slate-200, etc.)
+- Don't use hardcoded hex values in className or style props
+- Don't use rounded-2xl, rounded-xl, rounded-lg — use rounded-card, rounded-button, etc.
+- Don't use max-w-[XXXpx] for containers — use container-content or container-page
+- Don't use inline style={{ boxShadow: ... }} — use shadow scale utilities
+- Don't use style={{ fontSize: ... }} — use text-{size} utilities
+- Don't define CVA variants locally if a shared variant in src/lib/variants.ts already covers it
 - Don't ignore mobile-first responsive design
 - Don't use `<img>` instead of `next/image`
 - Don't forget "use client" for interactive components
