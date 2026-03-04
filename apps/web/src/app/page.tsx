@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import type { ComponentProps } from "react";
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { BrandStar, BrandSunburst, BrandArch, BrandConcentricArch } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 
@@ -52,14 +54,14 @@ export default function LandingPage() {
       {/* Announcement Banner */}
       <div className="bg-teal text-white text-center py-3 px-4 text-sm font-medium">
         {t("announcement")}{" "}
-        <Link href="/auth/signup" className="underline font-semibold hover:opacity-80">
+        <Link href={ROUTES.AUTH.SIGNUP} className="underline font-semibold hover:opacity-80">
           {t("join_now")}
         </Link>
       </div>
 
       {/* Nav */}
       <nav aria-label="Main navigation" className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-ink/[0.03] bg-cream sticky top-0 z-50">
-        <Link href="/" aria-label="Kurate home" className="flex items-center gap-2">
+        <Link href={ROUTES.HOME} aria-label="Kurate home" className="flex items-center gap-2">
           <BrandConcentricArch s={26} className="text-ink" />
           <span className="font-sans font-black text-xl text-ink tracking-tight">
             {tApp("name")}
@@ -69,17 +71,17 @@ export default function LandingPage() {
           <Link href="#features" className="hidden md:inline font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
             {tNav("product")}
           </Link>
-          <Link href="/about" className="hidden md:inline font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
+          <Link href={ROUTES.ABOUT as ComponentProps<typeof Link>["href"]} className="hidden md:inline font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
             {tNav("about")}
           </Link>
-          <Link href="/blog" className="hidden md:inline font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
+          <Link href={ROUTES.BLOG as ComponentProps<typeof Link>["href"]} className="hidden md:inline font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
             {tNav("blog")}
           </Link>
-          <Link href="/auth/login" className="font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
+          <Link href={ROUTES.AUTH.LOGIN} className="font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
             {tNav("log_in")}
           </Link>
           <Button asChild size="sm">
-            <Link href="/auth/signup">{tNav("get_early_access")}</Link>
+            <Link href={ROUTES.AUTH.SIGNUP}>{tNav("get_early_access")}</Link>
           </Button>
         </div>
       </nav>
@@ -120,10 +122,10 @@ export default function LandingPage() {
             className="flex gap-3 justify-center flex-wrap"
           >
             <Button asChild size="lg">
-              <Link href="/auth/signup">{t("get_started")}</Link>
+              <Link href={ROUTES.AUTH.SIGNUP}>{t("get_started")}</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/auth/login">{t("log_in")}</Link>
+              <Link href={ROUTES.AUTH.LOGIN}>{t("log_in")}</Link>
             </Button>
           </motion.div>
         </motion.div>
@@ -150,7 +152,7 @@ export default function LandingPage() {
               {t("save_description")}
             </p>
             <Button asChild variant="outline">
-              <Link href="/demo">{t("watch_in_action")}</Link>
+              <Link href={ROUTES.DEMO as ComponentProps<typeof Link>["href"]}>{t("watch_in_action")}</Link>
             </Button>
           </div>
 
@@ -297,10 +299,10 @@ export default function LandingPage() {
             </h2>
             <div className="flex gap-3 justify-center flex-wrap">
               <Button asChild size="lg">
-                <Link href="/auth/signup">{t("get_started")}</Link>
+                <Link href={ROUTES.AUTH.SIGNUP}>{t("get_started")}</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="/auth/login">{t("log_in")}</Link>
+                <Link href={ROUTES.AUTH.LOGIN}>{t("log_in")}</Link>
               </Button>
             </div>
           </div>
@@ -320,7 +322,7 @@ export default function LandingPage() {
               <div key={i} className="text-center">
                 <h4 className="font-serif text-sm md:text-lg font-normal italic text-ink/60 mb-2.5 md:mb-4">{t(col.titleKey)}</h4>
                 {col.linkKeys.map((key) => (
-                  <Link key={key} href="/" className="block font-sans text-xs md:text-sm text-ink/75 py-0.5 md:py-1 hover:text-ink transition-colors">
+                  <Link key={key} href={ROUTES.HOME} className="block font-sans text-xs md:text-sm text-ink/75 py-0.5 md:py-1 hover:text-ink transition-colors">
                     {t(key)}
                   </Link>
                 ))}
@@ -339,7 +341,7 @@ export default function LandingPage() {
             <span className="font-sans text-sm text-ink/55">{t("copyright")}</span>
             <div className="flex gap-3 items-center">
               {([t("terms"), t("privacy"), t("data_controls")]).map((label) => (
-                <Link key={label} href="/" className="font-sans text-sm text-ink/55 hover:text-ink/75 transition-colors">
+                <Link key={label} href={ROUTES.HOME} className="font-sans text-sm text-ink/55 hover:text-ink/75 transition-colors">
                   {label}
                 </Link>
               ))}

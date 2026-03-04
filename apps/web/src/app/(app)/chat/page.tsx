@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppSidebar } from "@/app/_components/app-sidebar";
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { ChatBubble } from "@/app/_components/chat/chat-bubble";
 import { ChatInput } from "@/app/_components/chat/chat-input";
 import { QuickChips } from "@/app/_components/chat/quick-chips";
@@ -88,7 +89,7 @@ function ChatPageInner() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/auth/login");
+    router.push(ROUTES.AUTH.LOGIN);
   }
 
   function handlePersonClick(handle: string) {

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
 import { Arrow, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
 
@@ -109,7 +110,7 @@ export default function LoginPage() {
             {error && <p className="text-destructive mt-1.5 font-sans text-sm">{error}</p>}
             <p
               className="text-muted-foreground hover:text-foreground mt-2 cursor-pointer text-right font-sans text-sm transition-colors"
-              onClick={() => router.push("/auth/forgot-password")}>
+              onClick={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}>
               Forgot password?
             </p>
           </div>
@@ -139,7 +140,7 @@ export default function LoginPage() {
             No account?{" "}
             <span
               className="cursor-pointer font-bold underline"
-              onClick={() => router.push("/auth/signup")}>
+              onClick={() => router.push(ROUTES.AUTH.SIGNUP)}>
               Sign up
             </span>
           </p>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { Button } from "@/components/ui/button";
 
 export default function UnauthorizedPage() {
@@ -10,7 +11,7 @@ export default function UnauthorizedPage() {
         You are not authorized to access this resource or this page.
       </p>
       <Button asChild className="cursor-pointer">
-        <Link href="/">Return Home</Link>
+        <Link href={ROUTES.HOME}>Return Home</Link>
       </Button>
     </section>
   );

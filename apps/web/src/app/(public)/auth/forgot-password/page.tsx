@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
 import { BrandStar, BrandSunburst, FloatDeco , Arrow } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -129,7 +130,7 @@ export default function ForgotPasswordPage() {
                   Remember your password?{" "}
                   <span
                     className="font-bold underline cursor-pointer"
-                    onClick={() => router.push("/auth/login")}
+                    onClick={() => router.push(ROUTES.AUTH.LOGIN)}
                   >
                     Log in
                   </span>
@@ -159,7 +160,7 @@ export default function ForgotPasswordPage() {
                   Back to{" "}
                   <span
                     className="font-bold underline cursor-pointer"
-                    onClick={() => router.push("/auth/login")}
+                    onClick={() => router.push(ROUTES.AUTH.LOGIN)}
                   >
                     Log in
                   </span>

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "env";
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { routing } from "@/i18n/config";
 
 const intlMiddleware = createMiddleware(routing);
@@ -51,15 +52,15 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isProtectedRoute =
-    pathname.startsWith("/chat") ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/shared") ||
+    pathname.startsWith(ROUTES.APP.CHAT) ||
+    pathname.startsWith(ROUTES.APP.PROFILE) ||
+    pathname.startsWith(ROUTES.APP.SHARED) ||
     pathname.startsWith("/groups") ||
     pathname.startsWith("/dashboard");
 
   if (!bypassAuth && !user && isProtectedRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = ROUTES.AUTH.LOGIN;
     return NextResponse.redirect(url);
   }
 
@@ -69,10 +70,10 @@ export async function proxy(request: NextRequest) {
     user &&
     pathname.startsWith("/auth") &&
     pathname !== "/auth/callback" &&
-    pathname !== "/auth/reset-password"
+    pathname !== ROUTES.AUTH.RESET_PASSWORD
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/chat";
+    url.pathname = ROUTES.APP.CHAT;
     return NextResponse.redirect(url);
   }
 

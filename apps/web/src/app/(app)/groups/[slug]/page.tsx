@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AppSidebar } from "@/app/_components/app-sidebar";
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
 import { MOCK_GROUPS, getMembersForGroup } from "@/app/_libs/contacts";
 
@@ -42,7 +43,7 @@ export default function GroupPage() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/auth/login");
+    router.push(ROUTES.AUTH.LOGIN);
   }
 
   if (!currentGroup) {

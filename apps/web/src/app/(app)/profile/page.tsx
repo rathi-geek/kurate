@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/app/_components/app-sidebar";
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
 
 const INTEREST_TAGS = ["Product", "Startups", "AI", "Psychology"];
@@ -29,7 +30,7 @@ export default function ProfilePage() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/auth/login");
+    router.push(ROUTES.AUTH.LOGIN);
   }
 
   return (

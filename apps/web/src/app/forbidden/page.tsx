@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { Button } from "@/components/ui/button";
 
 export default function ForbiddenPage() {
@@ -8,7 +9,7 @@ export default function ForbiddenPage() {
       <h2 className="text-4xl font-bold">Forbidden</h2>
       <p className="mt-4 mb-2 text-2xl">You are not authorized to access this resource.</p>
       <Button asChild className="cursor-pointer">
-        <Link href="/">Return Home</Link>
+        <Link href={ROUTES.HOME}>Return Home</Link>
       </Button>
     </section>
   );
