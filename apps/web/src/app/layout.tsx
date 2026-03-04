@@ -28,6 +28,12 @@ export default async function RootLayout({
     <html lang={locale}>
       <body
         className={`${dmSans.variable} ${dmMono.variable} bg-cream text-foreground font-sans antialiased`}>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-button focus:font-sans focus:text-sm focus:font-medium"
+        >
+          Skip to main content
+        </a>
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
           <SonnarToaster />

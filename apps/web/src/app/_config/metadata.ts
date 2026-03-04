@@ -20,11 +20,20 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: env.NEXT_PUBLIC_APP_TITLE,
     description: env.NEXT_PUBLIC_APP_DESCRIPTION,
+    images: ["/og-image.png"],
   },
   openGraph: {
     siteName: env.NEXT_PUBLIC_APP_TITLE,
     url: env.NEXT_PUBLIC_APP_URL,
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Kurate — Read smarter, curate better",
+      },
+    ],
   },
   icons: [
     {

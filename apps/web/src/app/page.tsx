@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { BrandStar, BrandSunburst, BrandArch, BrandConcentricArch } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 
@@ -42,6 +42,7 @@ const STATS_PEOPLE = [
 ];
 
 export default function LandingPage() {
+  const prefersReducedMotion = useReducedMotion();
   const t = useTranslations("landing");
   const tNav = useTranslations("nav");
   const tApp = useTranslations("app");
@@ -57,66 +58,73 @@ export default function LandingPage() {
       </div>
 
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-ink/[0.03] bg-cream sticky top-0 z-50">
-        <div className="flex items-center gap-2">
+      <nav aria-label="Main navigation" className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-ink/[0.03] bg-cream sticky top-0 z-50">
+        <Link href="/" aria-label="Kurate home" className="flex items-center gap-2">
           <BrandConcentricArch s={26} className="text-ink" />
           <span className="font-sans font-black text-xl text-ink tracking-tight">
             {tApp("name")}
           </span>
-        </div>
+        </Link>
         <div className="flex items-center gap-7">
-          <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
+          <Link href="#features" className="hidden md:inline font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
             {tNav("product")}
           </Link>
-          <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
+          <Link href="/about" className="hidden md:inline font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
             {tNav("about")}
           </Link>
-          <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
+          <Link href="/blog" className="hidden md:inline font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
             {tNav("blog")}
           </Link>
-          <Link href="/auth/login" className="font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
+          <Link href="/auth/login" className="font-sans text-sm font-medium text-ink/75 hover:text-ink transition-opacity">
             {tNav("log_in")}
           </Link>
-          <Link href="/auth/signup">
-            <Button size="sm">{tNav("get_early_access")}</Button>
-          </Link>
+          <Button asChild size="sm">
+            <Link href="/auth/signup">{tNav("get_early_access")}</Link>
+          </Button>
         </div>
       </nav>
 
+      <main id="main-content">
       {/* Hero */}
-      <section className="px-6 py-20 md:py-32 text-center relative">
+      <section aria-labelledby="hero-heading" className="px-6 py-20 md:py-32 text-center relative">
         <motion.div
           initial={false}
-          animate="visible"
+          animate={prefersReducedMotion ? undefined : "visible"}
           variants={staggerContainer}
           className="container-content relative z-10"
         >
           <motion.h1
+            id="hero-heading"
+            initial={prefersReducedMotion ? false : undefined}
+            animate={prefersReducedMotion ? undefined : "visible"}
             variants={fadeUp}
             transition={{ type: "spring", stiffness: 260, damping: 25 }}
-            className="font-serif text-5xl md:text-7xl font-normal text-ink mb-6"
-            style={{ letterSpacing: "-0.02em" }}
+            className="font-serif text-5xl md:text-7xl font-normal text-ink mb-6 tracking-[-0.02em]"
           >
             <span className="italic">{t("hero_title")}</span>
           </motion.h1>
           <motion.p
+            initial={prefersReducedMotion ? false : undefined}
+            animate={prefersReducedMotion ? undefined : "visible"}
             variants={fadeUp}
             transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.15 }}
-            className="font-sans text-lg leading-relaxed text-ink/60 max-w-[500px] mx-auto mb-9"
+            className="font-sans text-lg leading-relaxed text-ink/75 max-w-[500px] mx-auto mb-9"
           >
             {t("hero_subtitle")}
           </motion.p>
           <motion.div
+            initial={prefersReducedMotion ? false : undefined}
+            animate={prefersReducedMotion ? undefined : "visible"}
             variants={fadeUp}
             transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.3 }}
             className="flex gap-3 justify-center flex-wrap"
           >
-            <Link href="/auth/signup">
-              <Button size="lg">{t("get_started")}</Button>
-            </Link>
-            <Link href="/auth/login">
-              <Button variant="outline" size="lg">{t("log_in")}</Button>
-            </Link>
+            <Button asChild size="lg">
+              <Link href="/auth/signup">{t("get_started")}</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/auth/login">{t("log_in")}</Link>
+            </Button>
           </motion.div>
         </motion.div>
       </section>
@@ -138,14 +146,16 @@ export default function LandingPage() {
             <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink mb-5">
               {t("save_title")}
             </h2>
-            <p className="font-sans text-base text-ink/55 leading-[1.7] mb-8 max-w-[400px]">
+            <p className="font-sans text-base text-ink/75 leading-[1.7] mb-8 max-w-[400px]">
               {t("save_description")}
             </p>
-            <Button variant="outline">{t("watch_in_action")}</Button>
+            <Button asChild variant="outline">
+              <Link href="/demo">{t("watch_in_action")}</Link>
+            </Button>
           </div>
 
           {/* Phone mockup */}
-          <div className="flex-1 flex justify-center">
+          <div aria-hidden="true" className="flex-1 flex justify-center">
             <div className="w-[220px] h-[400px] bg-ink overflow-hidden rounded-card border-2 border-border shadow-xl">
               <div className="p-4 pt-10">
                 <div className="font-sans font-bold text-white/40 uppercase mb-3 text-xs tracking-[0.08em]">
@@ -171,7 +181,7 @@ export default function LandingPage() {
       </section>
 
       {/* Logo Ticker */}
-      <div className="bg-teal py-5 overflow-hidden">
+      <div aria-hidden="true" className="bg-teal py-5 overflow-hidden">
         <div className="flex" style={{ animation: "marquee 20s linear infinite" }}>
           {[...LOGOS, ...LOGOS].map((l, i) => (
             <span key={i} className="font-sans text-base font-bold text-white/50 whitespace-nowrap px-6">
@@ -182,12 +192,12 @@ export default function LandingPage() {
       </div>
 
       {/* Features */}
-      <section className="px-6 py-20 bg-cream">
+      <section id="features" aria-labelledby="features-heading" className="px-6 py-20 bg-cream">
         <div className="container-page text-center mb-[60px]">
-          <h2 className="font-serif text-3xl md:text-4xl font-normal text-ink mb-4">
+          <h2 id="features-heading" className="font-serif text-3xl md:text-4xl font-normal text-ink mb-4">
             {t("proof_title")}
           </h2>
-          <p className="font-sans text-base text-ink/55 leading-[1.7] max-w-[520px] mx-auto">
+          <p className="font-sans text-base text-ink/75 leading-[1.7] max-w-[520px] mx-auto">
             {t("proof_subtitle")}
           </p>
         </div>
@@ -195,33 +205,33 @@ export default function LandingPage() {
           {FEATURE_KEYS.map((feature, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
+              whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.1 }}
               viewport={{ once: true }}
-              whileHover={{ y: -6 }}
+              whileHover={prefersReducedMotion ? undefined : { y: -6 }}
               className="flex-1 bg-muted rounded-card p-7 border border-ink/[0.06]"
             >
-              <div className={`w-11 h-11 ${feature.bg} rounded-card flex items-center justify-center mb-4`}>
+              <div aria-hidden="true" className={`w-11 h-11 ${feature.bg} rounded-card flex items-center justify-center mb-4`}>
                 {feature.icon === "arch" && <BrandArch s={22} c="#1A1A1A" />}
                 {feature.icon === "star" && <BrandStar s={20} c="#1A1A1A" />}
                 {feature.icon === "sunburst" && <BrandSunburst s={22} c="#1A1A1A" />}
               </div>
               <h3 className="font-sans font-bold text-lg text-ink mb-2">{t(feature.titleKey)}</h3>
-              <p className="font-sans text-sm text-ink/50 leading-relaxed">{t(feature.descKey)}</p>
+              <p className="font-sans text-sm text-ink/70 leading-relaxed">{t(feature.descKey)}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="bg-muted py-20 overflow-hidden">
+      <section aria-labelledby="testimonials-heading" className="bg-muted py-20 overflow-hidden">
         <div className="text-center mb-12 px-6">
-          <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink italic">
+          <h2 id="testimonials-heading" className="font-serif text-3xl md:text-5xl font-normal text-ink italic">
             {t("testimonials_line1")}<br />{t("testimonials_line2")}
           </h2>
         </div>
-        <div className="flex w-max" style={{ animation: "marquee 60s linear infinite" }}>
+        <div aria-hidden="true" className="flex w-max" style={{ animation: "marquee 60s linear infinite" }}>
           {[...TESTIMONIALS, ...TESTIMONIALS].map((t, idx) => (
             <div key={idx} className="min-w-[280px] max-w-[300px] bg-white rounded-card p-6 shrink-0 flex flex-col gap-4 mr-5">
               <div className="w-11 h-11 rounded-full bg-teal/20 flex items-center justify-center font-sans text-sm font-bold text-teal mx-auto">
@@ -230,7 +240,7 @@ export default function LandingPage() {
               <p className="font-sans text-sm leading-relaxed text-ink text-center flex-1">&ldquo;{t.quote}&rdquo;</p>
               <div className="text-center">
                 <div className="font-sans text-sm font-bold text-ink">{t.name}</div>
-                <div className="font-sans text-xs text-ink/45">{t.role}</div>
+                <div className="font-sans text-xs text-ink/65">{t.role}</div>
               </div>
             </div>
           ))}
@@ -243,11 +253,11 @@ export default function LandingPage() {
           {([{ statKey: "stat_1", descKey: "stat_1_desc" }, { statKey: "stat_2", descKey: "stat_2_desc" }] as const).map((card, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
+              whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.15 }}
               viewport={{ once: true }}
-              whileHover={{ y: -4 }}
+              whileHover={prefersReducedMotion ? undefined : { y: -4 }}
               className="bg-teal rounded-card p-8 flex flex-col flex-1 max-w-md"
             >
               <h3 className="font-serif text-2xl md:text-3xl font-normal italic text-white mb-2 min-h-[80px]">
@@ -271,31 +281,32 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="px-6 py-20 bg-cream">
+      <section aria-labelledby="cta-heading" className="px-6 py-20 bg-cream">
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.97 }}
+          whileInView={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 25 }}
           viewport={{ once: true }}
           className="container-content border-2 border-ink/[0.08] p-8 md:p-12 text-center relative overflow-hidden rounded-card"
           style={{ animation: "ctaBreathe 3s ease-in-out infinite" }}
         >
           <div className="relative z-10">
-            <p className="font-sans text-sm text-ink/50 mb-2">{t("cta_ready")}</p>
-            <h2 className="font-serif text-2xl md:text-4xl font-normal text-ink mb-8">
+            <p className="font-sans text-sm text-ink/70 mb-2">{t("cta_ready")}</p>
+            <h2 id="cta-heading" className="font-serif text-2xl md:text-4xl font-normal text-ink mb-8">
               <span className="italic">{t("cta_title_italic")}</span> {t("cta_title_rest")}
             </h2>
             <div className="flex gap-3 justify-center flex-wrap">
-              <Link href="/auth/signup">
-                <Button size="lg">{t("get_started")}</Button>
-              </Link>
-              <Link href="/auth/login">
-                <Button variant="outline" size="lg">{t("log_in")}</Button>
-              </Link>
+              <Button asChild size="lg">
+                <Link href="/auth/signup">{t("get_started")}</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/auth/login">{t("log_in")}</Link>
+              </Button>
             </div>
           </div>
         </motion.div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="px-6 py-12 border-t border-ink/[0.06] bg-cream">
@@ -307,11 +318,11 @@ export default function LandingPage() {
               { titleKey: "footer_resources" as const, linkKeys: ["footer_help", "footer_community", "footer_privacy", "footer_terms"] as const },
             ].map((col, i) => (
               <div key={i} className="text-center">
-                <h4 className="font-serif text-sm md:text-lg font-normal italic text-ink/40 mb-2.5 md:mb-4">{t(col.titleKey)}</h4>
+                <h4 className="font-serif text-sm md:text-lg font-normal italic text-ink/60 mb-2.5 md:mb-4">{t(col.titleKey)}</h4>
                 {col.linkKeys.map((key) => (
-                  <div key={key} className="font-sans text-xs md:text-sm text-ink/60 py-0.5 md:py-1 cursor-pointer hover:text-ink transition-colors">
+                  <Link key={key} href="/" className="block font-sans text-xs md:text-sm text-ink/75 py-0.5 md:py-1 hover:text-ink transition-colors">
                     {t(key)}
-                  </div>
+                  </Link>
                 ))}
               </div>
             ))}
@@ -319,18 +330,18 @@ export default function LandingPage() {
 
           <div className="flex items-center justify-center mb-10 gap-5">
             <BrandConcentricArch s={80} className="text-ink" />
-            <span className="font-sans text-5xl md:text-7xl font-black text-ink leading-none" style={{ letterSpacing: "-0.04em" }}>
+            <span className="font-sans text-5xl md:text-7xl font-black text-ink leading-none tracking-[-0.04em]">
               {tApp("name")}
             </span>
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between border-t border-ink/[0.06] pt-5 gap-4">
-            <span className="font-sans text-sm text-ink/35">{t("copyright")}</span>
+            <span className="font-sans text-sm text-ink/55">{t("copyright")}</span>
             <div className="flex gap-3 items-center">
               {([t("terms"), t("privacy"), t("data_controls")]).map((label) => (
-                <span key={label} className="font-sans text-sm text-ink/35 cursor-pointer hover:text-ink/60 transition-colors">
+                <Link key={label} href="/" className="font-sans text-sm text-ink/55 hover:text-ink/75 transition-colors">
                   {label}
-                </span>
+                </Link>
               ))}
             </div>
           </div>
