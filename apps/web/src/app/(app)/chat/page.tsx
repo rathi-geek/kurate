@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { AppSidebar } from "@/app/_components/app-sidebar";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { ChatBubble } from "@/app/_components/chat/chat-bubble";
@@ -39,6 +39,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
   const {
     activeThreadId,
     isFullScreen,
@@ -295,7 +296,8 @@ function ChatPageInner() {
           onOpenArticle={handleOpenArticle}
         />
       ) : (
-        <div
+        <main
+          id="main-content"
           onClick={() => activeThreadId && closeThread()}
           className={`flex-1 flex flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}
         >
@@ -310,7 +312,7 @@ function ChatPageInner() {
                 >
                   {activeTab === tab && (
                     <motion.div
-                      layoutId="tab-pill"
+                      layoutId={prefersReducedMotion ? undefined : "tab-pill"}
                       className="absolute inset-0 bg-background rounded-full shadow-sm"
                       transition={springSnappy}
                     />
@@ -393,23 +395,23 @@ function ChatPageInner() {
                       ))}
                       {isTyping && (
                         <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
+                          initial={prefersReducedMotion ? false : { opacity: 0 }}
+                          animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+                          exit={prefersReducedMotion ? undefined : { opacity: 0 }}
                           className="flex gap-1 p-4"
                         >
                           <motion.span
-                            animate={{ scale: [0.8, 1, 0.8] }}
+                            animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8 }}
                             className="w-2 h-2 bg-muted-foreground rounded-full"
                           />
                           <motion.span
-                            animate={{ scale: [0.8, 1, 0.8] }}
+                            animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
                             className="w-2 h-2 bg-muted-foreground rounded-full"
                           />
                           <motion.span
-                            animate={{ scale: [0.8, 1, 0.8] }}
+                            animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
                             className="w-2 h-2 bg-muted-foreground rounded-full"
                           />
@@ -438,7 +440,7 @@ function ChatPageInner() {
             onTabChange={setActiveTab}
             onMenuOpen={() => setMobileMenuOpen(true)}
           />
-        </div>
+        </main>
       )}
       <ArticleReader
         url={readerUrl}

@@ -41,8 +41,8 @@ export default function SharedPage() {
   return (
     <div className="h-screen flex bg-background">
       <AppSidebar userEmail={userEmail} onLogout={handleLogout} />
-      
-      <div className="flex-1 overflow-y-auto">
+
+      <main id="main-content" className="flex-1 overflow-y-auto">
         <div className="max-w-xl mx-auto px-6 py-8">
           <p className="font-mono text-xs font-medium text-muted-foreground uppercase tracking-wider mb-6">
             Shared
@@ -72,7 +72,7 @@ export default function SharedPage() {
             </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

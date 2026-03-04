@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
-import { BrandStar, BrandSunburst, FloatDeco , Arrow } from "@/components/brand";
+import { BrandStar, BrandSunburst, FloatDeco, Arrow } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function SignupPage() {
   const router = useRouter();
+  const t = useTranslations("auth.signup");
+  const tApp = useTranslations("app");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -36,41 +40,43 @@ export default function SignupPage() {
       }
     }
 
-    router.push("/chat" as never);
+    router.push(ROUTES.APP.CHAT);
   }
 
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center relative overflow-hidden">
-      <FloatDeco top={60} right={40} opacity={0.04}>
-        <BrandSunburst s={120} />
-      </FloatDeco>
-      <FloatDeco bottom={80} left={60} opacity={0.03}>
-        <BrandSunburst s={80} />
-      </FloatDeco>
+      <div aria-hidden="true">
+        <FloatDeco top={60} right={40} opacity={0.04}>
+          <BrandSunburst s={120} />
+        </FloatDeco>
+        <FloatDeco bottom={80} left={60} opacity={0.03}>
+          <BrandSunburst s={80} />
+        </FloatDeco>
+      </div>
 
-      <div className="w-full max-w-[var(--container-auth)] px-8 relative z-10">
+      <main id="main-content" className="w-full max-w-[var(--container-auth)] px-8 relative z-10">
         <div className="flex items-center gap-2 mb-12">
-          <BrandStar s={20} />
+          <span aria-hidden="true"><BrandStar s={20} /></span>
           <span className="font-sans font-black text-lg tracking-tight">
-            KURATE
+            {tApp("name").toUpperCase()}
           </span>
         </div>
 
         <h2 className="font-serif text-3xl font-normal mb-1.5 tracking-tight">
-          Start reading smarter
+          {t("title")}
         </h2>
         <p className="font-sans text-sm text-muted-foreground mb-8">
-          Create your account to get started.
+          {t("subtitle")}
         </p>
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
             <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
-              Email
+              {t("email_label")}
             </label>
             <Input
               type="email"
-              placeholder="you@example.com"
+              placeholder={t("email_placeholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -78,11 +84,11 @@ export default function SignupPage() {
           </div>
           <div>
             <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
-              Password
+              {t("password_label")}
             </label>
             <Input
               type="password"
-              placeholder="At least 8 characters"
+              placeholder={t("password_placeholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
@@ -102,7 +108,7 @@ export default function SignupPage() {
                 </span>
               ) : (
                 <>
-                  Create Account <Arrow s={14} />
+                  {t("submit")} <Arrow s={14} />
                 </>
               )}
             </Button>
@@ -111,16 +117,16 @@ export default function SignupPage() {
 
         <div className="border-t border-border mt-8 pt-6 text-center">
           <p className="font-sans text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <span
-              className="font-bold underline cursor-pointer"
-              onClick={() => router.push(ROUTES.AUTH.LOGIN)}
+            {t("already_have_account")}{" "}
+            <Link
+              href={ROUTES.AUTH.LOGIN}
+              className="font-bold underline hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm"
             >
-              Log in
-            </span>
+              {t("log_in")}
+            </Link>
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

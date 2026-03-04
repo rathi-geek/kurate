@@ -118,10 +118,78 @@
     "next": "Next",
     "search": "Search"
   },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Log in to your account.",
+      "email_label": "Email",
+      "password_label": "Password",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "Your password",
+      "forgot_password": "Forgot password?",
+      "submit": "Log In",
+      "no_account": "No account?",
+      "sign_up": "Sign up",
+      "error_invalid": "Invalid email or password."
+    },
+    "signup": {
+      "title": "Start reading smarter",
+      "subtitle": "Create your account to get started.",
+      "email_label": "Email",
+      "password_label": "Password",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "At least 8 characters",
+      "submit": "Create Account",
+      "already_have_account": "Already have an account?",
+      "log_in": "Log in"
+    },
+    "forgot_password": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email and we'll send you a reset link.",
+      "email_label": "Email",
+      "email_placeholder": "you@example.com",
+      "submit": "Send Reset Link",
+      "remember_password": "Remember your password?",
+      "log_in": "Log in",
+      "sent_title": "Check your email",
+      "sent_message": "We sent a password reset link to {email}.",
+      "back_to": "Back to"
+    },
+    "reset_password": {
+      "title": "Set new password",
+      "subtitle": "Choose a new password for your account.",
+      "new_password_label": "New password",
+      "confirm_password_label": "Confirm password",
+      "placeholder": "At least 8 characters",
+      "confirm_placeholder": "Re-enter your password",
+      "submit": "Update Password",
+      "error_mismatch": "Passwords do not match."
+    }
+  },
+  "about": {
+    "title": "About",
+    "coming_soon": "Coming soon.",
+    "back_home": "Back to home"
+  },
+  "blog": {
+    "title": "Blog",
+    "coming_soon": "Coming soon.",
+    "back_home": "Back to home"
+  },
+  "demo": {
+    "title": "Watch in action",
+    "coming_soon": "Demo coming soon.",
+    "back_home": "Back to home"
+  },
   "errors": {
     "not_found": "Page not found",
     "unauthorized": "You need to sign in",
-    "generic": "Something went wrong. Please try again."
+    "generic": "Something went wrong. Please try again.",
+    "forbidden_title": "Forbidden",
+    "forbidden_message": "You are not authorized to access this resource.",
+    "unauthorized_title": "Unauthorized",
+    "unauthorized_message": "You are not authorized to access this resource or this page.",
+    "return_home": "Return Home"
   },
   "formats": {
     "date_short": "{date, date, short}",

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-
-import { motion ,type  Variants } from "framer-motion";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,9 @@ const fadeUp: Variants = {
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useTranslations("auth.login");
+  const tApp = useTranslations("app");
+  const prefersReducedMotion = useReducedMotion();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -43,54 +47,61 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        setError("Invalid email or password.");
+        setError(t("error_invalid"));
         setLoading(false);
         return;
       }
     }
 
-    router.replace("/chat");
+    router.replace(ROUTES.APP.CHAT);
     router.refresh();
   }
 
   return (
     <div className="bg-cream relative flex min-h-screen items-center justify-center overflow-hidden">
-      <FloatDeco top={50} right={50} opacity={0.04}>
-        <BrandSunburst s={100} />
-      </FloatDeco>
+      <div aria-hidden="true">
+        <FloatDeco top={50} right={50} opacity={0.04}>
+          <BrandSunburst s={100} />
+        </FloatDeco>
+      </div>
 
-      <div className="relative z-10 w-full max-w-[var(--container-auth)] px-8">
+      <main id="main-content" className="relative z-10 w-full max-w-[var(--container-auth)] px-8">
         <motion.div
           custom={0}
-          initial="hidden"
-          animate="visible"
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
           className="mb-12 flex items-center gap-2"
         >
-          <BrandStar s={20} />
-          <span className="font-sans text-lg font-black tracking-tight">KURATE</span>
+          <span aria-hidden="true"><BrandStar s={20} /></span>
+          <span className="font-sans text-lg font-black tracking-tight">{tApp("name").toUpperCase()}</span>
         </motion.div>
 
-        <motion.div custom={1} initial="hidden" animate="visible" variants={fadeUp}>
-          <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">Welcome back</h2>
-          <p className="text-muted-foreground mb-8 font-sans text-sm">Log in to your account.</p>
+        <motion.div
+          custom={1}
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate={prefersReducedMotion ? undefined : "visible"}
+          variants={fadeUp}
+        >
+          <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("title")}</h2>
+          <p className="text-muted-foreground mb-8 font-sans text-sm">{t("subtitle")}</p>
         </motion.div>
 
         <motion.form
           custom={2}
-          initial="hidden"
-          animate="visible"
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
           onSubmit={handleLogin}
           className="space-y-4"
         >
           <div>
             <label className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
-              Email
+              {t("email_label")}
             </label>
             <Input
               type="email"
-              placeholder="you@example.com"
+              placeholder={t("email_placeholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -98,20 +109,23 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
-              Password
+              {t("password_label")}
             </label>
             <Input
               type="password"
-              placeholder="Your password"
+              placeholder={t("password_placeholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
             {error && <p className="text-destructive mt-1.5 font-sans text-sm">{error}</p>}
-            <p
-              className="text-muted-foreground hover:text-foreground mt-2 cursor-pointer text-right font-sans text-sm transition-colors"
-              onClick={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}>
-              Forgot password?
+            <p className="text-muted-foreground mt-2 text-right font-sans text-sm">
+              <Link
+                href={ROUTES.AUTH.FORGOT_PASSWORD}
+                className="hover:text-foreground transition-colors underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm"
+              >
+                {t("forgot_password")}
+              </Link>
             </p>
           </div>
           <div className="pt-2">
@@ -122,7 +136,7 @@ export default function LoginPage() {
                 </span>
               ) : (
                 <>
-                  Log In <Arrow s={14} />
+                  {t("submit")} <Arrow s={14} />
                 </>
               )}
             </Button>
@@ -131,21 +145,22 @@ export default function LoginPage() {
 
         <motion.div
           custom={3}
-          initial="hidden"
-          animate="visible"
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
           className="border-border mt-8 border-t pt-6 text-center"
         >
           <p className="text-muted-foreground font-sans text-sm">
-            No account?{" "}
-            <span
-              className="cursor-pointer font-bold underline"
-              onClick={() => router.push(ROUTES.AUTH.SIGNUP)}>
-              Sign up
-            </span>
+            {t("no_account")}{" "}
+            <Link
+              href={ROUTES.AUTH.SIGNUP}
+              className="font-bold underline hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm"
+            >
+              {t("sign_up")}
+            </Link>
           </p>
         </motion.div>
-      </div>
+      </main>
     </div>
   );
 }

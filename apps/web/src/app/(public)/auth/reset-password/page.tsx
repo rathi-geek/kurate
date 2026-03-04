@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
-import { BrandStar, BrandSunburst, FloatDeco , Arrow } from "@/components/brand";
+import { BrandStar, BrandSunburst, FloatDeco, Arrow } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -15,6 +17,9 @@ const pageVariants = {
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const t = useTranslations("auth.reset_password");
+  const tApp = useTranslations("app");
+  const prefersReducedMotion = useReducedMotion();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -25,7 +30,7 @@ export default function ResetPasswordPage() {
     setError("");
 
     if (password !== confirm) {
-      setError("Passwords do not match.");
+      setError(t("error_mismatch"));
       return;
     }
 
@@ -42,43 +47,46 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    router.push("/chat" as never);
+    router.push(ROUTES.APP.CHAT);
   }
 
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center relative overflow-hidden">
-      <FloatDeco top={50} right={50} opacity={0.04}>
-        <BrandSunburst s={100} />
-      </FloatDeco>
+      <div aria-hidden="true">
+        <FloatDeco top={50} right={50} opacity={0.04}>
+          <BrandSunburst s={100} />
+        </FloatDeco>
+      </div>
 
-      <motion.div
-        variants={pageVariants}
-        initial="hidden"
-        animate="visible"
-        className="w-full max-w-[var(--container-auth)] px-8 relative z-10"
-      >
+      <main id="main-content" className="w-full max-w-[var(--container-auth)] px-8 relative z-10">
+        <motion.div
+          variants={pageVariants}
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate={prefersReducedMotion ? undefined : "visible"}
+          className="w-full"
+        >
         <div className="flex items-center gap-2 mb-12">
-          <BrandStar s={20} />
+          <span aria-hidden="true"><BrandStar s={20} /></span>
           <span className="font-sans font-black text-lg tracking-tight">
-            KURATE
+            {tApp("name").toUpperCase()}
           </span>
         </div>
 
         <h2 className="font-serif text-3xl font-normal mb-1.5 tracking-tight">
-          Set new password
+          {t("title")}
         </h2>
         <p className="font-sans text-sm text-muted-foreground mb-8">
-          Choose a new password for your account.
+          {t("subtitle")}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
-              New password
+              {t("new_password_label")}
             </label>
             <Input
               type="password"
-              placeholder="At least 8 characters"
+              placeholder={t("placeholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
@@ -87,11 +95,11 @@ export default function ResetPasswordPage() {
           </div>
           <div>
             <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
-              Confirm password
+              {t("confirm_password_label")}
             </label>
             <Input
               type="password"
-              placeholder="Re-enter your password"
+              placeholder={t("confirm_placeholder")}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               minLength={8}
@@ -119,13 +127,14 @@ export default function ResetPasswordPage() {
                 </motion.span>
               ) : (
                 <>
-                  Update Password <Arrow s={14} />
+                  {t("submit")} <Arrow s={14} />
                 </>
               )}
             </Button>
           </div>
         </form>
-      </motion.div>
+        </motion.div>
+      </main>
     </div>
   );
 }

@@ -50,17 +50,18 @@ export default function GroupPage() {
     return (
       <div className="h-screen flex bg-background">
         <AppSidebar userEmail={userEmail} onLogout={handleLogout} />
-        <div className="flex-1 flex items-center justify-center">
+        <main id="main-content" className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-muted-foreground mb-2">Group not found</p>
             <button
-              onClick={() => router.push("/chat")}
+              type="button"
+              onClick={() => router.push(ROUTES.APP.CHAT)}
               className="text-sm text-primary hover:underline"
             >
               Back to Home
             </button>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -68,14 +69,16 @@ export default function GroupPage() {
   return (
     <div className="h-screen flex bg-background">
       <AppSidebar userEmail={userEmail} onLogout={handleLogout} />
-      
-      <div className="flex-1 overflow-y-auto">
+
+      <main id="main-content" className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-6 py-8">
           <button
-            onClick={() => router.push("/chat")}
+            type="button"
+            onClick={() => router.push(ROUTES.APP.CHAT)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+            aria-label="Back to home"
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M7.5 9.5L4 6l3.5-3.5" />
             </svg>
             Home
@@ -138,7 +141,7 @@ export default function GroupPage() {
             ))}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
