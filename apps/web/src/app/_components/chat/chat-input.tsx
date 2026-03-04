@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 
 interface ChatInputProps {
@@ -12,10 +13,12 @@ interface ChatInputProps {
 
 export function ChatInput({
   onSend,
-  placeholder = "Type a message...",
+  placeholder,
   disabled,
   autoFocus,
 }: ChatInputProps) {
+  const t = useTranslations("chat");
+  const resolvedPlaceholder = placeholder ?? t("placeholder");
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -53,7 +56,7 @@ export function ChatInput({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             disabled={disabled}
             autoFocus={autoFocus}
             rows={1}

@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 import path from "node:path";
 
 import withBundleAnalyzer from "@next/bundle-analyzer";
+import createNextIntlPlugin from "next-intl/plugin";
 import { withPostHogConfig } from "@posthog/nextjs-config";
 import { withSentryConfig } from "@sentry/nextjs";
 import { env } from "env";
@@ -105,10 +106,15 @@ const withSentry = env.SENTRY_AUTH_TOKEN
     })
   : withPostHog;
 
-export default withBundleAnalyzer({
-  enabled: env.ANALYZE === "true",
-})(
-  env.NEXT_PUBLIC_APP_ENV === "production" || env.NEXT_PUBLIC_APP_ENV === "staging"
-    ? withSentry
-    : nextConfig,
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(
+  withBundleAnalyzer({
+    enabled: env.ANALYZE === "true",
+  })(
+    env.NEXT_PUBLIC_APP_ENV === "production" ||
+      env.NEXT_PUBLIC_APP_ENV === "staging"
+      ? withSentry
+      : nextConfig,
+  ),
 );

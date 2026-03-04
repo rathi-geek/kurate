@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { BrandStar, BrandSunburst, BrandArch, BrandConcentricArch } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -29,40 +30,29 @@ const TESTIMONIALS = [
   { quote: "Replaced Pocket, Instapaper, and my 47 open tabs. Kurate just gets it.", name: "Peter Thiel", role: "Founder, Founders Fund" },
 ];
 
-const FEATURES = [
-  {
-    icon: "arch",
-    bg: "bg-amber/20",
-    title: "Save Anything",
-    description: "One-click browser extension. Share sheet on mobile. Paste a URL. AI does the rest.",
-  },
-  {
-    icon: "star",
-    bg: "bg-lavender/30",
-    title: "Rate & Review",
-    description: "Star ratings, short takes, topic tags. Build your proof of knowledge.",
-  },
-  {
-    icon: "sunburst",
-    bg: "bg-teal/20",
-    title: "Discover via Trust",
-    description: "Follow curators you trust. The best content finds you through people.",
-  },
-];
+const FEATURE_KEYS = [
+  { icon: "arch", bg: "bg-amber/20", titleKey: "feature_1_title", descKey: "feature_1_desc" },
+  { icon: "star", bg: "bg-lavender/30", titleKey: "feature_2_title", descKey: "feature_2_desc" },
+  { icon: "sunburst", bg: "bg-teal/20", titleKey: "feature_3_title", descKey: "feature_3_desc" },
+] as const;
 
-const STATS = [
-  { stat: "10x better discovery", desc: "Curated content from trusted people beats any algorithm.", person: "Naman Lahoti", role: "Founder & Builder" },
-  { stat: "50+ hours saved", desc: "Stop drowning in tabs. Your library organizes itself.", person: "Arshia Mal", role: "Product Designer" },
+const STATS_PEOPLE = [
+  { person: "Naman Lahoti", role: "Founder & Builder" },
+  { person: "Arshia Mal", role: "Product Designer" },
 ];
 
 export default function LandingPage() {
+  const t = useTranslations("landing");
+  const tNav = useTranslations("nav");
+  const tApp = useTranslations("app");
+
   return (
     <div className="min-h-screen bg-cream text-ink">
       {/* Announcement Banner */}
       <div className="bg-teal text-white text-center py-3 px-4 text-sm font-medium">
-        Join the <strong>early access waitlist</strong> — spots are limited.{" "}
+        {t("announcement")}{" "}
         <Link href="/auth/signup" className="underline font-semibold hover:opacity-80">
-          Join now ›
+          {t("join_now")}
         </Link>
       </div>
 
@@ -71,24 +61,24 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           <BrandConcentricArch s={26} className="text-ink" />
           <span className="font-sans font-black text-xl text-ink tracking-tight">
-            Kurate
+            {tApp("name")}
           </span>
         </div>
         <div className="flex items-center gap-7">
           <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
-            Product
+            {tNav("product")}
           </Link>
           <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
-            About
+            {tNav("about")}
           </Link>
           <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
-            Blog
+            {tNav("blog")}
           </Link>
           <Link href="/auth/login" className="font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
-            Log In
+            {tNav("log_in")}
           </Link>
           <Link href="/auth/signup">
-            <Button size="sm">Get Early Access</Button>
+            <Button size="sm">{tNav("get_early_access")}</Button>
           </Link>
         </div>
       </nav>
@@ -107,14 +97,14 @@ export default function LandingPage() {
             className="font-serif text-5xl md:text-7xl font-normal text-ink mb-6"
             style={{ letterSpacing: "-0.02em" }}
           >
-            <span className="italic">Consume what matters.</span>
+            <span className="italic">{t("hero_title")}</span>
           </motion.h1>
           <motion.p
             variants={fadeUp}
             transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.15 }}
             className="font-sans text-lg leading-relaxed text-ink/60 max-w-[500px] mx-auto mb-9"
           >
-            The consumption network that turns your best finds into proof of knowledge, powered by people you trust.
+            {t("hero_subtitle")}
           </motion.p>
           <motion.div
             variants={fadeUp}
@@ -122,10 +112,10 @@ export default function LandingPage() {
             className="flex gap-3 justify-center flex-wrap"
           >
             <Link href="/auth/signup">
-              <Button size="lg">Get Started</Button>
+              <Button size="lg">{t("get_started")}</Button>
             </Link>
             <Link href="/auth/login">
-              <Button variant="outline" size="lg">Log in</Button>
+              <Button variant="outline" size="lg">{t("log_in")}</Button>
             </Link>
           </motion.div>
         </motion.div>
@@ -136,7 +126,7 @@ export default function LandingPage() {
         <div className="container-page flex flex-col md:flex-row items-center gap-10 md:gap-[60px]">
           <div className="flex-1">
             <div className="flex gap-2 mb-7">
-              {["Web", "iOS", "Android"].map((p) => (
+              {([t("platform_web"), t("platform_ios"), t("platform_android")] as const).map((p) => (
                 <span
                   key={p}
                   className="py-1.5 px-3.5 rounded-full border border-ink/[0.08] font-sans text-sm font-medium text-ink flex items-center gap-1.5"
@@ -146,12 +136,12 @@ export default function LandingPage() {
               ))}
             </div>
             <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink mb-5">
-              Save the best content from all your apps
+              {t("save_title")}
             </h2>
             <p className="font-sans text-base text-ink/55 leading-[1.7] mb-8 max-w-[400px]">
-              One-click save from any browser or app. AI automatically tags, categorizes, and surfaces your best finds.
+              {t("save_description")}
             </p>
-            <Button variant="outline">Watch in action</Button>
+            <Button variant="outline">{t("watch_in_action")}</Button>
           </div>
 
           {/* Phone mockup */}
@@ -159,7 +149,7 @@ export default function LandingPage() {
             <div className="w-[220px] h-[400px] bg-ink overflow-hidden rounded-card border-2 border-border shadow-xl">
               <div className="p-4 pt-10">
                 <div className="font-sans font-bold text-white/40 uppercase mb-3 text-xs tracking-[0.08em]">
-                  Your Library
+                  {t("library_label")}
                 </div>
                 {[
                   { t: "Tech Trends Report 2026", src: "research.contrary.com", tag: "AI" },
@@ -195,14 +185,14 @@ export default function LandingPage() {
       <section className="px-6 py-20 bg-cream">
         <div className="container-page text-center mb-[60px]">
           <h2 className="font-serif text-3xl md:text-4xl font-normal text-ink mb-4">
-            Proof of Knowledge
+            {t("proof_title")}
           </h2>
           <p className="font-sans text-base text-ink/55 leading-[1.7] max-w-[520px] mx-auto">
-            Rate what you read. Build a public signal of your expertise. Your curation history becomes your intellectual reputation.
+            {t("proof_subtitle")}
           </p>
         </div>
         <div className="container-page flex flex-col md:flex-row gap-6">
-          {FEATURES.map((feature, i) => (
+          {FEATURE_KEYS.map((feature, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 24 }}
@@ -217,8 +207,8 @@ export default function LandingPage() {
                 {feature.icon === "star" && <BrandStar s={20} c="#1A1A1A" />}
                 {feature.icon === "sunburst" && <BrandSunburst s={22} c="#1A1A1A" />}
               </div>
-              <h3 className="font-sans font-bold text-lg text-ink mb-2">{feature.title}</h3>
-              <p className="font-sans text-sm text-ink/50 leading-relaxed">{feature.description}</p>
+              <h3 className="font-sans font-bold text-lg text-ink mb-2">{t(feature.titleKey)}</h3>
+              <p className="font-sans text-sm text-ink/50 leading-relaxed">{t(feature.descKey)}</p>
             </motion.div>
           ))}
         </div>
@@ -228,7 +218,7 @@ export default function LandingPage() {
       <section className="bg-muted py-20 overflow-hidden">
         <div className="text-center mb-12 px-6">
           <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink italic">
-            People love switching<br />to Kurate
+            {t("testimonials_line1")}<br />{t("testimonials_line2")}
           </h2>
         </div>
         <div className="flex w-max" style={{ animation: "marquee 60s linear infinite" }}>
@@ -250,7 +240,7 @@ export default function LandingPage() {
       {/* Stats */}
       <section className="bg-muted px-6 pb-20">
         <div className="container-page flex flex-col md:flex-row gap-5 justify-center">
-          {STATS.map((card, i) => (
+          {([{ statKey: "stat_1", descKey: "stat_1_desc" }, { statKey: "stat_2", descKey: "stat_2_desc" }] as const).map((card, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 24 }}
@@ -261,18 +251,18 @@ export default function LandingPage() {
               className="bg-teal rounded-card p-8 flex flex-col flex-1 max-w-md"
             >
               <h3 className="font-serif text-2xl md:text-3xl font-normal italic text-white mb-2 min-h-[80px]">
-                {card.stat}
+                {t(card.statKey)}
               </h3>
               <p className="font-sans text-sm text-white/70 leading-relaxed mb-6 flex-1">
-                {card.desc}
+                {t(card.descKey)}
               </p>
               <div className="flex items-center gap-2.5 mt-auto">
                 <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-sans text-xs font-bold text-white">
-                  {card.person.charAt(0)}
+                  {STATS_PEOPLE[i].person.charAt(0)}
                 </div>
                 <div>
-                  <div className="font-sans text-sm font-semibold text-white">{card.person}</div>
-                  <div className="font-sans text-xs text-white/50">{card.role}</div>
+                  <div className="font-sans text-sm font-semibold text-white">{STATS_PEOPLE[i].person}</div>
+                  <div className="font-sans text-xs text-white/50">{STATS_PEOPLE[i].role}</div>
                 </div>
               </div>
             </motion.div>
@@ -291,16 +281,16 @@ export default function LandingPage() {
           style={{ animation: "ctaBreathe 3s ease-in-out infinite" }}
         >
           <div className="relative z-10">
-            <p className="font-sans text-sm text-ink/50 mb-2">Ready to curate smarter?</p>
+            <p className="font-sans text-sm text-ink/50 mb-2">{t("cta_ready")}</p>
             <h2 className="font-serif text-2xl md:text-4xl font-normal text-ink mb-8">
-              <span className="italic">Your reading</span> deserves better
+              <span className="italic">{t("cta_title_italic")}</span> {t("cta_title_rest")}
             </h2>
             <div className="flex gap-3 justify-center flex-wrap">
               <Link href="/auth/signup">
-                <Button size="lg">Get Started</Button>
+                <Button size="lg">{t("get_started")}</Button>
               </Link>
               <Link href="/auth/login">
-                <Button variant="outline" size="lg">Log in</Button>
+                <Button variant="outline" size="lg">{t("log_in")}</Button>
               </Link>
             </div>
           </div>
@@ -312,15 +302,15 @@ export default function LandingPage() {
         <div className="container-page">
           <div className="flex flex-row items-start justify-evenly mb-[60px]">
             {[
-              { title: "Company", links: ["About", "Careers", "Blog", "Press"] },
-              { title: "Product", links: ["Features", "Pricing", "Extension", "Mobile App"] },
-              { title: "Resources", links: ["Help Center", "Community", "Privacy", "Terms"] },
+              { titleKey: "footer_company", linkKeys: ["footer_about", "footer_careers", "footer_blog", "footer_press"] as const },
+              { titleKey: "footer_product", linkKeys: ["footer_features", "footer_pricing", "footer_extension", "footer_mobile_app"] as const },
+              { titleKey: "footer_resources", linkKeys: ["footer_help", "footer_community", "footer_privacy", "footer_terms"] as const },
             ].map((col, i) => (
               <div key={i} className="text-center">
-                <h4 className="font-serif text-sm md:text-lg font-normal italic text-ink/40 mb-2.5 md:mb-4">{col.title}</h4>
-                {col.links.map((l) => (
-                  <div key={l} className="font-sans text-xs md:text-sm text-ink/60 py-0.5 md:py-1 cursor-pointer hover:text-ink transition-colors">
-                    {l}
+                <h4 className="font-serif text-sm md:text-lg font-normal italic text-ink/40 mb-2.5 md:mb-4">{t(col.titleKey)}</h4>
+                {col.linkKeys.map((key) => (
+                  <div key={key} className="font-sans text-xs md:text-sm text-ink/60 py-0.5 md:py-1 cursor-pointer hover:text-ink transition-colors">
+                    {t(key)}
                   </div>
                 ))}
               </div>
@@ -330,16 +320,16 @@ export default function LandingPage() {
           <div className="flex items-center justify-center mb-10 gap-5">
             <BrandConcentricArch s={80} className="text-ink" />
             <span className="font-sans text-5xl md:text-7xl font-black text-ink leading-none" style={{ letterSpacing: "-0.04em" }}>
-              Kurate
+              {tApp("name")}
             </span>
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between border-t border-ink/[0.06] pt-5 gap-4">
-            <span className="font-sans text-sm text-ink/35">&copy; Kurate 2026</span>
+            <span className="font-sans text-sm text-ink/35">{t("copyright")}</span>
             <div className="flex gap-3 items-center">
-              {["Terms", "Privacy", "Data Controls"].map((l) => (
-                <span key={l} className="font-sans text-sm text-ink/35 cursor-pointer hover:text-ink/60 transition-colors">
-                  {l}
+              {([t("terms"), t("privacy"), t("data_controls")]).map((label) => (
+                <span key={label} className="font-sans text-sm text-ink/35 cursor-pointer hover:text-ink/60 transition-colors">
+                  {label}
                 </span>
               ))}
             </div>

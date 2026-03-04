@@ -1,8 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
+import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "env";
+import { routing } from "@/i18n/config";
 
+const intlMiddleware = createMiddleware(routing);
+
+/** Single request handler: locale (next-intl) first, then Supabase auth. Next.js 16+ uses proxy.ts (not middleware.ts). */
 export async function proxy(request: NextRequest) {
+  // Run next-intl first for locale detection / redirect
+  const intlResponse = intlMiddleware(request);
+  if (intlResponse.status !== 200) return intlResponse;
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -70,13 +79,10 @@ export async function proxy(request: NextRequest) {
   return supabaseResponse;
 }
 
+export default proxy;
+
 export const config = {
   matcher: [
-    "/chat/:path*",
-    "/profile/:path*",
-    "/shared/:path*",
-    "/groups/:path*",
-    "/dashboard/:path*",
-    "/auth/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

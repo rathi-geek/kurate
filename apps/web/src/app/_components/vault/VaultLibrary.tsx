@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/app/_libs/supabase/client";
 import { BrandArch, BrandStar } from "@/components/brand";
 import {
@@ -39,17 +40,17 @@ interface VaultLibraryProps {
 type SourceFilter = "all" | "logged" | "discovered";
 type ContentTypeFilter = "all" | "articles" | "videos" | "podcasts";
 
-const SOURCE_PILLS: { value: SourceFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "logged", label: "Logged" },
-  { value: "discovered", label: "Discovered" },
+const SOURCE_PILL_KEYS: { value: SourceFilter; labelKey: string }[] = [
+  { value: "all", labelKey: "filter_all" },
+  { value: "logged", labelKey: "filter_logged" },
+  { value: "discovered", labelKey: "filter_discovered" },
 ];
 
-const CONTENT_PILLS: { value: ContentTypeFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "articles", label: "Articles" },
-  { value: "videos", label: "Videos" },
-  { value: "podcasts", label: "Podcasts" },
+const CONTENT_PILL_KEYS: { value: ContentTypeFilter; labelKey: string }[] = [
+  { value: "all", labelKey: "filter_all" },
+  { value: "articles", labelKey: "filter_articles" },
+  { value: "videos", labelKey: "filter_videos" },
+  { value: "podcasts", labelKey: "filter_podcasts" },
 ];
 
 function StarRating({ rating }: { rating: number }) {
@@ -71,6 +72,7 @@ export function VaultLibrary({
   onItemClick,
   panelMode = false,
 }: VaultLibraryProps) {
+  const t = useTranslations("vault");
   const [items, setItems] = useState<VaultItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
@@ -160,9 +162,9 @@ export function VaultLibrary({
     return (
       <div className="p-5">
         <p className="font-mono text-xs font-bold uppercase tracking-widest text-ink/30">
-          Your Vault
+          {t("title")}
         </p>
-        <p className="font-sans text-xs text-ink/40 mt-2">Loading...</p>
+        <p className="font-sans text-xs text-ink/40 mt-2">{t("loading")}</p>
       </div>
     );
   }
@@ -173,7 +175,7 @@ export function VaultLibrary({
       <div className="p-6 flex flex-col items-center justify-center min-h-[180px]">
         <BrandArch s={48} className="text-ink/20 mb-4" />
         <p className="font-sans text-sm text-muted-foreground text-center">
-          Nothing saved yet. Drop a link to get started.
+          {t("empty_prompt")}
         </p>
       </div>
     );
@@ -187,15 +189,15 @@ export function VaultLibrary({
     <div className={panelMode ? "p-5 space-y-4" : "mt-8 space-y-4"}>
       <div className="flex items-center justify-between">
         <p className="font-mono text-xs font-bold uppercase tracking-widest text-ink/30">
-          Your Vault
+          {t("title")}
         </p>
-        <span className="font-mono text-xs text-ink/20">{filteredItems.length} items</span>
+        <span className="font-mono text-xs text-ink/20">{t("items_count", { count: filteredItems.length })}</span>
       </div>
 
       {/* Filter bar */}
       <div className="flex flex-wrap gap-3">
         <div className="flex gap-1.5">
-          {SOURCE_PILLS.map(({ value, label }) => (
+          {SOURCE_PILL_KEYS.map(({ value, labelKey }) => (
             <button
               key={value}
               type="button"
@@ -206,12 +208,12 @@ export function VaultLibrary({
                   : "bg-ink/5 text-ink/60 hover:bg-ink/10"
               }`}
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
         <div className="flex gap-1.5">
-          {CONTENT_PILLS.map(({ value, label }) => (
+          {CONTENT_PILL_KEYS.map(({ value, labelKey }) => (
             <button
               key={value}
               type="button"
@@ -222,7 +224,7 @@ export function VaultLibrary({
                   : "bg-ink/5 text-ink/60 hover:bg-ink/10"
               }`}
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
@@ -292,7 +294,7 @@ export function VaultLibrary({
                 </p>
                 {item.read_time && (
                   <p className="font-mono text-xs text-muted-foreground mt-1">
-                    {item.read_time} read
+                    {item.read_time} {t("read_suffix")}
                   </p>
                 )}
               </div>
@@ -305,14 +307,14 @@ export function VaultLibrary({
                     size="icon"
                     className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => e.stopPropagation()}
-                    aria-label="Options"
+                    aria-label={t("options_aria")}
                   >
                     <span className="text-lg leading-none">⋯</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenuItem onClick={() => onItemClick(item.url)}>
-                    Open
+                    {t("open")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -326,10 +328,10 @@ export function VaultLibrary({
                       }
                     }}
                   >
-                    Share
+                    {t("share")}
                   </DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" onClick={(e) => handleDelete(item, e)}>
-                    Delete
+                    {t("delete")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
