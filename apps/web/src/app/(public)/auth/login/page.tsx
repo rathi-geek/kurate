@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { motion } from "framer-motion";
+import { motion ,type  Variants } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { Arrow, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
-import type { Variants } from "framer-motion";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },

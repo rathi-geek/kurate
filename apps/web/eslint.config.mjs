@@ -1,15 +1,7 @@
-import { FlatCompat } from "@eslint/eslintrc";
-import importPlugin from "eslint-plugin-import";
 import unusedImports from "eslint-plugin-unused-imports";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
 const eslintConfig = [
   // Global ignores (replaces .eslintignore)
@@ -25,11 +17,11 @@ const eslintConfig = [
       "test-results/**/*",
     ],
   },
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextCoreWebVitals,
+  ...nextTypescript,
   {
     plugins: {
       "unused-imports": unusedImports,
-      import: importPlugin,
     },
     settings: {
       "import/resolver": {
@@ -67,7 +59,7 @@ const eslintConfig = [
 
       // Duplicate imports: error
       "import/no-duplicates": ["error", { "prefer-inline": true }],
-      // (optional) avoid self-imports, which often show up in cycle refactors
+      // Avoid self-imports, which often show up in cycle refactors
       "import/no-self-import": "error",
 
       // Prevent import cycles

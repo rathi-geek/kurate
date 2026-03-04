@@ -34,15 +34,6 @@
       "@/components/*": [
         "./src/components/*"
       ],
-      "@/hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@/types/*": [
-        "./src/types/*"
-      ],
-      "@/utils/*": [
-        "./src/utils/*"
-      ],
       "@/app/*": [
         "./src/app/*"
       ]
@@ -50,6 +41,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "next-bundle-analyzer.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",

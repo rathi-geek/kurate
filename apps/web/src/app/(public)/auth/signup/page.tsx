@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/app/_libs/supabase/client";
-import { BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import { BrandStar, BrandSunburst, FloatDeco , Arrow } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Arrow } from "@/components/brand";
 
 export default function SignupPage() {
   const router = useRouter();
