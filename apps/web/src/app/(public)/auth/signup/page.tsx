@@ -47,7 +47,7 @@ export default function SignupPage() {
         <BrandSunburst s={80} />
       </FloatDeco>
 
-      <div className="w-full max-w-[440px] px-8 relative z-10">
+      <div className="w-full max-w-[var(--container-auth)] px-8 relative z-10">
         <div className="flex items-center gap-2 mb-12">
           <BrandStar s={20} />
           <span className="font-sans font-black text-lg tracking-tight">
@@ -55,7 +55,7 @@ export default function SignupPage() {
           </span>
         </div>
 
-        <h2 className="font-serif text-[32px] font-normal mb-1.5 tracking-tight">
+        <h2 className="font-serif text-3xl font-normal mb-1.5 tracking-tight">
           Start reading smarter
         </h2>
         <p className="font-sans text-sm text-muted-foreground mb-8">
@@ -64,7 +64,7 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label className="block mb-2 font-sans text-[11px] font-bold uppercase tracking-[0.08em] text-foreground">
+            <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
               Email
             </label>
             <Input
@@ -76,7 +76,7 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label className="block mb-2 font-sans text-[11px] font-bold uppercase tracking-[0.08em] text-foreground">
+            <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
               Password
             </label>
             <Input
@@ -88,7 +88,7 @@ export default function SignupPage() {
               required
             />
             {error && (
-              <p className="mt-1.5 font-sans text-[13px] text-destructive">
+              <p className="mt-1.5 font-sans text-sm text-destructive">
                 {error}
               </p>
             )}
@@ -109,7 +109,7 @@ export default function SignupPage() {
         </form>
 
         <div className="border-t border-border mt-8 pt-6 text-center">
-          <p className="font-sans text-[13px] text-muted-foreground">
+          <p className="font-sans text-sm text-muted-foreground">
             Already have an account?{" "}
             <span
               className="font-bold underline cursor-pointer"

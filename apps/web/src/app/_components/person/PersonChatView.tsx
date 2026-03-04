@@ -68,23 +68,23 @@ export function PersonChatView({
             <path d="M10 3L5 8l5 5" />
           </svg>
         </button>
-        <div className="w-10 h-10 bg-teal text-primary-foreground flex items-center justify-center font-sans text-[14px] font-bold shrink-0 rounded-full">
+        <div className="w-10 h-10 bg-teal text-primary-foreground flex items-center justify-center font-sans text-sm font-bold shrink-0 rounded-full">
           {initial}
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-sans text-[16px] font-bold text-ink leading-tight truncate">
+          <h2 className="font-sans text-base font-bold text-ink leading-tight truncate">
             {name}
           </h2>
           {items.length > 0 && (
             <button
               onClick={() => setVaultOpen((v) => !v)}
               type="button"
-              className={`flex items-center gap-1.5 mt-1 px-2.5 py-1.5 rounded-full font-mono text-[10px] font-bold cursor-pointer transition-all min-h-[44px] ${
+              className={`flex items-center gap-1.5 mt-1 px-2.5 py-1.5 rounded-full font-mono text-xs font-bold cursor-pointer transition-all min-h-[44px] ${
                 vaultOpen ? "bg-teal text-primary-foreground" : "bg-ink/[0.06] text-ink/50 hover:bg-ink/[0.1]"
               }`}
             >
               Shared Vault
-              <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded-full ${vaultOpen ? "bg-white/20" : "bg-ink/[0.08] text-ink/40"}`}>
+              <span className={`font-mono text-xs px-1.5 py-0.5 rounded-full ${vaultOpen ? "bg-white/20" : "bg-ink/[0.08] text-ink/40"}`}>
                 {items.length}
               </span>
             </button>

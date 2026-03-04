@@ -159,10 +159,10 @@ export function VaultLibrary({
     if (!panelMode) return null;
     return (
       <div className="p-5">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-ink/30">
+        <p className="font-mono text-xs font-bold uppercase tracking-widest text-ink/30">
           Your Vault
         </p>
-        <p className="font-sans text-[12px] text-ink/40 mt-2">Loading...</p>
+        <p className="font-sans text-xs text-ink/40 mt-2">Loading...</p>
       </div>
     );
   }
@@ -172,7 +172,7 @@ export function VaultLibrary({
     return (
       <div className="p-6 flex flex-col items-center justify-center min-h-[180px]">
         <BrandArch s={48} className="text-ink/20 mb-4" />
-        <p className="font-sans text-[13px] text-muted-foreground text-center">
+        <p className="font-sans text-sm text-muted-foreground text-center">
           Nothing saved yet. Drop a link to get started.
         </p>
       </div>
@@ -186,10 +186,10 @@ export function VaultLibrary({
   return (
     <div className={panelMode ? "p-5 space-y-4" : "mt-8 space-y-4"}>
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-ink/30">
+        <p className="font-mono text-xs font-bold uppercase tracking-widest text-ink/30">
           Your Vault
         </p>
-        <span className="font-mono text-[11px] text-ink/20">{filteredItems.length} items</span>
+        <span className="font-mono text-xs text-ink/20">{filteredItems.length} items</span>
       </div>
 
       {/* Filter bar */}
@@ -200,7 +200,7 @@ export function VaultLibrary({
               key={value}
               type="button"
               onClick={() => setSourceFilter(value)}
-              className={`px-3 py-1.5 rounded-full font-sans text-[12px] font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-full font-sans text-xs font-medium transition-colors ${
                 sourceFilter === value
                   ? "bg-ink text-white"
                   : "bg-ink/5 text-ink/60 hover:bg-ink/10"
@@ -216,7 +216,7 @@ export function VaultLibrary({
               key={value}
               type="button"
               onClick={() => setContentTypeFilter(value)}
-              className={`px-3 py-1.5 rounded-full font-sans text-[12px] font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-full font-sans text-xs font-medium transition-colors ${
                 contentTypeFilter === value
                   ? "bg-ink text-white"
                   : "bg-ink/5 text-ink/60 hover:bg-ink/10"
@@ -248,7 +248,7 @@ export function VaultLibrary({
               ) : (
                 <div className="w-full h-[120px] flex items-center justify-center bg-muted">
                   <span
-                    className="font-mono text-[9px] font-bold uppercase px-2 py-1 rounded-full"
+                    className="font-mono text-xs font-bold uppercase px-2 py-1 rounded-full"
                     style={{
                       backgroundColor:
                         item.content_type === "video"
@@ -269,7 +269,7 @@ export function VaultLibrary({
                 </div>
               )}
               <div className="p-3">
-                <h3 className="font-sans text-[14px] font-bold text-foreground leading-snug line-clamp-2 pr-8">
+                <h3 className="font-sans text-sm font-bold text-foreground leading-snug line-clamp-2 pr-8">
                   {item.title || item.url}
                 </h3>
                 {item.rating != null && item.rating >= 1 && item.rating <= 5 && (
@@ -280,18 +280,18 @@ export function VaultLibrary({
                     {(item.tags ?? []).slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className="font-mono text-[10px] text-ink/50 bg-ink/5 px-1.5 py-0.5 rounded"
+                        className="font-mono text-xs text-ink/50 bg-ink/5 px-1.5 py-0.5 rounded"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
                 )}
-                <p className="font-mono text-[11px] text-muted-foreground mt-0.5">
+                <p className="font-mono text-xs text-muted-foreground mt-0.5">
                   {item.source ?? "—"}
                 </p>
                 {item.read_time && (
-                  <p className="font-mono text-[10px] text-muted-foreground mt-1">
+                  <p className="font-mono text-xs text-muted-foreground mt-1">
                     {item.read_time} read
                   </p>
                 )}

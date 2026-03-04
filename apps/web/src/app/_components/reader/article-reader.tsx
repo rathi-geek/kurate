@@ -152,7 +152,7 @@ export function ArticleReader({
                 <button
                   type="button"
                   onClick={openOriginal}
-                  className="font-sans text-[13px] font-medium text-teal hover:underline"
+                  className="font-sans text-sm font-medium text-teal hover:underline"
                 >
                   Open original
                 </button>

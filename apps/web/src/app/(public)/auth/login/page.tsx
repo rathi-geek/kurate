@@ -58,7 +58,7 @@ export default function LoginPage() {
         <BrandSunburst s={100} />
       </FloatDeco>
 
-      <div className="relative z-10 w-full max-w-[440px] px-8">
+      <div className="relative z-10 w-full max-w-[var(--container-auth)] px-8">
         <motion.div
           custom={0}
           initial="hidden"
@@ -71,7 +71,7 @@ export default function LoginPage() {
         </motion.div>
 
         <motion.div custom={1} initial="hidden" animate="visible" variants={fadeUp}>
-          <h2 className="mb-1.5 font-serif text-[32px] font-normal tracking-tight">Welcome back</h2>
+          <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">Welcome back</h2>
           <p className="text-muted-foreground mb-8 font-sans text-sm">Log in to your account.</p>
         </motion.div>
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
           className="space-y-4"
         >
           <div>
-            <label className="text-foreground mb-2 block font-sans text-[11px] font-bold tracking-[0.08em] uppercase">
+            <label className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
               Email
             </label>
             <Input
@@ -96,7 +96,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="text-foreground mb-2 block font-sans text-[11px] font-bold tracking-[0.08em] uppercase">
+            <label className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
               Password
             </label>
             <Input
@@ -106,9 +106,9 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            {error && <p className="text-destructive mt-1.5 font-sans text-[13px]">{error}</p>}
+            {error && <p className="text-destructive mt-1.5 font-sans text-sm">{error}</p>}
             <p
-              className="text-muted-foreground hover:text-foreground mt-2 cursor-pointer text-right font-sans text-[13px] transition-colors"
+              className="text-muted-foreground hover:text-foreground mt-2 cursor-pointer text-right font-sans text-sm transition-colors"
               onClick={() => router.push("/auth/forgot-password")}>
               Forgot password?
             </p>
@@ -135,7 +135,7 @@ export default function LoginPage() {
           variants={fadeUp}
           className="border-border mt-8 border-t pt-6 text-center"
         >
-          <p className="text-muted-foreground font-sans text-[13px]">
+          <p className="text-muted-foreground font-sans text-sm">
             No account?{" "}
             <span
               className="cursor-pointer font-bold underline"

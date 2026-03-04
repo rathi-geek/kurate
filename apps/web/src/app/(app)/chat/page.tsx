@@ -361,7 +361,7 @@ function ChatPageInner() {
                         onSave={handleFeedSave}
                       />
                       <div className="max-w-md mx-auto">
-                        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
+                        <p className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
                           Recent threads
                         </p>
                         <div className="space-y-2">
@@ -372,10 +372,10 @@ function ChatPageInner() {
                               onClick={() => openThread(t.id)}
                               className="w-full text-left p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
                             >
-                              <p className="font-sans text-[14px] font-semibold text-foreground truncate">
+                              <p className="font-sans text-sm font-semibold text-foreground truncate">
                                 {t.contentTitle ?? "Untitled"}
                               </p>
-                              <p className="font-mono text-[11px] text-muted-foreground mt-0.5">
+                              <p className="font-mono text-xs text-muted-foreground mt-0.5">
                                 with {t.participants.map((p) => p.userName).join(", ")}
                               </p>
                             </button>

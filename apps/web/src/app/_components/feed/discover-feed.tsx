@@ -32,7 +32,7 @@ const FILTER_LABELS: { value: ContentFilter; label: string }[] = [
 function ContentTypeBadge({ type }: { type: FeedItem["contentType"] }) {
   const label = type.charAt(0).toUpperCase() + type.slice(1);
   return (
-    <span className="shrink-0 font-mono text-[10px] font-medium uppercase tracking-wider text-ink/40 bg-ink/5 px-2 py-0.5 rounded">
+    <span className="shrink-0 font-mono text-xs font-medium uppercase tracking-wider text-ink/40 bg-ink/5 px-2 py-0.5 rounded">
       {label}
     </span>
   );
@@ -70,7 +70,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
     <div className="space-y-10">
       {/* Section 1 — Trending */}
       <section>
-        <h2 className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink/35 mb-4">
+        <h2 className="font-sans text-xs font-bold uppercase tracking-widest text-ink/35 mb-4">
           Trending in your network
         </h2>
         <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-thin">
@@ -98,10 +98,10 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                 )}
               </div>
               <div className="p-3">
-                <p className="font-sans text-[14px] font-semibold text-foreground line-clamp-2">
+                <p className="font-sans text-sm font-semibold text-foreground line-clamp-2">
                   {item.title}
                 </p>
-                <p className="font-mono text-[11px] text-ink/40 mt-1">
+                <p className="font-mono text-xs text-ink/40 mt-1">
                   {item.hostname}
                   {item.readTime != null && ` · ${item.readTime} min`}
                 </p>
@@ -114,7 +114,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
       {/* Section 2 — For You */}
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink/35">
+          <h2 className="font-sans text-xs font-bold uppercase tracking-widest text-ink/35">
             For you
           </h2>
           <div className="flex gap-1.5">
@@ -123,7 +123,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                 key={value}
                 type="button"
                 onClick={() => setFilter(value)}
-                className={`px-3 py-1.5 rounded-full font-sans text-[12px] font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-full font-sans text-xs font-medium transition-colors ${
                   filter === value
                     ? "bg-ink text-white"
                     : "bg-ink/5 text-ink/60 hover:bg-ink/10"
@@ -156,7 +156,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                     {item.sharer?.name?.charAt(0) ?? "?"}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-sans text-[12px] text-ink/50">
+                    <p className="font-sans text-xs text-ink/50">
                       <span className="font-semibold text-foreground">
                         {item.sharer?.name ?? "Someone"}
                       </span>{" "}
@@ -167,17 +167,17 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                       onClick={() => onItemClick(item)}
                       className="text-left mt-1.5 block w-full group"
                     >
-                      <p className="font-sans text-[15px] font-semibold text-foreground group-hover:text-teal transition-colors line-clamp-1">
+                      <p className="font-sans text-sm font-semibold text-foreground group-hover:text-teal transition-colors line-clamp-1">
                         {item.title}
                       </p>
                       {item.description && (
-                        <p className="font-sans text-[13px] text-ink/50 mt-0.5 line-clamp-2">
+                        <p className="font-sans text-sm text-ink/50 mt-0.5 line-clamp-2">
                           {item.description}
                         </p>
                       )}
                     </button>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="font-mono text-[11px] text-ink/40">
+                      <span className="font-mono text-xs text-ink/40">
                         {item.hostname}
                         {item.readTime != null && ` · ${item.readTime} min`}
                       </span>
@@ -189,7 +189,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                         e.stopPropagation();
                         onSave(item);
                       }}
-                      className="mt-3 font-sans text-[13px] font-medium text-teal hover:underline"
+                      className="mt-3 font-sans text-sm font-medium text-teal hover:underline"
                     >
                       Save
                     </button>

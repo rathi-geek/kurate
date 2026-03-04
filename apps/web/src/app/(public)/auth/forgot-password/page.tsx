@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
         variants={pageVariants}
         initial="hidden"
         animate="visible"
-        className="w-full max-w-[440px] px-8 relative z-10"
+        className="w-full max-w-[var(--container-auth)] px-8 relative z-10"
       >
         <div className="flex items-center gap-2 mb-12">
           <BrandStar s={20} />
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
               animate={{ opacity: 1, y: 0, transition: springGentle }}
               exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
             >
-              <h2 className="font-serif text-[32px] font-normal mb-1.5 tracking-tight">
+              <h2 className="font-serif text-3xl font-normal mb-1.5 tracking-tight">
                 Reset your password
               </h2>
               <p className="font-sans text-sm text-muted-foreground mb-8">
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block mb-2 font-sans text-[11px] font-bold uppercase tracking-[0.08em] text-foreground">
+                  <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
                     Email
                   </label>
                   <Input
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
                     required
                   />
                   {error && (
-                    <p className="mt-1.5 font-sans text-[13px] text-destructive">
+                    <p className="mt-1.5 font-sans text-sm text-destructive">
                       {error}
                     </p>
                   )}
@@ -125,7 +125,7 @@ export default function ForgotPasswordPage() {
               </form>
 
               <div className="border-t border-border mt-8 pt-6 text-center">
-                <p className="font-sans text-[13px] text-muted-foreground">
+                <p className="font-sans text-sm text-muted-foreground">
                   Remember your password?{" "}
                   <span
                     className="font-bold underline cursor-pointer"
@@ -146,7 +146,7 @@ export default function ForgotPasswordPage() {
               exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
               className="text-center"
             >
-              <h2 className="font-serif text-[32px] font-normal mb-1.5 tracking-tight">
+              <h2 className="font-serif text-3xl font-normal mb-1.5 tracking-tight">
                 Check your email
               </h2>
               <p className="font-sans text-sm text-muted-foreground mb-8">
@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
               </p>
 
               <div className="border-t border-border mt-8 pt-6">
-                <p className="font-sans text-[13px] text-muted-foreground">
+                <p className="font-sans text-sm text-muted-foreground">
                   Back to{" "}
                   <span
                     className="font-bold underline cursor-pointer"

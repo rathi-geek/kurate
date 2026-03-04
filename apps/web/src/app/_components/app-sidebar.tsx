@@ -67,7 +67,7 @@ export function AppSidebar({
             <BrandConcentricArch s={20} c="#1A1A1A" />
           </div>
           {!collapsed && (
-            <span className="text-ink flex-1 truncate font-sans text-[18px] font-black">
+            <span className="text-ink flex-1 truncate font-sans text-lg font-black">
               Kurate
             </span>
           )}
@@ -110,7 +110,7 @@ export function AppSidebar({
                 <>
                   <Icon s={iconSize} c={active ? "#1A1A1A" : "rgba(26,26,26,0.35)"} />
                   <span
-                    className={`font-sans text-[12px] ${
+                    className={`font-sans text-xs ${
                       active ? "text-ink font-bold" : "text-ink/55 font-semibold"
                     }`}>
                     {label}
@@ -119,7 +119,7 @@ export function AppSidebar({
               );
 
               return disabled ? (
-                <div key={href} className={itemClass} style={{ borderRadius: 6 }}>
+                <div key={href} className={`${itemClass} rounded-badge`}>
                   {content}
                 </div>
               ) : (
@@ -127,8 +127,7 @@ export function AppSidebar({
                   key={href}
                   href={href as never}
                   title={label}
-                  className={itemClass}
-                  style={{ borderRadius: 6 }}>
+                  className={`${itemClass} rounded-badge`}>
                   {content}
                 </Link>
               );
@@ -144,7 +143,7 @@ export function AppSidebar({
           {/* People */}
           <div className={collapsed ? "mt-4 px-2" : "mt-5 px-3"}>
             {!collapsed && (
-              <p className="text-ink/25 mb-2 px-3 font-mono text-[9px] font-bold tracking-widest uppercase">
+              <p className="text-ink/25 mb-2 px-3 font-mono text-xs font-bold tracking-widest uppercase">
                 People
               </p>
             )}
@@ -160,15 +159,11 @@ export function AppSidebar({
                       isActivePerson ? "bg-teal/10" : "hover:bg-ink/4"
                     }`}>
                     <div className="relative">
-                      <div
-                        className="bg-ink text-cream flex h-[26px] w-[26px] items-center justify-center font-sans text-[10px] font-bold"
-                        style={{ borderRadius: "50%" }}>
+                      <div className="bg-ink text-cream flex h-[26px] w-[26px] items-center justify-center font-sans text-xs font-bold rounded-full">
                         {p.name[0]}
                       </div>
                       {p.online && (
-                        <div
-                          className="bg-teal absolute -right-px -bottom-px h-[7px] w-[7px] border-2 border-white"
-                          style={{ borderRadius: "50%" }}
+                        <div className="bg-teal absolute -right-px -bottom-px h-[7px] w-[7px] border-2 border-white rounded-full"
                         />
                       )}
                     </div>
@@ -177,26 +172,23 @@ export function AppSidebar({
                   <button
                     key={p.handle}
                     onClick={() => onPersonClick?.(p.handle)}
-                    className={`flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left transition-colors ${
+                    className={`flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left transition-colors rounded-badge ${
                       isActivePerson ? "bg-teal/10" : "hover:bg-ink/4"
-                    }`}
-                    style={{ borderRadius: 6 }}>
+                    }`}>
                     <div className="relative shrink-0">
                       <div
-                        className="bg-ink text-cream flex h-[26px] w-[26px] items-center justify-center font-sans text-[10px] font-bold"
-                        style={{ borderRadius: "50%" }}>
+                        className="bg-ink text-cream flex h-[26px] w-[26px] items-center justify-center font-sans text-xs font-bold rounded-full">
                         {p.name[0]}
                       </div>
                       {p.online && (
                         <div
-                          className="bg-teal absolute -right-px -bottom-px h-[7px] w-[7px] border-2 border-white"
-                          style={{ borderRadius: "50%" }}
+                          className="bg-teal absolute -right-px -bottom-px h-[7px] w-[7px] border-2 border-white rounded-full"
                         />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-ink font-sans text-[12px] font-bold">{p.name}</div>
-                      <div className="text-ink/35 font-mono text-[9px]">{p.handle}</div>
+                      <div className="text-ink font-sans text-xs font-bold">{p.name}</div>
+                      <div className="text-ink/35 font-mono text-xs">{p.handle}</div>
                     </div>
                   </button>
                 );
@@ -207,7 +199,7 @@ export function AppSidebar({
           {/* Groups */}
           <div className={collapsed ? "mt-4 px-2" : "mt-5 px-3"}>
             {!collapsed && (
-              <p className="text-ink/25 mb-2 px-3 font-mono text-[9px] font-bold tracking-widest uppercase">
+              <p className="text-ink/25 mb-2 px-3 font-mono text-xs font-bold tracking-widest uppercase">
                 Groups
               </p>
             )}
@@ -219,36 +211,36 @@ export function AppSidebar({
                     title={`Chat: ${g.name}`}
                     onClick={() => onGroupChatClick?.(g.name)}
                     className="hover:bg-ink/4 flex w-full cursor-pointer items-center justify-center rounded-md py-1.5 transition-colors">
+                    {/* Dynamic group color — cannot use static token */}
                     <div
-                      className="flex h-7 w-7 items-center justify-center"
-                      style={{ borderRadius: 8, backgroundColor: `${g.color}20` }}>
+                      className="flex h-7 w-7 items-center justify-center rounded-md"
+                      style={{ backgroundColor: `${g.color}20` }}>
                       <BrandStar s={10} c={g.color} />
                     </div>
                   </button>
                 ) : (
                   <div
                     key={g.name}
-                    className="hover:bg-ink/4 group/grp flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors"
-                    style={{ borderRadius: 6 }}>
+                    className="hover:bg-ink/4 group/grp flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors rounded-badge">
                     <Link
                       href={`/groups/${g.slug}` as never}
                       className="flex min-w-0 flex-1 items-center gap-2.5">
+                      {/* Dynamic group color — cannot use static token */}
                       <div
-                        className="flex h-7 w-7 shrink-0 items-center justify-center"
-                        style={{ borderRadius: 8, backgroundColor: `${g.color}20` }}>
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                        style={{ backgroundColor: `${g.color}20` }}>
                         <BrandStar s={10} c={g.color} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-ink truncate font-sans text-[12px] font-bold">
+                        <div className="text-ink truncate font-sans text-xs font-bold">
                           {g.name}
                         </div>
-                        <div className="text-ink/35 font-mono text-[9px]">{g.members} members</div>
+                        <div className="text-ink/35 font-mono text-xs">{g.members} members</div>
                       </div>
                     </Link>
                     <button
                       onClick={() => onGroupChatClick?.(g.name)}
-                      className="hover:bg-ink/8 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center opacity-0 transition-all group-hover/grp:opacity-100"
-                      style={{ borderRadius: "50%" }}
+                      className="hover:bg-ink/8 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center opacity-0 transition-all group-hover/grp:opacity-100 rounded-full"
                       title={`Chat in ${g.name}`}>
                       <svg
                         width="12"
@@ -272,18 +264,17 @@ export function AppSidebar({
         {/* Footer */}
         <div className={`border-ink/6 border-t ${collapsed ? "space-y-1 px-2 py-3" : "px-3 py-4"}`}>
           {!collapsed && userEmail && (
-            <div className="text-ink/30 mb-2 truncate font-mono text-[10px]">{userEmail}</div>
+            <div className="text-ink/30 mb-2 truncate font-mono text-xs">{userEmail}</div>
           )}
           <button
             onClick={onLogout}
-            className={`hover:bg-ink/4 flex cursor-pointer items-center transition-colors ${
+            className={`hover:bg-ink/4 flex cursor-pointer items-center transition-colors rounded-badge ${
               collapsed ? "w-full justify-center p-2" : "gap-1.5 px-3 py-1.5"
             }`}
-            style={{ borderRadius: 6 }}
             title={collapsed ? "Log out" : undefined}>
             <Arrow s={12} d="r" />
             {!collapsed && (
-              <span className="text-ink/40 hover:text-ink/60 font-sans text-[11px] font-semibold">
+              <span className="text-ink/40 hover:text-ink/60 font-sans text-xs font-semibold">
                 Log out
               </span>
             )}
@@ -319,7 +310,7 @@ export function AppSidebar({
                 <div className="ml-1 shrink-0">
                   <BrandConcentricArch s={20} c="#1A1A1A" />
                 </div>
-                <span className="text-ink flex-1 truncate font-sans text-[18px] font-black">
+                <span className="text-ink flex-1 truncate font-sans text-lg font-black">
                   Kurate
                 </span>
                 <button
@@ -348,9 +339,9 @@ export function AppSidebar({
                     } ${active ? "bg-ink/8" : ""}`;
 
                     return disabled ? (
-                      <div key={href} className={itemClass} style={{ borderRadius: 6 }}>
+                      <div key={href} className={`${itemClass} rounded-badge`}>
                         <Icon s={iconSize} c="rgba(26,26,26,0.35)" />
-                        <span className="text-ink/55 font-sans text-[13px] font-semibold">
+                        <span className="text-ink/55 font-sans text-sm font-semibold">
                           {label}
                         </span>
                       </div>
@@ -358,12 +349,11 @@ export function AppSidebar({
                       <Link
                         key={href}
                         href={href as never}
-                        className={itemClass}
-                        style={{ borderRadius: 6 }}
+                        className={`${itemClass} rounded-badge`}
                         onClick={onMobileClose}>
                         <Icon s={iconSize} c={active ? "#1A1A1A" : "rgba(26,26,26,0.35)"} />
                         <span
-                          className={`font-sans text-[13px] ${active ? "text-ink font-bold" : "text-ink/55 font-semibold"}`}>
+                          className={`font-sans text-sm ${active ? "text-ink font-bold" : "text-ink/55 font-semibold"}`}>
                           {label}
                         </span>
                       </Link>
@@ -378,7 +368,7 @@ export function AppSidebar({
               <div className="min-h-0 flex-1 overflow-y-auto">
                 {/* People */}
                 <div className="mt-5 px-3">
-                  <p className="text-ink/25 mb-2 px-3 font-mono text-[9px] font-bold tracking-widest uppercase">
+                  <p className="text-ink/25 mb-2 px-3 font-mono text-xs font-bold tracking-widest uppercase">
                     People
                   </p>
                   <div className="space-y-0.5">
@@ -389,24 +379,20 @@ export function AppSidebar({
                           onPersonClick?.(p.handle);
                           onMobileClose?.();
                         }}
-                        className="hover:bg-ink/4 flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors"
-                        style={{ borderRadius: 6 }}>
+                        className="hover:bg-ink/4 flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors rounded-badge">
                         <div className="relative shrink-0">
-                          <div
-                            className="bg-ink text-cream flex h-[30px] w-[30px] items-center justify-center font-sans text-[11px] font-bold"
-                            style={{ borderRadius: "50%" }}>
+                          <div className="bg-ink text-cream flex h-[30px] w-[30px] items-center justify-center font-sans text-xs font-bold rounded-full">
                             {p.name[0]}
                           </div>
                           {p.online && (
                             <div
-                              className="bg-teal absolute -right-px -bottom-px h-[8px] w-[8px] border-2 border-white"
-                              style={{ borderRadius: "50%" }}
+                              className="bg-teal absolute -right-px -bottom-px h-[8px] w-[8px] border-2 border-white rounded-full"
                             />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-ink font-sans text-[13px] font-bold">{p.name}</div>
-                          <div className="text-ink/35 font-mono text-[10px]">{p.handle}</div>
+                          <div className="text-ink font-sans text-sm font-bold">{p.name}</div>
+                          <div className="text-ink/35 font-mono text-xs">{p.handle}</div>
                         </div>
                       </button>
                     ))}
@@ -415,7 +401,7 @@ export function AppSidebar({
 
                 {/* Groups */}
                 <div className="mt-5 px-3">
-                  <p className="text-ink/25 mb-2 px-3 font-mono text-[9px] font-bold tracking-widest uppercase">
+                  <p className="text-ink/25 mb-2 px-3 font-mono text-xs font-bold tracking-widest uppercase">
                     Groups
                   </p>
                   <div className="space-y-0.5">
@@ -423,19 +409,19 @@ export function AppSidebar({
                       <Link
                         key={g.name}
                         href={`/groups/${g.slug}` as never}
-                        className="hover:bg-ink/4 flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors"
-                        style={{ borderRadius: 6 }}
+                        className="hover:bg-ink/4 flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors rounded-badge"
                         onClick={onMobileClose}>
+                        {/* Dynamic group color — cannot use static token */}
                         <div
-                          className="flex h-8 w-8 shrink-0 items-center justify-center"
-                          style={{ borderRadius: 8, backgroundColor: `${g.color}20` }}>
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+                          style={{ backgroundColor: `${g.color}20` }}>
                           <BrandStar s={12} c={g.color} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-ink truncate font-sans text-[13px] font-bold">
+                          <div className="text-ink truncate font-sans text-sm font-bold">
                             {g.name}
                           </div>
-                          <div className="text-ink/35 font-mono text-[10px]">
+                          <div className="text-ink/35 font-mono text-xs">
                             {g.members} members
                           </div>
                         </div>
@@ -448,14 +434,13 @@ export function AppSidebar({
               {/* Footer */}
               <div className="border-ink/6 shrink-0 border-t px-5 py-4">
                 {userEmail && (
-                  <div className="text-ink/30 mb-2 truncate font-mono text-[10px]">{userEmail}</div>
+                  <div className="text-ink/30 mb-2 truncate font-mono text-xs">{userEmail}</div>
                 )}
                 <button
                   onClick={onLogout}
-                  className="hover:bg-ink/4 flex cursor-pointer items-center gap-1.5 px-3 py-1.5 transition-colors"
-                  style={{ borderRadius: 6 }}>
+                  className="hover:bg-ink/4 flex cursor-pointer items-center gap-1.5 px-3 py-1.5 transition-colors rounded-badge">
                   <Arrow s={12} d="r" />
-                  <span className="text-ink/40 font-sans text-[11px] font-semibold">Log out</span>
+                  <span className="text-ink/40 font-sans text-xs font-semibold">Log out</span>
                 </button>
               </div>
             </motion.div>

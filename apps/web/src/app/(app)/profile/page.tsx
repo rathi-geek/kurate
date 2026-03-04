@@ -85,13 +85,13 @@ export default function ProfilePage() {
             <p className="font-mono text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
               Your Week
             </p>
-            <div className="grid grid-cols-3 gap-4 p-5 bg-card border rounded-2xl">
+            <div className="grid grid-cols-3 gap-4 p-5 bg-card border rounded-card">
               <div className="text-center">
                 <div className="text-2xl font-bold text-teal-500">12</div>
                 <div className="font-mono text-xs text-muted-foreground uppercase mt-1">Saved</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-500">8</div>
+                <div className="text-2xl font-bold text-lavender-dark">8</div>
                 <div className="font-mono text-xs text-muted-foreground uppercase mt-1">Read</div>
               </div>
               <div className="text-center">
@@ -105,7 +105,7 @@ export default function ProfilePage() {
             <p className="font-mono text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
               Content DNA
             </p>
-            <div className="bg-card border rounded-2xl p-6">
+            <div className="bg-card border rounded-card p-6">
               <div className="h-32 flex items-center justify-center text-muted-foreground">
                 Content DNA Chart (Coming Soon)
               </div>

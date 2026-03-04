@@ -41,7 +41,7 @@ export function MobileTabBar({ activeTab, onTabChange, onMenuOpen }: MobileTabBa
           )}
           <CompassIcon active={activeTab === "discovering"} />
           <span
-            className={`font-sans text-[10px] font-semibold transition-colors ${
+            className={`font-sans text-xs font-semibold transition-colors ${
               activeTab === "discovering" ? "text-primary" : "text-muted-foreground"
             }`}
           >
@@ -62,7 +62,7 @@ export function MobileTabBar({ activeTab, onTabChange, onMenuOpen }: MobileTabBa
           )}
           <LinkIcon active={activeTab === "logging"} />
           <span
-            className={`font-sans text-[10px] font-semibold transition-colors ${
+            className={`font-sans text-xs font-semibold transition-colors ${
               activeTab === "logging" ? "text-primary" : "text-muted-foreground"
             }`}
           >

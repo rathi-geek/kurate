@@ -23,8 +23,8 @@ export function CommentList({
   if (comments.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col items-center justify-center text-center">
-        <p className="font-sans text-[13px] text-ink/30 font-medium">No takes yet</p>
-        <p className="font-sans text-[11px] text-ink/20 mt-1">Share your thoughts on this piece</p>
+        <p className="font-sans text-sm text-ink/30 font-medium">No takes yet</p>
+        <p className="font-sans text-xs text-ink/20 mt-1">Share your thoughts on this piece</p>
       </div>
     );
   }

@@ -68,7 +68,7 @@ export function ContentThreadPanel({
         className="w-full max-w-[420px] sm:max-w-[420px] h-full border-l border-ink/[0.06] bg-white flex flex-col overflow-hidden shrink-0"
       >
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="font-sans text-[13px] text-ink/30">Thread not found</p>
+          <p className="font-sans text-sm text-ink/30">Thread not found</p>
         </div>
       </motion.div>
     );

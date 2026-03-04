@@ -30,8 +30,8 @@ export function ChatBubble({ role, children }: ChatBubbleProps) {
           text-sm leading-relaxed
           ${
             isUser
-              ? "bg-primary text-primary-foreground rounded-2xl"
-              : "bg-card text-foreground rounded-2xl border"
+              ? "bg-primary text-primary-foreground rounded-card"
+              : "bg-card text-foreground rounded-card border"
           }
         `}
       >

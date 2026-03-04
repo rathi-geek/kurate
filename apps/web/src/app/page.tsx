@@ -99,7 +99,7 @@ export default function LandingPage() {
           initial={false}
           animate="visible"
           variants={staggerContainer}
-          className="max-w-[800px] mx-auto relative z-10"
+          className="container-content relative z-10"
         >
           <motion.h1
             variants={fadeUp}
@@ -132,14 +132,14 @@ export default function LandingPage() {
       </section>
 
       {/* Dark Showcase */}
-      <section className="bg-[#F7F7F7] px-6 py-16 md:py-20">
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center gap-10 md:gap-[60px]">
+      <section className="bg-muted px-6 py-16 md:py-20">
+        <div className="container-page flex flex-col md:flex-row items-center gap-10 md:gap-[60px]">
           <div className="flex-1">
             <div className="flex gap-2 mb-7">
               {["Web", "iOS", "Android"].map((p) => (
                 <span
                   key={p}
-                  className="py-1.5 px-3.5 rounded-full border border-ink/[0.08] font-sans text-[13px] font-medium text-ink flex items-center gap-1.5"
+                  className="py-1.5 px-3.5 rounded-full border border-ink/[0.08] font-sans text-sm font-medium text-ink flex items-center gap-1.5"
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-ink" /> {p}
                 </span>
@@ -156,12 +156,9 @@ export default function LandingPage() {
 
           {/* Phone mockup */}
           <div className="flex-1 flex justify-center">
-            <div
-              className="w-[220px] h-[400px] bg-ink overflow-hidden"
-              style={{ borderRadius: 28, border: "2px solid rgba(26,26,26,0.08)", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}
-            >
+            <div className="w-[220px] h-[400px] bg-ink overflow-hidden rounded-card border-2 border-border shadow-xl">
               <div className="p-4 pt-10">
-                <div className="font-sans font-bold text-white/40 uppercase mb-3" style={{ fontSize: 11, letterSpacing: "0.08em" }}>
+                <div className="font-sans font-bold text-white/40 uppercase mb-3 text-xs tracking-[0.08em]">
                   Your Library
                 </div>
                 {[
@@ -172,8 +169,8 @@ export default function LandingPage() {
                   <div key={i} className="py-2.5" style={{ borderTop: i ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
                     <div className="font-sans text-xs font-semibold text-white mb-0.5">{item.t}</div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-white/35" style={{ fontSize: 9 }}>{item.src}</span>
-                      <span className="py-0.5 px-1.5 bg-white/[0.07] text-white/50" style={{ fontSize: 9, borderRadius: 3 }}>{item.tag}</span>
+                      <span className="font-mono text-white/35 text-xs">{item.src}</span>
+                      <span className="py-0.5 px-1.5 bg-white/[0.07] text-white/50 text-xs rounded-sm">{item.tag}</span>
                     </div>
                   </div>
                 ))}
@@ -196,7 +193,7 @@ export default function LandingPage() {
 
       {/* Features */}
       <section className="px-6 py-20 bg-cream">
-        <div className="max-w-[1200px] mx-auto text-center mb-[60px]">
+        <div className="container-page text-center mb-[60px]">
           <h2 className="font-serif text-3xl md:text-4xl font-normal text-ink mb-4">
             Proof of Knowledge
           </h2>
@@ -204,7 +201,7 @@ export default function LandingPage() {
             Rate what you read. Build a public signal of your expertise. Your curation history becomes your intellectual reputation.
           </p>
         </div>
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-6">
+        <div className="container-page flex flex-col md:flex-row gap-6">
           {FEATURES.map((feature, i) => (
             <motion.div
               key={i}
@@ -213,9 +210,9 @@ export default function LandingPage() {
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.1 }}
               viewport={{ once: true }}
               whileHover={{ y: -6 }}
-              className="flex-1 bg-[#F7F7F7] rounded-2xl p-7 border border-ink/[0.06]"
+              className="flex-1 bg-muted rounded-card p-7 border border-ink/[0.06]"
             >
-              <div className={`w-11 h-11 ${feature.bg} rounded-2xl flex items-center justify-center mb-4`}>
+              <div className={`w-11 h-11 ${feature.bg} rounded-card flex items-center justify-center mb-4`}>
                 {feature.icon === "arch" && <BrandArch s={22} c="#1A1A1A" />}
                 {feature.icon === "star" && <BrandStar s={20} c="#1A1A1A" />}
                 {feature.icon === "sunburst" && <BrandSunburst s={22} c="#1A1A1A" />}
@@ -228,7 +225,7 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-[#F7F7F7] py-20 overflow-hidden">
+      <section className="bg-muted py-20 overflow-hidden">
         <div className="text-center mb-12 px-6">
           <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink italic">
             People love switching<br />to Kurate
@@ -236,13 +233,13 @@ export default function LandingPage() {
         </div>
         <div className="flex w-max" style={{ animation: "marquee 60s linear infinite" }}>
           {[...TESTIMONIALS, ...TESTIMONIALS].map((t, idx) => (
-            <div key={idx} className="min-w-[280px] max-w-[300px] bg-white rounded-2xl p-6 shrink-0 flex flex-col gap-4 mr-5">
+            <div key={idx} className="min-w-[280px] max-w-[300px] bg-white rounded-card p-6 shrink-0 flex flex-col gap-4 mr-5">
               <div className="w-11 h-11 rounded-full bg-teal/20 flex items-center justify-center font-sans text-sm font-bold text-teal mx-auto">
                 {t.name.split(" ").map(n => n[0]).join("")}
               </div>
               <p className="font-sans text-sm leading-relaxed text-ink text-center flex-1">&ldquo;{t.quote}&rdquo;</p>
               <div className="text-center">
-                <div className="font-sans text-[13px] font-bold text-ink">{t.name}</div>
+                <div className="font-sans text-sm font-bold text-ink">{t.name}</div>
                 <div className="font-sans text-xs text-ink/45">{t.role}</div>
               </div>
             </div>
@@ -251,8 +248,8 @@ export default function LandingPage() {
       </section>
 
       {/* Stats */}
-      <section className="bg-[#F7F7F7] px-6 pb-20">
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-5 justify-center">
+      <section className="bg-muted px-6 pb-20">
+        <div className="container-page flex flex-col md:flex-row gap-5 justify-center">
           {STATS.map((card, i) => (
             <motion.div
               key={i}
@@ -261,7 +258,7 @@ export default function LandingPage() {
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.15 }}
               viewport={{ once: true }}
               whileHover={{ y: -4 }}
-              className="bg-teal rounded-2xl p-8 flex flex-col flex-1 max-w-md"
+              className="bg-teal rounded-card p-8 flex flex-col flex-1 max-w-md"
             >
               <h3 className="font-serif text-2xl md:text-3xl font-normal italic text-white mb-2 min-h-[80px]">
                 {card.stat}
@@ -274,7 +271,7 @@ export default function LandingPage() {
                   {card.person.charAt(0)}
                 </div>
                 <div>
-                  <div className="font-sans text-[13px] font-semibold text-white">{card.person}</div>
+                  <div className="font-sans text-sm font-semibold text-white">{card.person}</div>
                   <div className="font-sans text-xs text-white/50">{card.role}</div>
                 </div>
               </div>
@@ -290,11 +287,11 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 25 }}
           viewport={{ once: true }}
-          className="max-w-[800px] mx-auto border-2 border-ink/[0.08] p-8 md:p-12 text-center relative overflow-hidden rounded-2xl"
+          className="container-content border-2 border-ink/[0.08] p-8 md:p-12 text-center relative overflow-hidden rounded-card"
           style={{ animation: "ctaBreathe 3s ease-in-out infinite" }}
         >
           <div className="relative z-10">
-            <p className="font-sans text-[15px] text-ink/50 mb-2">Ready to curate smarter?</p>
+            <p className="font-sans text-sm text-ink/50 mb-2">Ready to curate smarter?</p>
             <h2 className="font-serif text-2xl md:text-4xl font-normal text-ink mb-8">
               <span className="italic">Your reading</span> deserves better
             </h2>
@@ -312,7 +309,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="px-6 py-12 border-t border-ink/[0.06] bg-cream">
-        <div className="max-w-[1200px] mx-auto">
+        <div className="container-page">
           <div className="flex flex-row items-start justify-evenly mb-[60px]">
             {[
               { title: "Company", links: ["About", "Careers", "Blog", "Press"] },
@@ -322,7 +319,7 @@ export default function LandingPage() {
               <div key={i} className="text-center">
                 <h4 className="font-serif text-sm md:text-lg font-normal italic text-ink/40 mb-2.5 md:mb-4">{col.title}</h4>
                 {col.links.map((l) => (
-                  <div key={l} className="font-sans text-[11px] md:text-sm text-ink/60 py-0.5 md:py-1 cursor-pointer hover:text-ink transition-colors">
+                  <div key={l} className="font-sans text-xs md:text-sm text-ink/60 py-0.5 md:py-1 cursor-pointer hover:text-ink transition-colors">
                     {l}
                   </div>
                 ))}
@@ -338,10 +335,10 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between border-t border-ink/[0.06] pt-5 gap-4">
-            <span className="font-sans text-[13px] text-ink/35">&copy; Kurate 2026</span>
+            <span className="font-sans text-sm text-ink/35">&copy; Kurate 2026</span>
             <div className="flex gap-3 items-center">
               {["Terms", "Privacy", "Data Controls"].map((l) => (
-                <span key={l} className="font-sans text-[13px] text-ink/35 cursor-pointer hover:text-ink/60 transition-colors">
+                <span key={l} className="font-sans text-sm text-ink/35 cursor-pointer hover:text-ink/60 transition-colors">
                   {l}
                 </span>
               ))}

@@ -81,10 +81,12 @@ export default function GroupPage() {
           </button>
 
           <div className="flex items-center gap-4 mb-6">
+            {/* Dynamic group color — runtime value, no static token */}
             <div
               className="w-12 h-12 flex items-center justify-center rounded-xl"
               style={{ backgroundColor: `${currentGroup.color}20` }}
             >
+              {/* Dynamic group color — runtime value, no static token */}
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: currentGroup.color }} />
             </div>
             <div>

@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
         variants={pageVariants}
         initial="hidden"
         animate="visible"
-        className="w-full max-w-[440px] px-8 relative z-10"
+        className="w-full max-w-[var(--container-auth)] px-8 relative z-10"
       >
         <div className="flex items-center gap-2 mb-12">
           <BrandStar s={20} />
@@ -64,7 +64,7 @@ export default function ResetPasswordPage() {
           </span>
         </div>
 
-        <h2 className="font-serif text-[32px] font-normal mb-1.5 tracking-tight">
+        <h2 className="font-serif text-3xl font-normal mb-1.5 tracking-tight">
           Set new password
         </h2>
         <p className="font-sans text-sm text-muted-foreground mb-8">
@@ -73,7 +73,7 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block mb-2 font-sans text-[11px] font-bold uppercase tracking-[0.08em] text-foreground">
+            <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
               New password
             </label>
             <Input
@@ -86,7 +86,7 @@ export default function ResetPasswordPage() {
             />
           </div>
           <div>
-            <label className="block mb-2 font-sans text-[11px] font-bold uppercase tracking-[0.08em] text-foreground">
+            <label className="block mb-2 font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
               Confirm password
             </label>
             <Input
@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
               required
             />
             {error && (
-              <p className="mt-1.5 font-sans text-[13px] text-destructive">
+              <p className="mt-1.5 font-sans text-sm text-destructive">
                 {error}
               </p>
             )}
