@@ -4,6 +4,8 @@ import Script from "next/script";
 
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
 import GoogleAnalyticsScripts from "@/app/_components/google-analytics";
 import SonnarToaster from "@/app/_components/sonner-toaster";
@@ -14,17 +16,22 @@ import { viewport } from "@/app/_config/viewport";
 
 export { metadata, viewport };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body
         className={`${dmSans.variable} ${dmMono.variable} bg-cream text-foreground font-sans antialiased`}>
-        {children}
-        <SonnarToaster />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+          <SonnarToaster />
+        </NextIntlClientProvider>
         <GoogleAnalyticsScripts />
         <SpeedInsights />
         <Analytics />

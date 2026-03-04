@@ -46,8 +46,6 @@
   --input: rgba(26, 26, 26, 0.1);
   --ring: #1A5C4B;
 
-  /* Typography (font-dm-sans / font-dm-mono are set by Next.js in layout) */
-  --font-serif: Georgia, "Times New Roman", serif;
 }
 
 @theme inline {
@@ -92,8 +90,4 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Typography */
-  --font-sans: var(--font-dm-sans);
-  --font-serif: var(--font-serif);
-  --font-mono: var(--font-dm-mono);
 }

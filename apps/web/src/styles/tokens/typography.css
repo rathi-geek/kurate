@@ -1,4 +1,14 @@
+/* font-dm-sans and font-dm-mono variables are injected by Next.js via layout.tsx className */
+:root {
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
 @theme inline {
+  /* Font Families */
+  --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-dm-mono);
+
   /* Typography Scale */
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;

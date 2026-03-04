@@ -40,17 +40,17 @@ interface VaultLibraryProps {
 type SourceFilter = "all" | "logged" | "discovered";
 type ContentTypeFilter = "all" | "articles" | "videos" | "podcasts";
 
-const SOURCE_PILL_KEYS: { value: SourceFilter; labelKey: string }[] = [
-  { value: "all", labelKey: "filter_all" },
-  { value: "logged", labelKey: "filter_logged" },
-  { value: "discovered", labelKey: "filter_discovered" },
+const SOURCE_PILL_KEYS = [
+  { value: "all" as SourceFilter, labelKey: "filter_all" as const },
+  { value: "logged" as SourceFilter, labelKey: "filter_logged" as const },
+  { value: "discovered" as SourceFilter, labelKey: "filter_discovered" as const },
 ];
 
-const CONTENT_PILL_KEYS: { value: ContentTypeFilter; labelKey: string }[] = [
-  { value: "all", labelKey: "filter_all" },
-  { value: "articles", labelKey: "filter_articles" },
-  { value: "videos", labelKey: "filter_videos" },
-  { value: "podcasts", labelKey: "filter_podcasts" },
+const CONTENT_PILL_KEYS = [
+  { value: "all" as ContentTypeFilter, labelKey: "filter_all" as const },
+  { value: "articles" as ContentTypeFilter, labelKey: "filter_articles" as const },
+  { value: "videos" as ContentTypeFilter, labelKey: "filter_videos" as const },
+  { value: "podcasts" as ContentTypeFilter, labelKey: "filter_podcasts" as const },
 ];
 
 function StarRating({ rating }: { rating: number }) {

@@ -302,9 +302,9 @@ export default function LandingPage() {
         <div className="container-page">
           <div className="flex flex-row items-start justify-evenly mb-[60px]">
             {[
-              { titleKey: "footer_company", linkKeys: ["footer_about", "footer_careers", "footer_blog", "footer_press"] as const },
-              { titleKey: "footer_product", linkKeys: ["footer_features", "footer_pricing", "footer_extension", "footer_mobile_app"] as const },
-              { titleKey: "footer_resources", linkKeys: ["footer_help", "footer_community", "footer_privacy", "footer_terms"] as const },
+              { titleKey: "footer_company" as const, linkKeys: ["footer_about", "footer_careers", "footer_blog", "footer_press"] as const },
+              { titleKey: "footer_product" as const, linkKeys: ["footer_features", "footer_pricing", "footer_extension", "footer_mobile_app"] as const },
+              { titleKey: "footer_resources" as const, linkKeys: ["footer_help", "footer_community", "footer_privacy", "footer_terms"] as const },
             ].map((col, i) => (
               <div key={i} className="text-center">
                 <h4 className="font-serif text-sm md:text-lg font-normal italic text-ink/40 mb-2.5 md:mb-4">{t(col.titleKey)}</h4>

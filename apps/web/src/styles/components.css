@@ -31,31 +31,5 @@
     padding: 1.5rem;
   }
 
-  /* Semantic state badges */
-  .badge-success {
-    background-color: var(--success-bg);
-    color: var(--success-foreground);
-    border-radius: var(--radius-badge);
-    padding: 0.125rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  .badge-warning {
-    background-color: var(--warning-bg);
-    color: var(--warning-foreground);
-    border-radius: var(--radius-badge);
-    padding: 0.125rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  .badge-info {
-    background-color: var(--info-bg);
-    color: var(--info-foreground);
-    border-radius: var(--radius-badge);
-    padding: 0.125rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
+  /* State badges — use badgeVariants from src/lib/variants.ts instead of these CSS classes */
 }
