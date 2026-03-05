@@ -1,5 +1,5 @@
 import type { ContentType } from "@/app/_libs/chat-types";
-import { MOCK_THREADS } from "@/app/_libs/mockThreadData";
+import { MOCK_THREADS } from "@/app/_mocks/mock-thread-data";
 
 export interface SharedContentItem {
   id: string;

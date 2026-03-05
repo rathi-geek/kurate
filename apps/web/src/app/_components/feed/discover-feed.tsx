@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { BrandSunburst } from "@/components/brand";
-import { MOCK_FEED_ITEMS, type FeedItem } from "@/app/_libs/mock-data";
+import { MOCK_FEED_ITEMS, type FeedItem } from "@/app/_mocks/mock-data";
 
 const CARD_STAGGER_MS = 80;
 const cardVariants = {

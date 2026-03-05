@@ -76,6 +76,6 @@ const t = useTranslations("namespace");        // from "next-intl"
 ## Full Reference
 
 → AGENTS.md (conventions, patterns, anti-patterns)
-→ src/styles/TOKENS.md (all token values)
+→ src/styles/tokens/ (colors.css, radius.css, typography.css, shadows.css, spacing.css, z-index.css)
 → src/lib/variants.ts (buttonVariants, badgeVariants, inputVariants)
 → src/app/_libs/constants/routes.ts (ROUTES)

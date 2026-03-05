@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ContentThread } from "@/app/_libs/chat-types";
-import { getOtherParticipants } from "@/app/_libs/mockThreadData";
+import { getOtherParticipants } from "@/app/_mocks/mock-thread-data";
 import { springGentle } from "@/app/_libs/utils/motion";
 
 interface ThreadHeaderProps {

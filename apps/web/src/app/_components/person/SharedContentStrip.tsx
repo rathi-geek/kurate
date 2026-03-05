@@ -1,6 +1,6 @@
 "use client";
 
-import type { SharedContentItem } from "@/app/_libs/mockPersonContent";
+import type { SharedContentItem } from "@/app/_mocks/mock-person-content";
 
 interface SharedContentStripProps {
   items: SharedContentItem[];

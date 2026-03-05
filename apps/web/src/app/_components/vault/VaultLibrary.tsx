@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import type { ContentType } from "@/app/_libs/chat-types";
-import { MOCK_ITEMS } from "@/app/_libs/mock-data";
+import { MOCK_ITEMS } from "@/app/_mocks/mock-data";
 
 interface VaultItem {
   id: string;

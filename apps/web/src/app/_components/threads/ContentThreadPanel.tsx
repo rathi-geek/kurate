@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ThreadHeader } from "./ThreadHeader";
 import { CommentList } from "./CommentList";
 import { CommentInput } from "./CommentInput";
-import { MOCK_THREADS, MOCK_THREAD_COMMENTS } from "@/app/_libs/mockThreadData";
+import { MOCK_THREADS, MOCK_THREAD_COMMENTS } from "@/app/_mocks/mock-thread-data";
 import { springHeavy } from "@/app/_libs/utils/motion";
 import type { ThreadComment } from "@/app/_libs/chat-types";
 

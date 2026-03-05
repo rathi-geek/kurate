@@ -27,7 +27,7 @@ pnpm db:migrate
 - **Supabase** — Postgres database + Auth. Client in `src/app/_libs/supabase/`
 - **shadcn/ui** — UI component library built on Radix UI
 - **Framer Motion** — All animations. Variants defined in component files
-- **Tailwind CSS v4** — Design tokens in src/styles/tokens/. Reference: src/styles/TOKENS.md
+- **Tailwind CSS v4** — Design tokens in src/styles/tokens/
 
 ## Code Conventions
 - **File naming:** kebab-case (`chat-bubble.tsx`, `user-profile.tsx`)
@@ -37,7 +37,7 @@ pnpm db:migrate
 - **TypeScript:** Strict mode enabled
 
 ## Design System
-- Token reference: src/styles/TOKENS.md
+- Token reference: src/styles/tokens/ (colors.css, radius.css, typography.css, shadows.css)
 - New components must use semantic color tokens (bg-primary, text-foreground) — never Tailwind defaults or hex values
 - CVA variants go in src/lib/variants.ts if reusable; local cva() otherwise
 - Cursor rules in .cursor/rules/ enforce this automatically
@@ -64,8 +64,7 @@ src/
     ├── base.css        # @layer base resets
     ├── components.css  # @layer components utilities
     ├── animations.css  # @keyframes
-    ├── globals.css     # Imports only — no styles
-    └── TOKENS.md       # Design token reference for developers
+    └── globals.css     # Imports only — no styles
 ```
 
 ## Git Workflow

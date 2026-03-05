@@ -63,7 +63,7 @@ Build for a seated user with a mouse, keyboard, and a viewport at least 768px wi
 
 ### Design Language
 - **shadcn/ui** base with Kurate brand customization
-- Design tokens live in `src/styles/tokens/` — always check `src/styles/TOKENS.md` before introducing a new color, radius, or shadow
+- Design tokens live in `src/styles/tokens/` — check the CSS files before introducing a new color, radius, or shadow
 - Brand colors: cream (background), ink (text), teal (primary), lavender (secondary), amber (accent)
 - Cards: `rounded-card` (12px) with `shadow-sm` at rest, `shadow-md` on hover
 - Buttons: `rounded-button` (10px)
@@ -121,4 +121,4 @@ When building any UI, pull from this palette. Never invent new values.
 | All borders | `border-border` |
 | Focus ring | `ring-ring` |
 
-Full token list: `src/styles/TOKENS.md`
+Full token list: `src/styles/tokens/` (colors.css, radius.css, typography.css, shadows.css)
