@@ -8,16 +8,20 @@ export const ROUTES = {
   DEMO: "/demo",
 
   AUTH: {
+    BASE: "/auth",
     LOGIN: "/auth/login",
     SIGNUP: "/auth/signup",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
+    CALLBACK: "/auth/callback",
   },
 
   APP: {
     CHAT: "/chat",
     PROFILE: "/profile",
     SHARED: "/shared",
+    GROUPS: "/groups",
+    DASHBOARD: "/dashboard",
     GROUP: (slug: string) => `/groups/${slug}`,
   },
 

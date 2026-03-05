@@ -18,7 +18,7 @@ You are working in the Kurate web app. Full conventions are in AGENTS.md. This f
 ❌ max-w-[800px]         → container-content
 ❌ shadow-[0_4px_6px...] → shadow-sm / shadow-md
 ❌ style={{ color, boxShadow, fontSize }}  → use className
-❌ href="/auth/login"    → ROUTES.AUTH.LOGIN
+❌ any hardcoded path string ("/chat", "/auth/login", "/groups", etc.) → always use ROUTES constant — in JSX, proxy.ts, route handlers, server actions, everywhere. If the path doesn't exist in ROUTES, add it first.
 ❌ <Link><Button>        → <Button asChild><Link href={ROUTES.x}>
 ❌ import Link from "next/link"  → from "@/i18n"
 ❌ useTranslations() in server component  → getTranslations()

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BfcacheGuard } from "./_components/bfcache-guard";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -9,5 +10,10 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      <BfcacheGuard />
+      {children}
+    </>
+  );
 }

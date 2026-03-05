@@ -55,8 +55,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith(ROUTES.APP.CHAT) ||
     pathname.startsWith(ROUTES.APP.PROFILE) ||
     pathname.startsWith(ROUTES.APP.SHARED) ||
-    pathname.startsWith("/groups") ||
-    pathname.startsWith("/dashboard");
+    pathname.startsWith(ROUTES.APP.GROUPS) ||
+    pathname.startsWith(ROUTES.APP.DASHBOARD);
 
   if (!bypassAuth && !user && isProtectedRoute) {
     const url = request.nextUrl.clone();
@@ -64,14 +64,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Auth routes: redirect to chat if already authenticated
-  // Exception: /auth/callback (needs to process) and /auth/reset-password (needs session to update password)
-  if (
-    user &&
-    pathname.startsWith("/auth") &&
-    pathname !== "/auth/callback" &&
-    pathname !== ROUTES.AUTH.RESET_PASSWORD
-  ) {
+  // Public-only routes: redirect to chat if already authenticated
+  // Covers landing page and all auth pages except callback + reset-password
+  const isPublicOnlyRoute =
+    pathname === ROUTES.HOME ||
+    (pathname.startsWith(ROUTES.AUTH.BASE) &&
+      pathname !== ROUTES.AUTH.CALLBACK &&
+      pathname !== ROUTES.AUTH.RESET_PASSWORD);
+
+  if (user && isPublicOnlyRoute) {
     const url = request.nextUrl.clone();
     url.pathname = ROUTES.APP.CHAT;
     return NextResponse.redirect(url);
