@@ -141,7 +141,10 @@
       "password_placeholder": "At least 8 characters",
       "submit": "Create Account",
       "already_have_account": "Already have an account?",
-      "log_in": "Log in"
+      "log_in": "Log in",
+      "error_general": "Something went wrong. Please try again.",
+      "email_sent_title": "Check your inbox",
+      "email_sent_message": "We sent a confirmation link to {email}."
     },
     "forgot_password": {
       "title": "Reset your password",

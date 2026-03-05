@@ -1,18 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { env } from "env";
+import { ROUTES } from "@/app/_libs/constants/routes";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const type = searchParams.get("type"); // "signup" | "recovery" etc.
 
   if (code) {
-    const response = NextResponse.redirect(
+    const redirectTo =
       type === "recovery"
-        ? `${origin}/auth/reset-password`
-        : `${origin}/chat`
-    );
+        ? `${origin}${ROUTES.AUTH.RESET_PASSWORD}`
+        : `${origin}${ROUTES.APP.CHAT}`;
+
+    const response = NextResponse.redirect(redirectTo);
 
     const supabase = createServerClient(
       env.NEXT_PUBLIC_SUPABASE_URL,
@@ -20,15 +22,7 @@ export async function GET(request: Request) {
       {
         cookies: {
           getAll() {
-            return (
-              request.headers
-                .get("cookie")
-                ?.split("; ")
-                .map((c) => {
-                  const [name, ...rest] = c.split("=");
-                  return { name: name ?? "", value: rest.join("=") };
-                }) ?? []
-            );
+            return request.cookies.getAll();
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) =>
@@ -46,7 +40,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // If code exchange fails or no code, redirect to login
   const { origin: o } = new URL(request.url);
-  return NextResponse.redirect(`${o}/auth/login`);
+  return NextResponse.redirect(`${o}${ROUTES.AUTH.LOGIN}`);
 }
