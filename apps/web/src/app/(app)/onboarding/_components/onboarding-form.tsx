@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
-import { Arrow, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import { Arrow, BrandLogo, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
@@ -95,10 +95,9 @@ export function OnboardingForm() {
           initial={prefersReducedMotion ? false : "hidden"}
           animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
-          className="mb-12 flex items-center gap-2"
+          className="mb-12"
         >
-          <span aria-hidden="true"><BrandStar s={20} /></span>
-          <span className="font-sans text-lg font-black tracking-tight">{tApp("name").toUpperCase()}</span>
+          <BrandLogo name={tApp("name")} s={24} />
         </motion.div>
 
         <motion.div
@@ -178,7 +177,7 @@ export function OnboardingForm() {
           <div className="pt-2">
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? (
-                <span className="inline-block animate-spin"><BrandStar s={14} /></span>
+                <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><BrandStar s={14} /></motion.span>
               ) : (
                 <>{t("submit")} <Arrow s={14} /></>
               )}

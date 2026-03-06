@@ -1,5 +1,5 @@
 @layer components {
-  /* Container — centered content wrapper */
+  /* ─── Layout Containers ───────────────────────────────────────────── */
   .container-content {
     width: 100%;
     max-width: var(--container-content);
@@ -14,22 +14,64 @@
     padding-inline: 1.5rem;
   }
 
-  /* Section spacing */
-  .section {
-    padding-block: 5rem;
+  .section    { padding-block: 5rem; }
+  .section-sm { padding-block: 2.5rem; }
+
+  /* ─── Tab Group — Linear-style pill container ─────────────────────── */
+  /*
+   * Usage:
+   *   <div class="tab-group">
+   *     <button class="tab">Tab A</button>
+   *     <button class="tab tab-active">Tab B</button>
+   *   </div>
+   */
+  .tab-group {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    background-color: var(--surface);
+    border-radius: var(--radius-pill);
   }
 
-  .section-sm {
-    padding-block: 2.5rem;
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    background-color: var(--brand-50);
+    color: var(--brand);
+    border: none;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+    white-space: nowrap;
   }
 
-  /* Card base */
+  .tab:hover:not(.tab-active) {
+    background-color: var(--brand-100);
+  }
+
+  .tab-active {
+    background-color: var(--brand);
+    color: var(--white);
+  }
+
+  .tab:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /* ─── Card ────────────────────────────────────────────────────────── */
   .card-base {
-    background-color: var(--card);
+    background-color: var(--surface-card);
     border-radius: var(--radius-card);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-default);
     padding: 1.5rem;
   }
 
-  /* State badges — use badgeVariants from src/lib/variants.ts instead of these CSS classes */
+  /* ─── State badges — use badgeVariants from src/lib/variants.ts ───── */
 }

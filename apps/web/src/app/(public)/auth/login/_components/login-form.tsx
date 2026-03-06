@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
-import { Arrow, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import { Arrow, BrandLogo, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
 import { GoogleIcon } from "@/components/icons";
 
 const springGentle = { type: "spring" as const, stiffness: 260, damping: 25 };
@@ -160,10 +160,9 @@ export function LoginForm() {
             initial={prefersReducedMotion ? false : "hidden"}
             animate={prefersReducedMotion ? undefined : "visible"}
             variants={fadeUp}
-            className="mb-12 flex items-center gap-2"
+            className="mb-12"
           >
-            <span aria-hidden="true"><BrandStar s={20} /></span>
-            <span className="font-sans text-lg font-black tracking-tight">{tApp("name").toUpperCase()}</span>
+            <BrandLogo name={tApp("name")} s={24} />
           </motion.div>
 
           <motion.div
@@ -205,7 +204,7 @@ export function LoginForm() {
             <div className="pt-2">
               <Button type="submit" disabled={loading || otpCode.length < 6} className="w-full">
                 {loading ? (
-                  <span className="inline-block animate-spin"><BrandStar s={14} /></span>
+                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><BrandStar s={14} /></motion.span>
                 ) : (
                   <>{t("otp_submit")} <Arrow s={14} /></>
                 )}
@@ -247,10 +246,9 @@ export function LoginForm() {
           initial={prefersReducedMotion ? false : "hidden"}
           animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
-          className="mb-12 flex items-center gap-2"
+          className="mb-12"
         >
-          <span aria-hidden="true"><BrandStar s={20} /></span>
-          <span className="font-sans text-lg font-black tracking-tight">{tApp("name").toUpperCase()}</span>
+          <BrandLogo name={tApp("name")} s={24} />
         </motion.div>
 
         <motion.div
@@ -294,18 +292,28 @@ export function LoginForm() {
           initial={prefersReducedMotion ? false : "hidden"}
           animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
-          className="mb-6 flex rounded-button bg-border/40 p-0.5"
+          className="relative mb-6 flex rounded-button bg-surface p-1"
         >
+          {/* Single always-mounted sliding pill — translates by its own width (= one tab) */}
+          <motion.span
+            aria-hidden="true"
+            className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-[calc(var(--radius-button)-2px)] bg-primary"
+            initial={false}
+            animate={{ x: method === LoginMethod.Password ? "0%" : "100%" }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { type: "spring", stiffness: 500, damping: 40, mass: 0.6 }
+            }
+          />
           {([LoginMethod.Password, LoginMethod.MagicLink] as LoginMethod[]).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMethod(m)}
               className={cn(
-                "flex-1 rounded-[calc(var(--radius-button)-2px)] px-3 py-1.5 font-sans text-sm transition-all",
-                method === m
-                  ? "bg-card text-foreground shadow-xs font-medium"
-                  : "text-muted-foreground hover:text-foreground"
+                "relative z-10 flex-1 px-4 py-1.5 font-sans text-sm font-medium transition-colors duration-200",
+                method === m ? "text-primary-foreground" : "text-muted-foreground hover:text-brand"
               )}
             >
               {m === LoginMethod.Password ? t("tab_password") : t("tab_magic_link")}
@@ -365,9 +373,9 @@ export function LoginForm() {
               <div className="pt-2">
                 <Button type="submit" disabled={loading} className="w-full">
                   {loading ? (
-                    <span className="inline-block animate-spin">
+                    <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block">
                       <BrandStar s={14} />
-                    </span>
+                    </motion.span>
                   ) : (
                     <>
                       {t("submit")} <Arrow s={14} />
@@ -407,7 +415,7 @@ export function LoginForm() {
                 <div className="pt-2">
                   <Button type="submit" disabled={magicLoading} className="w-full">
                     {magicLoading ? (
-                      <span className="inline-block animate-spin"><BrandStar s={14} /></span>
+                      <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><BrandStar s={14} /></motion.span>
                     ) : (
                       <>{t("magic_link_submit")} <Arrow s={14} /></>
                     )}

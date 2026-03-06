@@ -8,7 +8,7 @@ interface ArrowProps extends IconProps {
   d?: "r" | "l" | "u" | "d";
 }
 
-export function BrandStar({ s = 20, c = "#1A1A1A", className }: IconProps) {
+export function BrandStar({ s = 20, c = "currentColor", className }: IconProps) {
   return (
     <svg
       width={s}
@@ -79,9 +79,18 @@ export function BrandSunburst({ s = 40, c = "#1A1A1A", className }: IconProps) {
   );
 }
 
+export function BrandLogo({ name, s = 24, className }: { name: string; s?: number; className?: string }) {
+  return (
+    <div className={`flex items-center gap-2${className ? ` ${className}` : ""}`}>
+      <BrandConcentricArch s={s} className="text-ink" />
+      <span className="font-sans font-black text-xl text-ink tracking-tight">{name}</span>
+    </div>
+  );
+}
+
 export function BrandConcentricArch({
   s = 40,
-  c = "#1A1A1A",
+  c = "currentColor",
   className,
 }: IconProps) {
   return (
@@ -103,7 +112,7 @@ export function BrandConcentricArch({
 
 export function Arrow({
   s = 18,
-  c = "#1A1A1A",
+  c = "currentColor",
   d = "r",
   className,
 }: ArrowProps) {

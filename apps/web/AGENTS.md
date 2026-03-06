@@ -35,22 +35,77 @@ src/app/
 This project uses **Tailwind CSS v4** with custom tokens in `src/styles/tokens/`.
 Tokens are CSS custom properties in `:root`, mapped to Tailwind via `@theme inline`.
 
-### Colors
+### Color System
 
-| Situation | Use |
-|-----------|-----|
-| Page background / body text | `bg-background` / `text-foreground` |
-| Primary actions | `bg-primary text-primary-foreground` |
-| Subtle / muted text | `text-muted-foreground` |
-| Cards | `bg-card text-card-foreground` |
+Tokens live in `src/styles/tokens/colors.css`. All raw values are in `:root`; Tailwind classes come from `@theme inline`. **Never use hex values or Tailwind color primitives (`text-gray-600`, `bg-blue-500`) anywhere.**
+
+#### Color Families
+
+**1. Surfaces — warm cream scale**
+```
+bg-background        #F5F0E8   warm cream page background
+bg-surface           #FAF7F2   sections, sidebars, tab containers
+bg-card              #FFFFFF   cards, inputs, popovers, modals
+```
+Layer rule: `background` → `surface` (slightly lighter) → `card` (white). Never put a card on a card; never put a `bg-background` inside a `bg-card`.
+
+**2. Text — deep blue scale (darkest is `#143D60`)**
+```
+text-foreground      #2B5B7E   default body text (use for all prose)
+text-muted-foreground #5B7D99  labels, captions, secondary copy
+                                — use for placeholders, helper text
+text-ink             #143D60   headings, logo, max-contrast moments
+                                — use sparingly, not for body text
+```
+Rule: never reach for a darker blue than `text-ink` (`#143D60`). If something looks too light, first try `text-ink`; if it still needs weight, use `font-bold`, not a darker color.
+
+**3. Brand — green scale**
+```
+bg-primary / text-primary          #1A5C4B   CTAs, active states, focus rings
+bg-brand-50 / text-brand-50        #EAF3EF   tab default bg, pill tints
+bg-brand-100                       #C5DDD4   tab hover, badge backgrounds
+bg-brand-200                       #8BBDAE   decorative accents only
+text-primary (on bg-primary)       use text-primary-foreground (#FFFFFF)
+```
+
+#### Semantic Tokens — use these in all app UI
+
+| Situation | Class(es) |
+|-----------|-----------|
+| Page background | `bg-background` |
+| Section / sidebar background | `bg-surface` |
+| Card / input / modal background | `bg-card` |
+| Default body text | `text-foreground` |
+| Headings, logo text | `text-ink` or `font-serif` + `text-ink` |
+| Secondary / helper text | `text-muted-foreground` |
+| Primary buttons / active pills | `bg-primary text-primary-foreground` |
+| Outline / ghost buttons hover | `hover:bg-surface hover:text-foreground` |
+| Tab container background | `bg-surface` |
+| Active tab pill | `bg-primary text-primary-foreground` |
+| Inactive tab text | `text-muted-foreground hover:text-brand` |
 | All borders | `border-border` |
-| Focus rings | `ring-ring` |
-| Errors | `bg-destructive text-destructive-foreground` |
+| Subtle borders (dividers) | `border-border/50` |
+| Focus rings | `ring-ring` (= brand green) |
+| Destructive / error | `bg-destructive text-destructive-foreground` |
+| Error text inline | `text-destructive` |
 | Success | `bg-success-bg text-success-foreground` |
 | Warning | `bg-warning-bg text-warning-foreground` |
 | Info | `bg-info-bg text-info-foreground` |
 
-Brand colors (`bg-cream`, `bg-ink`, `bg-teal`, `bg-slate`, `bg-teal-light`, `bg-slate-subtle`) are for **brand moments only** — landing page, logo areas, hero sections. Use semantic tokens for all app UI. Primary = teal; secondary = slate (#3B4953).
+#### Brand-moment colors (landing page / logo areas only)
+`bg-cream`, `text-ink`, `bg-teal`, `text-teal`, `bg-slate`, `bg-teal-light`, `bg-slate-subtle`, `bg-amber` — **do not use in app UI components**. For app UI always use semantic tokens above.
+
+#### Color anti-patterns
+```
+❌ text-gray-600              → text-muted-foreground
+❌ bg-white                   → bg-card
+❌ bg-gray-50                 → bg-surface
+❌ text-[#143d60]             → text-ink
+❌ bg-[#1a5c4b]               → bg-primary
+❌ border-gray-200            → border-border
+❌ hover:bg-accent            → hover:bg-surface (buttons) or hover:bg-brand-50 (pills)
+❌ text-black / text-white    → text-ink / text-primary-foreground
+```
 
 ### Border Radius — named tokens only
 
@@ -172,8 +227,10 @@ Does NOT require `"use client"`: `getTranslations`, `getMessages`, `getLocale`, 
 ## Anti-Patterns
 
 ```
-❌ bg-[#1A5C4B]              → bg-teal
+❌ bg-[#1A5C4B]              → bg-primary
 ❌ text-gray-600             → text-muted-foreground
+❌ bg-white                  → bg-card
+❌ text-black                → text-ink
 ❌ rounded-2xl               → rounded-card
 ❌ max-w-[800px]             → container-content
 ❌ style={{ boxShadow }}     → shadow-sm / shadow-md

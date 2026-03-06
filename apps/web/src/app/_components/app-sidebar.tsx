@@ -64,7 +64,7 @@ export function AppSidebar({
         {/* Logo + collapse toggle */}
         <div className="flex min-w-0 items-center gap-2 px-3 py-5">
           <div className="ml-1 shrink-0">
-            <BrandConcentricArch s={20} c="#1A1A1A" />
+            <BrandConcentricArch s={20} className="text-ink" />
           </div>
           {!collapsed && (
             <span className="text-ink flex-1 truncate font-sans text-lg font-black">
@@ -308,7 +308,7 @@ export function AppSidebar({
               {/* Header */}
               <div className="flex shrink-0 items-center gap-2 px-4 py-5">
                 <div className="ml-1 shrink-0">
-                  <BrandConcentricArch s={20} c="#1A1A1A" />
+                  <BrandConcentricArch s={20} className="text-ink" />
                 </div>
                 <span className="text-ink flex-1 truncate font-sans text-lg font-black">
                   Kurate

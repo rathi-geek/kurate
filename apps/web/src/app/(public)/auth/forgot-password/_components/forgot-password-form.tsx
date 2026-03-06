@@ -7,7 +7,7 @@ import { Link } from "@/i18n";
 import { env } from "env";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
-import { Arrow, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import { Arrow, BrandLogo, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -60,9 +60,8 @@ export function ForgotPasswordForm() {
           animate={prefersReducedMotion ? undefined : "visible"}
           className="w-full"
         >
-          <div className="mb-12 flex items-center gap-2">
-            <span aria-hidden="true"><BrandStar s={20} /></span>
-            <span className="font-sans text-lg font-black tracking-tight">{tApp("name").toUpperCase()}</span>
+          <div className="mb-12">
+            <BrandLogo name={tApp("name")} s={24} />
           </div>
 
           <AnimatePresence mode="wait">
