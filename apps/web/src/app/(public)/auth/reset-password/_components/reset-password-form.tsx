@@ -46,7 +46,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-cream">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
       <div aria-hidden="true">
         <FloatDeco top={50} right={50} opacity={0.04}>
           <BrandSunburst s={100} />

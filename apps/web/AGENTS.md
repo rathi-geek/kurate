@@ -50,7 +50,7 @@ Tokens are CSS custom properties in `:root`, mapped to Tailwind via `@theme inli
 | Warning | `bg-warning-bg text-warning-foreground` |
 | Info | `bg-info-bg text-info-foreground` |
 
-Brand colors (`bg-cream`, `bg-ink`, `bg-teal`, `bg-lavender`, `bg-amber`) are for **brand moments only** — landing page, logo areas, hero sections. Use semantic tokens for all app UI.
+Brand colors (`bg-cream`, `bg-ink`, `bg-teal`, `bg-slate`, `bg-teal-light`, `bg-slate-subtle`) are for **brand moments only** — landing page, logo areas, hero sections. Use semantic tokens for all app UI. Primary = teal; secondary = slate (#3B4953).
 
 ### Border Radius — named tokens only
 

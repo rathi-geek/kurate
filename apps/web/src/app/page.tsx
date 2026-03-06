@@ -33,9 +33,9 @@ const TESTIMONIALS = [
 ];
 
 const FEATURE_KEYS = [
-  { icon: "arch", bg: "bg-amber/20", titleKey: "feature_1_title", descKey: "feature_1_desc" },
-  { icon: "star", bg: "bg-lavender/30", titleKey: "feature_2_title", descKey: "feature_2_desc" },
-  { icon: "sunburst", bg: "bg-teal/20", titleKey: "feature_3_title", descKey: "feature_3_desc" },
+  { icon: "arch", bg: "bg-teal/20", titleKey: "feature_1_title", descKey: "feature_1_desc" },
+  { icon: "star", bg: "bg-slate-subtle", titleKey: "feature_2_title", descKey: "feature_2_desc" },
+  { icon: "sunburst", bg: "bg-accent", titleKey: "feature_3_title", descKey: "feature_3_desc" },
 ] as const;
 
 const STATS_PEOPLE = [
@@ -54,7 +54,7 @@ export default function LandingPage() {
       {/* Announcement Banner */}
       <div className="bg-teal text-white text-center py-3 px-4 text-sm font-medium">
         {t("announcement")}{" "}
-        <Link href={ROUTES.AUTH.SIGNUP} className="underline font-semibold hover:opacity-80">
+        <Link href={ROUTES.AUTH.LOGIN} className="underline font-semibold hover:opacity-80">
           {t("join_now")}
         </Link>
       </div>
@@ -81,7 +81,7 @@ export default function LandingPage() {
             {tNav("log_in")}
           </Link>
           <Button asChild size="sm">
-            <Link href={ROUTES.AUTH.SIGNUP}>{tNav("get_early_access")}</Link>
+            <Link href={ROUTES.AUTH.LOGIN}>{tNav("get_early_access")}</Link>
           </Button>
         </div>
       </nav>
@@ -122,7 +122,7 @@ export default function LandingPage() {
             className="flex gap-3 justify-center flex-wrap"
           >
             <Button asChild size="lg">
-              <Link href={ROUTES.AUTH.SIGNUP}>{t("get_started")}</Link>
+              <Link href={ROUTES.AUTH.LOGIN}>{t("get_started")}</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link href={ROUTES.AUTH.LOGIN}>{t("log_in")}</Link>
@@ -299,7 +299,7 @@ export default function LandingPage() {
             </h2>
             <div className="flex gap-3 justify-center flex-wrap">
               <Button asChild size="lg">
-                <Link href={ROUTES.AUTH.SIGNUP}>{t("get_started")}</Link>
+                <Link href={ROUTES.AUTH.LOGIN}>{t("get_started")}</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
                 <Link href={ROUTES.AUTH.LOGIN}>{t("log_in")}</Link>

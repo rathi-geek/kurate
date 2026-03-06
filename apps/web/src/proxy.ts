@@ -51,30 +51,43 @@ export async function proxy(request: NextRequest) {
     env.NODE_ENV === "development" && env.BYPASS_AUTH === "true";
 
   const pathname = request.nextUrl.pathname;
-  const isProtectedRoute =
+
+  // App routes (require auth + completed onboarding)
+  const isAppRoute =
     pathname.startsWith(ROUTES.APP.CHAT) ||
     pathname.startsWith(ROUTES.APP.PROFILE) ||
     pathname.startsWith(ROUTES.APP.SHARED) ||
     pathname.startsWith(ROUTES.APP.GROUPS) ||
     pathname.startsWith(ROUTES.APP.DASHBOARD);
 
+  // All protected routes (require auth)
+  const isProtectedRoute = isAppRoute || pathname.startsWith(ROUTES.APP.ONBOARDING);
+
+  // Not logged in → login
   if (!bypassAuth && !user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = ROUTES.AUTH.LOGIN;
     return NextResponse.redirect(url);
   }
 
-  // Public-only routes: redirect to chat if already authenticated
-  // Covers landing page and all auth pages except callback + reset-password
-  const isPublicOnlyRoute =
-    pathname === ROUTES.HOME ||
-    (pathname.startsWith(ROUTES.AUTH.BASE) &&
-      pathname !== ROUTES.AUTH.CALLBACK &&
-      pathname !== ROUTES.AUTH.RESET_PASSWORD);
-
-  if (user && isPublicOnlyRoute) {
+  // Logged in but not yet onboarded → onboarding (only from app routes, not from /onboarding itself)
+  if (user && isAppRoute && user.user_metadata?.onboarded !== true) {
     const url = request.nextUrl.clone();
-    url.pathname = ROUTES.APP.CHAT;
+    url.pathname = ROUTES.APP.ONBOARDING;
+    return NextResponse.redirect(url);
+  }
+
+  // Auth pages: redirect logged-in users to the right destination
+  // Landing page (/) is intentionally NOT in this list — authenticated users can still visit it
+  const isAuthRoute =
+    pathname.startsWith(ROUTES.AUTH.BASE) &&
+    pathname !== ROUTES.AUTH.CALLBACK &&
+    pathname !== ROUTES.AUTH.RESET_PASSWORD;
+
+  if (user && isAuthRoute) {
+    const url = request.nextUrl.clone();
+    const isOnboarded = user.user_metadata?.onboarded === true;
+    url.pathname = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
     return NextResponse.redirect(url);
   }
 

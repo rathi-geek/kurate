@@ -10,7 +10,6 @@ export const ROUTES = {
   AUTH: {
     BASE: "/auth",
     LOGIN: "/auth/login",
-    SIGNUP: "/auth/signup",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
     CALLBACK: "/auth/callback",
@@ -22,6 +21,7 @@ export const ROUTES = {
     SHARED: "/shared",
     GROUPS: "/groups",
     DASHBOARD: "/dashboard",
+    ONBOARDING: "/onboarding",
     GROUP: (slug: string) => `/groups/${slug}`,
   },
 

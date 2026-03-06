@@ -88,15 +88,15 @@ export default function ProfilePage() {
             </p>
             <div className="grid grid-cols-3 gap-4 p-5 bg-card border rounded-card">
               <div className="text-center">
-                <div className="text-2xl font-bold text-teal-500">12</div>
+                <div className="text-2xl font-bold text-primary">12</div>
                 <div className="font-mono text-xs text-muted-foreground uppercase mt-1">Saved</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-lavender-dark">8</div>
+                <div className="text-2xl font-bold text-secondary">8</div>
                 <div className="font-mono text-xs text-muted-foreground uppercase mt-1">Read</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-amber-500">5</div>
+                <div className="text-2xl font-bold text-slate">5</div>
                 <div className="font-mono text-xs text-muted-foreground uppercase mt-1">Shared</div>
               </div>
             </div>
