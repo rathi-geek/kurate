@@ -57,11 +57,9 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5 mt-1" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <BrandStar
-          key={i}
-          s={10}
-          c={i <= rating ? "#F59E0B" : "#E5E7EB"}
-        />
+        <span key={i} className={i <= rating ? "text-amber" : "text-border"}>
+          <BrandStar s={10} c="currentColor" />
+        </span>
       ))}
     </div>
   );
@@ -161,10 +159,10 @@ export function VaultLibrary({
     if (!panelMode) return null;
     return (
       <div className="p-5">
-        <p className="font-mono text-xs font-bold uppercase tracking-widest text-ink/30">
+        <p className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
           {t("title")}
         </p>
-        <p className="font-sans text-xs text-ink/40 mt-2">{t("loading")}</p>
+        <p className="font-sans text-xs text-muted-foreground mt-2">{t("loading")}</p>
       </div>
     );
   }
@@ -188,10 +186,10 @@ export function VaultLibrary({
   return (
     <div className={panelMode ? "p-5 space-y-4" : "mt-8 space-y-4"}>
       <div className="flex items-center justify-between">
-        <p className="font-mono text-xs font-bold uppercase tracking-widest text-ink/30">
+        <p className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
           {t("title")}
         </p>
-        <span className="font-mono text-xs text-ink/20">{t("items_count", { count: filteredItems.length })}</span>
+        <span className="font-mono text-xs text-muted-foreground">{t("items_count", { count: filteredItems.length })}</span>
       </div>
 
       {/* Filter bar */}
@@ -202,10 +200,10 @@ export function VaultLibrary({
               key={value}
               type="button"
               onClick={() => setSourceFilter(value)}
-              className={`px-3 py-1.5 rounded-full font-sans text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-badge font-sans text-xs font-medium transition-colors ${
                 sourceFilter === value
-                  ? "bg-ink text-white"
-                  : "bg-ink/5 text-ink/60 hover:bg-ink/10"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface text-muted-foreground hover:bg-brand-50"
               }`}
             >
               {t(labelKey)}
@@ -218,10 +216,10 @@ export function VaultLibrary({
               key={value}
               type="button"
               onClick={() => setContentTypeFilter(value)}
-              className={`px-3 py-1.5 rounded-full font-sans text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-badge font-sans text-xs font-medium transition-colors ${
                 contentTypeFilter === value
-                  ? "bg-ink text-white"
-                  : "bg-ink/5 text-ink/60 hover:bg-ink/10"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface text-muted-foreground hover:bg-brand-50"
               }`}
             >
               {t(labelKey)}
@@ -234,7 +232,7 @@ export function VaultLibrary({
         {filteredItems.map((item) => (
           <div
             key={item.id}
-            className="relative rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-shadow group"
+            className="relative rounded-card border border-border bg-card overflow-hidden hover:shadow-md transition-shadow group"
           >
             <button
               type="button"
@@ -250,21 +248,13 @@ export function VaultLibrary({
               ) : (
                 <div className="w-full h-[120px] flex items-center justify-center bg-muted">
                   <span
-                    className="font-mono text-xs font-bold uppercase px-2 py-1 rounded-full"
-                    style={{
-                      backgroundColor:
-                        item.content_type === "video"
-                          ? "#D8C9F020"
-                          : item.content_type === "podcast"
-                            ? "#F0C27A20"
-                            : "#1A5C4B15",
-                      color:
-                        item.content_type === "video"
-                          ? "#7C3AED"
-                          : item.content_type === "podcast"
-                            ? "#B8860B"
-                            : "#1A5C4B",
-                    }}
+                    className={`font-mono text-xs font-bold uppercase px-2 py-1 rounded-badge ${
+                      item.content_type === "video"
+                        ? "bg-info-bg text-info-foreground"
+                        : item.content_type === "podcast"
+                          ? "bg-warning-bg text-warning-foreground"
+                          : "bg-brand-50 text-primary"
+                    }`}
                   >
                     {item.content_type}
                   </span>
@@ -282,7 +272,7 @@ export function VaultLibrary({
                     {(item.tags ?? []).slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className="font-mono text-xs text-ink/50 bg-ink/5 px-1.5 py-0.5 rounded"
+                        className="font-mono text-xs text-muted-foreground bg-surface px-1.5 py-0.5 rounded"
                       >
                         {tag}
                       </span>

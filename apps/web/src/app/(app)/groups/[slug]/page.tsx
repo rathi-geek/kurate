@@ -75,7 +75,7 @@ export default function GroupPage() {
           <button
             type="button"
             onClick={() => router.push(ROUTES.APP.CHAT)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 rounded-badge px-2 py-1 hover:bg-surface transition-colors"
             aria-label="Back to home"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -87,58 +87,76 @@ export default function GroupPage() {
           <div className="flex items-center gap-4 mb-6">
             {/* Dynamic group color — runtime value, no static token */}
             <div
-              className="w-12 h-12 flex items-center justify-center rounded-xl"
+              className="w-12 h-12 flex items-center justify-center rounded-card"
               style={{ backgroundColor: `${currentGroup.color}20` }}
             >
               {/* Dynamic group color — runtime value, no static token */}
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: currentGroup.color }} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{currentGroup.name}</h1>
+              <h1 className="font-serif text-3xl font-normal tracking-tight text-ink">{currentGroup.name}</h1>
               <p className="text-sm text-muted-foreground">{currentGroup.members} members</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex -space-x-2">
-              {members.slice(0, 5).map((m) => (
+          <div className="mb-8">
+            <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              Members
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {members.slice(0, 5).map((m) => (
+                  <div
+                    key={m.handle}
+                    className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold rounded-full border-2 border-background"
+                  >
+                    {m.name[0]}
+                  </div>
+                ))}
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {members.map((m) => m.name).join(", ")}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              Content
+            </p>
+            <div className="space-y-4">
+              {MOCK_GROUP_CONTENT.map((item) => (
                 <div
-                  key={m.handle}
-                  className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold rounded-full border-2 border-background"
+                  key={item.id}
+                  className="p-4 bg-card border rounded-card hover:bg-surface transition-colors cursor-pointer"
                 >
-                  {m.name[0]}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-badge font-medium capitalize ${
+                        item.contentType === "video"
+                          ? "bg-info-bg text-info-foreground"
+                          : item.contentType === "podcast"
+                            ? "bg-warning-bg text-warning-foreground"
+                            : "bg-brand-50 text-primary"
+                      }`}
+                    >
+                      {item.contentType}
+                    </span>
+                    {item.readTime && (
+                      <span className="text-xs text-muted-foreground">{item.readTime}</span>
+                    )}
+                  </div>
+                  <h3 className="font-medium mb-1 hover:text-primary transition-colors cursor-pointer">{item.title}</h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{item.source}</span>
+                    <span>·</span>
+                    <span>Shared by {item.sharedBy}</span>
+                    <span>·</span>
+                    <span>{item.timeLabel}</span>
+                  </div>
                 </div>
               ))}
             </div>
-            <span className="text-sm text-muted-foreground">
-              {members.map((m) => m.name).join(", ")}
-            </span>
-          </div>
-
-          <div className="space-y-4">
-            {MOCK_GROUP_CONTENT.map((item) => (
-              <div
-                key={item.id}
-                className="p-4 bg-card border rounded-xl hover:bg-accent/50 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs px-2 py-1 bg-secondary rounded-full capitalize">
-                    {item.contentType}
-                  </span>
-                  {item.readTime && (
-                    <span className="text-xs text-muted-foreground">{item.readTime}</span>
-                  )}
-                </div>
-                <h3 className="font-medium mb-1">{item.title}</h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{item.source}</span>
-                  <span>·</span>
-                  <span>Shared by {item.sharedBy}</span>
-                  <span>·</span>
-                  <span>{item.timeLabel}</span>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </main>

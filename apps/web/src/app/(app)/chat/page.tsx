@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { AppSidebar } from "@/app/_components/app-sidebar";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { ChatBubble } from "@/app/_components/chat/chat-bubble";
@@ -19,7 +20,6 @@ import type { FeedItem } from "@/app/_mocks/mock-data";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import { MOCK_THREADS } from "@/app/_mocks/mock-thread-data";
 import { createClient } from "@/app/_libs/supabase/client";
-import { springSnappy } from "@/app/_libs/utils/motion";
 import type { ChatTab } from "@/app/_libs/chat-types";
 
 interface Message {
@@ -40,6 +40,7 @@ export default function ChatPage() {
 function ChatPageInner() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
+  const t = useTranslations("chat");
   const {
     activeThreadId,
     isFullScreen,
@@ -59,6 +60,7 @@ function ChatPageInner() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [vaultRefreshKey, setVaultRefreshKey] = useState(0);
+  const [vaultPulse, setVaultPulse] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [readerItem, setReaderItem] = useState<FeedItem | null>(null);
@@ -126,6 +128,7 @@ function ChatPageInner() {
       { onConflict: "user_id,url" }
     );
     setVaultRefreshKey((k) => k + 1);
+    setVaultPulse(true);
   }
 
   const handleSend = useCallback(
@@ -162,6 +165,7 @@ function ChatPageInner() {
               );
               if (!error) {
                 setVaultRefreshKey((k) => k + 1);
+                setVaultPulse(true);
                 saved = true;
               }
             }
@@ -302,28 +306,41 @@ function ChatPageInner() {
           className={`flex-1 flex flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}
         >
           <div className="shrink-0 hidden md:flex items-center justify-center py-3 border-b bg-background">
-            <div className="relative inline-flex bg-muted rounded-full p-[3px]">
+            <div className="relative flex rounded-button bg-surface p-1 min-w-[220px]">
+              <motion.span
+                aria-hidden="true"
+                className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-[calc(var(--radius-button)-2px)] bg-primary"
+                initial={false}
+                animate={{ x: activeTab === "discovering" ? "0%" : "100%" }}
+                transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40, mass: 0.6 }}
+              />
               {(["discovering", "logging"] as ChatTab[]).map((tab) => (
                 <button
                   key={tab}
-                  onClick={(e) => { e.stopPropagation(); setActiveTab(tab); }}
-                  className="relative px-5 py-1.5 cursor-pointer min-h-[44px]"
                   type="button"
+                  onClick={(e) => { e.stopPropagation(); setActiveTab(tab); }}
+                  className={`relative z-10 flex-1 px-5 py-2 text-center font-sans text-[13px] font-semibold transition-colors duration-200 ${
+                    activeTab === tab ? "text-primary-foreground" : "text-muted-foreground hover:text-brand"
+                  }`}
                 >
-                  {activeTab === tab && (
-                    <motion.div
-                      layoutId={prefersReducedMotion ? undefined : "tab-pill"}
-                      className="absolute inset-0 bg-background rounded-full shadow-sm"
-                      transition={springSnappy}
-                    />
+                  {tab === "discovering" ? t("tab_discovering") : t("tab_logging")}
+                  {tab === "logging" && (
+                    <AnimatePresence>
+                      {vaultPulse && (
+                        <motion.span
+                          key="vault-plus"
+                          initial={{ opacity: 1, y: 0, scale: 1 }}
+                          animate={{ opacity: 0, y: -18, scale: 0.8 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+                          onAnimationComplete={() => setVaultPulse(false)}
+                          className="absolute -top-1 -right-4 font-mono text-[10px] font-bold text-primary-foreground pointer-events-none"
+                        >
+                          +1
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   )}
-                  <span
-                    className={`relative z-10 text-sm font-medium transition-colors ${
-                      activeTab === tab ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {tab === "discovering" ? "Discovering" : "Logging"}
-                  </span>
                 </button>
               ))}
             </div>
@@ -373,7 +390,7 @@ function ChatPageInner() {
                               key={t.id}
                               type="button"
                               onClick={() => openThread(t.id)}
-                              className="w-full text-left p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
+                              className="w-full text-left p-3 rounded-card border border-border bg-card hover:bg-surface transition-colors"
                             >
                               <p className="font-sans text-sm font-semibold text-foreground truncate">
                                 {t.contentTitle ?? "Untitled"}
@@ -403,17 +420,17 @@ function ChatPageInner() {
                           <motion.span
                             animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8 }}
-                            className="w-2 h-2 bg-muted-foreground rounded-full"
+                            className="w-2 h-2 bg-primary/40 rounded-full"
                           />
                           <motion.span
                             animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
-                            className="w-2 h-2 bg-muted-foreground rounded-full"
+                            className="w-2 h-2 bg-primary/40 rounded-full"
                           />
                           <motion.span
                             animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
-                            className="w-2 h-2 bg-muted-foreground rounded-full"
+                            className="w-2 h-2 bg-primary/40 rounded-full"
                           />
                         </motion.div>
                       )}

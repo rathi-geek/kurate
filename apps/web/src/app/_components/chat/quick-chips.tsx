@@ -51,7 +51,7 @@ export function QuickChips({ onSelect, visible }: QuickChipsProps) {
               key={prompt}
               type="button"
               variants={chipVariants}
-              className="border border-ink/15 font-sans text-sm font-medium text-ink/60 px-4 py-2 rounded-full hover:border-teal hover:text-teal transition-all"
+              className="border border-border font-sans text-sm font-medium text-muted-foreground px-4 py-2 rounded-full hover:border-primary hover:text-primary transition-all"
               onClick={() => onSelect(prompt)}
             >
               {label}
