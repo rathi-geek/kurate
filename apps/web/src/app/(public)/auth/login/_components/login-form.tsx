@@ -101,7 +101,12 @@ export function LoginForm() {
       await supabase.auth.signInWithPassword({ email, password });
 
     if (!signInError) {
-      const isOnboarded = signInData.user?.user_metadata?.onboarded === true;
+      const user = signInData.user;
+      if (user?.user_metadata?.role === "admin") {
+        router.replace(ROUTES.ADMIN.DASHBOARD);
+        return;
+      }
+      const isOnboarded = user?.user_metadata?.onboarded === true;
       router.replace(isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING);
       return;
     }
@@ -121,6 +126,10 @@ export function LoginForm() {
       return;
     }
 
+    if (signUpData.user?.user_metadata?.role === "admin") {
+      router.replace(ROUTES.ADMIN.DASHBOARD);
+      return;
+    }
     router.replace(ROUTES.APP.ONBOARDING);
   }
 
@@ -142,6 +151,11 @@ export function LoginForm() {
       return;
     }
 
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser?.user_metadata?.role === "admin") {
+      router.replace(ROUTES.ADMIN.DASHBOARD);
+      return;
+    }
     router.replace(ROUTES.APP.ONBOARDING);
   }
 
@@ -154,7 +168,7 @@ export function LoginForm() {
           </FloatDeco>
         </div>
 
-        <main id="main-content" className="relative z-10 w-full max-w-[var(--container-auth)] px-8">
+        <main id="main-content" className="relative z-10 w-full max-w-auth px-8">
           <motion.div
             custom={0}
             initial={prefersReducedMotion ? false : "hidden"}
@@ -240,7 +254,7 @@ export function LoginForm() {
         </FloatDeco>
       </div>
 
-      <main id="main-content" className="relative z-10 w-full max-w-[var(--container-auth)] px-8">
+      <main id="main-content" className="relative z-10 w-full max-w-auth px-8">
         <motion.div
           custom={0}
           initial={prefersReducedMotion ? false : "hidden"}

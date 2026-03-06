@@ -35,8 +35,12 @@ export async function GET(request: NextRequest) {
         redirectPath = ROUTES.AUTH.RESET_PASSWORD;
       } else {
         const { data: { user } } = await supabase.auth.getUser();
-        const isOnboarded = user?.user_metadata?.onboarded === true;
-        redirectPath = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
+        if (user?.user_metadata?.role === "admin") {
+          redirectPath = ROUTES.ADMIN.DASHBOARD;
+        } else {
+          const isOnboarded = user?.user_metadata?.onboarded === true;
+          redirectPath = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
+        }
       }
 
       const response = NextResponse.redirect(`${origin}${redirectPath}`);

@@ -200,6 +200,24 @@
       "error_mismatch": "Passwords do not match."
     }
   },
+  "admin": {
+    "nav": {
+      "brand": "Admin",
+      "dashboard": "Dashboard",
+      "users": "Users"
+    },
+    "dashboard": {
+      "title": "Analytics",
+      "total_users": "Total users",
+      "total_logged_items": "Logged items",
+      "recent_signups": "Recent signups (7 days)",
+      "error_load": "Could not load analytics"
+    },
+    "users": {
+      "title": "Users",
+      "subtitle": "User list and management can be extended here."
+    }
+  },
   "about": {
     "title": "About",
     "coming_soon": "Coming soon.",

@@ -25,6 +25,12 @@ export const ROUTES = {
     GROUP: (slug: string) => `/groups/${slug}`,
   },
 
+  ADMIN: {
+    BASE: "/admin",
+    DASHBOARD: "/admin/dashboard",
+    USERS: "/admin/users",
+  },
+
   ERROR: {
     UNAUTHORIZED: "/unauthorized",
     FORBIDDEN: "/forbidden",

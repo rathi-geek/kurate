@@ -24,6 +24,7 @@ You are working in the Kurate web app. Full conventions are in AGENTS.md. This f
 ❌ useTranslations() in server component  → getTranslations()
 ❌ "use client" on page.tsx  → extract client parts to sub-component
 ❌ <div onClick>         → <button> or <a>
+❌ Hardcoded English  → useTranslations("admin") / getTranslations("admin")
 ```
 
 ## Colors
@@ -35,24 +36,28 @@ You are working in the Kurate web app. Full conventions are in AGENTS.md. This f
 
 ## Tokens
 
-| What | Use |
-|------|-----|
-| Button radius | `rounded-button` |
-| Card radius | `rounded-card` |
-| Input radius | `rounded-input` |
-| Badge radius | `rounded-badge` |
-| Pill | `rounded-pill` |
-| Page width | `container-page` |
-| Content width | `container-content` |
-| Shadows | `shadow-xs` `shadow-sm` `shadow-md` `shadow-lg` `shadow-xl` |
-| Font | `font-sans` (body) `font-serif` (headlines) `font-mono` (code/meta) |
+| What          | Use                                                                 |
+| ------------- | ------------------------------------------------------------------- |
+| Button radius | `rounded-button`                                                    |
+| Card radius   | `rounded-card`                                                      |
+| Input radius  | `rounded-input`                                                     |
+| Badge radius  | `rounded-badge`                                                     |
+| Pill          | `rounded-pill`                                                      |
+| Page width    | `container-page`                                                    |
+| Content width | `container-content`                                                 |
+| Shadows       | `shadow-xs` `shadow-sm` `shadow-md` `shadow-lg` `shadow-xl`         |
+| Font          | `font-sans` (body) `font-serif` (headlines) `font-mono` (code/meta) |
 
 ## Components
 
 ```ts
-import { buttonVariants, badgeVariants } from "@/lib/variants";  // shared CVA
-import { ROUTES } from "@/app/_libs/constants/routes";           // all paths
-import { Link } from "@/i18n";                                    // i18n-aware Link
+// shared CVA
+import { ROUTES } from "@/app/_libs/constants/routes";
+// all paths
+import { Link } from "@/i18n";
+import { badgeVariants, buttonVariants } from "@/lib/variants";
+
+// i18n-aware Link
 ```
 
 ## Localization
@@ -78,4 +83,4 @@ const t = useTranslations("namespace");        // from "next-intl"
 → AGENTS.md (conventions, patterns, anti-patterns)
 → src/styles/tokens/ (colors.css, radius.css, typography.css, shadows.css, spacing.css, z-index.css)
 → src/lib/variants.ts (buttonVariants, badgeVariants, inputVariants)
-→ src/app/_libs/constants/routes.ts (ROUTES)
+→ src/app/\_libs/constants/routes.ts (ROUTES)

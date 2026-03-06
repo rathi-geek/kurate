@@ -52,6 +52,9 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  const isAdminRoute = pathname.startsWith(ROUTES.ADMIN.BASE);
+  const isAdmin = user?.user_metadata?.role === "admin";
+
   // App routes (require auth + completed onboarding)
   const isAppRoute =
     pathname.startsWith(ROUTES.APP.CHAT) ||
@@ -61,7 +64,10 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith(ROUTES.APP.DASHBOARD);
 
   // All protected routes (require auth)
-  const isProtectedRoute = isAppRoute || pathname.startsWith(ROUTES.APP.ONBOARDING);
+  const isProtectedRoute =
+    isAppRoute ||
+    pathname.startsWith(ROUTES.APP.ONBOARDING) ||
+    isAdminRoute;
 
   // Not logged in → login
   if (!bypassAuth && !user && isProtectedRoute) {
@@ -70,8 +76,20 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Logged in but not yet onboarded → onboarding (only from app routes, not from /onboarding itself)
-  if (user && isAppRoute && user.user_metadata?.onboarded !== true) {
+  // Admin routes: only admins may access
+  if (!bypassAuth && user && isAdminRoute && !isAdmin) {
+    const url = request.nextUrl.clone();
+    url.pathname = ROUTES.ERROR.FORBIDDEN;
+    return NextResponse.redirect(url);
+  }
+
+  // Logged in but not yet onboarded → onboarding (only from app routes; admins bypass)
+  if (
+    user &&
+    isAppRoute &&
+    !isAdmin &&
+    user.user_metadata?.onboarded !== true
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = ROUTES.APP.ONBOARDING;
     return NextResponse.redirect(url);
@@ -86,8 +104,12 @@ export async function proxy(request: NextRequest) {
 
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
-    const isOnboarded = user.user_metadata?.onboarded === true;
-    url.pathname = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
+    if (isAdmin) {
+      url.pathname = ROUTES.ADMIN.DASHBOARD;
+    } else {
+      const isOnboarded = user.user_metadata?.onboarded === true;
+      url.pathname = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
+    }
     return NextResponse.redirect(url);
   }
 
