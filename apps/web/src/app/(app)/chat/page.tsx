@@ -21,6 +21,7 @@ import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import { MOCK_THREADS } from "@/app/_mocks/mock-thread-data";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { ChatTab } from "@/app/_libs/chat-types";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 interface Message {
   id: string;
@@ -306,25 +307,17 @@ function ChatPageInner() {
           className={`flex-1 flex flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}
         >
           <div className="shrink-0 hidden md:flex items-center justify-center py-3 border-b bg-background">
-            <div className="relative flex rounded-button bg-surface p-1 min-w-[220px]">
-              <motion.span
-                aria-hidden="true"
-                className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-[calc(var(--radius-button)-2px)] bg-primary"
-                initial={false}
-                animate={{ x: activeTab === "discovering" ? "0%" : "100%" }}
-                transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40, mass: 0.6 }}
-              />
-              {(["discovering", "logging"] as ChatTab[]).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setActiveTab(tab); }}
-                  className={`relative z-10 flex-1 px-5 py-2 text-center font-sans text-[13px] font-semibold transition-colors duration-200 ${
-                    activeTab === tab ? "text-primary-foreground" : "text-muted-foreground hover:text-brand"
-                  }`}
-                >
-                  {tab === "discovering" ? t("tab_discovering") : t("tab_logging")}
-                  {tab === "logging" && (
+            <SlidingTabs
+              size="md"
+              animated={!activeThreadId}
+              value={activeTab}
+              onChange={(v) => setActiveTab(v as ChatTab)}
+              tabs={[
+                { value: "discovering", label: t("tab_discovering") },
+                {
+                  value: "logging",
+                  label: t("tab_logging"),
+                  suffix: (
                     <AnimatePresence>
                       {vaultPulse && (
                         <motion.span
@@ -340,10 +333,10 @@ function ChatPageInner() {
                         </motion.span>
                       )}
                     </AnimatePresence>
-                  )}
-                </button>
-              ))}
-            </div>
+                  ),
+                },
+              ]}
+            />
           </div>
 
           {activeTab === "logging" ? (

@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
 import { Link, useRouter } from "@/i18n";
 import { env } from "env";
-import { cn } from "@/app/_libs/utils/cn";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/app/_libs/constants/routes";
@@ -292,33 +292,17 @@ export function LoginForm() {
           initial={prefersReducedMotion ? false : "hidden"}
           animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
-          className="relative mb-6 flex rounded-button bg-surface p-1"
+          className="mb-6"
         >
-          {/* Single always-mounted sliding pill — translates by its own width (= one tab) */}
-          <motion.span
-            aria-hidden="true"
-            className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-[calc(var(--radius-button)-2px)] bg-primary"
-            initial={false}
-            animate={{ x: method === LoginMethod.Password ? "0%" : "100%" }}
-            transition={
-              prefersReducedMotion
-                ? { duration: 0 }
-                : { type: "spring", stiffness: 500, damping: 40, mass: 0.6 }
-            }
+          <SlidingTabs
+            size="sm"
+            value={method}
+            onChange={setMethod}
+            tabs={[
+              { value: LoginMethod.Password, label: t("tab_password") },
+              { value: LoginMethod.MagicLink, label: t("tab_magic_link") },
+            ]}
           />
-          {([LoginMethod.Password, LoginMethod.MagicLink] as LoginMethod[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMethod(m)}
-              className={cn(
-                "relative z-10 flex-1 px-4 py-1.5 font-sans text-sm font-medium transition-colors duration-200",
-                method === m ? "text-primary-foreground" : "text-muted-foreground hover:text-brand"
-              )}
-            >
-              {m === LoginMethod.Password ? t("tab_password") : t("tab_magic_link")}
-            </button>
-          ))}
         </motion.div>
 
         {method === LoginMethod.Password && (
