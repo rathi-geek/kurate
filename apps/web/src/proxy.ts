@@ -99,8 +99,7 @@ export async function proxy(request: NextRequest) {
   // Landing page (/) is intentionally NOT in this list — authenticated users can still visit it
   const isAuthRoute =
     pathname.startsWith(ROUTES.AUTH.BASE) &&
-    pathname !== ROUTES.AUTH.CALLBACK &&
-    pathname !== ROUTES.AUTH.RESET_PASSWORD;
+    pathname !== ROUTES.AUTH.CALLBACK;
 
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();

@@ -7,54 +7,27 @@ import { type Variants, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
-import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 import { ErrorAlert } from "@/app/_components/error-alert";
+import { Spinner } from "@/app/_components/spinner";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
-import { redirectAfterAuth } from "@/app/_libs/utils/auth";
 import { fadeUp } from "@/app/_libs/utils/motion";
 import { BrandLogo, BrandSunburst, FloatDeco } from "@/components/brand";
 import { GoogleIcon } from "@/components/icons";
-import { useRouter } from "@/i18n";
 
 import { MagicLinkForm, MagicStep } from "./magic-link-form";
-import { OtpVerifyView } from "./otp-verify-view";
-import { PasswordForm } from "./password-form";
-
-enum AuthStep {
-  Form = "form",
-  OtpVerify = "otp",
-}
-
-enum LoginMethod {
-  Password = "password",
-  MagicLink = "magic-link",
-}
 
 export function LoginForm() {
-  const router = useRouter();
   const t = useTranslations("auth.login");
   const tApp = useTranslations("app");
   const prefersReducedMotion = useReducedMotion();
 
-  const [authStep, setAuthStep] = useState<AuthStep>(AuthStep.Form);
-  const [method, setMethod] = useState<LoginMethod>(LoginMethod.Password);
-
-  // Shared across password + OTP steps
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  // Magic link step
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");
   const [magicStep, setMagicStep] = useState<MagicStep>(MagicStep.Form);
   const [magicError, setMagicError] = useState("");
   const [magicLoading, setMagicLoading] = useState(false);
-
-  // Hash error from Supabase redirects (e.g. expired magic link)
   const [authError, setAuthError] = useState("");
 
   useEffect(() => {
@@ -68,77 +41,18 @@ export function LoginForm() {
         access_denied: t("magic_link_invalid"),
       };
       setAuthError(messages[errorCode] ?? t("magic_link_invalid"));
-      setMethod(LoginMethod.MagicLink);
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [t]);
 
   async function handleGoogle() {
+    setGoogleLoading(true);
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}` },
     });
-  }
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    const supabase = createClient();
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (!signInError) {
-      redirectAfterAuth(signInData.user, router);
-      return;
-    }
-
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (signUpError) {
-      setError(t("error_wrong_password"));
-      setLoading(false);
-      return;
-    }
-
-    if (signUpData.session === null) {
-      setAuthStep(AuthStep.OtpVerify);
-      setLoading(false);
-      return;
-    }
-
-    redirectAfterAuth(signUpData.user, router);
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    const supabase = createClient();
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token: otpCode,
-      type: "signup",
-    });
-
-    if (verifyError) {
-      setError(t("otp_error"));
-      setLoading(false);
-      return;
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    redirectAfterAuth(user, router);
+    // signInWithOAuth redirects the browser — loading stays true until navigation completes
   }
 
   async function handleMagicLink(e: React.FormEvent) {
@@ -169,24 +83,6 @@ export function LoginForm() {
     variants: fadeUp as Variants,
   });
 
-  if (authStep === AuthStep.OtpVerify) {
-    return (
-      <OtpVerifyView
-        email={email}
-        otpCode={otpCode}
-        error={error}
-        loading={loading}
-        onOtpChange={setOtpCode}
-        onSubmit={handleVerifyOtp}
-        onBack={() => {
-          setAuthStep(AuthStep.Form);
-          setOtpCode("");
-          setError("");
-        }}
-      />
-    );
-  }
-
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
       <div aria-hidden="true">
@@ -196,53 +92,38 @@ export function LoginForm() {
       </div>
 
       <main id="main-content" className="max-w-auth relative z-10 w-full px-8">
-        <motion.div {...mp(0)} className="mb-12">
+        <motion.div {...mp(0)} className="mb-4">
           <BrandLogo name={tApp("name")} s={24} />
         </motion.div>
 
-        <motion.div {...mp(1)}>
+        <motion.div {...mp(1)} className="mb-12">
           <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("title")}</h2>
-          <p className="text-muted-foreground mb-8 font-sans text-sm">{t("subtitle")}</p>
         </motion.div>
 
-        {authError && <ErrorAlert>{authError}</ErrorAlert>}
+        {authError && (
+          <motion.div {...mp(1.5)}>
+            <ErrorAlert>{authError}</ErrorAlert>
+          </motion.div>
+        )}
 
         <motion.div {...mp(2)}>
-          <Button type="button" variant="outline" className="w-full gap-2" onClick={handleGoogle}>
-            <GoogleIcon className="h-4 w-4" />
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2"
+            disabled={googleLoading}
+            onClick={handleGoogle}>
+            {googleLoading ? <Spinner /> : <GoogleIcon className="h-4 w-4" />}
             {t("google")}
           </Button>
-          <div className="relative my-2 flex items-center gap-3">
+          <div className="relative my-4 flex items-center gap-3">
             <div className="bg-border h-px flex-1" />
             <span className="text-muted-foreground font-sans text-xs">{t("or_divider")}</span>
             <div className="bg-border h-px flex-1" />
           </div>
         </motion.div>
 
-        <motion.div {...mp(3)} className="mb-6">
-          <SlidingTabs
-            value={method}
-            onChange={setMethod}
-            tabs={[
-              { value: LoginMethod.Password, label: t("tab_password") },
-              { value: LoginMethod.MagicLink, label: t("tab_magic_link") },
-            ]}
-          />
-        </motion.div>
-
-        {method === LoginMethod.Password && (
-          <PasswordForm
-            email={email}
-            password={password}
-            error={error}
-            loading={loading}
-            onEmailChange={setEmail}
-            onPasswordChange={setPassword}
-            onSubmit={handleLogin}
-          />
-        )}
-
-        {method === LoginMethod.MagicLink && (
+        <motion.div {...mp(3)}>
           <MagicLinkForm
             email={magicEmail}
             step={magicStep}
@@ -256,7 +137,7 @@ export function LoginForm() {
               setMagicError("");
             }}
           />
-        )}
+        </motion.div>
       </main>
     </div>
   );

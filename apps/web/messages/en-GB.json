@@ -123,32 +123,16 @@
   "auth": {
     "login": {
       "title": "Welcome to Kurate",
-      "subtitle": "Sign in or create an account.",
-      "email_label": "Email",
-      "password_label": "Password",
-      "email_placeholder": "you@example.com",
-      "password_placeholder": "Your password",
-      "forgot_password": "Forgot password?",
-      "submit": "Continue",
-      "error_invalid": "Invalid email or password.",
-      "error_wrong_password": "Wrong password. Please try again.",
+
       "or_divider": "or",
       "google": "Continue with Google",
-      "tab_password": "Password",
-      "tab_magic_link": "Magic link",
+      "error_invalid": "Something went wrong. Please try again.",
       "magic_link_email_label": "Email",
       "magic_link_email_placeholder": "you@example.com",
       "magic_link_submit": "Send sign-in link",
       "magic_link_sent_title": "Check your inbox",
       "magic_link_sent_message": "We sent a sign-in link to {email}.",
       "magic_link_use_different_email": "Use a different email",
-      "otp_title": "Check your email",
-      "otp_subtitle": "Enter the 6-digit code we sent to {email}.",
-      "otp_code_label": "Verification code",
-      "otp_code_placeholder": "123456",
-      "otp_submit": "Verify",
-      "otp_error": "Invalid or expired code. Please try again.",
-      "otp_back": "Use a different email",
       "magic_link_expired": "Your sign-in link has expired. Enter your email below to get a new one.",
       "magic_link_invalid": "This sign-in link is no longer valid. Enter your email below to request a new one."
     },
@@ -179,28 +163,6 @@
       "email_sent_message": "We sent a confirmation link to {email}.",
       "or_divider": "or",
       "google": "Continue with Google"
-    },
-    "forgot_password": {
-      "title": "Reset your password",
-      "subtitle": "Enter your email and we'll send you a reset link.",
-      "email_label": "Email",
-      "email_placeholder": "you@example.com",
-      "submit": "Send Reset Link",
-      "remember_password": "Remember your password?",
-      "log_in": "Log in",
-      "sent_title": "Check your email",
-      "sent_message": "We sent a password reset link to {email}.",
-      "back_to": "Back to"
-    },
-    "reset_password": {
-      "title": "Set new password",
-      "subtitle": "Choose a new password for your account.",
-      "new_password_label": "New password",
-      "confirm_password_label": "Confirm password",
-      "placeholder": "At least 8 characters",
-      "confirm_placeholder": "Re-enter your password",
-      "submit": "Update Password",
-      "error_mismatch": "Passwords do not match."
     }
   },
   "admin": {

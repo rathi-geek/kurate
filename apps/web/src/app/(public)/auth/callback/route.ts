@@ -6,7 +6,6 @@ import { ROUTES } from "@/app/_libs/constants/routes";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const type = searchParams.get("type");
 
   if (code) {
     const collectedCookies: Array<{ name: string; value: string; options: object }> = [];
@@ -29,18 +28,14 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
       let redirectPath: string;
 
-      if (type === "recovery") {
-        redirectPath = ROUTES.AUTH.RESET_PASSWORD;
+      if (user?.user_metadata?.role === "admin") {
+        redirectPath = ROUTES.ADMIN.DASHBOARD;
       } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.user_metadata?.role === "admin") {
-          redirectPath = ROUTES.ADMIN.DASHBOARD;
-        } else {
-          const isOnboarded = user?.user_metadata?.onboarded === true;
-          redirectPath = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
-        }
+        const isOnboarded = user?.user_metadata?.onboarded === true;
+        redirectPath = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
       }
 
       const response = NextResponse.redirect(`${origin}${redirectPath}`);

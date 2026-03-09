@@ -10,8 +10,6 @@ export const ROUTES = {
   AUTH: {
     BASE: "/auth",
     LOGIN: "/auth/login",
-    FORGOT_PASSWORD: "/auth/forgot-password",
-    RESET_PASSWORD: "/auth/reset-password",
     CALLBACK: "/auth/callback",
   },
 
