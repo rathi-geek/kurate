@@ -1,16 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+
 import { motion, useReducedMotion } from "framer-motion";
-import { useRouter } from "@/i18n";
-import { ROUTES } from "@/app/_libs/constants/routes";
-import { createClient } from "@/app/_libs/supabase/client";
-import { Arrow, BrandLogo, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const pageVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
+import { ROUTES } from "@/app/_libs/constants/routes";
+import { createClient } from "@/app/_libs/supabase/client";
+import { fadeUp } from "@/app/_libs/utils/motion";
+import { Arrow, BrandLogo } from "@/components/brand";
+import { useRouter } from "@/i18n";
+
+import { FormField } from "@/app/_components/form-field";
+import { Spinner } from "@/app/_components/spinner";
+import { AuthPageShell } from "../../_components/auth-page-shell";
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -32,7 +38,6 @@ export function ResetPasswordForm() {
     }
 
     setLoading(true);
-
     const supabase = createClient();
     const { error: updateError } = await supabase.auth.updateUser({ password });
 
@@ -45,80 +50,53 @@ export function ResetPasswordForm() {
     router.replace(ROUTES.APP.CHAT);
   }
 
+  const mp = (custom: number) => ({
+    custom,
+    initial: prefersReducedMotion ? false : ("hidden" as const),
+    animate: prefersReducedMotion ? undefined : ("visible" as const),
+    variants: fadeUp,
+  });
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
-      <div aria-hidden="true">
-        <FloatDeco top={50} right={50} opacity={0.04}>
-          <BrandSunburst s={100} />
-        </FloatDeco>
-      </div>
+    <AuthPageShell>
+      <motion.div {...mp(0)} className="mb-12">
+        <BrandLogo name={tApp("name")} s={24} />
+      </motion.div>
 
-      <main id="main-content" className="relative z-10 w-full max-w-[var(--container-auth)] px-8">
-        <motion.div
-          variants={pageVariants}
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate={prefersReducedMotion ? undefined : "visible"}
-          className="w-full"
-        >
-          <div className="mb-12">
-            <BrandLogo name={tApp("name")} s={24} />
-          </div>
+      <motion.div {...mp(1)}>
+        <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("title")}</h2>
+        <p className="text-muted-foreground mb-8 font-sans text-sm">{t("subtitle")}</p>
+      </motion.div>
 
-          <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("title")}</h2>
-          <p className="mb-8 font-sans text-sm text-muted-foreground">{t("subtitle")}</p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="reset-password" className="mb-2 block font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
-                {t("new_password_label")}
-              </label>
-              <Input
-                id="reset-password"
-                type="password"
-                placeholder={t("placeholder")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={8}
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="reset-confirm" className="mb-2 block font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
-                {t("confirm_password_label")}
-              </label>
-              <Input
-                id="reset-confirm"
-                type="password"
-                placeholder={t("confirm_placeholder")}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                minLength={8}
-                required
-              />
-              {error && (
-                <p className="mt-1.5 font-sans text-sm text-destructive">{error}</p>
-              )}
-            </div>
-            <div className="pt-2">
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? (
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="inline-block"
-                  >
-                    <BrandStar s={14} />
-                  </motion.span>
-                ) : (
-                  <>
-                    {t("submit")} <Arrow s={14} />
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </motion.div>
-      </main>
-    </div>
+      <motion.form {...mp(2)} onSubmit={handleSubmit} className="space-y-4">
+        <FormField htmlFor="reset-password" label={t("new_password_label")}>
+          <Input
+            id="reset-password"
+            type="password"
+            placeholder={t("placeholder")}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            required
+          />
+        </FormField>
+        <FormField htmlFor="reset-confirm" label={t("confirm_password_label")} error={error}>
+          <Input
+            id="reset-confirm"
+            type="password"
+            placeholder={t("confirm_placeholder")}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            minLength={8}
+            required
+          />
+        </FormField>
+        <div className="pt-2">
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? <Spinner /> : <>{t("submit")} <Arrow s={14} /></>}
+          </Button>
+        </div>
+      </motion.form>
+    </AuthPageShell>
   );
 }

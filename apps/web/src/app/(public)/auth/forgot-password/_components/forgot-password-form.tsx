@@ -1,18 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Link } from "@/i18n";
+
 import { env } from "env";
-import { ROUTES } from "@/app/_libs/constants/routes";
-import { createClient } from "@/app/_libs/supabase/client";
-import { Arrow, BrandLogo, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const springGentle = { type: "spring" as const, stiffness: 260, damping: 25 };
-const pageVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
+import { ROUTES } from "@/app/_libs/constants/routes";
+import { createClient } from "@/app/_libs/supabase/client";
+import { springGentle } from "@/lib/motion-variants";
+import { Arrow } from "@/components/brand";
+import { BrandLogo } from "@/components/brand";
+import { Link } from "@/i18n";
+
+import { ErrorAlert } from "@/app/_components/error-alert";
+import { FormField } from "@/app/_components/form-field";
+import { Spinner } from "@/app/_components/spinner";
+import { AuthPageShell } from "../../_components/auth-page-shell";
 
 type Step = "form" | "sent";
 
@@ -32,7 +39,7 @@ export function ForgotPasswordForm() {
 
     const supabase = createClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery`,
+      redirectTo: `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}?type=recovery`,
     });
 
     if (resetError) {
@@ -45,113 +52,80 @@ export function ForgotPasswordForm() {
     setStep("sent");
   }
 
+  const mp = (custom?: number) => ({
+    custom,
+    initial: prefersReducedMotion ? false : { opacity: 0, y: 8 },
+    animate: prefersReducedMotion ? undefined : { opacity: 1, y: 0, transition: springGentle },
+    exit: prefersReducedMotion ? undefined : { opacity: 0, y: -8, transition: { duration: 0.15 } },
+  });
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
-      <div aria-hidden="true">
-        <FloatDeco top={50} right={50} opacity={0.04}>
-          <BrandSunburst s={100} />
-        </FloatDeco>
+    <AuthPageShell>
+      <div className="mb-12">
+        <BrandLogo name={tApp("name")} s={24} />
       </div>
 
-      <main id="main-content" className="relative z-10 w-full max-w-[var(--container-auth)] px-8">
-        <motion.div
-          variants={pageVariants}
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate={prefersReducedMotion ? undefined : "visible"}
-          className="w-full"
-        >
-          <div className="mb-12">
-            <BrandLogo name={tApp("name")} s={24} />
-          </div>
+      <AnimatePresence mode="wait">
+        {step === "form" && (
+          <motion.div key="form" {...mp()}>
+            <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("title")}</h2>
+            <p className="text-muted-foreground mb-8 font-sans text-sm">{t("subtitle")}</p>
 
-          <AnimatePresence mode="wait">
-            {step === "form" && (
-              <motion.div
-                key="form"
-                initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-                animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0, transition: springGentle }}
-                exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8, transition: { duration: 0.15 } }}
-              >
-                <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("title")}</h2>
-                <p className="mb-8 font-sans text-sm text-muted-foreground">{t("subtitle")}</p>
+            {error && <ErrorAlert>{error}</ErrorAlert>}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label htmlFor="forgot-email" className="mb-2 block font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
-                      {t("email_label")}
-                    </label>
-                    <Input
-                      id="forgot-email"
-                      type="email"
-                      placeholder={t("email_placeholder")}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                    {error && (
-                      <p className="mt-1.5 font-sans text-sm text-destructive">{error}</p>
-                    )}
-                  </div>
-                  <div className="pt-2">
-                    <Button type="submit" disabled={loading} className="w-full">
-                      {loading ? (
-                        <motion.span
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="inline-block"
-                        >
-                          <BrandStar s={14} />
-                        </motion.span>
-                      ) : (
-                        <>
-                          {t("submit")} <Arrow s={14} />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <FormField htmlFor="forgot-email" label={t("email_label")}>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder={t("email_placeholder")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </FormField>
+              <div className="pt-2">
+                <Button type="submit" disabled={loading} className="w-full">
+                  {loading ? <Spinner /> : <>{t("submit")} <Arrow s={14} /></>}
+                </Button>
+              </div>
+            </form>
 
-                <div className="mt-8 border-t border-border pt-6 text-center">
-                  <p className="font-sans text-sm text-muted-foreground">
-                    {t("remember_password")}{" "}
-                    <Link
-                      href={ROUTES.AUTH.LOGIN}
-                      className="rounded-sm font-bold underline hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    >
-                      {t("log_in")}
-                    </Link>
-                  </p>
-                </div>
-              </motion.div>
-            )}
+            <div className="border-border mt-8 border-t pt-6 text-center">
+              <p className="text-muted-foreground font-sans text-sm">
+                {t("remember_password")}{" "}
+                <Link
+                  href={ROUTES.AUTH.LOGIN}
+                  className="focus:ring-ring rounded-sm font-bold underline hover:text-foreground focus:ring-2 focus:ring-offset-2 focus:outline-none">
+                  {t("log_in")}
+                </Link>
+              </p>
+            </div>
+          </motion.div>
+        )}
 
-            {step === "sent" && (
-              <motion.div
-                key="sent"
-                initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-                animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0, transition: springGentle }}
-                exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8, transition: { duration: 0.15 } }}
-                className="text-center"
-              >
-                <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("sent_title")}</h2>
-                <p className="mb-8 font-sans text-sm text-muted-foreground">{t("sent_message", { email })}</p>
+        {step === "sent" && (
+          <motion.div key="sent" {...mp()} className="text-center">
+            <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">
+              {t("sent_title")}
+            </h2>
+            <p className="text-muted-foreground mb-8 font-sans text-sm">
+              {t("sent_message", { email })}
+            </p>
 
-                <div className="mt-8 border-t border-border pt-6">
-                  <p className="font-sans text-sm text-muted-foreground">
-                    {t("back_to")}{" "}
-                    <Link
-                      href={ROUTES.AUTH.LOGIN}
-                      className="rounded-sm font-bold underline hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    >
-                      {t("log_in")}
-                    </Link>
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </main>
-    </div>
+            <div className="border-border mt-8 border-t pt-6">
+              <p className="text-muted-foreground font-sans text-sm">
+                {t("back_to")}{" "}
+                <Link
+                  href={ROUTES.AUTH.LOGIN}
+                  className="focus:ring-ring rounded-sm font-bold underline hover:text-foreground focus:ring-2 focus:ring-offset-2 focus:outline-none">
+                  {t("log_in")}
+                </Link>
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </AuthPageShell>
   );
 }

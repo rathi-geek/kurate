@@ -1,0 +1,405 @@
+---
+description: App-wide component and code patterns for every feature — loading, errors, forms, layouts, animations, lists, filters
+globs: ["src/**/*.tsx", "src/**/*.ts"]
+alwaysApply: true
+---
+
+# Component & Code Patterns
+
+Check this file before writing any UI code. These patterns apply to **every feature** — chat, feed, vault, onboarding, admin, auth, and anything new.
+
+---
+
+## Loading States
+
+### Button loading → `<Spinner>`
+
+Any button that triggers an async operation:
+
+```tsx
+import { Spinner } from "@/app/_components/spinner";
+
+<Button disabled={loading}>
+  {loading ? <Spinner /> : <>{t("save")} <Arrow s={14} /></>}
+</Button>
+```
+
+❌ Never inline `<motion.span animate={{ rotate: 360 }}>` + `<BrandStar>` in a button again.
+
+### Content loading → skeleton pulse
+
+When a section is waiting for data to load:
+
+```tsx
+// Skeleton cards
+<div className="grid gap-4 sm:grid-cols-3">
+  {[1, 2, 3].map((i) => (
+    <div key={i} className="h-24 animate-pulse rounded-card bg-muted" />
+  ))}
+</div>
+```
+
+### Page-level loading text
+
+When a full panel or page is loading:
+
+```tsx
+<p className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
+  {t("section_title")}
+</p>
+<p className="font-sans text-xs text-muted-foreground mt-2">{t("loading")}</p>
+```
+
+---
+
+## Error States
+
+### Form field error → `<FormField error={...}>`
+
+Per-field inline errors are handled by `<FormField>` automatically (see Forms section).
+
+### Page / API error banner → `<ErrorAlert>`
+
+For errors not tied to a specific field — network failures, API errors, permission errors:
+
+```tsx
+import { ErrorAlert } from "@/app/_components/error-alert";
+
+{error && <ErrorAlert>{error}</ErrorAlert>}
+```
+
+Has `role="alert"` built in. Place above the form or the affected section.
+
+### Panel / section inline error
+
+For errors inside a content panel (not a form):
+
+```tsx
+{error && (
+  <p className="font-sans text-sm text-destructive" role="alert">{error}</p>
+)}
+```
+
+---
+
+## Empty States
+
+Centered icon + description. Used when a list or feed has no content:
+
+```tsx
+<div className="flex flex-col items-center justify-center py-20 px-6">
+  <BrandSunburst s={64} className="text-ink/15 mb-6" aria-hidden="true" />
+  <p className="text-center max-w-[280px] font-sans text-sm text-muted-foreground">
+    {t("empty_message")}
+  </p>
+</div>
+```
+
+Text-only variant (for compact spaces like sidebars):
+
+```tsx
+<p className="py-8 text-center font-sans text-sm text-muted-foreground">
+  {t("empty_message")}
+</p>
+```
+
+---
+
+## Forms
+
+### Field wrapper → `<FormField>`
+
+Every label + input + error in any form across the app:
+
+```tsx
+import { FormField } from "@/app/_components/form-field";
+
+<FormField htmlFor="field-id" label={t("field_label")} error={errors.field}>
+  <Input id="field-id" ... />
+</FormField>
+
+// Works with any input type:
+<FormField htmlFor="bio" label={t("bio_label")} error={errors.bio}>
+  <Textarea id="bio" ... />
+</FormField>
+```
+
+`htmlFor` must match the `id` on the input inside. `error` is optional.
+
+❌ Never repeat this inline:
+```tsx
+<label className="mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase text-foreground">
+<p className="mt-1.5 font-sans text-sm text-destructive">
+```
+
+### Page heading → `<PageHeader>`
+
+```tsx
+import { PageHeader } from "@/app/_components/page-header";
+
+<PageHeader title={t("title")} subtitle={t("subtitle")} />
+```
+
+Subtitle is optional. Use on any page, section, or modal that needs a heading.
+
+### Multi-step form structure
+
+When a form or flow has multiple steps or views:
+
+```
+feature/
+├── page.tsx                     ← server component, NO "use client"
+└── _components/
+    ├── feature-form.tsx         ← "use client" orchestrator — state + handlers only
+    ├── step-a-view.tsx          ← pure view, receives everything via props
+    └── step-b-view.tsx          ← pure view, receives everything via props
+```
+
+The orchestrator is thin — it holds state and async logic, then delegates rendering to views.
+
+---
+
+## Page Layouts
+
+### App pages (with sidebar)
+
+```tsx
+<div className="h-screen flex bg-background">
+  <AppSidebar userEmail={userEmail} onLogout={handleLogout} />
+  <main id="main-content" className="flex-1 overflow-y-auto">
+    <div className="max-w-xl mx-auto px-6 py-8">
+      {/* page content */}
+    </div>
+  </main>
+</div>
+```
+
+Use `max-w-xl` for single-column content, `max-w-3xl` for wider layouts.
+
+### Auth pages (full-screen centered)
+
+```tsx
+import { AuthPageShell } from "@/app/(public)/auth/_components/auth-page-shell";
+
+<AuthPageShell>
+  <BrandLogo ... />
+  <PageHeader title={t("title")} subtitle={t("subtitle")} />
+  {/* form content */}
+</AuthPageShell>
+```
+
+---
+
+## Async Data Fetching
+
+Use a `cancelled` flag inside `useEffect` to prevent state updates after unmount:
+
+```tsx
+useEffect(() => {
+  let cancelled = false;
+  setLoading(true);
+
+  async function load() {
+    try {
+      const { data, error } = await supabase.from("table").select("...");
+      if (cancelled) return;
+      if (error) { setError(error.message); return; }
+      setData(data);
+    } catch {
+      if (!cancelled) setError(t("error_generic"));
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  }
+
+  load();
+  return () => { cancelled = true; };
+}, [dependency]);
+```
+
+---
+
+## Framer Motion
+
+### Always handle reduced motion
+
+```tsx
+import { motion, useReducedMotion } from "framer-motion";
+
+const prefersReducedMotion = useReducedMotion();
+```
+
+Set `initial={prefersReducedMotion ? false : "hidden"}` and `animate={prefersReducedMotion ? undefined : "visible"}` on every `<motion.*>` element.
+
+### Use the `mp()` helper for staggered animations
+
+Avoids repeating `initial/animate/variants` on each element:
+
+```tsx
+import { type Variants, motion, useReducedMotion } from "framer-motion";
+import { fadeUp } from "@/app/_libs/utils/motion";
+
+const prefersReducedMotion = useReducedMotion();
+
+const mp = (custom: number) => ({
+  custom,
+  initial: prefersReducedMotion ? false : ("hidden" as const),
+  animate: prefersReducedMotion ? undefined : ("visible" as const),
+  variants: fadeUp as Variants,
+});
+
+<motion.div {...mp(0)}>first</motion.div>
+<motion.div {...mp(1)}>second — staggered by 70ms</motion.div>
+<motion.div {...mp(2)}>third</motion.div>
+```
+
+### Stagger for lists
+
+```tsx
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.05, type: "spring", stiffness: 300, damping: 28 },
+  }),
+};
+
+{items.map((item, i) => (
+  <motion.div
+    key={item.id}
+    variants={cardVariants}
+    initial={prefersReducedMotion ? false : "hidden"}
+    animate={prefersReducedMotion ? undefined : "visible"}
+    custom={i}
+  >
+    ...
+  </motion.div>
+))}
+```
+
+### Slide-in panels
+
+```tsx
+<AnimatePresence>
+  {open && (
+    <>
+      <motion.div
+        key="backdrop"
+        className="fixed inset-0 z-40 bg-ink/20"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      <motion.div
+        key="panel"
+        className="fixed inset-y-0 right-0 z-50 w-full max-w-[720px] bg-background"
+        initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+        transition={springGentle}
+      >
+        {/* panel content */}
+      </motion.div>
+    </>
+  )}
+</AnimatePresence>
+```
+
+Import `springGentle` from `@/lib/motion-variants`. Never define spring configs inline.
+
+---
+
+## Filter Pills
+
+Active/inactive pill button pattern for filter bars:
+
+```tsx
+{FILTER_OPTIONS.map(({ value, label }) => (
+  <button
+    key={value}
+    type="button"
+    onClick={() => setFilter(value)}
+    className={`rounded-badge px-3 py-1.5 font-sans text-xs font-medium transition-colors ${
+      filter === value
+        ? "bg-primary text-primary-foreground"
+        : "bg-muted text-muted-foreground hover:bg-muted/80"
+    }`}>
+    {label}
+  </button>
+))}
+```
+
+---
+
+## Card Grid
+
+```tsx
+<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  {items.map((item) => (
+    <div
+      key={item.id}
+      className="rounded-card border bg-card p-4 transition-shadow hover:shadow-md">
+      {/* card content */}
+    </div>
+  ))}
+</div>
+```
+
+---
+
+## Dropdown Actions Menu
+
+For per-item action menus (edit, delete, share):
+
+```tsx
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" size="icon" aria-label={t("actions_label")}>
+      <DotsIcon />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end">
+    <DropdownMenuItem onClick={handleEdit}>{t("edit")}</DropdownMenuItem>
+    <DropdownMenuItem onClick={handleShare}>{t("share")}</DropdownMenuItem>
+    <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+      {t("delete")}
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+```
+
+---
+
+## Routes & Translations
+
+```tsx
+// Routes — always use constants, never hardcode strings
+import { ROUTES } from "@/app/_libs/constants/routes";
+router.replace(ROUTES.APP.CHAT);
+<Link href={ROUTES.AUTH.LOGIN}>
+
+// Translations — always; never hardcode English
+const t = useTranslations("feature.section");      // client component
+const t = await getTranslations("feature.section"); // server component
+// Add keys to both messages/en-US.json and messages/en-GB.json
+```
+
+---
+
+## Quick Reference
+
+| Need | Use |
+|---|---|
+| Async button loading | `<Spinner>` — `@/app/_components/spinner` |
+| Skeleton content loading | `animate-pulse` div with `bg-muted rounded-card` |
+| Form label + input + error | `<FormField>` — `@/app/_components/form-field` |
+| Page/API error banner | `<ErrorAlert>` — `@/app/_components/error-alert` |
+| Page or section heading | `<PageHeader>` — `@/app/_components/page-header` |
+| Auth page layout | `<AuthPageShell>` — `@/app/(public)/auth/_components/auth-page-shell` |
+| App page layout | `<AppSidebar>` + `<main id="main-content">` |
+| Post-auth redirect | `redirectAfterAuth(user, router)` — `@/app/_libs/utils/auth` |
+| Motion variants | `fadeUp`, `fadeUpLeft`, `slideInLeft`, `springGentle` — `@/app/_libs/utils/motion` |
+| Per-item action menu | `<DropdownMenu>` from `@/components/ui/dropdown-menu` |
+| Filter bar | Active/inactive pill buttons with `rounded-badge` |
+| Card list stagger | `cardVariants` with `custom={index}` |

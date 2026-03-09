@@ -1,30 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { env } from "env";
-import { AnimatePresence, type Variants, motion, useReducedMotion } from "framer-motion";
+import { type Variants, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
-import { fadeUpLeft, fadeUpRight } from "@/app/_libs/utils/motion";
-import { Arrow, BrandLogo, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
+import { redirectAfterAuth } from "@/app/_libs/utils/auth";
+import { fadeUp } from "@/app/_libs/utils/motion";
+import { Arrow, BrandLogo, BrandSunburst, FloatDeco } from "@/components/brand";
 import { GoogleIcon } from "@/components/icons";
-import { Link, useRouter } from "@/i18n";
+import { useRouter } from "@/i18n";
 
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i?: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring" as const, stiffness: 300, damping: 28, delay: (i ?? 0) * 0.07 },
-  }),
-};
+import { ErrorAlert } from "@/app/_components/error-alert";
+
+import { MagicLinkForm, MagicStep } from "./magic-link-form";
+import { OtpVerifyView } from "./otp-verify-view";
+import { PasswordForm } from "./password-form";
 
 enum AuthStep {
   Form = "form",
@@ -36,11 +33,6 @@ enum LoginMethod {
   MagicLink = "magic-link",
 }
 
-enum MagicStep {
-  Form = "form",
-  Sent = "sent",
-}
-
 export function LoginForm() {
   const router = useRouter();
   const t = useTranslations("auth.login");
@@ -49,47 +41,45 @@ export function LoginForm() {
 
   const [authStep, setAuthStep] = useState<AuthStep>(AuthStep.Form);
   const [method, setMethod] = useState<LoginMethod>(LoginMethod.Password);
+
+  // Shared across password + OTP steps
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Magic link step
   const [magicEmail, setMagicEmail] = useState("");
   const [magicStep, setMagicStep] = useState<MagicStep>(MagicStep.Form);
-  const [magicLoading, setMagicLoading] = useState(false);
   const [magicError, setMagicError] = useState("");
+  const [magicLoading, setMagicLoading] = useState(false);
+
+  // Hash error from Supabase redirects (e.g. expired magic link)
+  const [authError, setAuthError] = useState("");
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+    const params = new URLSearchParams(hash.slice(1));
+    const errorCode = params.get("error_code");
+    if (errorCode) {
+      const messages: Record<string, string> = {
+        otp_expired: t("magic_link_expired"),
+        access_denied: t("magic_link_invalid"),
+      };
+      setAuthError(messages[errorCode] ?? t("magic_link_invalid"));
+      setMethod(LoginMethod.MagicLink);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [t]);
 
   async function handleGoogle() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}`,
-      },
+      options: { redirectTo: `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}` },
     });
-  }
-
-  async function handleMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    setMagicError("");
-    setMagicLoading(true);
-
-    const supabase = createClient();
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email: magicEmail,
-      options: {
-        emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}`,
-      },
-    });
-
-    if (otpError) {
-      setMagicError(t("error_invalid"));
-      setMagicLoading(false);
-      return;
-    }
-
-    setMagicStep(MagicStep.Sent);
-    setMagicLoading(false);
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -98,20 +88,13 @@ export function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (!signInError) {
-      const user = signInData.user;
-      if (user?.user_metadata?.role === "admin") {
-        router.replace(ROUTES.ADMIN.DASHBOARD);
-        return;
-      }
-      const isOnboarded = user?.user_metadata?.onboarded === true;
-      router.replace(isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING);
+      redirectAfterAuth(signInData.user, router);
       return;
     }
 
@@ -132,11 +115,7 @@ export function LoginForm() {
       return;
     }
 
-    if (signUpData.user?.user_metadata?.role === "admin") {
-      router.replace(ROUTES.ADMIN.DASHBOARD);
-      return;
-    }
-    router.replace(ROUTES.APP.ONBOARDING);
+    redirectAfterAuth(signUpData.user, router);
   }
 
   async function handleVerifyOtp(e: React.FormEvent) {
@@ -158,111 +137,54 @@ export function LoginForm() {
     }
 
     const {
-      data: { user: currentUser },
+      data: { user },
     } = await supabase.auth.getUser();
-    if (currentUser?.user_metadata?.role === "admin") {
-      router.replace(ROUTES.ADMIN.DASHBOARD);
+    redirectAfterAuth(user, router);
+  }
+
+  async function handleMagicLink(e: React.FormEvent) {
+    e.preventDefault();
+    setMagicError("");
+    setMagicLoading(true);
+
+    const supabase = createClient();
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email: magicEmail,
+      options: { emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}` },
+    });
+
+    if (otpError) {
+      setMagicError(t("error_invalid"));
+      setMagicLoading(false);
       return;
     }
-    router.replace(ROUTES.APP.ONBOARDING);
+
+    setMagicStep(MagicStep.Sent);
+    setMagicLoading(false);
   }
+
+  const mp = (custom: number) => ({
+    custom,
+    initial: prefersReducedMotion ? false : ("hidden" as const),
+    animate: prefersReducedMotion ? undefined : ("visible" as const),
+    variants: fadeUp as Variants,
+  });
 
   if (authStep === AuthStep.OtpVerify) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
-        <div aria-hidden="true">
-          <FloatDeco top={50} right={50} opacity={0.04}>
-            <BrandSunburst s={100} />
-          </FloatDeco>
-        </div>
-
-        <main id="main-content" className="max-w-auth relative z-10 w-full px-8">
-          <motion.div
-            custom={0}
-            initial={prefersReducedMotion ? false : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={fadeUp}
-            className="mb-12">
-            <BrandLogo name={tApp("name")} s={24} />
-          </motion.div>
-
-          <motion.div
-            custom={1}
-            initial={prefersReducedMotion ? false : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={fadeUp}>
-            <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">
-              {t("otp_title")}
-            </h2>
-            <p className="text-muted-foreground mb-8 font-sans text-sm">
-              {t("otp_subtitle", { email })}
-            </p>
-          </motion.div>
-
-          <motion.form
-            custom={2}
-            initial={prefersReducedMotion ? false : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={fadeUp}
-            onSubmit={handleVerifyOtp}
-            className="space-y-4">
-            <div>
-              <label
-                htmlFor="otp-code"
-                className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
-                {t("otp_code_label")}
-              </label>
-              <Input
-                id="otp-code"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                placeholder={t("otp_code_placeholder")}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                required
-                autoFocus
-              />
-              {error && <p className="text-destructive mt-1.5 font-sans text-sm">{error}</p>}
-            </div>
-            <div className="pt-2">
-              <Button type="submit" disabled={loading || otpCode.length < 6} className="w-full">
-                {loading ? (
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="inline-block">
-                    <BrandStar s={14} />
-                  </motion.span>
-                ) : (
-                  <>
-                    {t("otp_submit")} <Arrow s={14} />
-                  </>
-                )}
-              </Button>
-            </div>
-          </motion.form>
-
-          <motion.div
-            custom={3}
-            initial={prefersReducedMotion ? false : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={fadeUp}
-            className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthStep(AuthStep.Form);
-                setOtpCode("");
-                setError("");
-              }}
-              className="text-muted-foreground hover:text-foreground focus:ring-ring rounded-sm font-sans text-sm underline focus:ring-2 focus:ring-offset-2 focus:outline-none">
-              {t("otp_back")}
-            </button>
-          </motion.div>
-        </main>
-      </div>
+      <OtpVerifyView
+        email={email}
+        otpCode={otpCode}
+        error={error}
+        loading={loading}
+        onOtpChange={setOtpCode}
+        onSubmit={handleVerifyOtp}
+        onBack={() => {
+          setAuthStep(AuthStep.Form);
+          setOtpCode("");
+          setError("");
+        }}
+      />
     );
   }
 
@@ -275,36 +197,22 @@ export function LoginForm() {
       </div>
 
       <main id="main-content" className="max-w-auth relative z-10 w-full px-8">
-        <motion.div
-          custom={0}
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate={prefersReducedMotion ? undefined : "visible"}
-          variants={fadeUp}
-          className="mb-12">
+        <motion.div {...mp(0)} className="mb-12">
           <BrandLogo name={tApp("name")} s={24} />
         </motion.div>
 
-        <motion.div
-          custom={1}
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate={prefersReducedMotion ? undefined : "visible"}
-          variants={fadeUp}>
+        <motion.div {...mp(1)}>
           <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("title")}</h2>
           <p className="text-muted-foreground mb-8 font-sans text-sm">{t("subtitle")}</p>
         </motion.div>
 
-        {/* Google OAuth */}
-        <motion.div
-          custom={2}
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate={prefersReducedMotion ? undefined : "visible"}
-          variants={fadeUp}>
+        {authError && <ErrorAlert>{authError}</ErrorAlert>}
+
+        <motion.div {...mp(2)}>
           <Button type="button" variant="outline" className="w-full gap-2" onClick={handleGoogle}>
             <GoogleIcon className="h-4 w-4" />
             {t("google")}
           </Button>
-
-          {/* Divider */}
           <div className="relative my-2 flex items-center gap-3">
             <div className="bg-border h-px flex-1" />
             <span className="text-muted-foreground font-sans text-xs">{t("or_divider")}</span>
@@ -312,13 +220,7 @@ export function LoginForm() {
           </div>
         </motion.div>
 
-        {/* Method tabs */}
-        <motion.div
-          custom={3}
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate={prefersReducedMotion ? undefined : "visible"}
-          variants={fadeUp}
-          className="mb-6">
+        <motion.div {...mp(3)} className="mb-6">
           <SlidingTabs
             value={method}
             onChange={setMethod}
@@ -330,131 +232,31 @@ export function LoginForm() {
         </motion.div>
 
         {method === LoginMethod.Password && (
-          <motion.div
-            key="password-form"
-            initial={prefersReducedMotion ? false : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={fadeUpRight}>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="login-email"
-                  className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
-                  {t("email_label")}
-                </label>
-                <Input
-                  id="login-email"
-                  type="email"
-                  placeholder={t("email_placeholder")}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="login-password"
-                  className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
-                  {t("password_label")}
-                </label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  placeholder={t("password_placeholder")}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                {error && <p className="text-destructive mt-1.5 font-sans text-sm">{error}</p>}
-                <p className="text-muted-foreground mt-2 text-right font-sans text-sm">
-                  <Link
-                    href={ROUTES.AUTH.FORGOT_PASSWORD}
-                    className="hover:text-foreground focus:ring-ring rounded-sm underline transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none">
-                    {t("forgot_password")}
-                  </Link>
-                </p>
-              </div>
-              <div className="pt-2">
-                <Button type="submit" disabled={loading} className="w-full">
-                  {loading ? (
-                    <motion.span
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="inline-block">
-                      <BrandStar s={14} />
-                    </motion.span>
-                  ) : (
-                    <>
-                      {t("submit")} <Arrow s={14} />
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </motion.div>
+          <PasswordForm
+            email={email}
+            password={password}
+            error={error}
+            loading={loading}
+            onEmailChange={setEmail}
+            onPasswordChange={setPassword}
+            onSubmit={handleLogin}
+          />
         )}
 
         {method === LoginMethod.MagicLink && (
-          <AnimatePresence mode="wait">
-            {magicStep === MagicStep.Form ? (
-              <motion.form
-                key="magic-form"
-                initial={prefersReducedMotion ? false : "hidden"}
-                animate={prefersReducedMotion ? undefined : "visible"}
-                exit={prefersReducedMotion ? undefined : "exit"}
-                variants={fadeUpLeft}
-                onSubmit={handleMagicLink}
-                className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="magic-email"
-                    className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
-                    {t("magic_link_email_label")}
-                  </label>
-                  <Input
-                    id="magic-email"
-                    type="email"
-                    placeholder={t("magic_link_email_placeholder")}
-                    value={magicEmail}
-                    onChange={(e) => setMagicEmail(e.target.value)}
-                    required
-                  />
-                  {magicError && (
-                    <p className="text-destructive mt-1.5 font-sans text-sm">{magicError}</p>
-                  )}
-                </div>
-                <div className="pt-2">
-                  <Button type="submit" disabled={magicLoading} className="w-full">
-                    {magicLoading ? (
-                      <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="inline-block">
-                        <BrandStar s={14} />
-                      </motion.span>
-                    ) : (
-                      <>
-                        {t("magic_link_submit")} <Arrow s={14} />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </motion.form>
-            ) : (
-              <motion.div
-                key="magic-sent"
-                initial={prefersReducedMotion ? false : "hidden"}
-                animate={prefersReducedMotion ? undefined : "visible"}
-                variants={fadeUpLeft}>
-                <h3 className="mb-1.5 font-serif text-xl font-normal">
-                  {t("magic_link_sent_title")}
-                </h3>
-                <p className="text-muted-foreground font-sans text-sm">
-                  {t("magic_link_sent_message", { email: magicEmail })}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <MagicLinkForm
+            email={magicEmail}
+            step={magicStep}
+            error={magicError}
+            loading={magicLoading}
+            onEmailChange={setMagicEmail}
+            onSubmit={handleMagicLink}
+            onReset={() => {
+              setMagicStep(MagicStep.Form);
+              setMagicEmail("");
+              setMagicError("");
+            }}
+          />
         )}
       </main>
     </div>

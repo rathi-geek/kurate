@@ -141,13 +141,16 @@
       "magic_link_submit": "Send sign-in link",
       "magic_link_sent_title": "Check your inbox",
       "magic_link_sent_message": "We sent a sign-in link to {email}.",
+      "magic_link_use_different_email": "Use a different email",
       "otp_title": "Check your email",
       "otp_subtitle": "Enter the 6-digit code we sent to {email}.",
       "otp_code_label": "Verification code",
       "otp_code_placeholder": "123456",
       "otp_submit": "Verify",
       "otp_error": "Invalid or expired code. Please try again.",
-      "otp_back": "Use a different email"
+      "otp_back": "Use a different email",
+      "magic_link_expired": "Your sign-in link has expired. Enter your email below to get a new one.",
+      "magic_link_invalid": "This sign-in link is no longer valid. Enter your email below to request a new one."
     },
     "onboarding": {
       "title": "Set up your profile",
