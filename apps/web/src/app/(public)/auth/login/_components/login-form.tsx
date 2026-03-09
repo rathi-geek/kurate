@@ -9,15 +9,14 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
+import { ErrorAlert } from "@/app/_components/error-alert";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
 import { redirectAfterAuth } from "@/app/_libs/utils/auth";
 import { fadeUp } from "@/app/_libs/utils/motion";
-import { Arrow, BrandLogo, BrandSunburst, FloatDeco } from "@/components/brand";
+import { BrandLogo, BrandSunburst, FloatDeco } from "@/components/brand";
 import { GoogleIcon } from "@/components/icons";
 import { useRouter } from "@/i18n";
-
-import { ErrorAlert } from "@/app/_components/error-alert";
 
 import { MagicLinkForm, MagicStep } from "./magic-link-form";
 import { OtpVerifyView } from "./otp-verify-view";

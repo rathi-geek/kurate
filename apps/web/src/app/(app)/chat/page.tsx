@@ -1,15 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-
-import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
-import { AppSidebar } from "@/app/_components/app-sidebar";
 import { MobileTabBar } from "@/app/_components/chat/MobileTabBar";
 import { ChatBubble } from "@/app/_components/chat/chat-bubble";
 import { ChatInput } from "@/app/_components/chat/chat-input";
@@ -21,7 +18,7 @@ import { ContentThreadPanel } from "@/app/_components/threads/ContentThreadPanel
 import { ThreadInfoPanel } from "@/app/_components/threads/ThreadInfoPanel";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import type { ChatTab } from "@/app/_libs/chat-types";
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { createClient } from "@/app/_libs/supabase/client";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import type { FeedItem } from "@/app/_mocks/mock-data";
@@ -43,7 +40,6 @@ export default function ChatPage() {
 }
 
 function ChatPageInner() {
-  const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const t = useTranslations("chat");
   const {
@@ -60,7 +56,6 @@ function ChatPageInner() {
     closePerson,
   } = useThread();
 
-  const [userEmail, setUserEmail] = useState("");
   const [activeTab, setActiveTab] = useState<ChatTab>("discovering");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -71,19 +66,6 @@ function ChatPageInner() {
   const [readerItem, setReaderItem] = useState<FeedItem | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isStreamingRef = useRef(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setUserEmail(data.user.email);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isTyping]);
 
   const activeThread = activeThreadId ? MOCK_THREADS.find((t) => t.id === activeThreadId) : null;
   const activeChatHandle =
@@ -96,15 +78,17 @@ function ChatPageInner() {
       return others.length === 1 ? others[0].userHandle : null;
     })();
 
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push(ROUTES.AUTH.LOGIN);
-  }
-
-  function handlePersonClick(handle: string) {
-    openPerson(handle);
-  }
+  const sidebarOverrides = useMemo(
+    () => ({
+      mobileOpen: mobileMenuOpen,
+      onMobileClose: () => setMobileMenuOpen(false),
+      onPersonClick: (handle: string) => openPerson(handle),
+      onGroupChatClick: () => {},
+      activeChatHandle: activeChatHandle ?? undefined,
+    }),
+    [mobileMenuOpen, activeChatHandle, openPerson],
+  );
+  useSidebarOverrides(sidebarOverrides);
 
   function handleOpenArticle(url: string) {
     window.open(url, "_blank", "noopener");
@@ -306,171 +290,132 @@ function ChatPageInner() {
   );
 
   return (
-    <div className="bg-background flex h-screen">
-      <AppSidebar
-        userEmail={userEmail}
-        onLogout={handleLogout}
-        mobileOpen={mobileMenuOpen}
-        onMobileClose={() => setMobileMenuOpen(false)}
-        onPersonClick={handlePersonClick}
-        onGroupChatClick={() => {}}
-        activeChatHandle={activeChatHandle}
-      />
-
-      <AnimatePresence>
-        {activeThreadId && !activePersonHandle && (
-          <ContentThreadPanel
-            key={activeThreadId}
-            threadId={activeThreadId}
-            isFullScreen={isFullScreen}
-            onClose={closeThread}
-            onToggleFullScreen={toggleFullScreen}
-            onToggleInfo={toggleInfo}
-            onOpenArticle={handleOpenArticle}
-            onSaveToVault={() => setVaultRefreshKey((k) => k + 1)}
+    <>
+      <div
+        onClick={() => activeThreadId && closeThread()}
+        className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}>
+        <div className="border-border hidden shrink-0 items-center justify-center border-b py-3 sm:flex md:flex">
+          <SlidingTabs
+            value={activeTab}
+            onChange={(v) => setActiveTab(v as ChatTab)}
+            tabs={[
+              { value: "discovering", label: t("tab_discovering") },
+              {
+                value: "logging",
+                label: t("tab_logging"),
+              },
+            ]}
           />
-        )}
-      </AnimatePresence>
+        </div>
 
-      <AnimatePresence>
-        {isInfoOpen && activeThread && !activePersonHandle && (
-          <ThreadInfoPanel key="info-panel" thread={activeThread} onClose={closeInfo} />
-        )}
-      </AnimatePresence>
-
-      {activePersonHandle ? (
-        <PersonChatView
-          handle={activePersonHandle}
-          onClose={closePerson}
-          onOpenArticle={handleOpenArticle}
-        />
-      ) : (
-        <main
-          id="main-content"
-          onClick={() => activeThreadId && closeThread()}
-          className={`flex flex-1 flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}>
-          <div className="border-border hidden shrink-0 items-center justify-center border-b py-3 sm:flex md:flex">
-            <SlidingTabs
-              value={activeTab}
-              onChange={(v) => setActiveTab(v as ChatTab)}
-              tabs={[
-                { value: "discovering", label: t("tab_discovering") },
-                {
-                  value: "logging",
-                  label: t("tab_logging"),
-                },
-              ]}
-            />
-          </div>
-
-          {activeTab === "logging" ? (
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <div className="hidden shrink-0 md:block">
-                <ChatInput
-                  onSend={handleSend}
-                  placeholder="Paste a link to log it..."
-                  disabled={isTyping}
-                />
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto pb-16 md:pb-0">
-                <VaultLibrary
-                  refreshKey={vaultRefreshKey}
-                  onItemClick={(url) => handleOpenArticle(url)}
-                  panelMode
-                />
-              </div>
-              <div className="shrink-0 border-t md:hidden">
-                <ChatInput
-                  onSend={handleSend}
-                  placeholder="Paste a link to log it..."
-                  disabled={isTyping}
-                />
-              </div>
+        {activeTab === "logging" ? (
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="hidden shrink-0 md:block">
+              <ChatInput
+                onSend={handleSend}
+                placeholder="Paste a link to log it..."
+                disabled={isTyping}
+              />
             </div>
-          ) : (
-            <>
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
-                <div className="mx-auto max-w-2xl space-y-4">
-                  {messages.length === 0 ? (
-                    <div className="space-y-10">
-                      <DiscoverFeed onItemClick={handleFeedItemClick} onSave={handleFeedSave} />
-                      <div className="mx-auto max-w-md">
-                        <p className="text-muted-foreground mb-3 font-mono text-xs font-bold tracking-widest uppercase">
-                          Recent threads
-                        </p>
-                        <div className="space-y-2">
-                          {MOCK_THREADS.slice(0, 3).map((t) => (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => openThread(t.id)}
-                              className="rounded-card border-border bg-card hover:bg-surface w-full border p-3 text-left transition-colors">
-                              <p className="text-foreground truncate font-sans text-sm font-semibold">
-                                {t.contentTitle ?? "Untitled"}
-                              </p>
-                              <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-                                with {t.participants.map((p) => p.userName).join(", ")}
-                              </p>
-                            </button>
-                          ))}
-                        </div>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-16 md:pb-0">
+              <VaultLibrary
+                refreshKey={vaultRefreshKey}
+                onItemClick={(url) => handleOpenArticle(url)}
+                panelMode
+              />
+            </div>
+            <div className="shrink-0 border-t md:hidden">
+              <ChatInput
+                onSend={handleSend}
+                placeholder="Paste a link to log it..."
+                disabled={isTyping}
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
+              <div className="mx-auto max-w-2xl space-y-4">
+                {messages.length === 0 ? (
+                  <div className="space-y-10">
+                    <DiscoverFeed onItemClick={handleFeedItemClick} onSave={handleFeedSave} />
+                    <div className="mx-auto max-w-md">
+                      <p className="text-muted-foreground mb-3 font-mono text-xs font-bold tracking-widest uppercase">
+                        Recent threads
+                      </p>
+                      <div className="space-y-2">
+                        {MOCK_THREADS.slice(0, 3).map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => openThread(t.id)}
+                            className="rounded-card border-border bg-card hover:bg-surface w-full border p-3 text-left transition-colors">
+                            <p className="text-foreground truncate font-sans text-sm font-semibold">
+                              {t.contentTitle ?? "Untitled"}
+                            </p>
+                            <p className="text-muted-foreground mt-0.5 font-mono text-xs">
+                              with {t.participants.map((p) => p.userName).join(", ")}
+                            </p>
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  ) : (
-                    <AnimatePresence>
-                      {messages.map((msg) => (
-                        <ChatBubble key={msg.id} role={msg.role}>
-                          {msg.content}
-                        </ChatBubble>
-                      ))}
-                      {isTyping && (
-                        <motion.div
-                          initial={prefersReducedMotion ? false : { opacity: 0 }}
-                          animate={prefersReducedMotion ? undefined : { opacity: 1 }}
-                          exit={prefersReducedMotion ? undefined : { opacity: 0 }}
-                          className="flex gap-1 p-4">
-                          <motion.span
-                            animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
-                            transition={{ repeat: Infinity, duration: 0.8 }}
-                            className="bg-primary/40 h-2 w-2 rounded-full"
-                          />
-                          <motion.span
-                            animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
-                            transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
-                            className="bg-primary/40 h-2 w-2 rounded-full"
-                          />
-                          <motion.span
-                            animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
-                            transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
-                            className="bg-primary/40 h-2 w-2 rounded-full"
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <AnimatePresence>
+                    {messages.map((msg) => (
+                      <ChatBubble key={msg.id} role={msg.role}>
+                        {msg.content}
+                      </ChatBubble>
+                    ))}
+                    {isTyping && (
+                      <motion.div
+                        initial={prefersReducedMotion ? false : { opacity: 0 }}
+                        animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+                        exit={prefersReducedMotion ? undefined : { opacity: 0 }}
+                        className="flex gap-1 p-4">
+                        <motion.span
+                          animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
+                          transition={{ repeat: Infinity, duration: 0.8 }}
+                          className="bg-primary/40 h-2 w-2 rounded-full"
+                        />
+                        <motion.span
+                          animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
+                          transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
+                          className="bg-primary/40 h-2 w-2 rounded-full"
+                        />
+                        <motion.span
+                          animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
+                          transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
+                          className="bg-primary/40 h-2 w-2 rounded-full"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
               </div>
-              <div className="shrink-0 space-y-2 px-4 pb-2">
-                <QuickChips
-                  visible={messages.length === 0}
-                  onSelect={(prompt) => handleSend(prompt)}
-                />
-                <ChatInput
-                  onSend={handleSend}
-                  placeholder="Ask me about any topic..."
-                  disabled={isTyping}
-                />
-              </div>
-            </>
-          )}
+            </div>
+            <div className="shrink-0 space-y-2 px-4 pb-2">
+              <QuickChips
+                visible={messages.length === 0}
+                onSelect={(prompt) => handleSend(prompt)}
+              />
+              <ChatInput
+                onSend={handleSend}
+                placeholder="Ask me about any topic..."
+                disabled={isTyping}
+              />
+            </div>
+          </>
+        )}
 
-          <MobileTabBar
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onMenuOpen={() => setMobileMenuOpen(true)}
-          />
-        </main>
-      )}
+        <MobileTabBar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onMenuOpen={() => setMobileMenuOpen(true)}
+        />
+      </div>
+
       <ArticleReader
         url={readerUrl}
         title={readerItem?.title}
@@ -481,6 +426,6 @@ function ChatPageInner() {
           setReaderItem(null);
         }}
       />
-    </div>
+    </>
   );
 }

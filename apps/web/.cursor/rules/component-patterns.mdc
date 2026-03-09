@@ -163,18 +163,16 @@ The orchestrator is thin — it holds state and async logic, then delegates rend
 
 ### App pages (with sidebar)
 
+The app shell (sidebar + main wrapper) lives in the **(app) layout** (`AppShell` in `layout.tsx`). Route-level pages only render the content that goes inside `<main>` — no wrapper div, no `<AppSidebar>`, no auth/logout logic.
+
 ```tsx
-<div className="h-screen flex bg-background">
-  <AppSidebar userEmail={userEmail} onLogout={handleLogout} />
-  <main id="main-content" className="flex-1 overflow-y-auto">
-    <div className="max-w-xl mx-auto px-6 py-8">
-      {/* page content */}
-    </div>
-  </main>
+// Page content only — shell is in layout
+<div className="max-w-xl mx-auto px-6 py-8">
+  {/* page content */}
 </div>
 ```
 
-Use `max-w-xl` for single-column content, `max-w-3xl` for wider layouts.
+Use `max-w-xl` for single-column content, `max-w-3xl` for wider layouts. For pages that need to control sidebar state (e.g. chat: mobile menu, person/group handlers), use **`useSidebarOverrides`** from `@/app/_libs/sidebar-overrides-context` to inject overrides; they are cleared on unmount.
 
 ### Auth pages (full-screen centered)
 
@@ -397,7 +395,7 @@ const t = await getTranslations("feature.section"); // server component
 | Page/API error banner | `<ErrorAlert>` — `@/app/_components/error-alert` |
 | Page or section heading | `<PageHeader>` — `@/app/_components/page-header` |
 | Auth page layout | `<AuthPageShell>` — `@/app/(public)/auth/_components/auth-page-shell` |
-| App page layout | `<AppSidebar>` + `<main id="main-content">` |
+| App page layout | Shell in (app) layout; pages render main content only; optional `useSidebarOverrides` for sidebar state |
 | Post-auth redirect | `redirectAfterAuth(user, router)` — `@/app/_libs/utils/auth` |
 | Motion variants | `fadeUp`, `fadeUpLeft`, `slideInLeft`, `springGentle` — `@/app/_libs/utils/motion` |
 | Per-item action menu | `<DropdownMenu>` from `@/components/ui/dropdown-menu` |
