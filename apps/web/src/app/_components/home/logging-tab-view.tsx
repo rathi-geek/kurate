@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatInput } from "@/app/_components/chat/chat-input";
+import { ChatInput } from "@/app/_components/home/chat-input";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 
 interface LoggingTabViewProps {

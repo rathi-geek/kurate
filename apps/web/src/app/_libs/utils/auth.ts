@@ -8,7 +8,7 @@ import { ROUTES } from "@/app/_libs/constants/routes";
  *
  * Priority:
  *   1. Admin role  → /admin/dashboard
- *   2. Onboarded   → /chat
+ *   2. Onboarded   → /home
  *   3. New user    → /onboarding
  */
 export function redirectAfterAuth(user: User | null, router: AppRouterInstance) {
@@ -17,5 +17,5 @@ export function redirectAfterAuth(user: User | null, router: AppRouterInstance) 
     return;
   }
   const isOnboarded = user?.user_metadata?.onboarded === true;
-  router.replace(isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING);
+  router.replace(isOnboarded ? ROUTES.APP.HOME : ROUTES.APP.ONBOARDING);
 }

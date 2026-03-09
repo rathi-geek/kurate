@@ -11,7 +11,6 @@ export interface SidebarOverrides {
   onMobileClose?: () => void;
   onPersonClick?: (handle: string) => void;
   onGroupChatClick?: (groupName: string) => void;
-  activeChatHandle?: string | null;
 }
 
 interface SidebarOverridesContextValue {
@@ -27,10 +26,7 @@ export function SidebarOverridesProvider({
   children: React.ReactNode;
   setOverrides: (o: SidebarOverrides) => void;
 }) {
-  const value = useCallback(
-    (next: SidebarOverrides) => setOverrides(next),
-    [setOverrides],
-  );
+  const value = useCallback((next: SidebarOverrides) => setOverrides(next), [setOverrides]);
   return (
     <SidebarOverridesContext.Provider value={{ setOverrides: value }}>
       {children}

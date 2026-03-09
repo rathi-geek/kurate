@@ -4,5 +4,5 @@ import { defineRouting } from "next-intl/routing";
 export const routing = defineRouting({
   locales: ["en-US", "en-GB"],
   defaultLocale: "en-US",
-  localePrefix: "never", // URLs stay as /chat, /profile — locale from cookie/header only
+  localePrefix: "never", // URLs stay as /home, /profile — locale from cookie/header only
 });

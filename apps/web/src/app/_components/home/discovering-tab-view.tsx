@@ -4,9 +4,9 @@ import { type RefObject } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-import { ChatBubble } from "@/app/_components/chat/chat-bubble";
-import { ChatInput } from "@/app/_components/chat/chat-input";
-import { QuickChips } from "@/app/_components/chat/quick-chips";
+import { ChatBubble } from "@/app/_components/home/chat-bubble";
+import { ChatInput } from "@/app/_components/home/chat-input";
+import { QuickChips } from "@/app/_components/home/quick-chips";
 import { DiscoverFeed } from "@/app/_components/feed/discover-feed";
 import type { ContentThread } from "@/app/_libs/chat-types";
 import type { FeedItem } from "@/app/_mocks/mock-data";

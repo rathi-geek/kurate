@@ -128,7 +128,7 @@ export default function LandingPage() {
           </Link>
 
           <Button asChild size="sm">
-            <Link href={ROUTES.APP.CHAT}>{t("get_started")}</Link>
+            <Link href={ROUTES.APP.HOME}>{t("get_started")}</Link>
           </Button>
         </div>
       </nav>

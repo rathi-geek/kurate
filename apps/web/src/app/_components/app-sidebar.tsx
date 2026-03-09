@@ -23,7 +23,7 @@ const springGentle = {
 };
 
 const NAV_ITEMS = [
-  { href: "/chat", label: "Home", Icon: BrandArch, iconSize: 14, disabled: false },
+  { href: "/home", label: "Home", Icon: BrandArch, iconSize: 14, disabled: false },
   { href: "/profile", label: "Profile", Icon: BrandCircle, iconSize: 12, disabled: false },
 ] as const;
 
@@ -50,7 +50,7 @@ export function AppSidebar({
   const pathname = usePathname();
 
   function isActive(href: string) {
-    if (href === "/chat") return pathname === "/chat" || pathname === "/";
+    if (href === "/home") return pathname === "/home" || pathname === "/";
     return pathname.startsWith(href);
   }
 

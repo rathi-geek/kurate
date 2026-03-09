@@ -2,24 +2,19 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
-import { DiscoveringTabView } from "@/app/_components/chat/discovering-tab-view";
-import { LoggingTabView } from "@/app/_components/chat/logging-tab-view";
-import { MobileTabBar } from "@/app/_components/chat/MobileTabBar";
-import { PersonChatView } from "@/app/_components/person/PersonChatView";
+import { MobileTabBar } from "@/app/_components/home/MobileTabBar";
+import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view";
+import { LoggingTabView } from "@/app/_components/home/logging-tab-view";
 import { ArticleReader } from "@/app/_components/reader/article-reader";
-import { ContentThreadPanel } from "@/app/_components/threads/ContentThreadPanel";
-import { ThreadInfoPanel } from "@/app/_components/threads/ThreadInfoPanel";
-import type { ChatTab } from "@/app/_libs/chat-types";
+import { HomeTab } from "@/app/_libs/chat-types";
 import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { createClient } from "@/app/_libs/supabase/client";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import type { FeedItem } from "@/app/_mocks/mock-data";
-import { MOCK_THREADS } from "@/app/_mocks/mock-thread-data";
 
 interface Message {
   id: string;
@@ -28,31 +23,19 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ChatPage() {
+export default function HomePage() {
   return (
     <ThreadProvider>
-      <ChatPageInner />
+      <HomePageInner />
     </ThreadProvider>
   );
 }
 
-function ChatPageInner() {
+function HomePageInner() {
   const t = useTranslations("chat");
-  const {
-    activeThreadId,
-    isFullScreen,
-    isInfoOpen,
-    activePersonHandle,
-    openThread,
-    closeThread,
-    toggleFullScreen,
-    toggleInfo,
-    closeInfo,
-    openPerson,
-    closePerson,
-  } = useThread();
+  const { activeThreadId, isFullScreen, openThread, closeThread, openPerson } = useThread();
 
-  const [activeTab, setActiveTab] = useState<ChatTab>("discovering");
+  const [activeTab, setActiveTab] = useState<HomeTab>(HomeTab.DISCOVERING);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [vaultRefreshKey, setVaultRefreshKey] = useState(0);
@@ -63,26 +46,14 @@ function ChatPageInner() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isStreamingRef = useRef(false);
 
-  const activeThread = activeThreadId ? MOCK_THREADS.find((t) => t.id === activeThreadId) : null;
-  const activeChatHandle =
-    activePersonHandle ??
-    (() => {
-      if (!activeThreadId) return null;
-      const thread = MOCK_THREADS.find((t) => t.id === activeThreadId);
-      if (!thread) return null;
-      const others = thread.participants.filter((p) => p.userHandle !== "@vivek");
-      return others.length === 1 ? others[0].userHandle : null;
-    })();
-
   const sidebarOverrides = useMemo(
     () => ({
       mobileOpen: mobileMenuOpen,
       onMobileClose: () => setMobileMenuOpen(false),
       onPersonClick: (handle: string) => openPerson(handle),
       onGroupChatClick: () => {},
-      activeChatHandle: activeChatHandle ?? undefined,
     }),
-    [mobileMenuOpen, activeChatHandle, openPerson],
+    [mobileMenuOpen, openPerson],
   );
   useSidebarOverrides(sidebarOverrides);
 
@@ -122,7 +93,7 @@ function ChatPageInner() {
 
   const handleSend = useCallback(
     async (text: string) => {
-      if (activeTab === "logging") {
+      if (activeTab === HomeTab.VAULT) {
         const urlMatch = text.match(/https?:\/\/[^\s]+/);
         if (urlMatch) {
           setIsTyping(true);
@@ -287,52 +258,21 @@ function ChatPageInner() {
 
   return (
     <>
-      <AnimatePresence>
-        {activeThreadId && !activePersonHandle && (
-          <ContentThreadPanel
-            key={activeThreadId}
-            threadId={activeThreadId}
-            isFullScreen={isFullScreen}
-            onClose={closeThread}
-            onToggleFullScreen={toggleFullScreen}
-            onToggleInfo={toggleInfo}
-            onOpenArticle={handleOpenArticle}
-            onSaveToVault={() => setVaultRefreshKey((k) => k + 1)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isInfoOpen && activeThread && !activePersonHandle && (
-          <ThreadInfoPanel key="info-panel" thread={activeThread} onClose={closeInfo} />
-        )}
-      </AnimatePresence>
-
-      {activePersonHandle ? (
-        <PersonChatView
-          handle={activePersonHandle}
-          onClose={closePerson}
-          onOpenArticle={handleOpenArticle}
-        />
-      ) : (
       <div
         onClick={() => activeThreadId && closeThread()}
         className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}>
         <div className="border-border hidden shrink-0 items-center justify-center border-b py-3 sm:flex md:flex">
           <SlidingTabs
-            value={activeTab}
-            onChange={(v) => setActiveTab(v as ChatTab)}
+            value={activeTab as HomeTab}
+            onChange={(v) => setActiveTab(v as HomeTab)}
             tabs={[
-              { value: "discovering", label: t("tab_discovering") },
-              {
-                value: "logging",
-                label: t("tab_logging"),
-              },
+              { value: HomeTab.DISCOVERING, label: t("tab_discovering") },
+              { value: HomeTab.VAULT, label: t("tab_vault") },
             ]}
           />
         </div>
 
-        {activeTab === "logging" ? (
+        {activeTab === HomeTab.VAULT ? (
           <LoggingTabView
             onSend={handleSend}
             disabled={isTyping}
@@ -356,7 +296,6 @@ function ChatPageInner() {
           onMenuOpen={() => setMobileMenuOpen(true)}
         />
       </div>
-      )}
 
       <ArticleReader
         url={readerUrl}

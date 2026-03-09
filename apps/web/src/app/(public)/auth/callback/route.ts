@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         redirectPath = ROUTES.ADMIN.DASHBOARD;
       } else {
         const isOnboarded = user?.user_metadata?.onboarded === true;
-        redirectPath = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
+        redirectPath = isOnboarded ? ROUTES.APP.HOME : ROUTES.APP.ONBOARDING;
       }
 
       const response = NextResponse.redirect(`${origin}${redirectPath}`);

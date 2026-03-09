@@ -57,7 +57,7 @@ export async function proxy(request: NextRequest) {
 
   // App routes (require auth + completed onboarding)
   const isAppRoute =
-    pathname.startsWith(ROUTES.APP.CHAT) ||
+    pathname.startsWith(ROUTES.APP.HOME) ||
     pathname.startsWith(ROUTES.APP.PROFILE) ||
     pathname.startsWith(ROUTES.APP.SHARED) ||
     pathname.startsWith(ROUTES.APP.GROUPS) ||
@@ -107,7 +107,7 @@ export async function proxy(request: NextRequest) {
       url.pathname = ROUTES.ADMIN.DASHBOARD;
     } else {
       const isOnboarded = user.user_metadata?.onboarded === true;
-      url.pathname = isOnboarded ? ROUTES.APP.CHAT : ROUTES.APP.ONBOARDING;
+      url.pathname = isOnboarded ? ROUTES.APP.HOME : ROUTES.APP.ONBOARDING;
     }
     return NextResponse.redirect(url);
   }

@@ -19,7 +19,7 @@
     "send": "Send",
     "thinking": "Thinking...",
     "tab_discovering": "Discover",
-    "tab_logging": "Vault"
+    "tab_vault": "Vault"
   },
   "discover": {
     "title": "Discover",

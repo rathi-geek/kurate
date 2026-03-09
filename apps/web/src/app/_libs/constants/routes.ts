@@ -14,7 +14,7 @@ export const ROUTES = {
   },
 
   APP: {
-    CHAT: "/chat",
+    HOME: "/home",
     PROFILE: "/profile",
     SHARED: "/shared",
     GROUPS: "/groups",

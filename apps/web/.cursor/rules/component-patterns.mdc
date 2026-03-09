@@ -374,7 +374,7 @@ import {
 ```tsx
 // Routes — always use constants, never hardcode strings
 import { ROUTES } from "@/app/_libs/constants/routes";
-router.replace(ROUTES.APP.CHAT);
+router.replace(ROUTES.APP.HOME);
 <Link href={ROUTES.AUTH.LOGIN}>
 
 // Translations — always; never hardcode English

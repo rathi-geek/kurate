@@ -36,7 +36,7 @@ export default function GroupPage() {
           <p className="text-muted-foreground mb-2">Group not found</p>
           <button
             type="button"
-            onClick={() => router.push(ROUTES.APP.CHAT)}
+            onClick={() => router.push(ROUTES.APP.HOME)}
             className="text-sm text-primary hover:underline"
           >
             Back to Home
@@ -50,7 +50,7 @@ export default function GroupPage() {
     <div className="mx-auto max-w-3xl px-6 py-8">
       <button
         type="button"
-        onClick={() => router.push(ROUTES.APP.CHAT)}
+        onClick={() => router.push(ROUTES.APP.HOME)}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 rounded-badge px-2 py-1 hover:bg-surface transition-colors"
         aria-label="Back to home"
       >

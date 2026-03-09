@@ -71,7 +71,7 @@ export function OnboardingForm() {
     await supabase.auth.updateUser({
       data: { name, username, interests, onboarded: true },
     });
-    router.replace(ROUTES.APP.CHAT);
+    router.replace(ROUTES.APP.HOME);
   }
 
   const mp = (custom: number) => ({

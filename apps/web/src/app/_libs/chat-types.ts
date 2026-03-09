@@ -48,4 +48,7 @@ export interface ThreadComment {
   updatedAt?: string;
 }
 
-export type ChatTab = "discovering" | "logging";
+export enum HomeTab {
+  DISCOVERING = "discovering",
+  VAULT = "vault",
+}
