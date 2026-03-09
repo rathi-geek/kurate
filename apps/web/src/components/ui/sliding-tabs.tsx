@@ -5,9 +5,9 @@ import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/app/_libs/utils/cn";
 
 // ─── Size Variants ─────────────────────────────────────────────────────────
-// sm  → login page  (compact, text-sm, font-medium)
-// md  → chat page   (slightly bigger, text-[13px], font-semibold)
-// lg  → future use  (spacious, text-sm, font-semibold)
+// md  → default everywhere (text-[13px], font-semibold)
+// sm  → compact override (text-sm, font-medium)
+// lg  → future use (spacious, text-sm, font-semibold)
 const SIZE_CONFIG = {
   sm: { pad: 4, btn: "px-4 py-1.5 text-sm font-medium",     minW: "min-w-[200px]" },
   md: { pad: 4, btn: "px-5 py-2 text-[13px] font-semibold", minW: "min-w-[220px]" },
@@ -41,7 +41,7 @@ export function SlidingTabs<T extends string>({
   tabs,
   value,
   onChange,
-  size = "sm",
+  size = "md",
   animated = true,
   className,
 }: SlidingTabsProps<T>) {

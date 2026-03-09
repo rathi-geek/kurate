@@ -1,27 +1,31 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
+
 import { AppSidebar } from "@/app/_components/app-sidebar";
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { MobileTabBar } from "@/app/_components/chat/MobileTabBar";
 import { ChatBubble } from "@/app/_components/chat/chat-bubble";
 import { ChatInput } from "@/app/_components/chat/chat-input";
 import { QuickChips } from "@/app/_components/chat/quick-chips";
+import { DiscoverFeed } from "@/app/_components/feed/discover-feed";
+import { PersonChatView } from "@/app/_components/person/PersonChatView";
+import { ArticleReader } from "@/app/_components/reader/article-reader";
 import { ContentThreadPanel } from "@/app/_components/threads/ContentThreadPanel";
 import { ThreadInfoPanel } from "@/app/_components/threads/ThreadInfoPanel";
-import { PersonChatView } from "@/app/_components/person/PersonChatView";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
-import { MobileTabBar } from "@/app/_components/chat/MobileTabBar";
-import { DiscoverFeed } from "@/app/_components/feed/discover-feed";
-import { ArticleReader } from "@/app/_components/reader/article-reader";
-import type { FeedItem } from "@/app/_mocks/mock-data";
-import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
-import { MOCK_THREADS } from "@/app/_mocks/mock-thread-data";
-import { createClient } from "@/app/_libs/supabase/client";
 import type { ChatTab } from "@/app/_libs/chat-types";
-import { SlidingTabs } from "@/components/ui/sliding-tabs";
+import { ROUTES } from "@/app/_libs/constants/routes";
+import { createClient } from "@/app/_libs/supabase/client";
+import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
+import type { FeedItem } from "@/app/_mocks/mock-data";
+import { MOCK_THREADS } from "@/app/_mocks/mock-thread-data";
 
 interface Message {
   id: string;
@@ -61,7 +65,7 @@ function ChatPageInner() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [vaultRefreshKey, setVaultRefreshKey] = useState(0);
-  const [vaultPulse, setVaultPulse] = useState(false);
+  const [_vaultPulse, setVaultPulse] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [readerItem, setReaderItem] = useState<FeedItem | null>(null);
@@ -82,13 +86,15 @@ function ChatPageInner() {
   }, [messages, isTyping]);
 
   const activeThread = activeThreadId ? MOCK_THREADS.find((t) => t.id === activeThreadId) : null;
-  const activeChatHandle = activePersonHandle ?? (() => {
-    if (!activeThreadId) return null;
-    const thread = MOCK_THREADS.find((t) => t.id === activeThreadId);
-    if (!thread) return null;
-    const others = thread.participants.filter((p) => p.userHandle !== "@vivek");
-    return others.length === 1 ? others[0].userHandle : null;
-  })();
+  const activeChatHandle =
+    activePersonHandle ??
+    (() => {
+      if (!activeThreadId) return null;
+      const thread = MOCK_THREADS.find((t) => t.id === activeThreadId);
+      if (!thread) return null;
+      const others = thread.participants.filter((p) => p.userHandle !== "@vivek");
+      return others.length === 1 ? others[0].userHandle : null;
+    })();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -111,7 +117,9 @@ function ChatPageInner() {
 
   async function handleFeedSave(item: FeedItem) {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from("logged_items").upsert(
       {
@@ -126,7 +134,7 @@ function ChatPageInner() {
         save_source: "feed",
         shared_to_groups: [],
       },
-      { onConflict: "user_id,url" }
+      { onConflict: "user_id,url" },
     );
     setVaultRefreshKey((k) => k + 1);
     setVaultPulse(true);
@@ -141,14 +149,25 @@ function ChatPageInner() {
           let saved = false;
           try {
             const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
             if (user) {
               const res = await fetch("/api/extract", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: urlMatch[0] }),
               });
-              const meta = res.ok ? await res.json() : { title: urlMatch[0], source: "", author: null, previewImage: null, contentType: "article", readTime: null };
+              const meta = res.ok
+                ? await res.json()
+                : {
+                    title: urlMatch[0],
+                    source: "",
+                    author: null,
+                    previewImage: null,
+                    contentType: "article",
+                    readTime: null,
+                  };
               const { error } = await supabase.from("logged_items").upsert(
                 {
                   user_id: user.id,
@@ -162,7 +181,7 @@ function ChatPageInner() {
                   save_source: "logged",
                   shared_to_groups: [],
                 },
-                { onConflict: "user_id,url" }
+                { onConflict: "user_id,url" },
               );
               if (!error) {
                 setVaultRefreshKey((k) => k + 1);
@@ -177,7 +196,9 @@ function ChatPageInner() {
           const sysMsg: Message = {
             id: crypto.randomUUID(),
             role: "system",
-            content: saved ? "Link saved to your vault." : "Vault save skipped (table may not exist yet).",
+            content: saved
+              ? "Link saved to your vault."
+              : "Vault save skipped (table may not exist yet).",
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, sysMsg]);
@@ -206,7 +227,10 @@ function ChatPageInner() {
       try {
         const history = messages
           .filter((m) => m.content.trim() !== "")
-          .map((m) => ({ role: m.role === "system" ? "assistant" as const : "user" as const, content: m.content }));
+          .map((m) => ({
+            role: m.role === "system" ? ("assistant" as const) : ("user" as const),
+            content: m.content,
+          }));
         history.push({ role: "user" as const, content: text });
 
         const res = await fetch("/api/ai/chat", {
@@ -228,41 +252,61 @@ function ChatPageInner() {
             fullText += decoder.decode(value, { stream: true });
             if (firstChunk) {
               firstChunk = false;
-              setMessages((prev) => [...prev, { id: msgId, role: "system", content: fullText, timestamp: new Date() }]);
+              setMessages((prev) => [
+                ...prev,
+                { id: msgId, role: "system", content: fullText, timestamp: new Date() },
+              ]);
               setIsTyping(false);
             } else {
-              setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, content: fullText } : m)));
+              setMessages((prev) =>
+                prev.map((m) => (m.id === msgId ? { ...m, content: fullText } : m)),
+              );
             }
           }
           if (firstChunk || !fullText.trim()) {
             setMessages((prev) => [
               ...prev,
-              { id: crypto.randomUUID(), role: "system", content: "I didn't get a response. Try again.", timestamp: new Date() },
+              {
+                id: crypto.randomUUID(),
+                role: "system",
+                content: "I didn't get a response. Try again.",
+                timestamp: new Date(),
+              },
             ]);
             setIsTyping(false);
           }
         } else {
           setMessages((prev) => [
             ...prev,
-            { id: crypto.randomUUID(), role: "system", content: "Something went wrong. Try again.", timestamp: new Date() },
+            {
+              id: crypto.randomUUID(),
+              role: "system",
+              content: "Something went wrong. Try again.",
+              timestamp: new Date(),
+            },
           ]);
           setIsTyping(false);
         }
       } catch {
         setMessages((prev) => [
           ...prev,
-          { id: crypto.randomUUID(), role: "system", content: "Something went wrong. Try again.", timestamp: new Date() },
+          {
+            id: crypto.randomUUID(),
+            role: "system",
+            content: "Something went wrong. Try again.",
+            timestamp: new Date(),
+          },
         ]);
         setIsTyping(false);
       } finally {
         isStreamingRef.current = false;
       }
     },
-    [activeTab, messages]
+    [activeTab, messages],
   );
 
   return (
-    <div className="h-screen flex bg-background">
+    <div className="bg-background flex h-screen">
       <AppSidebar
         userEmail={userEmail}
         onLogout={handleLogout}
@@ -304,12 +348,9 @@ function ChatPageInner() {
         <main
           id="main-content"
           onClick={() => activeThreadId && closeThread()}
-          className={`flex-1 flex flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}
-        >
-          <div className="shrink-0 hidden md:flex items-center justify-center py-3 border-b bg-background">
+          className={`flex flex-1 flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}>
+          <div className="border-border hidden shrink-0 items-center justify-center border-b py-3 sm:flex md:flex">
             <SlidingTabs
-              size="md"
-              animated={!activeThreadId}
               value={activeTab}
               onChange={(v) => setActiveTab(v as ChatTab)}
               tabs={[
@@ -317,45 +358,28 @@ function ChatPageInner() {
                 {
                   value: "logging",
                   label: t("tab_logging"),
-                  suffix: (
-                    <AnimatePresence>
-                      {vaultPulse && (
-                        <motion.span
-                          key="vault-plus"
-                          initial={{ opacity: 1, y: 0, scale: 1 }}
-                          animate={{ opacity: 0, y: -18, scale: 0.8 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-                          onAnimationComplete={() => setVaultPulse(false)}
-                          className="absolute -top-1 -right-4 font-mono text-[10px] font-bold text-primary-foreground pointer-events-none"
-                        >
-                          +1
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  ),
                 },
               ]}
             />
           </div>
 
           {activeTab === "logging" ? (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="hidden md:block shrink-0">
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="hidden shrink-0 md:block">
                 <ChatInput
                   onSend={handleSend}
                   placeholder="Paste a link to log it..."
                   disabled={isTyping}
                 />
               </div>
-              <div className="flex-1 overflow-y-auto min-h-0 pb-16 md:pb-0">
+              <div className="min-h-0 flex-1 overflow-y-auto pb-16 md:pb-0">
                 <VaultLibrary
                   refreshKey={vaultRefreshKey}
                   onItemClick={(url) => handleOpenArticle(url)}
                   panelMode
                 />
               </div>
-              <div className="md:hidden shrink-0 border-t">
+              <div className="shrink-0 border-t md:hidden">
                 <ChatInput
                   onSend={handleSend}
                   placeholder="Paste a link to log it..."
@@ -366,15 +390,12 @@ function ChatPageInner() {
           ) : (
             <>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
-                <div className="max-w-2xl mx-auto space-y-4">
+                <div className="mx-auto max-w-2xl space-y-4">
                   {messages.length === 0 ? (
                     <div className="space-y-10">
-                      <DiscoverFeed
-                        onItemClick={handleFeedItemClick}
-                        onSave={handleFeedSave}
-                      />
-                      <div className="max-w-md mx-auto">
-                        <p className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+                      <DiscoverFeed onItemClick={handleFeedItemClick} onSave={handleFeedSave} />
+                      <div className="mx-auto max-w-md">
+                        <p className="text-muted-foreground mb-3 font-mono text-xs font-bold tracking-widest uppercase">
                           Recent threads
                         </p>
                         <div className="space-y-2">
@@ -383,12 +404,11 @@ function ChatPageInner() {
                               key={t.id}
                               type="button"
                               onClick={() => openThread(t.id)}
-                              className="w-full text-left p-3 rounded-card border border-border bg-card hover:bg-surface transition-colors"
-                            >
-                              <p className="font-sans text-sm font-semibold text-foreground truncate">
+                              className="rounded-card border-border bg-card hover:bg-surface w-full border p-3 text-left transition-colors">
+                              <p className="text-foreground truncate font-sans text-sm font-semibold">
                                 {t.contentTitle ?? "Untitled"}
                               </p>
-                              <p className="font-mono text-xs text-muted-foreground mt-0.5">
+                              <p className="text-muted-foreground mt-0.5 font-mono text-xs">
                                 with {t.participants.map((p) => p.userName).join(", ")}
                               </p>
                             </button>
@@ -408,22 +428,21 @@ function ChatPageInner() {
                           initial={prefersReducedMotion ? false : { opacity: 0 }}
                           animate={prefersReducedMotion ? undefined : { opacity: 1 }}
                           exit={prefersReducedMotion ? undefined : { opacity: 0 }}
-                          className="flex gap-1 p-4"
-                        >
+                          className="flex gap-1 p-4">
                           <motion.span
                             animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8 }}
-                            className="w-2 h-2 bg-primary/40 rounded-full"
+                            className="bg-primary/40 h-2 w-2 rounded-full"
                           />
                           <motion.span
                             animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
-                            className="w-2 h-2 bg-primary/40 rounded-full"
+                            className="bg-primary/40 h-2 w-2 rounded-full"
                           />
                           <motion.span
                             animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
                             transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
-                            className="w-2 h-2 bg-primary/40 rounded-full"
+                            className="bg-primary/40 h-2 w-2 rounded-full"
                           />
                         </motion.div>
                       )}
@@ -431,7 +450,7 @@ function ChatPageInner() {
                   )}
                 </div>
               </div>
-              <div className="shrink-0 px-4 pb-2 space-y-2">
+              <div className="shrink-0 space-y-2 px-4 pb-2">
                 <QuickChips
                   visible={messages.length === 0}
                   onSelect={(prompt) => handleSend(prompt)}

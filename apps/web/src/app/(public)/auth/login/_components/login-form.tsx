@@ -1,19 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
-import { Link, useRouter } from "@/i18n";
+
 import { env } from "env";
-import { SlidingTabs } from "@/components/ui/sliding-tabs";
+import { AnimatePresence, type Variants, motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
+
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { createClient } from "@/app/_libs/supabase/client";
+import { fadeUpLeft, fadeUpRight } from "@/app/_libs/utils/motion";
 import { Arrow, BrandLogo, BrandStar, BrandSunburst, FloatDeco } from "@/components/brand";
 import { GoogleIcon } from "@/components/icons";
-
-const springGentle = { type: "spring" as const, stiffness: 260, damping: 25 };
+import { Link, useRouter } from "@/i18n";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
@@ -97,8 +99,10 @@ export function LoginForm() {
 
     const supabase = createClient();
 
-    const { data: signInData, error: signInError } =
-      await supabase.auth.signInWithPassword({ email, password });
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (!signInError) {
       const user = signInData.user;
@@ -111,8 +115,10 @@ export function LoginForm() {
       return;
     }
 
-    const { data: signUpData, error: signUpError } =
-      await supabase.auth.signUp({ email, password });
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
     if (signUpError) {
       setError(t("error_wrong_password"));
@@ -151,7 +157,9 @@ export function LoginForm() {
       return;
     }
 
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser();
     if (currentUser?.user_metadata?.role === "admin") {
       router.replace(ROUTES.ADMIN.DASHBOARD);
       return;
@@ -168,14 +176,13 @@ export function LoginForm() {
           </FloatDeco>
         </div>
 
-        <main id="main-content" className="relative z-10 w-full max-w-auth px-8">
+        <main id="main-content" className="max-w-auth relative z-10 w-full px-8">
           <motion.div
             custom={0}
             initial={prefersReducedMotion ? false : "hidden"}
             animate={prefersReducedMotion ? undefined : "visible"}
             variants={fadeUp}
-            className="mb-12"
-          >
+            className="mb-12">
             <BrandLogo name={tApp("name")} s={24} />
           </motion.div>
 
@@ -183,10 +190,13 @@ export function LoginForm() {
             custom={1}
             initial={prefersReducedMotion ? false : "hidden"}
             animate={prefersReducedMotion ? undefined : "visible"}
-            variants={fadeUp}
-          >
-            <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("otp_title")}</h2>
-            <p className="mb-8 font-sans text-sm text-muted-foreground">{t("otp_subtitle", { email })}</p>
+            variants={fadeUp}>
+            <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">
+              {t("otp_title")}
+            </h2>
+            <p className="text-muted-foreground mb-8 font-sans text-sm">
+              {t("otp_subtitle", { email })}
+            </p>
           </motion.div>
 
           <motion.form
@@ -195,10 +205,11 @@ export function LoginForm() {
             animate={prefersReducedMotion ? undefined : "visible"}
             variants={fadeUp}
             onSubmit={handleVerifyOtp}
-            className="space-y-4"
-          >
+            className="space-y-4">
             <div>
-              <label htmlFor="otp-code" className="mb-2 block font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
+              <label
+                htmlFor="otp-code"
+                className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
                 {t("otp_code_label")}
               </label>
               <Input
@@ -213,14 +224,21 @@ export function LoginForm() {
                 required
                 autoFocus
               />
-              {error && <p className="mt-1.5 font-sans text-sm text-destructive">{error}</p>}
+              {error && <p className="text-destructive mt-1.5 font-sans text-sm">{error}</p>}
             </div>
             <div className="pt-2">
               <Button type="submit" disabled={loading || otpCode.length < 6} className="w-full">
                 {loading ? (
-                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><BrandStar s={14} /></motion.span>
+                  <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="inline-block">
+                    <BrandStar s={14} />
+                  </motion.span>
                 ) : (
-                  <>{t("otp_submit")} <Arrow s={14} /></>
+                  <>
+                    {t("otp_submit")} <Arrow s={14} />
+                  </>
                 )}
               </Button>
             </div>
@@ -231,13 +249,15 @@ export function LoginForm() {
             initial={prefersReducedMotion ? false : "hidden"}
             animate={prefersReducedMotion ? undefined : "visible"}
             variants={fadeUp}
-            className="mt-6 text-center"
-          >
+            className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => { setAuthStep(AuthStep.Form); setOtpCode(""); setError(""); }}
-              className="font-sans text-sm text-muted-foreground underline hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm"
-            >
+              onClick={() => {
+                setAuthStep(AuthStep.Form);
+                setOtpCode("");
+                setError("");
+              }}
+              className="text-muted-foreground hover:text-foreground focus:ring-ring rounded-sm font-sans text-sm underline focus:ring-2 focus:ring-offset-2 focus:outline-none">
               {t("otp_back")}
             </button>
           </motion.div>
@@ -254,14 +274,13 @@ export function LoginForm() {
         </FloatDeco>
       </div>
 
-      <main id="main-content" className="relative z-10 w-full max-w-auth px-8">
+      <main id="main-content" className="max-w-auth relative z-10 w-full px-8">
         <motion.div
           custom={0}
           initial={prefersReducedMotion ? false : "hidden"}
           animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
-          className="mb-12"
-        >
+          className="mb-12">
           <BrandLogo name={tApp("name")} s={24} />
         </motion.div>
 
@@ -269,10 +288,9 @@ export function LoginForm() {
           custom={1}
           initial={prefersReducedMotion ? false : "hidden"}
           animate={prefersReducedMotion ? undefined : "visible"}
-          variants={fadeUp}
-        >
+          variants={fadeUp}>
           <h2 className="mb-1.5 font-serif text-3xl font-normal tracking-tight">{t("title")}</h2>
-          <p className="mb-8 font-sans text-sm text-muted-foreground">{t("subtitle")}</p>
+          <p className="text-muted-foreground mb-8 font-sans text-sm">{t("subtitle")}</p>
         </motion.div>
 
         {/* Google OAuth */}
@@ -280,23 +298,17 @@ export function LoginForm() {
           custom={2}
           initial={prefersReducedMotion ? false : "hidden"}
           animate={prefersReducedMotion ? undefined : "visible"}
-          variants={fadeUp}
-        >
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full gap-2"
-            onClick={handleGoogle}
-          >
+          variants={fadeUp}>
+          <Button type="button" variant="outline" className="w-full gap-2" onClick={handleGoogle}>
             <GoogleIcon className="h-4 w-4" />
             {t("google")}
           </Button>
 
           {/* Divider */}
           <div className="relative my-2 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="font-sans text-xs text-muted-foreground">{t("or_divider")}</span>
-            <div className="h-px flex-1 bg-border" />
+            <div className="bg-border h-px flex-1" />
+            <span className="text-muted-foreground font-sans text-xs">{t("or_divider")}</span>
+            <div className="bg-border h-px flex-1" />
           </div>
         </motion.div>
 
@@ -306,10 +318,8 @@ export function LoginForm() {
           initial={prefersReducedMotion ? false : "hidden"}
           animate={prefersReducedMotion ? undefined : "visible"}
           variants={fadeUp}
-          className="mb-6"
-        >
+          className="mb-6">
           <SlidingTabs
-            size="sm"
             value={method}
             onChange={setMethod}
             tabs={[
@@ -322,19 +332,14 @@ export function LoginForm() {
         {method === LoginMethod.Password && (
           <motion.div
             key="password-form"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0, transition: springGentle }}
-          >
-            <motion.form
-              custom={4}
-              initial={prefersReducedMotion ? false : "hidden"}
-              animate={prefersReducedMotion ? undefined : "visible"}
-              variants={fadeUp}
-              onSubmit={handleLogin}
-              className="space-y-4"
-            >
+            initial={prefersReducedMotion ? false : "hidden"}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={fadeUpRight}>
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label htmlFor="login-email" className="mb-2 block font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
+                <label
+                  htmlFor="login-email"
+                  className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
                   {t("email_label")}
                 </label>
                 <Input
@@ -347,7 +352,9 @@ export function LoginForm() {
                 />
               </div>
               <div>
-                <label htmlFor="login-password" className="mb-2 block font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
+                <label
+                  htmlFor="login-password"
+                  className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
                   {t("password_label")}
                 </label>
                 <Input
@@ -358,12 +365,11 @@ export function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                {error && <p className="mt-1.5 font-sans text-sm text-destructive">{error}</p>}
-                <p className="mt-2 text-right font-sans text-sm text-muted-foreground">
+                {error && <p className="text-destructive mt-1.5 font-sans text-sm">{error}</p>}
+                <p className="text-muted-foreground mt-2 text-right font-sans text-sm">
                   <Link
                     href={ROUTES.AUTH.FORGOT_PASSWORD}
-                    className="rounded-sm underline transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  >
+                    className="hover:text-foreground focus:ring-ring rounded-sm underline transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none">
                     {t("forgot_password")}
                   </Link>
                 </p>
@@ -371,7 +377,10 @@ export function LoginForm() {
               <div className="pt-2">
                 <Button type="submit" disabled={loading} className="w-full">
                   {loading ? (
-                    <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block">
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="inline-block">
                       <BrandStar s={14} />
                     </motion.span>
                   ) : (
@@ -381,7 +390,7 @@ export function LoginForm() {
                   )}
                 </Button>
               </div>
-            </motion.form>
+            </form>
           </motion.div>
         )}
 
@@ -390,14 +399,16 @@ export function LoginForm() {
             {magicStep === MagicStep.Form ? (
               <motion.form
                 key="magic-form"
-                initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-                animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0, transition: springGentle }}
-                exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8, transition: { duration: 0.15 } }}
+                initial={prefersReducedMotion ? false : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                exit={prefersReducedMotion ? undefined : "exit"}
+                variants={fadeUpLeft}
                 onSubmit={handleMagicLink}
-                className="space-y-4"
-              >
+                className="space-y-4">
                 <div>
-                  <label htmlFor="magic-email" className="mb-2 block font-sans text-xs font-bold uppercase tracking-[0.08em] text-foreground">
+                  <label
+                    htmlFor="magic-email"
+                    className="text-foreground mb-2 block font-sans text-xs font-bold tracking-[0.08em] uppercase">
                     {t("magic_link_email_label")}
                   </label>
                   <Input
@@ -408,14 +419,23 @@ export function LoginForm() {
                     onChange={(e) => setMagicEmail(e.target.value)}
                     required
                   />
-                  {magicError && <p className="mt-1.5 font-sans text-sm text-destructive">{magicError}</p>}
+                  {magicError && (
+                    <p className="text-destructive mt-1.5 font-sans text-sm">{magicError}</p>
+                  )}
                 </div>
                 <div className="pt-2">
                   <Button type="submit" disabled={magicLoading} className="w-full">
                     {magicLoading ? (
-                      <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><BrandStar s={14} /></motion.span>
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="inline-block">
+                        <BrandStar s={14} />
+                      </motion.span>
                     ) : (
-                      <>{t("magic_link_submit")} <Arrow s={14} /></>
+                      <>
+                        {t("magic_link_submit")} <Arrow s={14} />
+                      </>
                     )}
                   </Button>
                 </div>
@@ -423,11 +443,15 @@ export function LoginForm() {
             ) : (
               <motion.div
                 key="magic-sent"
-                initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-                animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0, transition: springGentle }}
-              >
-                <h3 className="mb-1.5 font-serif text-xl font-normal">{t("magic_link_sent_title")}</h3>
-                <p className="font-sans text-sm text-muted-foreground">{t("magic_link_sent_message", { email: magicEmail })}</p>
+                initial={prefersReducedMotion ? false : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={fadeUpLeft}>
+                <h3 className="mb-1.5 font-serif text-xl font-normal">
+                  {t("magic_link_sent_title")}
+                </h3>
+                <p className="text-muted-foreground font-sans text-sm">
+                  {t("magic_link_sent_message", { email: magicEmail })}
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
