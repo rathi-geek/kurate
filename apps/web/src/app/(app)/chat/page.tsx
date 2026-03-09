@@ -2,21 +2,18 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
+import { DiscoveringTabView } from "@/app/_components/chat/discovering-tab-view";
+import { LoggingTabView } from "@/app/_components/chat/logging-tab-view";
 import { MobileTabBar } from "@/app/_components/chat/MobileTabBar";
-import { ChatBubble } from "@/app/_components/chat/chat-bubble";
-import { ChatInput } from "@/app/_components/chat/chat-input";
-import { QuickChips } from "@/app/_components/chat/quick-chips";
-import { DiscoverFeed } from "@/app/_components/feed/discover-feed";
 import { PersonChatView } from "@/app/_components/person/PersonChatView";
 import { ArticleReader } from "@/app/_components/reader/article-reader";
 import { ContentThreadPanel } from "@/app/_components/threads/ContentThreadPanel";
 import { ThreadInfoPanel } from "@/app/_components/threads/ThreadInfoPanel";
-import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import type { ChatTab } from "@/app/_libs/chat-types";
 import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { createClient } from "@/app/_libs/supabase/client";
@@ -40,7 +37,6 @@ export default function ChatPage() {
 }
 
 function ChatPageInner() {
-  const prefersReducedMotion = useReducedMotion();
   const t = useTranslations("chat");
   const {
     activeThreadId,
@@ -291,6 +287,34 @@ function ChatPageInner() {
 
   return (
     <>
+      <AnimatePresence>
+        {activeThreadId && !activePersonHandle && (
+          <ContentThreadPanel
+            key={activeThreadId}
+            threadId={activeThreadId}
+            isFullScreen={isFullScreen}
+            onClose={closeThread}
+            onToggleFullScreen={toggleFullScreen}
+            onToggleInfo={toggleInfo}
+            onOpenArticle={handleOpenArticle}
+            onSaveToVault={() => setVaultRefreshKey((k) => k + 1)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isInfoOpen && activeThread && !activePersonHandle && (
+          <ThreadInfoPanel key="info-panel" thread={activeThread} onClose={closeInfo} />
+        )}
+      </AnimatePresence>
+
+      {activePersonHandle ? (
+        <PersonChatView
+          handle={activePersonHandle}
+          onClose={closePerson}
+          onOpenArticle={handleOpenArticle}
+        />
+      ) : (
       <div
         onClick={() => activeThreadId && closeThread()}
         className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}>
@@ -309,112 +333,30 @@ function ChatPageInner() {
         </div>
 
         {activeTab === "logging" ? (
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="hidden shrink-0 md:block">
-              <ChatInput
-                onSend={handleSend}
-                placeholder="Paste a link to log it..."
-                disabled={isTyping}
-              />
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pb-16 md:pb-0">
-              <VaultLibrary
-                refreshKey={vaultRefreshKey}
-                onItemClick={(url) => handleOpenArticle(url)}
-                panelMode
-              />
-            </div>
-            <div className="shrink-0 border-t md:hidden">
-              <ChatInput
-                onSend={handleSend}
-                placeholder="Paste a link to log it..."
-                disabled={isTyping}
-              />
-            </div>
-          </div>
+          <LoggingTabView
+            onSend={handleSend}
+            disabled={isTyping}
+            vaultRefreshKey={vaultRefreshKey}
+            onOpenArticle={handleOpenArticle}
+          />
         ) : (
-          <>
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
-              <div className="mx-auto max-w-2xl space-y-4">
-                {messages.length === 0 ? (
-                  <div className="space-y-10">
-                    <DiscoverFeed onItemClick={handleFeedItemClick} onSave={handleFeedSave} />
-                    <div className="mx-auto max-w-md">
-                      <p className="text-muted-foreground mb-3 font-mono text-xs font-bold tracking-widest uppercase">
-                        Recent threads
-                      </p>
-                      <div className="space-y-2">
-                        {MOCK_THREADS.slice(0, 3).map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => openThread(t.id)}
-                            className="rounded-card border-border bg-card hover:bg-surface w-full border p-3 text-left transition-colors">
-                            <p className="text-foreground truncate font-sans text-sm font-semibold">
-                              {t.contentTitle ?? "Untitled"}
-                            </p>
-                            <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-                              with {t.participants.map((p) => p.userName).join(", ")}
-                            </p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <AnimatePresence>
-                    {messages.map((msg) => (
-                      <ChatBubble key={msg.id} role={msg.role}>
-                        {msg.content}
-                      </ChatBubble>
-                    ))}
-                    {isTyping && (
-                      <motion.div
-                        initial={prefersReducedMotion ? false : { opacity: 0 }}
-                        animate={prefersReducedMotion ? undefined : { opacity: 1 }}
-                        exit={prefersReducedMotion ? undefined : { opacity: 0 }}
-                        className="flex gap-1 p-4">
-                        <motion.span
-                          animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
-                          transition={{ repeat: Infinity, duration: 0.8 }}
-                          className="bg-primary/40 h-2 w-2 rounded-full"
-                        />
-                        <motion.span
-                          animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
-                          transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
-                          className="bg-primary/40 h-2 w-2 rounded-full"
-                        />
-                        <motion.span
-                          animate={prefersReducedMotion ? undefined : { scale: [0.8, 1, 0.8] }}
-                          transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
-                          className="bg-primary/40 h-2 w-2 rounded-full"
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                )}
-              </div>
-            </div>
-            <div className="shrink-0 space-y-2 px-4 pb-2">
-              <QuickChips
-                visible={messages.length === 0}
-                onSelect={(prompt) => handleSend(prompt)}
-              />
-              <ChatInput
-                onSend={handleSend}
-                placeholder="Ask me about any topic..."
-                disabled={isTyping}
-              />
-            </div>
-          </>
+          <DiscoveringTabView
+            messages={messages}
+            isTyping={isTyping}
+            scrollRef={scrollRef}
+            onSend={handleSend}
+            onFeedItemClick={handleFeedItemClick}
+            onFeedSave={handleFeedSave}
+            onOpenThread={openThread}
+          />
         )}
-
         <MobileTabBar
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onMenuOpen={() => setMobileMenuOpen(true)}
         />
       </div>
+      )}
 
       <ArticleReader
         url={readerUrl}
