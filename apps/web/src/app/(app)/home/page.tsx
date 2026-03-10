@@ -8,20 +8,13 @@ import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 import { MobileTabBar } from "@/app/_components/home/MobileTabBar";
 import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view";
-import { LoggingTabView } from "@/app/_components/home/logging-tab-view";
+import { VaultTabView } from "@/app/_components/home/vault-tab-view";
 import { ArticleReader } from "@/app/_components/reader/article-reader";
 import { HomeTab } from "@/app/_libs/chat-types";
 import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { createClient } from "@/app/_libs/supabase/client";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import type { FeedItem } from "@/app/_mocks/mock-data";
-
-interface Message {
-  id: string;
-  role: "user" | "system";
-  content: string;
-  timestamp: Date;
-}
 
 export default function HomePage() {
   return (
@@ -36,7 +29,7 @@ function HomePageInner() {
   const { activeThreadId, isFullScreen, openThread, closeThread, openPerson } = useThread();
 
   const [activeTab, setActiveTab] = useState<HomeTab>(HomeTab.DISCOVERING);
-  const [messages, setMessages] = useState<Message[]>([]);
+
   const [isTyping, setIsTyping] = useState(false);
   const [vaultRefreshKey, setVaultRefreshKey] = useState(0);
   const [_vaultPulse, setVaultPulse] = useState(false);
@@ -44,7 +37,6 @@ function HomePageInner() {
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [readerItem, setReaderItem] = useState<FeedItem | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isStreamingRef = useRef(false);
 
   const sidebarOverrides = useMemo(
     () => ({
@@ -144,123 +136,107 @@ function HomePageInner() {
             // Table may not exist
           }
           setIsTyping(false);
-          const sysMsg: Message = {
-            id: crypto.randomUUID(),
-            role: "system",
-            content: saved
-              ? "Link saved to your vault."
-              : "Vault save skipped (table may not exist yet).",
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, sysMsg]);
         } else {
-          const sysMsg: Message = {
-            id: crypto.randomUUID(),
-            role: "system",
-            content: "Paste a link to save it to your vault.",
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, sysMsg]);
         }
         return;
       }
 
-      const userMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: text,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMsg]);
-      setIsTyping(true);
-      isStreamingRef.current = true;
+      // const userMsg: Message = {
+      //   id: crypto.randomUUID(),
+      //   role: "user",
+      //   content: text,
+      //   timestamp: new Date(),
+      // };
+      // setMessages((prev) => [...prev, userMsg]);
+      // setIsTyping(true);
+      // isStreamingRef.current = true;
 
-      try {
-        const history = messages
-          .filter((m) => m.content.trim() !== "")
-          .map((m) => ({
-            role: m.role === "system" ? ("assistant" as const) : ("user" as const),
-            content: m.content,
-          }));
-        history.push({ role: "user" as const, content: text });
+      // try {
+      //   const history = messages
+      //     .filter((m) => m.content.trim() !== "")
+      //     .map((m) => ({
+      //       role: m.role === "system" ? ("assistant" as const) : ("user" as const),
+      //       content: m.content,
+      //     }));
+      //   history.push({ role: "user" as const, content: text });
 
-        const res = await fetch("/api/ai/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history }),
-        });
+      //   const res = await fetch("/api/ai/chat", {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({ messages: history }),
+      //   });
 
-        if (res.ok && res.body) {
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let fullText = "";
-          const msgId = crypto.randomUUID();
-          let firstChunk = true;
+      //   if (res.ok && res.body) {
+      //     const reader = res.body.getReader();
+      //     const decoder = new TextDecoder();
+      //     let fullText = "";
+      //     const msgId = crypto.randomUUID();
+      //     let firstChunk = true;
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            fullText += decoder.decode(value, { stream: true });
-            if (firstChunk) {
-              firstChunk = false;
-              setMessages((prev) => [
-                ...prev,
-                { id: msgId, role: "system", content: fullText, timestamp: new Date() },
-              ]);
-              setIsTyping(false);
-            } else {
-              setMessages((prev) =>
-                prev.map((m) => (m.id === msgId ? { ...m, content: fullText } : m)),
-              );
-            }
-          }
-          if (firstChunk || !fullText.trim()) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                role: "system",
-                content: "I didn't get a response. Try again.",
-                timestamp: new Date(),
-              },
-            ]);
-            setIsTyping(false);
-          }
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "system",
-              content: "Something went wrong. Try again.",
-              timestamp: new Date(),
-            },
-          ]);
-          setIsTyping(false);
-        }
-      } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "system",
-            content: "Something went wrong. Try again.",
-            timestamp: new Date(),
-          },
-        ]);
-        setIsTyping(false);
-      } finally {
-        isStreamingRef.current = false;
-      }
+      //     while (true) {
+      //       const { done, value } = await reader.read();
+      //       if (done) break;
+      //       fullText += decoder.decode(value, { stream: true });
+      //       if (firstChunk) {
+      //         firstChunk = false;
+      //         setMessages((prev) => [
+      //           ...prev,
+      //           { id: msgId, role: "system", content: fullText, timestamp: new Date() },
+      //         ]);
+      //         setIsTyping(false);
+      //       } else {
+      //         setMessages((prev) =>
+      //           prev.map((m) => (m.id === msgId ? { ...m, content: fullText } : m)),
+      //         );
+      //       }
+      //     }
+      //     if (firstChunk || !fullText.trim()) {
+      //       setMessages((prev) => [
+      //         ...prev,
+      //         {
+      //           id: crypto.randomUUID(),
+      //           role: "system",
+      //           content: "I didn't get a response. Try again.",
+      //           timestamp: new Date(),
+      //         },
+      //       ]);
+      //       setIsTyping(false);
+      //     }
+      //   } else {
+      //     setMessages((prev) => [
+      //       ...prev,
+      //       {
+      //         id: crypto.randomUUID(),
+      //         role: "system",
+      //         content: "Something went wrong. Try again.",
+      //         timestamp: new Date(),
+      //       },
+      //     ]);
+      //     setIsTyping(false);
+      //   }
+      // } catch {
+      //   setMessages((prev) => [
+      //     ...prev,
+      //     {
+      //       id: crypto.randomUUID(),
+      //       role: "system",
+      //       content: "Something went wrong. Try again.",
+      //       timestamp: new Date(),
+      //     },
+      //   ]);
+      //   setIsTyping(false);
+      // } finally {
+      //   isStreamingRef.current = false;
+      // }
     },
-    [activeTab, messages],
+    [activeTab],
   );
 
   return (
     <>
       <div
         onClick={() => activeThreadId && closeThread()}
-        className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}>
+        className={`flex h-full flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}>
         <div className="border-border hidden shrink-0 items-center justify-center border-b py-3 sm:flex md:flex">
           <SlidingTabs
             value={activeTab as HomeTab}
@@ -272,16 +248,23 @@ function HomePageInner() {
           />
         </div>
 
-        {activeTab === HomeTab.VAULT ? (
-          <LoggingTabView
+        {/* Keep both tab panels mounted; hide inactive with CSS to preserve state (scroll, form input, etc.) */}
+        <div
+          className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeTab !== HomeTab.VAULT ? "hidden" : ""}`}
+          aria-hidden={activeTab !== HomeTab.VAULT}
+        >
+          <VaultTabView
             onSend={handleSend}
             disabled={isTyping}
             vaultRefreshKey={vaultRefreshKey}
             onOpenArticle={handleOpenArticle}
           />
-        ) : (
+        </div>
+        <div
+          className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeTab !== HomeTab.DISCOVERING ? "hidden" : ""}`}
+          aria-hidden={activeTab !== HomeTab.DISCOVERING}
+        >
           <DiscoveringTabView
-            messages={messages}
             isTyping={isTyping}
             scrollRef={scrollRef}
             onSend={handleSend}
@@ -289,7 +272,7 @@ function HomePageInner() {
             onFeedSave={handleFeedSave}
             onOpenThread={openThread}
           />
-        )}
+        </div>
         <MobileTabBar
           activeTab={activeTab}
           onTabChange={setActiveTab}

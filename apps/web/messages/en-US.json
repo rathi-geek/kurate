@@ -17,6 +17,9 @@
   "chat": {
     "placeholder": "Ask about anything...",
     "send": "Send",
+    "send_label": "Send message",
+    "add_label": "Add item",
+    "copy_link_label": "Copy link",
     "thinking": "Thinking...",
     "tab_discovering": "Discover",
     "tab_vault": "Vault"
