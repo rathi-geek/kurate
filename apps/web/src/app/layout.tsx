@@ -9,6 +9,7 @@ import { getLocale, getMessages } from "next-intl/server";
 
 import GoogleAnalyticsScripts from "@/app/_components/google-analytics";
 import SonnarToaster from "@/app/_components/sonner-toaster";
+import { QueryProvider } from "@/app/_libs/query/QueryProvider";
 import { AnimationPreview } from "@/app/_components/dev/animation-preview";
 import { dmMono, dmSans } from "@/app/_config/fonts";
 import { getJsonLd } from "@/app/_config/jsonId";
@@ -36,9 +37,11 @@ export default async function RootLayout({
           Skip to main content
         </a>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
-          <SonnarToaster />
-          <AnimationPreview />
+          <QueryProvider>
+            {children}
+            <SonnarToaster />
+            <AnimationPreview />
+          </QueryProvider>
         </NextIntlClientProvider>
         <GoogleAnalyticsScripts />
         <SpeedInsights />

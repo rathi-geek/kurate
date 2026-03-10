@@ -16,7 +16,7 @@ Working directory: apps/web/src
   text-muted-foreground, bg-muted, bg-surface, text-destructive, bg-destructive/10
 - Radius tokens: rounded-input (10px), rounded-button (10px), rounded-card (12px), rounded-badge (6px)
 - Font: font-sans (DM Sans), font-mono (DM Mono), font-serif (Georgia)
-- Motion: always import from "@/app/_libs/utils/motion" or "framer-motion"
+- Motion: always import from "@/app/\_libs/utils/motion" or "framer-motion"
   Use springSnappy, springGentle for transitions. Never use cubic-bezier strings.
 - Always check useReducedMotion() when using framer-motion animations
 - Focus states: border-primary + ring-2 + ring-primary/20 (never raw outline)
@@ -28,33 +28,52 @@ Working directory: apps/web/src
 ## DATABASE — logged_items TABLE (Supabase)
 
 Existing columns:
-  id                  uuid (PK)
-  user_id             uuid
-  url                 text
-  title               text
-  source              text
-  author              text
-  preview_image       text
-  content_type        text  ("article" | "video" | "podcast")
-  read_time           text
-  remarks             text
-  tags                text[]
-  raw_metadata        jsonb  (contains: description, and other extracted metadata)
-  created_at          timestamptz
-  save_source         text  ("logged" | "feed" | "discovered")
-  shared_to_groups    text[]
-  shared_from_name    text
-  shared_from_handle  text
+id uuid (PK)
+user_id uuid
+url text
+title text
+source text
+author text
+preview_image text
+content_type text ("article" | "video" | "podcast")
+read_time text
+remarks text
+tags text[]
+raw_metadata jsonb (contains: description, and other extracted metadata)
+created_at timestamptz
+save_source text ("logged" | "feed" | "discovered")
+shared_to_groups text[]
+shared_from_name text
+shared_from_handle text
 
 UNIQUE constraint: (user_id, url)
 
 Columns to be added later by backend team (make them optional in TypeScript types):
-  is_read             boolean
-  read_at             timestamptz
-  reading_progress    integer
-  last_opened_at      timestamptz
+is_read boolean
+read_at timestamptz
+reading_progress integer
+last_opened_at timestamptz
 
 Read description via: raw_metadata->>'description'
+
+---
+
+## TANSTACK QUERY — ALREADY SET UP
+
+@tanstack/react-query v5 and @tanstack/react-query-devtools are installed.
+
+The following files already exist — DO NOT recreate them:
+
+- src/app/_libs/query/client.ts         ← getQueryClient() singleton
+- src/app/_libs/query/QueryProvider.tsx ← wraps root layout, available everywhere
+- src/app/_libs/query/keys.ts           ← queryKeys.vault, queryKeys.feed, queryKeys.user, queryKeys.groups
+
+QueryProvider is already added to src/app/layout.tsx (root) — all routes have access.
+
+Import pattern:
+  import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+  import { queryKeys } from "@/app/_libs/query/keys"
+  import { getQueryClient } from "@/app/_libs/query/client"
 
 ---
 
@@ -66,7 +85,6 @@ Read description via: raw_metadata->>'description'
 - src/app/_libs/chat-types.ts                      ← ADD types here, never remove existing
 - src/app/_libs/supabase/client.ts                 ← Use createClient() from here — already typed with Database generic
 - src/app/_libs/supabase/server.ts                 ← Already typed with Database generic
-- src/app/_libs/types/database.types.ts            ← Auto-generated Supabase types — DO NOT edit manually, run pnpm db:types to regenerate
 - src/app/_mocks/mock-data.ts                      ← Keep MOCK_ITEMS as fallback
 
 ---
@@ -78,13 +96,13 @@ purpose, and requirements.
 
 ═══════════════════════════════════════════════════════
 STEP 1 — Types
-FILE: src/app/_libs/types/vault.ts  (NEW FILE)
+FILE: src/app/\_libs/types/vault.ts (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 DO NOT write hardcoded types manually.
 
 Types are auto-generated from the live Supabase schema.
-The file already exists at: src/app/_libs/types/database.types.ts
+The file already exists at: src/app/\_libs/types/database.types.ts
 Both Supabase clients (client.ts and server.ts) are already typed with Database generic.
 
 Derive all vault types from the generated schema:
@@ -100,9 +118,12 @@ export type VaultItemUpdate = Database["public"]["Tables"]["logged_items"]["Upda
 
 // Narrow string columns to proper unions
 export type ContentType = "article" | "video" | "podcast";
-export type SaveSource  = "logged" | "feed" | "discovered";
+export type SaveSource = "logged" | "feed" | "discovered";
 
-export type VaultItem = Omit<LoggedItemsRow, "content_type" | "save_source" | "tags" | "shared_to_groups"> & {
+export type VaultItem = Omit<
+  LoggedItemsRow,
+  "content_type" | "save_source" | "tags" | "shared_to_groups"
+> & {
   content_type: ContentType;
   save_source: SaveSource;
   tags: string[];
@@ -114,7 +135,7 @@ export type VaultItem = Omit<LoggedItemsRow, "content_type" | "save_source" | "t
   last_opened_at?: string | null;
 };
 
-export type TimeFilter        = "today" | "week" | "month" | "all";
+export type TimeFilter = "today" | "week" | "month" | "all";
 export type ContentTypeFilter = "all" | ContentType;
 
 export interface VaultFilters {
@@ -123,69 +144,147 @@ export interface VaultFilters {
   search: string;
 }
 
-export interface VaultPagination {
-  hasMore: boolean;
-  lastCreatedAt: string | null;
-  isLoading: boolean;
-  isLoadingMore: boolean;
-}
 ```
+
+NOTE: VaultPagination interface is NOT needed — TanStack Query manages all pagination state internally.
 
 ═══════════════════════════════════════════════════════
 STEP 2 — Data Hook
 FILE: src/app/_libs/hooks/useVault.ts  (NEW FILE)
 ═══════════════════════════════════════════════════════
 
-This hook owns ALL data logic. No component should call Supabase directly.
-
-Implement:
+Use TanStack Query (useInfiniteQuery + useMutation). No manual pagination state. No refreshKey.
 
 ```ts
-export function useVault(filters: VaultFilters, refreshKey: number) {
-  // Returns:
-  // items: VaultItem[]
-  // pagination: VaultPagination
-  // loadMore: () => Promise<void>
-  // deleteItem: (id: string) => Promise<void>
-  // updateRemarks: (id: string, remarks: string) => Promise<void>
-  // saveItem: (url: string) => Promise<"saved" | "duplicate" | "error">
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { startOfDay, subDays } from "date-fns";
+import { createClient } from "@/app/_libs/supabase/client";
+import { queryKeys } from "@/app/_libs/query/keys";
+import { MOCK_ITEMS } from "@/app/_mocks/mock-data";
+import type { VaultFilters, VaultItem } from "@/app/_libs/types/vault";
+
+const PAGE_SIZE = 20;
+
+async function fetchVaultPage(filters: VaultFilters, cursor: string | null): Promise<VaultItem[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  let query = supabase
+    .from("logged_items")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
+
+  if (cursor) query = query.lt("created_at", cursor);
+
+  if (filters.time === "today") query = query.gte("created_at", startOfDay(new Date()).toISOString());
+  if (filters.time === "week")  query = query.gte("created_at", subDays(new Date(), 7).toISOString());
+  if (filters.time === "month") query = query.gte("created_at", subDays(new Date(), 30).toISOString());
+  if (filters.contentType !== "all") query = query.eq("content_type", filters.contentType);
+  if (filters.search.trim()) {
+    const q = filters.search.trim();
+    query = query.or(`title.ilike.%${q}%,source.ilike.%${q}%,author.ilike.%${q}%,remarks.ilike.%${q}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) return MOCK_ITEMS as unknown as VaultItem[];
+  return (data ?? []) as VaultItem[];
+}
+
+export function useVault(filters: VaultFilters) {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  const query = useInfiniteQuery({
+    queryKey: queryKeys.vault.list(filters),
+    queryFn: ({ pageParam }) => fetchVaultPage(filters, pageParam as string | null),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) =>
+      lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,
+    staleTime: 1000 * 60,
+  });
+
+  const items = query.data?.pages.flat() ?? [];
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("logged_items").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.vault.all });
+      const previous = queryClient.getQueryData(queryKeys.vault.list(filters));
+      queryClient.setQueryData(queryKeys.vault.list(filters), (old: any) => ({
+        ...old,
+        pages: old?.pages.map((page: VaultItem[]) => page.filter((item) => item.id !== id)) ?? [],
+      }));
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.vault.list(filters), context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.vault.all }),
+  });
+
+  const remarksMutation = useMutation({
+    mutationFn: async ({ id, remarks }: { id: string; remarks: string }) => {
+      const { error } = await supabase.from("logged_items").update({ remarks }).eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, remarks }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.vault.all });
+      const previous = queryClient.getQueryData(queryKeys.vault.list(filters));
+      queryClient.setQueryData(queryKeys.vault.list(filters), (old: any) => ({
+        ...old,
+        pages: old?.pages.map((page: VaultItem[]) =>
+          page.map((item) => (item.id === id ? { ...item, remarks } : item))
+        ) ?? [],
+      }));
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.vault.list(filters), context.previous);
+    },
+  });
+
+  async function saveItem(url: string): Promise<"saved" | "duplicate" | "error"> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return "error";
+      const { error } = await supabase.from("logged_items").upsert(
+        { user_id: user.id, url, save_source: "logged", content_type: "article" },
+        { onConflict: "user_id,url" }
+      );
+      if (error?.code === "23505") return "duplicate";
+      if (error) return "error";
+      queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
+      return "saved";
+    } catch {
+      return "error";
+    }
+  }
+
+  return {
+    items,
+    isLoading: query.isLoading,
+    isLoadingMore: query.isFetchingNextPage,
+    hasMore: query.hasNextPage ?? false,
+    loadMore: query.fetchNextPage,
+    deleteItem: deleteMutation.mutate,
+    updateRemarks: (id: string, remarks: string) => remarksMutation.mutate({ id, remarks }),
+    saveItem,
+  };
 }
 ```
-
-Implementation rules:
-
-FETCH:
-- Initial load: 20 items, ordered by created_at DESC
-- Cursor pagination: WHERE created_at < lastItem.created_at LIMIT 20
-- Time filter:
-    today → gte(startOfDay(new Date()))
-    week  → gte(subDays(new Date(), 7))
-    month → gte(subDays(new Date(), 30))
-    all   → no filter
-- contentType filter: eq("content_type", value) — skip if "all"
-- Search: .or(`title.ilike.%${q}%,source.ilike.%${q}%,author.ilike.%${q}%,remarks.ilike.%${q}%`)
-- On Supabase error: fall back to MOCK_ITEMS from mock-data.ts
-
-DUPLICATE DETECTION (saveItem):
-- Use upsert with onConflict: "user_id,url"
-- If Supabase error code is "23505" → return "duplicate"
-- Otherwise return "saved" or "error"
-
-DELETE:
-- Optimistic: remove from items state immediately
-- Call supabase.from("logged_items").delete().eq("id", id)
-- On error: restore item to previous position
-
-UPDATE REMARKS:
-- Optimistic update in state
-- Call supabase.from("logged_items").update({ remarks }).eq("id", id)
 
 Use date-fns for date calculations (already installed).
 Import MOCK_ITEMS from "@/app/_mocks/mock-data".
 
 ═══════════════════════════════════════════════════════
 STEP 3 — VaultSearch
-FILE: src/app/_components/vault/VaultSearch.tsx  (NEW FILE)
+FILE: src/app/\_components/vault/VaultSearch.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: { value: string; onChange: (v: string) => void }
@@ -199,7 +298,7 @@ Props: { value: string; onChange: (v: string) => void }
 
 ═══════════════════════════════════════════════════════
 STEP 4 — VaultFilters
-FILE: src/app/_components/vault/VaultFilters.tsx  (NEW FILE)
+FILE: src/app/\_components/vault/VaultFilters.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: { filters: VaultFilters; onChange: (f: VaultFilters) => void }
@@ -207,19 +306,21 @@ Props: { filters: VaultFilters; onChange: (f: VaultFilters) => void }
 Layout: horizontal flex row, gap-3, flex-wrap
 
 LEFT: Time filter pills (Today | This Week | Month | All)
+
 - Pill button style: px-3 py-1.5 rounded-badge font-sans text-xs font-medium
 - Active: bg-primary text-primary-foreground
 - Inactive: bg-muted text-muted-foreground hover:bg-muted/80
 - transition-colors duration-150
 
 RIGHT: Content type dropdown using shadcn DropdownMenu
+
 - Trigger button: same pill style, shows current selection + chevron icon
 - Options: All Types | Articles | Videos | Podcasts
 - Active option shows checkmark on left
 
 ═══════════════════════════════════════════════════════
 STEP 5 — VaultEmptyState
-FILE: src/app/_components/vault/VaultEmptyState.tsx  (NEW FILE)
+FILE: src/app/\_components/vault/VaultEmptyState.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: { onExplore: () => void }
@@ -234,13 +335,13 @@ Props: { onExplore: () => void }
 
 ═══════════════════════════════════════════════════════
 STEP 6 — VaultDeleteModal
-FILE: src/app/_components/vault/VaultDeleteModal.tsx  (NEW FILE)
+FILE: src/app/\_components/vault/VaultDeleteModal.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: {
-  open: boolean
-  onConfirm: () => void
-  onCancel: () => void
+open: boolean
+onConfirm: () => void
+onCancel: () => void
 }
 
 - Use Dialog, DialogContent, DialogTitle, DialogDescription from "@/components/ui/dialog"
@@ -254,47 +355,50 @@ Props: {
 - Store skip preference in localStorage key: "vault.skipDeleteConfirm"
 
 Export also a helper: shouldSkipConfirm() → boolean
-  reads localStorage.getItem("vault.skipDeleteConfirm") === "true"
+reads localStorage.getItem("vault.skipDeleteConfirm") === "true"
 
 ═══════════════════════════════════════════════════════
 STEP 7 — VaultCard
-FILE: src/app/_components/vault/VaultCard.tsx  (NEW FILE)
+FILE: src/app/\_components/vault/VaultCard.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: {
-  item: VaultItem
-  onOpen: (item: VaultItem) => void
-  onDelete: (id: string) => void
-  onShare: (item: VaultItem) => void
-  onToggleRead: (item: VaultItem) => void
-  onEditRemark: (id: string, value: string) => void
+item: VaultItem
+onOpen: (item: VaultItem) => void
+onDelete: (id: string) => void
+onShare: (item: VaultItem) => void
+onToggleRead: (item: VaultItem) => void
+onEditRemark: (id: string, value: string) => void
 }
 
 Wrap entire export in React.memo.
 
 CARD STRUCTURE:
 ┌──────────────────────────────────┐
-│  [preview image or type badge]   │  ← h-[120px] object-cover
-│  content_type pill (top-left)    │  ← absolute positioned
+│ [preview image or type badge] │ ← h-[120px] object-cover
+│ content_type pill (top-left) │ ← absolute positioned
 ├──────────────────────────────────┤
-│  Title (line-clamp-2)            │
-│  Remark (editable, optional)     │
-│  Description (line-clamp-2)      │  ← from raw_metadata?.description
+│ Title (line-clamp-2) │
+│ Remark (editable, optional) │
+│ Description (line-clamp-2) │ ← from raw_metadata?.description
 ├──────────────────────────────────┤
-│  Source · timeAgo    [icons row] │
+│ Source · timeAgo [icons row] │
 └──────────────────────────────────┘
 
 CONTENT TYPE PILL:
+
 - Article: bg-brand-50 text-primary
-- Video:   bg-info-bg text-info-foreground
+- Video: bg-info-bg text-info-foreground
 - Podcast: bg-warning-bg text-warning-foreground
 - font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-badge
 
 READ STATE (when is_read is true — optional field):
+
 - Apply opacity-60 to the card
 - Show small eye icon badge overlaid on image (bottom-right of image area)
 
 REMARK EDITING:
+
 - If remarks exist: show text with pencil icon on hover
 - Click pencil → swap <p> for <textarea> (same font, no border, bg-transparent, outline:none)
 - Track editing state locally with useState
@@ -302,6 +406,7 @@ REMARK EDITING:
 - On Escape: cancel and restore original value
 
 SWIPE TO DELETE:
+
 - Wrap card content in motion.div with drag="x" dragConstraints={{ left: -72, right: 0 }}
 - dragElastic={0.1}
 - On dragEnd: if offset.x < -48 → call onDelete(id) flow (check shouldSkipConfirm first)
@@ -310,13 +415,15 @@ SWIPE TO DELETE:
 - Animate its opacity based on drag progress using useMotionValue + useTransform
 
 FOOTER ACTIONS (icon buttons, h-7 w-7, rounded-button):
+
 - Open: external link icon → calls onOpen(item)
 - Read toggle: eye / eye-off → calls onToggleRead(item)
 - Share: share icon → calls onShare(item)
 - Delete: trash icon → runs delete flow (check shouldSkipConfirm)
-All icons: SVG inline, 14×14, strokeWidth 1.5, stroke="currentColor", fill="none"
+  All icons: SVG inline, 14×14, strokeWidth 1.5, stroke="currentColor", fill="none"
 
 CARD OUTER WRAPPER:
+
 - rounded-card border border-border bg-card overflow-hidden
 - hover:shadow-md transition-shadow duration-200
 - NO hardcoded background colors — only bg-card and design tokens
@@ -325,55 +432,62 @@ timeAgo: format with date-fns formatDistanceToNow(new Date(item.created_at), { a
 
 ═══════════════════════════════════════════════════════
 STEP 8 — VaultGrid
-FILE: src/app/_components/vault/VaultGrid.tsx  (NEW FILE)
+FILE: src/app/\_components/vault/VaultGrid.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: {
-  items: VaultItem[]
-  hasMore: boolean
-  isLoadingMore: boolean
-  onLoadMore: () => void
-  onOpen: (item: VaultItem) => void
-  onDelete: (id: string) => void
-  onShare: (item: VaultItem) => void
-  onToggleRead: (item: VaultItem) => void
-  onEditRemark: (id: string, val: string) => void
+items: VaultItem[]
+hasMore: boolean
+isLoadingMore: boolean
+onLoadMore: () => void
+onOpen: (item: VaultItem) => void
+onDelete: (id: string) => void
+onShare: (item: VaultItem) => void
+onToggleRead: (item: VaultItem) => void
+onEditRemark: (id: string, val: string) => void
 }
 
 GRID:
+
 - grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3
 
 INFINITE SCROLL:
+
 - Place a sentinel <div ref={sentinelRef}> below the grid
 - Use IntersectionObserver: when sentinel enters viewport → call onLoadMore()
 - Only trigger when hasMore is true and not isLoadingMore
 - Cleanup observer on unmount
 
 SKELETON LOADING (while isLoadingMore):
+
 - Show 3 VaultCardSkeleton components below the grid
 - Skeleton: same card size, use bg-muted animate-pulse for image and text areas
 - rounded-card border border-border overflow-hidden
 
 STAGGER ANIMATION:
+
 - Wrap grid in motion.div with variants staggerContainer (from motion-variants)
 - Each VaultCard wrapped in motion.div with staggerItem variant
 - Only animate on initial mount, not on filter change (use key prop on grid)
 
 ═══════════════════════════════════════════════════════
 STEP 9 — VaultLibrary (REFACTORED ORCHESTRATOR)
-FILE: src/app/_components/vault/VaultLibrary.tsx  (REPLACE ENTIRELY)
+FILE: src/app/\_components/vault/VaultLibrary.tsx (REPLACE ENTIRELY)
 ═══════════════════════════════════════════════════════
 
 Props: {
-  refreshKey: number
   onItemClick: (item: VaultItem) => void
   panelMode?: boolean
   onNavigateToDiscover?: () => void
 }
 
+NOTE: refreshKey prop is REMOVED — TanStack Query handles cache invalidation via
+queryClient.invalidateQueries({ queryKey: queryKeys.vault.all }) called inside useVault mutations.
+
 Responsibilities (NO direct Supabase calls, NO heavy JSX):
+
 1. Own filters state (VaultFilters)
-2. Call useVault(filters, refreshKey)
+2. Call useVault(filters)  ← no refreshKey
 3. Manage deleteModal state (open, targetId)
 4. Manage shareModal state (open, targetItem)
 5. Handle open → call onItemClick(item)
@@ -381,61 +495,84 @@ Responsibilities (NO direct Supabase calls, NO heavy JSX):
 7. Render VaultSearch + VaultFilters + VaultGrid or VaultEmptyState
 
 Structure:
+
 ```tsx
-export function VaultLibrary({ refreshKey, onItemClick, panelMode, onNavigateToDiscover }) {
-  const [filters, setFilters] = useState<VaultFilters>({ time: "all", contentType: "all", search: "" })
-  const { items, pagination, loadMore, deleteItem, updateRemarks } = useVault(filters, refreshKey)
-  const [deleteModal, setDeleteModal] = useState<{ open: boolean; targetId: string | null }>({ open: false, targetId: null })
+export function VaultLibrary({ onItemClick, panelMode, onNavigateToDiscover }) {
+  const [filters, setFilters] = useState<VaultFilters>({
+    time: "all",
+    contentType: "all",
+    search: "",
+  });
+  const { items, isLoading, isLoadingMore, hasMore, loadMore, deleteItem, updateRemarks } = useVault(filters);
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; targetId: string | null }>({
+    open: false,
+    targetId: null,
+  });
 
   function handleDelete(id: string) {
-    if (shouldSkipConfirm()) { deleteItem(id); return }
-    setDeleteModal({ open: true, targetId: id })
+    if (shouldSkipConfirm()) {
+      deleteItem(id);
+      return;
+    }
+    setDeleteModal({ open: true, targetId: id });
   }
 
-  const isEmpty = !pagination.isLoading && items.length === 0
+  const isEmpty = !pagination.isLoading && items.length === 0;
 
   return (
-    <div className={panelMode ? "p-5 space-y-4" : "mt-8 space-y-4"}>
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <VaultSearch value={filters.search} onChange={(s) => setFilters(f => ({ ...f, search: s }))} />
+    <div className={panelMode ? "space-y-4 p-5" : "mt-8 space-y-4"}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <VaultSearch
+          value={filters.search}
+          onChange={(s) => setFilters((f) => ({ ...f, search: s }))}
+        />
       </div>
       <VaultFilters filters={filters} onChange={setFilters} />
 
-      {pagination.isLoading && <VaultGridSkeleton />}
-      {!pagination.isLoading && isEmpty && <VaultEmptyState onExplore={onNavigateToDiscover ?? (() => {})} />}
+      {isLoading && <VaultGridSkeleton />}
+      {!isLoading && isEmpty && (
+        <VaultEmptyState onExplore={onNavigateToDiscover ?? (() => {})} />
+      )}
       {!isEmpty && (
         <VaultGrid
           items={items}
-          hasMore={pagination.hasMore}
-          isLoadingMore={pagination.isLoadingMore}
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
           onLoadMore={loadMore}
           onOpen={onItemClick}
           onDelete={handleDelete}
-          onShare={(item) => { /* open share modal */ }}
-          onToggleRead={(item) => { /* toggle read */ }}
+          onShare={(item) => {
+            /* open share modal */
+          }}
+          onToggleRead={(item) => {
+            /* toggle read */
+          }}
           onEditRemark={updateRemarks}
         />
       )}
 
       <VaultDeleteModal
         open={deleteModal.open}
-        onConfirm={() => { deleteItem(deleteModal.targetId!); setDeleteModal({ open: false, targetId: null }) }}
+        onConfirm={() => {
+          deleteItem(deleteModal.targetId!);
+          setDeleteModal({ open: false, targetId: null });
+        }}
         onCancel={() => setDeleteModal({ open: false, targetId: null })}
       />
     </div>
-  )
+  );
 }
 ```
 
 ═══════════════════════════════════════════════════════
 STEP 10 — VaultShareModal
-FILE: src/app/_components/vault/VaultShareModal.tsx  (NEW FILE)
+FILE: src/app/\_components/vault/VaultShareModal.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: {
-  open: boolean
-  item: VaultItem | null
-  onClose: () => void
+open: boolean
+item: VaultItem | null
+onClose: () => void
 }
 
 - Use Dialog from shadcn
@@ -450,23 +587,25 @@ Props: {
 
 ═══════════════════════════════════════════════════════
 STEP 11 — VideoPlayer
-FILE: src/app/_components/reader/VideoPlayer.tsx  (NEW FILE)
+FILE: src/app/\_components/reader/VideoPlayer.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: {
-  url: string | null
-  title?: string | null
-  onClose: () => void
+url: string | null
+title?: string | null
+onClose: () => void
 }
 
 DETECTION:
+
 - YouTube: url matches youtube.com/watch?v= or youtu.be/
   → extract video ID → embed as https://www.youtube.com/embed/{id}
 - Vimeo: url matches vimeo.com/{id}
   → embed as https://player.vimeo.com/video/{id}
-- Otherwise: call window.open(url, "_blank", "noopener") and onClose()
+- Otherwise: call window.open(url, "\_blank", "noopener") and onClose()
 
 UI:
+
 - Same slide-in panel pattern as ArticleReader
 - 16:9 iframe container: aspect-video w-full
 - Close button top-right (same as ArticleReader)
@@ -475,22 +614,24 @@ UI:
 
 ═══════════════════════════════════════════════════════
 STEP 12 — PodcastPlayer
-FILE: src/app/_components/reader/PodcastPlayer.tsx  (NEW FILE)
+FILE: src/app/\_components/reader/PodcastPlayer.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
 Props: {
-  url: string | null
-  title?: string | null
-  source?: string | null
-  onClose: () => void
+url: string | null
+title?: string | null
+source?: string | null
+onClose: () => void
 }
 
 DETECTION:
+
 - Direct audio: url ends with .mp3, .m4a, .ogg, .wav
   → render <audio controls> with HTML5 player
-- Otherwise: window.open(url, "_blank", "noopener") and onClose()
+- Otherwise: window.open(url, "\_blank", "noopener") and onClose()
 
 UI:
+
 - Bottom sheet panel (slides up from bottom) instead of side panel
 - Shows title + source at top
 - HTML5 <audio> element with controls, full width
@@ -499,39 +640,51 @@ UI:
 
 ═══════════════════════════════════════════════════════
 STEP 13 — Wire everything in home/page.tsx
-FILE: src/app/(app)/home/page.tsx  (EXTEND)
+FILE: src/app/(app)/home/page.tsx (EXTEND)
 ═══════════════════════════════════════════════════════
 
 Update handleFeedItemClick and the open logic:
+
 - article → setReaderUrl + setReaderItem (existing)
 - video → setVideoItem(item) → renders VideoPlayer
 - podcast → setPodcastItem(item) → renders PodcastPlayer
 
 Add state:
-  const [videoItem, setVideoItem] = useState<VaultItem | null>(null)
-  const [podcastItem, setPodcastItem] = useState<VaultItem | null>(null)
+const [videoItem, setVideoItem] = useState<VaultItem | null>(null)
+const [podcastItem, setPodcastItem] = useState<VaultItem | null>(null)
 
 Pass onNavigateToDiscover to VaultTabView which passes it to VaultLibrary:
-  onNavigateToDiscover = () => setActiveTab(HomeTab.DISCOVERING)
+onNavigateToDiscover = () => setActiveTab(HomeTab.DISCOVERING)
 
 Duplicate save notification:
+
 - Import and use sonner toast
 - In handleSend (vault tab): if saveItem returns "duplicate":
   toast("Already in your Vault", { description: "This link has been saved before." })
 
 ═══════════════════════════════════════════════════════
 STEP 14 — Update vault-tab-view.tsx
-FILE: src/app/_components/home/vault-tab-view.tsx  (EXTEND)
+FILE: src/app/\_components/home/vault-tab-view.tsx (EXTEND)
 ═══════════════════════════════════════════════════════
 
 Add prop: onNavigateToDiscover: () => void
 Pass it through to VaultLibrary.
 
+Remove the refreshKey prop entirely — no longer needed.
+VaultLibrary now self-invalidates via TanStack Query when items are saved/deleted.
+
 Update VaultLibrary call:
-  onItemClick now receives VaultItem (not just url string).
-  Pass the full item up to home/page.tsx for routing to correct player.
+onItemClick now receives VaultItem (not just url string).
+Pass the full item up to home/page.tsx for routing to correct player.
 
 Update the onOpenArticle prop name to onItemClick with type (item: VaultItem) => void.
+
+In home/page.tsx:
+- Remove vaultRefreshKey state and setVaultRefreshKey entirely
+- When a URL is saved via ChatInput: use queryClient.invalidateQueries({ queryKey: queryKeys.vault.all })
+  instead of setVaultRefreshKey((k) => k + 1)
+- Import: import { useQueryClient } from "@tanstack/react-query"
+         import { queryKeys } from "@/app/_libs/query/keys"
 
 ---
 
@@ -540,25 +693,26 @@ Update the onOpenArticle prop name to onItemClick with type (item: VaultItem) =>
 1. Do NOT modify any auth files
 2. Do NOT modify AppShell, AppSidebar
 3. Do NOT modify any files outside of:
-   - src/app/_components/vault/
-   - src/app/_components/reader/
-   - src/app/_components/home/vault-tab-view.tsx
+   - src/app/\_components/vault/
+   - src/app/\_components/reader/
+   - src/app/\_components/home/vault-tab-view.tsx
    - src/app/(app)/home/page.tsx
-   - src/app/_libs/types/vault.ts  (new)
-   - src/app/_libs/hooks/useVault.ts  (new)
+   - src/app/\_libs/types/vault.ts (new)
+   - src/app/\_libs/hooks/useVault.ts (new)
 4. Every new component file must start with "use client"
 5. Never use any Tailwind color that is not a semantic token
 6. Every list item rendered from an array must have a stable key (use item.id)
 7. React.memo on VaultCard — it must NOT re-render unless its own item prop changes
 8. All SVG icons: inline, fill="none", stroke="currentColor", strokeWidth={1.5}, strokeLinecap="round", strokeLinejoin="round"
-9. Import cn from "@/app/_libs/utils/cn"
-10. Import motion utilities from "@/app/_libs/utils/motion" or directly from "framer-motion"
+9. Import cn from "@/app/\_libs/utils/cn"
+10. Import motion utilities from "@/app/\_libs/utils/motion" or directly from "framer-motion"
 
 ---
 
 ## IMPLEMENTATION ORDER
 
 Follow this order exactly:
+
 1. vault.ts (types)
 2. useVault.ts (hook)
 3. VaultEmptyState.tsx
