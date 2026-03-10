@@ -15,6 +15,7 @@
     "type:circular": "madge src --extensions ts,tsx --circular",
     "format": "prettier --write .",
     "setup": "node scripts/setup-env.js",
+    "db:types": "node scripts/db-types.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
