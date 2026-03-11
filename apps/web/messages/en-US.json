@@ -61,7 +61,16 @@
     "share": "Share",
     "delete": "Delete",
     "options_aria": "Options",
-    "read_suffix": "read"
+    "read_suffix": "read",
+    "delete_modal_title": "Delete item?",
+    "delete_modal_description": "This will permanently remove it from your Vault.",
+    "delete_modal_dont_ask_again": "Don't ask again",
+    "share_modal_title": "Share to group",
+    "share_modal_already_shared": "Already shared",
+    "share_modal_share_btn": "Share",
+    "share_modal_no_groups": "No groups yet",
+    "remark_placeholder": "Add a note…",
+    "remark_modal_title": "Add or edit note"
   },
   "landing": {
     "announcement": "Join the early access waitlist — spots are limited.",

@@ -1,5 +1,11 @@
 export { ChevronDownIcon } from "./chevron-down-icon";
 export { ExclamationCircleIcon } from "./exclamation-circle-icon";
+export { ExternalLinkIcon } from "./external-link-icon";
+export { EyeIcon } from "./eye-icon";
+export { EyeOffIcon } from "./eye-off-icon";
 export { GoogleIcon } from "./google-icon";
+export { PencilIcon } from "./pencil-icon";
 export { SearchIcon } from "./search-icon";
+export { ShareIcon } from "./share-icon";
+export { TrashIcon } from "./trash-icon";
 export { IconName } from "./types";

@@ -4,19 +4,15 @@ import { useState } from "react";
 
 import { useTranslations } from "next-intl";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
 import { useVault } from "@/app/_libs/hooks/useVault";
 import type { VaultFilters as VaultFiltersType, VaultItem } from "@/app/_libs/types/vault";
+import { VaultDeleteModal, shouldSkipConfirm } from "@/app/_components/vault/VaultDeleteModal";
 import { VaultEmptyState } from "@/app/_components/vault/VaultEmptyState";
+import { VaultRemarkModal } from "@/app/_components/vault/VaultRemarkModal";
+import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { VaultErrorState } from "@/app/_components/vault/VaultErrorState";
 import { VaultFilters } from "@/app/_components/vault/VaultFilters";
+import { VaultGrid } from "@/app/_components/vault/VaultGrid";
 import { VaultSearch } from "@/app/_components/vault/VaultSearch";
 
 export interface VaultLibraryProps {
@@ -43,10 +39,41 @@ export function VaultLibrary({
     isFetching,
     isError,
     hasMore,
+    isLoadingMore,
     loadMore,
     refetch,
     deleteItem,
+    updateRemarks,
   } = useVault(filters);
+
+  const [deleteModal, setDeleteModal] = useState<{
+    open: boolean;
+    targetId: string | null;
+  }>({ open: false, targetId: null });
+  const [shareModal, setShareModal] = useState<{
+    open: boolean;
+    targetItem: VaultItem | null;
+  }>({ open: false, targetItem: null });
+  const [remarkModal, setRemarkModal] = useState<{
+    open: boolean;
+    targetItem: VaultItem | null;
+  }>({ open: false, targetItem: null });
+
+  function handleDelete(id: string) {
+    if (shouldSkipConfirm()) {
+      deleteItem(id);
+      return;
+    }
+    setDeleteModal({ open: true, targetId: id });
+  }
+
+  function handleShare(item: VaultItem) {
+    setShareModal({ open: true, targetItem: item });
+  }
+
+  function handleOpenRemarkModal(item: VaultItem) {
+    setRemarkModal({ open: true, targetItem: item });
+  }
 
   const isEmpty = !isLoading && items.length === 0;
 
@@ -92,136 +119,45 @@ export function VaultLibrary({
             </span>
           </div>
 
-          <div
-            className={
-              panelMode
-                ? "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-                : "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
-            }
-          >
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="group relative overflow-hidden rounded-card border border-border bg-card transition-shadow hover:shadow-md"
-              >
-                <button
-                  type="button"
-                  onClick={() => onItemClick(item)}
-                  className="block w-full text-left"
-                >
-                  {item.preview_image ? (
-                    <img
-                      src={item.preview_image}
-                      alt=""
-                      className="h-[120px] w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-[120px] w-full items-center justify-center bg-muted">
-                      <span
-                        className={`rounded-badge px-2 py-1 font-mono text-xs font-bold uppercase ${
-                          item.content_type === "video"
-                            ? "bg-info-bg text-info-foreground"
-                            : item.content_type === "podcast"
-                              ? "bg-warning-bg text-warning-foreground"
-                              : "bg-brand-50 text-primary"
-                        }`}
-                      >
-                        {item.content_type}
-                      </span>
-                    </div>
-                  )}
-                  <div className="p-3">
-                    <h3 className="line-clamp-2 pr-8 font-sans text-sm font-bold leading-snug text-foreground">
-                      {item.title || item.url}
-                    </h3>
-                    {(item.tags?.length ?? 0) > 0 && (
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {(item.tags ?? []).slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                      {item.source ?? "—"}
-                    </p>
-                    {item.read_time && (
-                      <p className="mt-1 font-mono text-xs text-muted-foreground">
-                        {item.read_time} {t("read_suffix")}
-                      </p>
-                    )}
-                  </div>
-                </button>
-                <div className="absolute right-2 top-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={t("options_aria")}
-                      >
-                        <span className="text-lg leading-none">⋯</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <DropdownMenuItem onClick={() => onItemClick(item)}>
-                        {t("open")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          if (
-                            typeof navigator !== "undefined" &&
-                            navigator.share
-                          ) {
-                            navigator.share({
-                              title: item.title ?? undefined,
-                              url: item.url,
-                            });
-                          } else {
-                            window.open(item.url, "_blank", "noopener");
-                          }
-                        }}
-                      >
-                        {t("share")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteItem(item.id);
-                        }}
-                      >
-                        {t("delete")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {hasMore && (
-            <div className="flex justify-center py-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadMore()}
-              >
-                {t("load_more")}
-              </Button>
-            </div>
-          )}
+          <VaultGrid
+            items={items}
+            hasMore={hasMore}
+            isLoadingMore={isLoadingMore}
+            onLoadMore={loadMore}
+            onOpen={onItemClick}
+            onDelete={handleDelete}
+            onShare={handleShare}
+            onToggleRead={() => {}}
+            onEditRemark={updateRemarks}
+            onOpenRemarkModal={handleOpenRemarkModal}
+          />
         </>
       )}
+
+      <VaultDeleteModal
+        open={deleteModal.open}
+        onConfirm={() => {
+          if (deleteModal.targetId) deleteItem(deleteModal.targetId);
+          setDeleteModal({ open: false, targetId: null });
+        }}
+        onCancel={() => setDeleteModal({ open: false, targetId: null })}
+      />
+
+      <VaultShareModal
+        open={shareModal.open}
+        item={shareModal.targetItem}
+        onClose={() => setShareModal({ open: false, targetItem: null })}
+      />
+
+      <VaultRemarkModal
+        open={remarkModal.open}
+        item={remarkModal.targetItem}
+        onSave={(id, value) => {
+          updateRemarks(id, value);
+          setRemarkModal({ open: false, targetItem: null });
+        }}
+        onClose={() => setRemarkModal({ open: false, targetItem: null })}
+      />
     </div>
   );
 }
