@@ -58,8 +58,14 @@
     "filter_videos": "Videos",
     "filter_podcasts": "Podcasts",
     "open": "Open",
+    "open_aria": "Open item",
     "share": "Share",
+    "share_aria": "Share",
     "delete": "Delete",
+    "delete_aria": "Delete",
+    "mark_read_aria": "Mark read",
+    "mark_unread_aria": "Mark unread",
+    "edit_remark_aria": "Add or edit remark",
     "options_aria": "Options",
     "read_suffix": "read",
     "delete_modal_title": "Delete item?",
@@ -128,7 +134,12 @@
   "reader": {
     "open_original": "Open original article",
     "reading_time": "{minutes} min read",
-    "loading": "Loading article..."
+    "loading": "Loading article...",
+    "close_video_aria": "Close video",
+    "close_podcast_aria": "Close podcast",
+    "video_title_fallback": "Video",
+    "audio_unsupported": "Your browser does not support the audio element.",
+    "open_original_label": "Open original"
   },
   "common": {
     "loading": "Loading...",

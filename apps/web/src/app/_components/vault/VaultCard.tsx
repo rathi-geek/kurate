@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { motion, useMotionValue, useTransform } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +15,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { cn } from "@/app/_libs/utils/cn";
-import type { VaultItem } from "@/app/_libs/types/vault";
+import type { SourceRect, VaultItem } from "@/app/_libs/types/vault";
 
 function getDescription(item: VaultItem): string | undefined {
   const raw = item.raw_metadata;
@@ -36,7 +37,7 @@ const contentTypePillClass: Record<
 
 export interface VaultCardProps {
   item: VaultItem;
-  onOpen: (item: VaultItem) => void;
+  onOpen: (item: VaultItem, sourceRect?: SourceRect) => void;
   onDelete: (id: string) => void;
   onShare: (item: VaultItem) => void;
   onToggleRead: (item: VaultItem) => void;
@@ -52,8 +53,26 @@ function VaultCardInner({
   onToggleRead,
   onOpenRemarkModal,
 }: VaultCardProps) {
+  const t = useTranslations("vault");
+  const cardRef = useRef<HTMLDivElement>(null);
   const dragX = useMotionValue(0);
   const stripOpacity = useTransform(dragX, [0, -72], [0, 1]);
+
+  const getSourceRect = useCallback((): SourceRect | undefined => {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return undefined;
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }, []);
+
+  const handleCardKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onOpen(item, getSourceRect());
+      }
+    },
+    [item, onOpen, getSourceRect],
+  );
 
   const description = getDescription(item);
   const timeAgo = formatDistanceToNow(new Date(item.created_at), {
@@ -72,6 +91,7 @@ function VaultCardInner({
 
   return (
     <div
+      ref={cardRef}
       className={cn(
         "relative flex h-full min-h-0 flex-col overflow-hidden rounded-card border border-border bg-card transition-shadow duration-200 hover:shadow-md",
         item.is_read && "opacity-60",
@@ -94,10 +114,12 @@ function VaultCardInner({
         onDrag={(_, info) => dragX.set(info.offset.x)}
         onDragEnd={handleDragEnd}
       >
-        <button
-          type="button"
-          onClick={() => onOpen(item)}
-          className="flex min-h-0 flex-1 flex-col text-left"
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => onOpen(item, getSourceRect())}
+          onKeyDown={handleCardKeyDown}
+          className="flex min-h-0 flex-1 flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-card"
         >
           {/* Image / type badge area */}
           <div className="relative h-[150px] w-full shrink-0 overflow-hidden">
@@ -128,17 +150,17 @@ function VaultCardInner({
             >
               {item.content_type}
             </span>
-            {/* Pencil: add/edit remark — opens modal */}
+            {/* Pencil: add/edit remark — opens modal (not nested in card button) */}
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-2 top-2 h-7 w-7 rounded-button bg-card/80 text-muted-foreground hover:bg-card hover:text-foreground"
+              className="absolute right-2 top-2 z-10 h-7 w-7 rounded-button bg-card/80 text-muted-foreground hover:bg-card hover:text-foreground"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onOpenRemarkModal?.(item);
               }}
-              aria-label="Add or edit remark"
+              aria-label={t("edit_remark_aria")}
             >
               <PencilIcon className="size-3.5" />
             </Button>
@@ -174,7 +196,7 @@ function VaultCardInner({
               {item.source ?? "—"} · {timeAgo}
             </p>
           </div>
-        </button>
+        </div>
 
         {/* Footer actions — always at bottom */}
         <div className="mt-auto flex shrink-0 items-center gap-1 border-t border-border px-3 py-2">
@@ -185,9 +207,9 @@ function VaultCardInner({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onOpen(item);
+              onOpen(item, getSourceRect());
             }}
-            aria-label="Open"
+            aria-label={t("open_aria")}
           >
             <ExternalLinkIcon className="size-3.5" />
           </Button>
@@ -200,7 +222,7 @@ function VaultCardInner({
               e.stopPropagation();
               onToggleRead(item);
             }}
-            aria-label={item.is_read ? "Mark unread" : "Mark read"}
+            aria-label={item.is_read ? t("mark_unread_aria") : t("mark_read_aria")}
           >
             {item.is_read ? (
               <EyeOffIcon className="size-3.5" />
@@ -217,7 +239,7 @@ function VaultCardInner({
               e.stopPropagation();
               onShare(item);
             }}
-            aria-label="Share"
+            aria-label={t("share_aria")}
           >
             <ShareIcon className="size-3.5" />
           </Button>
@@ -230,7 +252,7 @@ function VaultCardInner({
               e.stopPropagation();
               onDelete(item.id);
             }}
-            aria-label="Delete"
+            aria-label={t("delete_aria")}
           >
             <TrashIcon className="size-3.5" />
           </Button>

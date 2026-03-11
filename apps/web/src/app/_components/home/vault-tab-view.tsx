@@ -2,12 +2,12 @@
 
 import { ChatInput } from "@/app/_components/home/chat-input";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
-import type { VaultItem } from "@/app/_libs/types/vault";
+import type { SourceRect, VaultItem } from "@/app/_libs/types/vault";
 
 interface VaultTabViewProps {
   onSend: (text: string) => void;
   disabled: boolean;
-  onItemClick: (item: VaultItem) => void;
+  onItemClick: (item: VaultItem, sourceRect?: SourceRect) => void;
   onNavigateToDiscover?: () => void;
 }
 

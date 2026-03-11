@@ -29,6 +29,14 @@ export type VaultItem = Omit<
 export type TimeFilter = "today" | "week" | "month" | "all";
 export type ContentTypeFilter = "all" | ContentType;
 
+/** Viewport rect for expand-from-card animation (e.g. VideoPlayer). */
+export interface SourceRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 /** Translation keys for vault time filter labels (must exist in vault messages). */
 export type VaultTimeFilterLabelKey =
   | "time_today"

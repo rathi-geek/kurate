@@ -5,19 +5,22 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { toast } from "sonner";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 import { MobileTabBar } from "@/app/_components/home/MobileTabBar";
 import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view";
 import { VaultTabView } from "@/app/_components/home/vault-tab-view";
 import { ArticleReader } from "@/app/_components/reader/article-reader";
+import { PodcastPlayer } from "@/app/_components/reader/PodcastPlayer";
+import { VideoPlayer } from "@/app/_components/reader/VideoPlayer";
 import { HomeTab } from "@/app/_libs/chat-types";
 import { queryKeys } from "@/app/_libs/query/keys";
 import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { createClient } from "@/app/_libs/supabase/client";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import type { FeedItem } from "@/app/_mocks/mock-data";
-import type { VaultItem } from "@/app/_libs/types/vault";
+import type { SourceRect, VaultItem } from "@/app/_libs/types/vault";
 
 export default function HomePage() {
   return (
@@ -39,6 +42,9 @@ function HomePageInner() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [readerItem, setReaderItem] = useState<FeedItem | null>(null);
+  const [videoItem, setVideoItem] = useState<VaultItem | null>(null);
+  const [videoSourceRect, setVideoSourceRect] = useState<SourceRect | null>(null);
+  const [podcastItem, setPodcastItem] = useState<VaultItem | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const sidebarOverrides = useMemo(
@@ -52,8 +58,25 @@ function HomePageInner() {
   );
   useSidebarOverrides(sidebarOverrides);
 
-  function handleVaultItemClick(item: VaultItem) {
-    window.open(item.url, "_blank", "noopener");
+  function handleVaultItemClick(item: VaultItem, sourceRect?: SourceRect) {
+    if (item.content_type === "article") {
+      setReaderUrl(item.url);
+      setReaderItem({
+        id: item.id ?? "",
+        url: item.url,
+        title: item.title ?? "",
+        hostname: item.source ?? "",
+        readTime: item.read_time != null ? Number(item.read_time) : undefined,
+        contentType: "article",
+      });
+    } else if (item.content_type === "video") {
+      setVideoItem(item);
+      setVideoSourceRect(sourceRect ?? null);
+    } else if (item.content_type === "podcast") {
+      setPodcastItem(item);
+    } else {
+      window.open(item.url, "_blank", "noopener");
+    }
   }
 
   function handleFeedItemClick(item: FeedItem) {
@@ -113,6 +136,18 @@ function HomePageInner() {
                     contentType: "article",
                     readTime: null,
                   };
+              const { data: existing } = await supabase
+                .from("logged_items")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("url", urlMatch[0])
+                .maybeSingle();
+              if (existing) {
+                toast("Already in your Vault", {
+                  description: "This link has been saved before.",
+                });
+                return;
+              }
               const readTime =
                 meta.readTime != null ? String(meta.readTime) : null;
               const { error } = await supabase.from("logged_items").upsert(
@@ -293,6 +328,25 @@ function HomePageInner() {
           setReaderItem(null);
         }}
       />
+      {videoItem && (
+        <VideoPlayer
+          url={videoItem.url}
+          title={videoItem.title}
+          initialRect={videoSourceRect}
+          onClose={() => {
+            setVideoItem(null);
+            setVideoSourceRect(null);
+          }}
+        />
+      )}
+      {podcastItem && (
+        <PodcastPlayer
+          url={podcastItem.url}
+          title={podcastItem.title}
+          source={podcastItem.source}
+          onClose={() => setPodcastItem(null)}
+        />
+      )}
     </>
   );
 }

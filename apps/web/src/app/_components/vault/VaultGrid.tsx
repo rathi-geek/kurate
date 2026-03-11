@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { type Variants, motion, useReducedMotion } from "framer-motion";
 
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
-import type { VaultItem } from "@/app/_libs/types/vault";
+import type { SourceRect, VaultItem } from "@/app/_libs/types/vault";
 import { VaultCard } from "@/app/_components/vault/VaultCard";
 import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
 
@@ -13,7 +13,7 @@ export interface VaultGridProps {
   hasMore: boolean;
   isLoadingMore: boolean;
   onLoadMore: () => void;
-  onOpen: (item: VaultItem) => void;
+  onOpen: (item: VaultItem, sourceRect?: SourceRect) => void;
   onDelete: (id: string) => void;
   onShare: (item: VaultItem) => void;
   onToggleRead: (item: VaultItem) => void;
