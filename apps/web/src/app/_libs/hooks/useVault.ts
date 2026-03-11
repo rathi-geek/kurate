@@ -17,6 +17,8 @@ import type {
   VaultItem,
 } from "@/app/_libs/types/vault";
 
+// saveItem logic lives in useSaveItem.ts — import from there when needed outside vault context
+
 const PAGE_SIZE = 20;
 
 // Module-level singleton — avoids recreating the client on every call
@@ -180,33 +182,43 @@ export function useVault(filters: VaultFilters) {
     },
   });
 
-  async function saveItem(
-    url: string,
-    metadata?: { content_type?: ContentType; title?: string },
-  ): Promise<"saved" | "duplicate" | "error"> {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return "error";
-      const { error } = await supabase.from("logged_items").upsert(
-        {
-          user_id: user.id,
-          url,
-          save_source: "logged",
-          content_type: metadata?.content_type ?? "article",
-          ...(metadata?.title ? { title: metadata.title } : {}),
+  // TODO: wire toggleRead when is_read column is added to logged_items by backend team
+  const toggleReadMutation = useMutation({
+    mutationFn: async ({ id, is_read }: { id: string; is_read: boolean }) => {
+      const { error } = await supabase
+        .from("logged_items")
+        .update({ is_read } as Record<string, unknown>)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, is_read }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.vault.all });
+      const previous = queryClient.getQueryData(queryKeys.vault.list(filters));
+      queryClient.setQueryData(
+        queryKeys.vault.list(filters),
+        (old: InfiniteData<VaultItem[]> | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) =>
+              page.map((item) =>
+                item.id === id ? { ...item, is_read } : item,
+              ),
+            ),
+          };
         },
-        { onConflict: "user_id,url" },
       );
-      if (error?.code === "23505") return "duplicate";
-      if (error) return "error";
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.vault.list(filters), context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
-      return "saved";
-    } catch {
-      return "error";
-    }
-  }
+    },
+  });
 
   return {
     items,
@@ -221,6 +233,7 @@ export function useVault(filters: VaultFilters) {
     deleteItem: deleteMutation.mutate,
     updateRemarks: (id: string, remarks: string) =>
       remarksMutation.mutate({ id, remarks }),
-    saveItem,
+    toggleRead: (item: VaultItem) =>
+      toggleReadMutation.mutate({ id: item.id, is_read: !item.is_read }),
   };
 }

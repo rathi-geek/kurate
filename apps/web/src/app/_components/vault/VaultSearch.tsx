@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Input } from "@/components/ui/input";
 import { SearchIcon } from "@/components/icons";
 import { useDebouncedValue } from "@/app/_libs/hooks/useDebouncedValue";
@@ -13,6 +15,7 @@ export interface VaultSearchProps {
 }
 
 export function VaultSearch({ value, onChange }: VaultSearchProps) {
+  const t = useTranslations("vault");
   const [localValue, setLocalValue] = useDebouncedValue(
     value,
     onChange,
@@ -33,9 +36,9 @@ export function VaultSearch({ value, onChange }: VaultSearchProps) {
         type="search"
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
-        placeholder="Search your vault…"
+        placeholder={t("search_placeholder")}
         className={cn("pl-9", showClear && "pr-9")}
-        aria-label="Search your vault"
+        aria-label={t("search_placeholder")}
       />
       {showClear && (
         <button
@@ -45,7 +48,7 @@ export function VaultSearch({ value, onChange }: VaultSearchProps) {
             onChange("");
           }}
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded-button p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
-          aria-label="Clear search"
+          aria-label={t("search_clear_aria")}
         >
           <span className="text-lg leading-none">×</span>
         </button>

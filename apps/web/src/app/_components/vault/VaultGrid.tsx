@@ -12,12 +12,13 @@ export interface VaultGridProps {
   items: VaultItem[];
   hasMore: boolean;
   isLoadingMore: boolean;
+  /** Changes when filters change — forces stagger animation to replay */
+  animationKey: string;
   onLoadMore: () => void;
   onOpen: (item: VaultItem, sourceRect?: SourceRect) => void;
   onDelete: (id: string) => void;
   onShare: (item: VaultItem) => void;
   onToggleRead: (item: VaultItem) => void;
-  onEditRemark: (id: string, val: string) => void;
   onOpenRemarkModal?: (item: VaultItem) => void;
 }
 
@@ -25,12 +26,12 @@ export function VaultGrid({
   items,
   hasMore,
   isLoadingMore,
+  animationKey,
   onLoadMore,
   onOpen,
   onDelete,
   onShare,
   onToggleRead,
-  onEditRemark,
   onOpenRemarkModal,
 }: VaultGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -56,7 +57,7 @@ export function VaultGrid({
   return (
     <>
       <motion.div
-        key="vault-grid"
+        key={animationKey}
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 items-stretch"
         variants={staggerContainer as Variants}
         initial={prefersReducedMotion ? false : "hidden"}
@@ -65,6 +66,7 @@ export function VaultGrid({
         {items.map((item) => (
           <motion.div
             key={item.id}
+            layout
             className="h-full min-h-0"
             variants={staggerItem as Variants}
           >
@@ -74,7 +76,6 @@ export function VaultGrid({
               onDelete={onDelete}
               onShare={onShare}
               onToggleRead={onToggleRead}
-              onEditRemark={onEditRemark}
               onOpenRemarkModal={onOpenRemarkModal}
             />
           </motion.div>

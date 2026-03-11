@@ -41,7 +41,6 @@ export interface VaultCardProps {
   onDelete: (id: string) => void;
   onShare: (item: VaultItem) => void;
   onToggleRead: (item: VaultItem) => void;
-  onEditRemark: (id: string, value: string) => void;
   onOpenRemarkModal?: (item: VaultItem) => void;
 }
 

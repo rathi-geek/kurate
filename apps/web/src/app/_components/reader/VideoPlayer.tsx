@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/app/_libs/utils/cn";
@@ -35,10 +35,10 @@ export function VideoPlayer({ url, title, initialRect, onClose }: VideoPlayerPro
   const prefersReducedMotion = useReducedMotion();
   const expandFromCard = Boolean(initialRect && !prefersReducedMotion);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isClosing) return;
     setIsClosing(true);
-  };
+  }, [isClosing]);
 
   useEffect(() => {
     if (url && !embed) {
@@ -55,7 +55,7 @@ export function VideoPlayer({ url, title, initialRect, onClose }: VideoPlayerPro
       window.addEventListener("keydown", handleKey);
       return () => window.removeEventListener("keydown", handleKey);
     }
-  }, [url, embed]);
+  }, [url, embed, handleClose]);
 
   const showPanel = Boolean(url && embed) && !isClosing;
   const openInNewTab = () => {

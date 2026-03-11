@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +15,34 @@ import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
 import type { VaultItem } from "@/app/_libs/types/vault";
 
+const supabase = createClient();
+
 interface GroupRow {
   id: string;
   name: string;
+}
+
+async function fetchUserGroups(): Promise<GroupRow[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: memberships } = await supabase
+    .from("group_members")
+    .select("group_id, groups(id, name)")
+    .eq("user_id", user.id);
+
+  const list: GroupRow[] = [];
+  const seen = new Set<string>();
+  for (const row of memberships ?? []) {
+    const g = (row as { groups: GroupRow | null }).groups;
+    if (g?.id && !seen.has(g.id)) {
+      seen.add(g.id);
+      list.push({ id: g.id, name: g.name });
+    }
+  }
+  return list;
 }
 
 export interface VaultShareModalProps {
@@ -26,66 +51,24 @@ export interface VaultShareModalProps {
   onClose: () => void;
 }
 
-export function VaultShareModal({
-  open,
-  item,
-  onClose,
-}: VaultShareModalProps) {
+export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
   const t = useTranslations("vault");
   const queryClient = useQueryClient();
-  const [groups, setGroups] = useState<GroupRow[]>([]);
-  const [loading, setLoading] = useState(false);
   const [sharingId, setSharingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const supabase = createClient();
-    let cancelled = false;
-
-    async function fetchGroups() {
-      setLoading(true);
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user || cancelled) return;
-        const { data: memberships } = await supabase
-          .from("group_members")
-          .select("group_id, groups(id, name)")
-          .eq("user_id", user.id);
-        if (cancelled) return;
-        const list: GroupRow[] = [];
-        const seen = new Set<string>();
-        for (const row of memberships ?? []) {
-          const g = (row as { groups: GroupRow | null }).groups;
-          if (g?.id && !seen.has(g.id)) {
-            seen.add(g.id);
-            list.push({ id: g.id, name: g.name });
-          }
-        }
-        setGroups(list);
-      } catch {
-        if (!cancelled) setGroups([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    fetchGroups();
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
+  const { data: groups = [], isLoading } = useQuery({
+    queryKey: queryKeys.groups.list(),
+    queryFn: fetchUserGroups,
+    enabled: open,
+    staleTime: 1000 * 60 * 5, // groups rarely change — 5 min cache
+  });
 
   async function handleShare(groupId: string) {
     if (!item) return;
-    const supabase = createClient();
     setSharingId(groupId);
     try {
       const current = item.shared_to_groups ?? [];
-      const next = current.includes(groupId)
-        ? current
-        : [...current, groupId];
+      const next = current.includes(groupId) ? current : [...current, groupId];
       await supabase
         .from("logged_items")
         .update({ shared_to_groups: next })
@@ -105,10 +88,8 @@ export function VaultShareModal({
         <DialogHeader>
           <DialogTitle>{t("share_modal_title")}</DialogTitle>
         </DialogHeader>
-        {loading ? (
-          <p className="font-sans text-sm text-muted-foreground">
-            …
-          </p>
+        {isLoading ? (
+          <p className="font-sans text-sm text-muted-foreground">…</p>
         ) : groups.length === 0 ? (
           <p className="font-sans text-sm text-muted-foreground">
             {t("share_modal_no_groups")}

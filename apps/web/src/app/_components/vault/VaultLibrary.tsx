@@ -44,6 +44,7 @@ export function VaultLibrary({
     refetch,
     deleteItem,
     updateRemarks,
+    toggleRead,
   } = useVault(filters);
 
   const [deleteModal, setDeleteModal] = useState<{
@@ -123,12 +124,12 @@ export function VaultLibrary({
             items={items}
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
+            animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
             onLoadMore={loadMore}
             onOpen={onItemClick}
             onDelete={handleDelete}
             onShare={handleShare}
-            onToggleRead={() => {}}
-            onEditRemark={updateRemarks}
+            onToggleRead={toggleRead}
             onOpenRemarkModal={handleOpenRemarkModal}
           />
         </>
