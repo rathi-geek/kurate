@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
@@ -11,10 +12,12 @@ import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view"
 import { VaultTabView } from "@/app/_components/home/vault-tab-view";
 import { ArticleReader } from "@/app/_components/reader/article-reader";
 import { HomeTab } from "@/app/_libs/chat-types";
+import { queryKeys } from "@/app/_libs/query/keys";
 import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { createClient } from "@/app/_libs/supabase/client";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import type { FeedItem } from "@/app/_mocks/mock-data";
+import type { VaultItem } from "@/app/_libs/types/vault";
 
 export default function HomePage() {
   return (
@@ -30,8 +33,8 @@ function HomePageInner() {
 
   const [activeTab, setActiveTab] = useState<HomeTab>(HomeTab.DISCOVERING);
 
+  const queryClient = useQueryClient();
   const [isTyping, setIsTyping] = useState(false);
-  const [vaultRefreshKey, setVaultRefreshKey] = useState(0);
   const [_vaultPulse, setVaultPulse] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
@@ -49,8 +52,8 @@ function HomePageInner() {
   );
   useSidebarOverrides(sidebarOverrides);
 
-  function handleOpenArticle(url: string) {
-    window.open(url, "_blank", "noopener");
+  function handleVaultItemClick(item: VaultItem) {
+    window.open(item.url, "_blank", "noopener");
   }
 
   function handleFeedItemClick(item: FeedItem) {
@@ -73,13 +76,13 @@ function HomePageInner() {
         author: null,
         preview_image: item.imageUrl ?? null,
         content_type: item.contentType,
-        read_time: item.readTime ?? null,
+        read_time: item.readTime != null ? String(item.readTime) : null,
         save_source: "feed",
         shared_to_groups: [],
       },
       { onConflict: "user_id,url" },
     );
-    setVaultRefreshKey((k) => k + 1);
+    queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
     setVaultPulse(true);
   }
 
@@ -89,7 +92,6 @@ function HomePageInner() {
         const urlMatch = text.match(/https?:\/\/[^\s]+/);
         if (urlMatch) {
           setIsTyping(true);
-          let saved = false;
           try {
             const supabase = createClient();
             const {
@@ -111,6 +113,8 @@ function HomePageInner() {
                     contentType: "article",
                     readTime: null,
                   };
+              const readTime =
+                meta.readTime != null ? String(meta.readTime) : null;
               const { error } = await supabase.from("logged_items").upsert(
                 {
                   user_id: user.id,
@@ -120,16 +124,15 @@ function HomePageInner() {
                   author: meta.author ?? null,
                   preview_image: meta.previewImage ?? null,
                   content_type: meta.contentType ?? "article",
-                  read_time: meta.readTime ?? null,
+                  read_time: readTime,
                   save_source: "logged",
                   shared_to_groups: [],
                 },
                 { onConflict: "user_id,url" },
               );
               if (!error) {
-                setVaultRefreshKey((k) => k + 1);
+                queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
                 setVaultPulse(true);
-                saved = true;
               }
             }
           } catch {
@@ -229,7 +232,7 @@ function HomePageInner() {
       //   isStreamingRef.current = false;
       // }
     },
-    [activeTab],
+    [activeTab, queryClient],
   );
 
   return (
@@ -256,8 +259,8 @@ function HomePageInner() {
           <VaultTabView
             onSend={handleSend}
             disabled={isTyping}
-            vaultRefreshKey={vaultRefreshKey}
-            onOpenArticle={handleOpenArticle}
+            onItemClick={handleVaultItemClick}
+            onNavigateToDiscover={() => setActiveTab(HomeTab.DISCOVERING)}
           />
         </div>
         <div

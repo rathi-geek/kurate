@@ -2,25 +2,30 @@
 
 import { ChatInput } from "@/app/_components/home/chat-input";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
+import type { VaultItem } from "@/app/_libs/types/vault";
 
 interface VaultTabViewProps {
   onSend: (text: string) => void;
   disabled: boolean;
-  vaultRefreshKey: number;
-  onOpenArticle: (url: string) => void;
+  onItemClick: (item: VaultItem) => void;
+  onNavigateToDiscover?: () => void;
 }
 
 export function VaultTabView({
   onSend,
   disabled,
-  vaultRefreshKey,
-  onOpenArticle,
+  onItemClick,
+  onNavigateToDiscover,
 }: VaultTabViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Scrollable vault content */}
       <div className="min-h-0 flex-1 overflow-y-auto pb-16 md:pb-0">
-        <VaultLibrary refreshKey={vaultRefreshKey} onItemClick={onOpenArticle} panelMode />
+        <VaultLibrary
+          onItemClick={onItemClick}
+          panelMode
+          onNavigateToDiscover={onNavigateToDiscover}
+        />
       </div>
 
       {/* Input pinned to bottom */}
