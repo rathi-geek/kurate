@@ -2,7 +2,6 @@
 
 import React, { useCallback, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -56,8 +55,6 @@ function VaultCardInner({
   // TODO: restore when in-app reader is re-enabled
   // const { openItem } = useMediaPlayer();
   const cardRef = useRef<HTMLDivElement>(null);
-  const dragX = useMotionValue(0);
-  const stripOpacity = useTransform(dragX, [0, -72], [0, 1]);
 
   // TODO: restore when in-app reader is re-enabled
   // const getSourceRect = useCallback(() => {
@@ -83,16 +80,6 @@ function VaultCardInner({
     addSuffix: true,
   });
 
-  const handleDragEnd = useCallback(
-    (_: unknown, info: { offset: { x: number } }) => {
-      if (info.offset.x < -48) {
-        onDelete(item.id);
-      }
-      dragX.set(0);
-    },
-    [item.id, onDelete, dragX],
-  );
-
   return (
     <div
       ref={cardRef}
@@ -101,23 +88,7 @@ function VaultCardInner({
         item.is_read && "opacity-60",
       )}
     >
-      {/* Red strip behind (swipe reveal) */}
-      <motion.div
-        className="absolute inset-y-0 right-0 z-0 flex w-[72px] items-center justify-center bg-destructive/90 text-destructive-foreground"
-        style={{ opacity: stripOpacity }}
-        aria-hidden
-      >
-        <TrashIcon className="size-5" />
-      </motion.div>
-
-      <motion.div
-        className="relative z-10 flex h-full min-h-0 flex-col bg-card"
-        drag="x"
-        dragConstraints={{ left: -72, right: 0 }}
-        dragElastic={0.1}
-        onDrag={(_, info) => dragX.set(info.offset.x)}
-        onDragEnd={handleDragEnd}
-      >
+      <div className="relative z-10 flex h-full min-h-0 flex-col bg-card">
         <div
           role="button"
           tabIndex={0}
@@ -263,7 +234,7 @@ function VaultCardInner({
             <TrashIcon className="size-3.5" />
           </Button>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
