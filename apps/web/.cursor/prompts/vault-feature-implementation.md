@@ -126,14 +126,19 @@ export type VaultItem = Omit<
 > & {
   content_type: ContentType;
   save_source: SaveSource;
-  tags: string[];
-  shared_to_groups: string[];
+  // REAL SCHEMA: tags and shared_to_groups are nullable in the DB
+  tags: string[] | null;
+  shared_to_groups: string[] | null;
   // Pending backend migration — optional until columns are added to logged_items
   is_read?: boolean;
   read_at?: string | null;
   reading_progress?: number;
   last_opened_at?: string | null;
 };
+
+// NOTE: description is NOT a column on logged_items.
+// Read it via: item.raw_metadata?.description
+// NOTE: profiles table has NO handle/username field — only display_name.
 
 export type TimeFilter = "today" | "week" | "month" | "all";
 export type ContentTypeFilter = "all" | ContentType;
@@ -156,7 +161,7 @@ FILE: src/app/_libs/hooks/useVault.ts  (NEW FILE)
 Use TanStack Query (useInfiniteQuery + useMutation). No manual pagination state. No refreshKey.
 
 ```ts
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { startOfDay, subDays } from "date-fns";
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
@@ -165,8 +170,10 @@ import type { VaultFilters, VaultItem } from "@/app/_libs/types/vault";
 
 const PAGE_SIZE = 20;
 
+// Module-level singleton — avoids recreating the client on every call
+const supabase = createClient();
+
 async function fetchVaultPage(filters: VaultFilters, cursor: string | null): Promise<VaultItem[]> {
-  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
@@ -189,13 +196,14 @@ async function fetchVaultPage(filters: VaultFilters, cursor: string | null): Pro
   }
 
   const { data, error } = await query;
-  if (error) return MOCK_ITEMS as unknown as VaultItem[];
+  // Throw so TanStack can track isError, trigger retry (retry: 1 in client.ts), and expose error
+  if (error) throw new Error(error.message);
   return (data ?? []) as VaultItem[];
 }
 
 export function useVault(filters: VaultFilters) {
   const queryClient = useQueryClient();
-  const supabase = createClient();
+  // Use the module-level singleton, not a new client per render
 
   const query = useInfiniteQuery({
     queryKey: queryKeys.vault.list(filters),
@@ -216,10 +224,13 @@ export function useVault(filters: VaultFilters) {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.vault.all });
       const previous = queryClient.getQueryData(queryKeys.vault.list(filters));
-      queryClient.setQueryData(queryKeys.vault.list(filters), (old: any) => ({
-        ...old,
-        pages: old?.pages.map((page: VaultItem[]) => page.filter((item) => item.id !== id)) ?? [],
-      }));
+      queryClient.setQueryData(queryKeys.vault.list(filters), (old: InfiniteData<VaultItem[]> | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => page.filter((item) => item.id !== id)),
+        };
+      });
       return { previous };
     },
     onError: (_err, _id, context) => {
@@ -236,12 +247,15 @@ export function useVault(filters: VaultFilters) {
     onMutate: async ({ id, remarks }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.vault.all });
       const previous = queryClient.getQueryData(queryKeys.vault.list(filters));
-      queryClient.setQueryData(queryKeys.vault.list(filters), (old: any) => ({
-        ...old,
-        pages: old?.pages.map((page: VaultItem[]) =>
-          page.map((item) => (item.id === id ? { ...item, remarks } : item))
-        ) ?? [],
-      }));
+      queryClient.setQueryData(queryKeys.vault.list(filters), (old: InfiniteData<VaultItem[]> | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) =>
+            page.map((item) => (item.id === id ? { ...item, remarks } : item))
+          ),
+        };
+      });
       return { previous };
     },
     onError: (_err, _vars, context) => {
@@ -249,12 +263,25 @@ export function useVault(filters: VaultFilters) {
     },
   });
 
-  async function saveItem(url: string): Promise<"saved" | "duplicate" | "error"> {
+  // saveItem belongs in useVault — vault is for personal reading AND sharing with groups/profiles.
+  // content_type should NOT be hardcoded — it must be extracted from the URL by the backend/metadata service.
+  // For now pass it as a param; default to "article" only when auto-detection is unavailable.
+  async function saveItem(
+    url: string,
+    metadata?: { content_type?: ContentType; title?: string }
+  ): Promise<"saved" | "duplicate" | "error"> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return "error";
       const { error } = await supabase.from("logged_items").upsert(
-        { user_id: user.id, url, save_source: "logged", content_type: "article" },
+        {
+          user_id: user.id,
+          url,
+          save_source: "logged",
+          // Use detected content_type if available; fall back to "article"
+          content_type: metadata?.content_type ?? "article",
+          ...(metadata?.title ? { title: metadata.title } : {}),
+        },
         { onConflict: "user_id,url" }
       );
       if (error?.code === "23505") return "duplicate";
@@ -268,15 +295,23 @@ export function useVault(filters: VaultFilters) {
 
   return {
     items,
+    // TanStack state — expose all so VaultLibrary doesn't need to import useQuery directly
     isLoading: query.isLoading,
     isLoadingMore: query.isFetchingNextPage,
+    isFetching: query.isFetching,   // true during background refetch (after invalidation)
+    isError: query.isError,
+    error: query.error,
     hasMore: query.hasNextPage ?? false,
     loadMore: query.fetchNextPage,
+    refetch: query.refetch,         // manual retry
     deleteItem: deleteMutation.mutate,
     updateRemarks: (id: string, remarks: string) => remarksMutation.mutate({ id, remarks }),
-    saveItem,
+    saveItem, // signature: (url, metadata?) => Promise<"saved" | "duplicate" | "error">
   };
 }
+
+// Also import ContentType in this file:
+// import type { VaultFilters, VaultItem, ContentType } from "@/app/_libs/types/vault";
 ```
 
 Use date-fns for date calculations (already installed).
@@ -334,7 +369,24 @@ Props: { onExplore: () => void }
 - Wrap in motion.div with fadeUp variant, min-h-[240px] flex flex-col items-center justify-center
 
 ═══════════════════════════════════════════════════════
-STEP 6 — VaultDeleteModal
+STEP 6 — VaultErrorState
+FILE: src/app/\_components/vault/VaultErrorState.tsx (NEW FILE)
+═══════════════════════════════════════════════════════
+
+Props: { onRetry: () => void }
+
+- Center content vertically and horizontally, min-h-[240px]
+- Icon: exclamation circle SVG (24×24, strokeWidth 1.5), text-destructive/60
+- Title: "Something went wrong" — font-serif text-base font-bold text-foreground mt-3
+- Subtitle: "We couldn't load your Vault. Check your connection." — font-sans text-sm text-muted-foreground mt-1
+- Button: "Try again" — variant="outline" size="sm" mt-4 — calls onRetry
+- Wrap in motion.div fadeUp variant
+
+This is intentionally minimal. TanStack will automatically retry once (retry: 1 in client.ts)
+before this state appears, so users rarely see it.
+
+═══════════════════════════════════════════════════════
+STEP 7 — VaultDeleteModal
 FILE: src/app/\_components/vault/VaultDeleteModal.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
@@ -358,7 +410,7 @@ Export also a helper: shouldSkipConfirm() → boolean
 reads localStorage.getItem("vault.skipDeleteConfirm") === "true"
 
 ═══════════════════════════════════════════════════════
-STEP 7 — VaultCard
+STEP 8 — VaultCard
 FILE: src/app/\_components/vault/VaultCard.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
@@ -431,7 +483,7 @@ CARD OUTER WRAPPER:
 timeAgo: format with date-fns formatDistanceToNow(new Date(item.created_at), { addSuffix: true })
 
 ═══════════════════════════════════════════════════════
-STEP 8 — VaultGrid
+STEP 9 — VaultGrid
 FILE: src/app/\_components/vault/VaultGrid.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
@@ -471,7 +523,7 @@ STAGGER ANIMATION:
 - Only animate on initial mount, not on filter change (use key prop on grid)
 
 ═══════════════════════════════════════════════════════
-STEP 9 — VaultLibrary (REFACTORED ORCHESTRATOR)
+STEP 10 — VaultLibrary (REFACTORED ORCHESTRATOR)
 FILE: src/app/\_components/vault/VaultLibrary.tsx (REPLACE ENTIRELY)
 ═══════════════════════════════════════════════════════
 
@@ -503,7 +555,7 @@ export function VaultLibrary({ onItemClick, panelMode, onNavigateToDiscover }) {
     contentType: "all",
     search: "",
   });
-  const { items, isLoading, isLoadingMore, hasMore, loadMore, deleteItem, updateRemarks } = useVault(filters);
+  const { items, isLoading, isLoadingMore, isFetching, isError, hasMore, loadMore, deleteItem, updateRemarks, refetch } = useVault(filters);
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; targetId: string | null }>({
     open: false,
     targetId: null,
@@ -517,7 +569,7 @@ export function VaultLibrary({ onItemClick, panelMode, onNavigateToDiscover }) {
     setDeleteModal({ open: true, targetId: id });
   }
 
-  const isEmpty = !pagination.isLoading && items.length === 0;
+  const isEmpty = !isLoading && items.length === 0;
 
   return (
     <div className={panelMode ? "space-y-4 p-5" : "mt-8 space-y-4"}>
@@ -529,11 +581,19 @@ export function VaultLibrary({ onItemClick, panelMode, onNavigateToDiscover }) {
       </div>
       <VaultFilters filters={filters} onChange={setFilters} />
 
+      {/* Subtle top bar when background refetch is in progress */}
+      {isFetching && !isLoading && (
+        <div className="h-0.5 w-full animate-pulse bg-primary/30 rounded-full" />
+      )}
+
       {isLoading && <VaultGridSkeleton />}
-      {!isLoading && isEmpty && (
+      {!isLoading && isError && (
+        <VaultErrorState onRetry={refetch} />
+      )}
+      {!isLoading && !isError && isEmpty && (
         <VaultEmptyState onExplore={onNavigateToDiscover ?? (() => {})} />
       )}
-      {!isEmpty && (
+      {!isLoading && !isError && !isEmpty && (
         <VaultGrid
           items={items}
           hasMore={hasMore}
@@ -565,7 +625,7 @@ export function VaultLibrary({ onItemClick, panelMode, onNavigateToDiscover }) {
 ```
 
 ═══════════════════════════════════════════════════════
-STEP 10 — VaultShareModal
+STEP 11 — VaultShareModal
 FILE: src/app/\_components/vault/VaultShareModal.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
@@ -579,14 +639,15 @@ onClose: () => void
 - Title: "Share to group"
 - Fetch user's groups from Supabase (table: groups — select id, name, slug)
 - For each group: show group name
-  - If item.shared_to_groups.includes(groupId): show "✓ Already Shared" greyed out
+  - If (item.shared_to_groups ?? []).includes(groupId): show "✓ Already Shared" greyed out
+    (NOTE: shared_to_groups is string[] | null in the real schema — always null-coalesce)
   - Otherwise: show "Share" button
 - On share: update shared_to_groups array in logged_items via Supabase
 - Optimistic update: close modal, parent refreshes vault
 - If groups table doesn't exist yet: show "No groups yet" empty state
 
 ═══════════════════════════════════════════════════════
-STEP 11 — VideoPlayer
+STEP 12 — VideoPlayer
 FILE: src/app/\_components/reader/VideoPlayer.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
@@ -613,7 +674,7 @@ UI:
 - Animation: same slideInRight variant as ArticleReader
 
 ═══════════════════════════════════════════════════════
-STEP 12 — PodcastPlayer
+STEP 13 — PodcastPlayer
 FILE: src/app/\_components/reader/PodcastPlayer.tsx (NEW FILE)
 ═══════════════════════════════════════════════════════
 
@@ -639,7 +700,7 @@ UI:
 - Height: auto, min-h-[140px]
 
 ═══════════════════════════════════════════════════════
-STEP 13 — Wire everything in home/page.tsx
+STEP 14 — Wire everything in home/page.tsx
 FILE: src/app/(app)/home/page.tsx (EXTEND)
 ═══════════════════════════════════════════════════════
 
@@ -663,7 +724,7 @@ Duplicate save notification:
   toast("Already in your Vault", { description: "This link has been saved before." })
 
 ═══════════════════════════════════════════════════════
-STEP 14 — Update vault-tab-view.tsx
+STEP 15 — Update vault-tab-view.tsx
 FILE: src/app/\_components/home/vault-tab-view.tsx (EXTEND)
 ═══════════════════════════════════════════════════════
 
@@ -716,14 +777,15 @@ Follow this order exactly:
 1. vault.ts (types)
 2. useVault.ts (hook)
 3. VaultEmptyState.tsx
-4. VaultSearch.tsx
-5. VaultFilters.tsx
-6. VaultDeleteModal.tsx
-7. VaultCard.tsx
-8. VaultGrid.tsx
-9. VaultLibrary.tsx (replace)
-10. VaultShareModal.tsx
-11. VideoPlayer.tsx
-12. PodcastPlayer.tsx
-13. vault-tab-view.tsx (extend)
-14. home/page.tsx (extend)
+4. VaultErrorState.tsx
+5. VaultSearch.tsx
+6. VaultFilters.tsx
+7. VaultDeleteModal.tsx
+8. VaultCard.tsx
+9. VaultGrid.tsx
+10. VaultLibrary.tsx (replace)
+11. VaultShareModal.tsx
+12. VideoPlayer.tsx
+13. PodcastPlayer.tsx
+14. vault-tab-view.tsx (extend)
+15. home/page.tsx (extend)

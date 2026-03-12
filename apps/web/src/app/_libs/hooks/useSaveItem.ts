@@ -19,7 +19,10 @@ export interface SaveItemInput {
   save_source?: "logged" | "feed" | "discovered";
 }
 
-export type SaveItemResult = "saved" | "duplicate" | "error";
+export interface SaveItemResult {
+  status: "saved" | "duplicate" | "error";
+  item?: { id: string; shared_to_groups: string[] };
+}
 
 export function useSaveItem() {
   const queryClient = useQueryClient();
@@ -29,7 +32,7 @@ export function useSaveItem() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return "error";
+      if (!user) return { status: "error" };
 
       // Check duplicate before insert
       const { data: existing } = await supabase
@@ -39,29 +42,39 @@ export function useSaveItem() {
         .eq("url", input.url)
         .maybeSingle();
 
-      if (existing) return "duplicate";
+      if (existing) return { status: "duplicate" };
 
-      const { error } = await supabase.from("logged_items").upsert(
-        {
-          user_id: user.id,
-          url: input.url,
-          title: input.title ?? input.url,
-          source: input.source ?? null,
-          author: input.author ?? null,
-          preview_image: input.preview_image ?? null,
-          content_type: input.content_type ?? "article",
-          read_time: input.read_time ?? null,
-          save_source: input.save_source ?? "logged",
-          shared_to_groups: [],
-        },
-        { onConflict: "user_id,url" },
-      );
+      const { data, error } = await supabase
+        .from("logged_items")
+        .upsert(
+          {
+            user_id: user.id,
+            url: input.url,
+            title: input.title ?? input.url,
+            source: input.source ?? null,
+            author: input.author ?? null,
+            preview_image: input.preview_image ?? null,
+            content_type: input.content_type ?? "article",
+            read_time: input.read_time ?? null,
+            save_source: input.save_source ?? "logged",
+            shared_to_groups: [],
+          },
+          { onConflict: "user_id,url" },
+        )
+        .select("id, shared_to_groups")
+        .single();
 
       if (error) throw new Error(error.message);
-      return "saved";
+      return {
+        status: "saved",
+        item: {
+          id: data.id,
+          shared_to_groups: (data.shared_to_groups as string[] | null) ?? [],
+        },
+      };
     },
     onSuccess: (result) => {
-      if (result === "saved") {
+      if (result.status === "saved") {
         queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
       }
     },

@@ -14,8 +14,10 @@ import {
   ShareIcon,
   TrashIcon,
 } from "@/components/icons";
+// TODO: restore when in-app reader is re-enabled
+// import { useMediaPlayer } from "@/app/_libs/context/MediaPlayerContext";
 import { cn } from "@/app/_libs/utils/cn";
-import type { SourceRect, VaultItem } from "@/app/_libs/types/vault";
+import type { VaultItem } from "@/app/_libs/types/vault";
 
 function getDescription(item: VaultItem): string | undefined {
   const raw = item.raw_metadata;
@@ -37,7 +39,6 @@ const contentTypePillClass: Record<
 
 export interface VaultCardProps {
   item: VaultItem;
-  onOpen: (item: VaultItem, sourceRect?: SourceRect) => void;
   onDelete: (id: string) => void;
   onShare: (item: VaultItem) => void;
   onToggleRead: (item: VaultItem) => void;
@@ -46,31 +47,35 @@ export interface VaultCardProps {
 
 function VaultCardInner({
   item,
-  onOpen,
   onDelete,
   onShare,
   onToggleRead,
   onOpenRemarkModal,
 }: VaultCardProps) {
   const t = useTranslations("vault");
+  // TODO: restore when in-app reader is re-enabled
+  // const { openItem } = useMediaPlayer();
   const cardRef = useRef<HTMLDivElement>(null);
   const dragX = useMotionValue(0);
   const stripOpacity = useTransform(dragX, [0, -72], [0, 1]);
 
-  const getSourceRect = useCallback((): SourceRect | undefined => {
-    const rect = cardRef.current?.getBoundingClientRect();
-    if (!rect) return undefined;
-    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-  }, []);
+  // TODO: restore when in-app reader is re-enabled
+  // const getSourceRect = useCallback(() => {
+  //   const rect = cardRef.current?.getBoundingClientRect();
+  //   if (!rect) return undefined;
+  //   return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  // }, []);
 
+  // TODO: remove comment below and restore in-app openItem() once reader is ready
   const handleCardKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        onOpen(item, getSourceRect());
+        window.open(item.url, "_blank", "noopener,noreferrer");
+        // openItem(item, getSourceRect());
       }
     },
-    [item, onOpen, getSourceRect],
+    [item],
   );
 
   const description = getDescription(item);
@@ -116,7 +121,8 @@ function VaultCardInner({
         <div
           role="button"
           tabIndex={0}
-          onClick={() => onOpen(item, getSourceRect())}
+          // TODO: restore openItem(item, getSourceRect()) once in-app reader is ready
+          onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
           onKeyDown={handleCardKeyDown}
           className="flex min-h-0 flex-1 flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-card"
         >
@@ -203,10 +209,11 @@ function VaultCardInner({
             variant="ghost"
             size="icon"
             className="h-7 w-7 rounded-button"
+            // TODO: restore openItem(item, getSourceRect()) once in-app reader is ready
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onOpen(item, getSourceRect());
+              window.open(item.url, "_blank", "noopener,noreferrer");
             }}
             aria-label={t("open_aria")}
           >

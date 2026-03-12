@@ -1,7 +1,9 @@
 "use client";
 
 import { useId } from "react";
+
 import { motion, useReducedMotion } from "framer-motion";
+
 import { cn } from "@/app/_libs/utils/cn";
 
 // ─── Size Variants ─────────────────────────────────────────────────────────
@@ -9,9 +11,9 @@ import { cn } from "@/app/_libs/utils/cn";
 // sm  → compact override (text-sm, font-medium)
 // lg  → future use (spacious, text-sm, font-semibold)
 const SIZE_CONFIG = {
-  sm: { pad: 4, btn: "px-4 py-1.5 text-sm font-medium",     minW: "min-w-[200px]" },
+  sm: { pad: 4, btn: "px-4 py-1.5 text-sm font-medium", minW: "min-w-[200px]" },
   md: { pad: 4, btn: "px-5 py-2 text-[13px] font-semibold", minW: "min-w-[220px]" },
-  lg: { pad: 6, btn: "px-6 py-2.5 text-sm font-semibold",   minW: "min-w-[260px]" },
+  lg: { pad: 6, btn: "px-6 py-2.5 text-sm font-semibold", minW: "min-w-[260px]" },
 } as const;
 
 export type SlidingTabsSize = keyof typeof SIZE_CONFIG;
@@ -55,9 +57,12 @@ export function SlidingTabs<T extends string>({
 
   return (
     <div
-      className={cn("relative flex rounded-button bg-surface", minW, className)}
-      style={{ padding: pad }}
-    >
+      className={cn(
+        "rounded-0 sm:rounded-button bg-surface relative flex shadow-md",
+        minW,
+        className,
+      )}
+      style={{ padding: pad }}>
       {tabs.map((tab) => {
         const isActive = value === tab.value;
         return (
@@ -66,23 +71,25 @@ export function SlidingTabs<T extends string>({
             type="button"
             onClick={() => onChange(tab.value)}
             className={cn(
-              "relative flex-1 flex items-center justify-center font-sans transition-colors duration-200",
+              "relative flex flex-1 items-center justify-center font-sans transition-colors duration-200",
               btn,
               isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-brand",
-            )}
-          >
+            )}>
             {/* Pill renders inside the active button; layoutId moves it between buttons */}
-            {isActive && (
-              shouldAnimate ? (
+            {isActive &&
+              (shouldAnimate ? (
                 <motion.span
                   layoutId={pillId}
-                  className="absolute inset-0 rounded-[calc(var(--radius-button)-2px)] bg-primary"
+                  className="bg-primary absolute inset-0 rounded-[calc(var(--radius-button)-2px)]"
+                  style={{ boxShadow: "0 4px 14px hsl(var(--primary) / 0.45)" }}
                   transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.6 }}
                 />
               ) : (
-                <span className="absolute inset-0 rounded-[calc(var(--radius-button)-2px)] bg-primary" />
-              )
-            )}
+                <span
+                  className="bg-primary absolute inset-0 rounded-[calc(var(--radius-button)-2px)]"
+                  style={{ boxShadow: "0 4px 14px hsl(var(--primary) / 0.45)" }}
+                />
+              ))}
 
             {/* Label + optional badge */}
             <span className="relative z-10">

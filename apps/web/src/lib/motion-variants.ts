@@ -204,6 +204,41 @@ export const spinnerTransition: Transition = {
   ease: "linear",
 };
 
+// ─── GLOW EFFECTS ──────────────────────────────────────────────────────────
+
+/**
+ * Floating card shadow — always-on elevated shadow so the card feels lifted.
+ * Use as the default `boxShadow` on cards that float above content.
+ */
+export const shadowFloating =
+  "0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)" as const;
+
+/**
+ * Hover glow — soft green pulse on interaction (not a one-time keyframe, just a steady glow).
+ * Pair with `shadowFloating` as the default and swap to this on hover.
+ */
+export const shadowHoverGlow =
+  "0 4px 20px rgba(34,197,94,0.22), 0 0 0 2px rgba(34,197,94,0.14), 0 1px 4px rgba(0,0,0,0.06)" as const;
+
+/**
+ * Green success glow — spreading ring that fades out (one-time entry animation).
+ * Use as `animate={{ boxShadow: successGlowBoxShadow }}` with `successGlowTransition`.
+ */
+export const successGlowBoxShadow = [
+  "0 0 0 0px rgba(34,197,94,0.5), 0 4px 16px rgba(0,0,0,0.10)",
+  "0 0 0 8px rgba(34,197,94,0.2), 0 4px 16px rgba(0,0,0,0.10)",
+  "0 0 0 14px rgba(34,197,94,0.0), 0 4px 16px rgba(0,0,0,0.10)",
+] as const;
+
+/** @deprecated use shadowFloating — kept for backward compat */
+export const shadowResting = shadowFloating;
+
+/** Transition config for the glow — use as `transition.boxShadow` */
+export const successGlowTransition: Transition = {
+  duration: 1.2,
+  ease: "easeOut",
+};
+
 /**
  * CSS animation strings for elements that can't use Framer Motion
  * (e.g. pseudo-elements, SVG stroke-dashoffset).

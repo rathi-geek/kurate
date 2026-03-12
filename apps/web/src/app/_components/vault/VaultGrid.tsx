@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { type Variants, motion, useReducedMotion } from "framer-motion";
 
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
-import type { SourceRect, VaultItem } from "@/app/_libs/types/vault";
+import type { VaultItem } from "@/app/_libs/types/vault";
 import { VaultCard } from "@/app/_components/vault/VaultCard";
 import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
 
@@ -15,7 +15,6 @@ export interface VaultGridProps {
   /** Changes when filters change — forces stagger animation to replay */
   animationKey: string;
   onLoadMore: () => void;
-  onOpen: (item: VaultItem, sourceRect?: SourceRect) => void;
   onDelete: (id: string) => void;
   onShare: (item: VaultItem) => void;
   onToggleRead: (item: VaultItem) => void;
@@ -28,7 +27,6 @@ export function VaultGrid({
   isLoadingMore,
   animationKey,
   onLoadMore,
-  onOpen,
   onDelete,
   onShare,
   onToggleRead,
@@ -66,13 +64,11 @@ export function VaultGrid({
         {items.map((item) => (
           <motion.div
             key={item.id}
-            layout
             className="h-full min-h-0"
             variants={staggerItem as Variants}
           >
             <VaultCard
               item={item}
-              onOpen={onOpen}
               onDelete={onDelete}
               onShare={onShare}
               onToggleRead={onToggleRead}

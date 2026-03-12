@@ -1,41 +1,68 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 
+import { Input } from "@/components/ui/input";
+
 import { cn } from "@/app/_libs/utils/cn";
+import { LinkIcon, PlusIcon } from "@/components/icons";
+
+const URL_REGEX = /https?:\/\/[^\s]+/;
 
 interface ChatInputProps {
   onSend: (message: string) => void;
+  onUrlChange?: (url: string | null) => void;
   placeholder?: string;
   disabled?: boolean;
   autoFocus?: boolean;
 }
 
-export function ChatInput({ onSend, placeholder, disabled, autoFocus }: ChatInputProps) {
+export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocus }: ChatInputProps) {
   const t = useTranslations("chat");
   const resolvedPlaceholder = placeholder ?? t("placeholder");
+  const prefersReducedMotion = useReducedMotion();
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  const isUrl = URL_REGEX.test(value);
+  const hasText = value.trim().length > 0;
+
+  // Notify parent of URL presence (debounced 150ms)
   useEffect(() => {
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = Math.min(el.scrollHeight, 120) + "px";
-    }
-  }, [value]);
+    const timer = setTimeout(() => {
+      const match = value.match(URL_REGEX);
+      onUrlChange?.(match ? match[0] : null);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [value, onUrlChange]);
 
-  function handleSubmit() {
+  const showSendButton = hasText || focused;
+
+  // Global Ctrl+V / Cmd+V — focus input and paste
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (document.activeElement === inputRef.current || disabled) return;
+      const text = e.clipboardData?.getData("text");
+      if (text) {
+        inputRef.current?.focus();
+        setValue(text);
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [disabled]);
+
+  const handleSubmit = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setValue("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-  }
+  }, [value, disabled, onSend]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -44,43 +71,45 @@ export function ChatInput({ onSend, placeholder, disabled, autoFocus }: ChatInpu
     }
   }
 
+  const boxShadow = isUrl
+    ? "0 6px 24px rgba(0,0,0,0.12), 0 0 0 2px hsl(var(--primary) / 0.18)"
+    : focused
+      ? "0 0 0 3px hsl(var(--primary) / 0.12)"
+      : "0 1px 2px 0 rgb(0 0 0 / 0.04)";
+
   return (
-    <div
+    <motion.div
       className={cn(
-        "rounded-input bg-card flex items-center gap-1 border-0 px-2 py-1.5",
-        "transition-[box-shadow] duration-300 ease-out",
+        "bg-card flex items-center gap-1 rounded-full border-0 p-2 shadow-lg",
         disabled && "pointer-events-none opacity-50",
       )}
-      style={{
-        boxShadow: focused
-          ? "0 0 0 3px hsl(var(--primary) / 0.12)"
-          : "0 1px 2px 0 rgb(0 0 0 / 0.04)",
-      }}>
-      {/* Left: Add button */}
-      <button
-        type="button"
-        disabled={disabled}
-        aria-label={t("add_label")}
-        className="rounded-button text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center transition-colors">
-        <svg
-          width={15}
-          height={15}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.75}
-          strokeLinecap="round"
-          aria-hidden="true">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </button>
+      animate={
+        prefersReducedMotion
+          ? undefined
+          : { marginLeft: isUrl ? -10 : 0, marginRight: isUrl ? -10 : 0 }
+      }
+      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+      style={{ boxShadow, transition: "box-shadow 0.3s ease-out" }}>
+      {/* Left: link icon — visible when empty (stays visible when focused) */}
+      <AnimatePresence>
+        <motion.button
+          key="link-icon"
+          type="button"
+          disabled={disabled}
+          aria-label="Link"
+          initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.75 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.75 }}
+          transition={{ duration: 0.15 }}
+          className="rounded-button text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center transition-colors">
+          <LinkIcon className="size-[15px]" />
+        </motion.button>
+      </AnimatePresence>
 
-      {/* Divider */}
-      <div className="bg-border h-4 w-px shrink-0" aria-hidden="true" />
-
-      {/* Center: textarea */}
-      <input
-        ref={textareaRef}
+      {/* Center: text input (shadcn Input, borderless to match wrapper) */}
+      <Input
+        ref={inputRef}
+        type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -89,32 +118,31 @@ export function ChatInput({ onSend, placeholder, disabled, autoFocus }: ChatInpu
         placeholder={resolvedPlaceholder}
         disabled={disabled}
         autoFocus={autoFocus}
-        rows={1}
-        style={{ outline: "none", resize: "none" }}
-        className="text-foreground placeholder:text-muted-foreground max-h-[120px] flex-1 bg-transparent px-2 py-1.5 font-sans text-sm"
+        className={cn(
+          "h-10 min-h-0 flex-1 border-0 bg-transparent px-2 py-1.5 shadow-none",
+          "focus-visible:ring-0 focus-visible:ring-offset-0",
+        )}
       />
 
-      {/* Send button */}
-      <motion.button
-        type="button"
-        onClick={handleSubmit}
-        whileTap={{ scale: 0.88 }}
-        disabled={!value.trim() || disabled}
-        aria-label={t("send_label")}
-        className="rounded-button bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center transition-opacity disabled:cursor-not-allowed disabled:opacity-35">
-        <svg
-          width={14}
-          height={14}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true">
-          <path d="M5 12h14M13 6l6 6-6 6" />
-        </svg>
-      </motion.button>
-    </div>
+      {/* Right: + (add/send) button — when focused or has text */}
+      <AnimatePresence>
+        {showSendButton && (
+          <motion.button
+            key="add-btn"
+            type="button"
+            onClick={handleSubmit}
+            whileTap={{ scale: 0.88 }}
+            disabled={!hasText || disabled}
+            aria-label={t("send_label")}
+            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.75 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.75 }}
+            transition={{ duration: 0.15 }}
+            className="bg-primary text-primary-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-opacity disabled:cursor-not-allowed disabled:opacity-35">
+            <PlusIcon className="size-3.5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

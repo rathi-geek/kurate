@@ -32,4 +32,9 @@ export {
   hoverScale,
   spinnerTransition,
   cssAnimations,
+  shadowFloating,
+  shadowHoverGlow,
+  successGlowBoxShadow,
+  shadowResting,
+  successGlowTransition,
 } from "@/lib/motion-variants";
