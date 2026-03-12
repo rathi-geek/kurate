@@ -206,6 +206,30 @@
       "google": "Continue with Google"
     }
   },
+  "profile": {
+    "title": "Profile",
+    "edit_btn": "Edit",
+    "stat_saved": "Saved",
+    "stat_read": "Read",
+    "stat_shared": "Shared",
+    "stat_following": "Following",
+    "stat_trust_score": "Trust Score",
+    "content_dna_title": "Content DNA",
+    "content_dna_coming_soon": "Content DNA Chart (Coming Soon)",
+    "edit_title": "Edit Profile",
+    "change_photo": "Click to change photo",
+    "display_name": "Display Name",
+    "display_name_placeholder": "Your name",
+    "username": "Username",
+    "username_placeholder": "your_handle",
+    "bio": "Bio",
+    "bio_placeholder": "A short bio...",
+    "interests": "Interests",
+    "show_more": "Show more",
+    "show_less": "Show less",
+    "save_changes": "Save changes",
+    "saving": "Saving…"
+  },
   "admin": {
     "nav": {
       "brand": "Admin",

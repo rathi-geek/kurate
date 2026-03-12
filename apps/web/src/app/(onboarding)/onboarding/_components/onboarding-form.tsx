@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/app/_components/form-field";
 import { Spinner } from "@/app/_components/spinner";
 import { ROUTES } from "@/app/_libs/constants/routes";
+import { INTEREST_OPTIONS } from "@/app/_libs/constants/interests";
 import { createClient } from "@/app/_libs/supabase/client";
 import { cn } from "@/app/_libs/utils/cn";
 import { fadeUp } from "@/app/_libs/utils/motion";
@@ -18,24 +19,6 @@ import { Arrow, BrandLogo } from "@/components/brand";
 import { useRouter } from "@/i18n";
 
 import { AuthPageShell } from "@/app/(public)/auth/_components/auth-page-shell";
-
-const DEFAULT_INTERESTS = [
-  "Technology",
-  "Design",
-  "Science",
-  "Finance",
-  "Startups",
-  "Psychology",
-  "Philosophy",
-  "Writing",
-  "Health",
-  "Politics",
-  "Climate",
-  "Arts",
-  "Education",
-  "Business",
-  "History",
-];
 
 const VISIBLE_COUNT = 5;
 
@@ -81,7 +64,7 @@ export function OnboardingForm() {
     variants: fadeUp as Variants,
   });
 
-  const visibleInterests = expanded ? DEFAULT_INTERESTS : DEFAULT_INTERESTS.slice(0, VISIBLE_COUNT);
+  const visibleInterests = expanded ? INTEREST_OPTIONS : INTEREST_OPTIONS.slice(0, VISIBLE_COUNT);
 
   return (
     <AuthPageShell>

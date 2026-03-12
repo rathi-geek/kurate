@@ -18,6 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOverrides, setSidebarOverrides] = useState<SidebarOverrides>({});
 
   const userEmail = user?.email ?? "";
+  const userName = user?.user_metadata?.name ?? "";
 
   const handleLogout = useCallback(async () => {
     const supabase = createClient();
@@ -30,6 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="bg-background flex h-screen">
         <AppSidebar
           userEmail={userEmail}
+          userName={userName}
           onLogout={handleLogout}
           {...sidebarOverrides}
         />

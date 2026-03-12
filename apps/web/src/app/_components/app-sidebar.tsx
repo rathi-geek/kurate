@@ -29,6 +29,7 @@ const NAV_ITEMS = [
 
 interface AppSidebarProps {
   userEmail?: string;
+  userName?: string;
   onLogout?: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -39,6 +40,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({
   userEmail,
+  userName,
   onLogout,
   mobileOpen = false,
   onMobileClose,
@@ -263,8 +265,15 @@ export function AppSidebar({
 
         {/* Footer */}
         <div className={`border-ink/6 border-t ${collapsed ? "space-y-1 px-2 py-3" : "px-3 py-4"}`}>
-          {!collapsed && userEmail && (
-            <div className="text-ink/30 mb-2 truncate font-mono text-xs">{userEmail}</div>
+          {!collapsed && (userName || userEmail) && (
+            <div className="mb-2">
+              {userName && (
+                <div className="text-ink/70 truncate font-sans text-xs font-semibold">{userName}</div>
+              )}
+              {userEmail && (
+                <div className="text-ink/30 truncate font-mono text-xs">{userEmail}</div>
+              )}
+            </div>
           )}
           <button
             onClick={onLogout}
@@ -433,8 +442,15 @@ export function AppSidebar({
 
               {/* Footer */}
               <div className="border-ink/6 shrink-0 border-t px-5 py-4">
-                {userEmail && (
-                  <div className="text-ink/30 mb-2 truncate font-mono text-xs">{userEmail}</div>
+                {(userName || userEmail) && (
+                  <div className="mb-2">
+                    {userName && (
+                      <div className="text-ink/70 truncate font-sans text-xs font-semibold">{userName}</div>
+                    )}
+                    {userEmail && (
+                      <div className="text-ink/30 truncate font-mono text-xs">{userEmail}</div>
+                    )}
+                  </div>
                 )}
                 <button
                   onClick={onLogout}

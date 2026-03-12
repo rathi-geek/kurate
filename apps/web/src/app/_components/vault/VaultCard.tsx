@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef } from "react";
+import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslations } from "next-intl";
 
@@ -100,10 +101,12 @@ function VaultCardInner({
           {/* Image / type badge area */}
           <div className="relative h-[150px] w-full shrink-0 overflow-hidden">
             {item.preview_image ? (
-              <img
+              <Image
                 src={item.preview_image}
                 alt=""
-                className="h-full w-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, 300px"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-muted">

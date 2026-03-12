@@ -7,11 +7,13 @@ import { createClient } from "@/app/_libs/supabase/client";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  refreshUser: async () => {},
 });
 
 export function useAuth() {
@@ -35,8 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  async function refreshUser() {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getUser();
+    setUser(data.user ?? null);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

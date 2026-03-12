@@ -1,56 +1,116 @@
 "use client";
 
-const INTEREST_TAGS = ["Product", "Startups", "AI", "Psychology"];
+import { useEffect, useState } from "react";
 
-const MOCK_PROFILE_STATS = [
-  { label: "Saved", value: 142 },
-  { label: "Read", value: 89 },
-  { label: "Shared", value: 47 },
-  { label: "Following", value: 23 },
-  { label: "Trust Score", value: 94 },
-];
+import Image from "next/image";
+import { useTranslations } from "next-intl";
+
+import { ProfileEditModal } from "@/app/_components/profile/ProfileEditModal";
+import { useAuth } from "@/app/_libs/auth-context";
+import { createClient } from "@/app/_libs/supabase/client";
+
+const DASH = "—";
 
 export default function ProfilePage() {
+  const t = useTranslations("profile");
+  const { user } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
+  const [savedCount, setSavedCount] = useState<number | null>(null);
+  const [readCount, setReadCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+
+    async function fetchCounts() {
+      const [{ count: saved }, { count: read }] = await Promise.all([
+        supabase
+          .from("logged_items")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id),
+        supabase
+          .from("logged_items")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id)
+          .eq("is_read", true),
+      ]);
+      setSavedCount(saved ?? 0);
+      setReadCount(read ?? 0);
+    }
+
+    fetchCounts();
+  }, [user]);
+
+  const name = user?.user_metadata?.name ?? "";
+  const username = user?.user_metadata?.username ?? "";
+  const bio = user?.user_metadata?.bio ?? "";
+  const interests: string[] = user?.user_metadata?.interests ?? [];
+  const avatarUrl: string = user?.user_metadata?.avatar_url ?? "";
+  const avatarLetter = name ? name[0].toUpperCase() : "?";
+
+  const profileStats = [
+    { labelKey: "stat_saved" as const, value: savedCount !== null ? savedCount : DASH },
+    { labelKey: "stat_read" as const, value: readCount !== null ? readCount : DASH },
+    { labelKey: "stat_shared" as const, value: DASH },
+    { labelKey: "stat_following" as const, value: DASH },
+    { labelKey: "stat_trust_score" as const, value: DASH },
+  ];
+
   return (
     <div className="mx-auto max-w-xl px-6 py-8">
       <p className="font-mono text-xs font-medium text-muted-foreground uppercase tracking-wider mb-6">
-        Profile
+        {t("title")}
       </p>
 
       <div className="flex items-start gap-4 mb-6">
-        <div className="w-16 h-16 bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold rounded-full">
-          V
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-primary">
+          {avatarUrl ? (
+            <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="64px" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-primary-foreground">
+              {avatarLetter}
+            </div>
+          )}
         </div>
+
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold">Vivek Kamath</h1>
-            <button className="text-xs px-3 py-1.5 border rounded-full hover:bg-accent transition-colors">
-              Edit
+            <h1 className="text-2xl font-bold">{name || DASH}</h1>
+            <button
+              onClick={() => setEditOpen(true)}
+              className="text-xs px-3 py-1.5 border rounded-full hover:bg-accent transition-colors">
+              {t("edit_btn")}
             </button>
           </div>
           <p className="font-mono text-sm text-muted-foreground mb-2">
-            @vivek
+            {username ? `@${username}` : ""}
           </p>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-            Product-minded builder. Curating the things that shape how I think.
-          </p>
+          {bio && (
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              {bio}
+            </p>
+          )}
 
-          <div className="flex gap-2 flex-wrap">
-            {INTEREST_TAGS.map((tag) => (
-              <span key={tag} className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-full">
-                {tag}
-              </span>
-            ))}
-          </div>
+          {interests.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {interests.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-5 gap-3 mb-8">
-        {MOCK_PROFILE_STATS.map((stat) => (
-          <div key={stat.label} className="text-center py-4 bg-card border rounded-xl">
+        {profileStats.map((stat) => (
+          <div key={stat.labelKey} className="text-center py-4 bg-card border rounded-xl">
             <div className="text-xl font-bold">{stat.value}</div>
             <div className="font-mono text-xs text-muted-foreground uppercase mt-1">
-              {stat.label}
+              {t(stat.labelKey)}
             </div>
           </div>
         ))}
@@ -58,34 +118,16 @@ export default function ProfilePage() {
 
       <div className="mb-8">
         <p className="font-mono text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
-          Your Week
+          {t("content_dna_title")}
         </p>
-        <div className="grid grid-cols-3 gap-4 p-5 bg-card border rounded-card">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">12</div>
-            <div className="font-mono text-xs text-muted-foreground uppercase mt-1">Saved</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-secondary">8</div>
-            <div className="font-mono text-xs text-muted-foreground uppercase mt-1">Read</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-slate">5</div>
-            <div className="font-mono text-xs text-muted-foreground uppercase mt-1">Shared</div>
+        <div className="bg-card border rounded-card p-6">
+          <div className="h-32 flex items-center justify-center text-muted-foreground">
+            {t("content_dna_coming_soon")}
           </div>
         </div>
       </div>
 
-      <div className="mb-8">
-        <p className="font-mono text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
-          Content DNA
-        </p>
-        <div className="bg-card border rounded-card p-6">
-          <div className="h-32 flex items-center justify-center text-muted-foreground">
-            Content DNA Chart (Coming Soon)
-          </div>
-        </div>
-      </div>
+      <ProfileEditModal open={editOpen} onClose={() => setEditOpen(false)} />
     </div>
   );
 }

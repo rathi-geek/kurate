@@ -1,4 +1,5 @@
 export { ApplePodcastsIcon } from "./apple-podcasts-icon";
+export { CameraIcon } from "./camera-icon";
 export { ChevronDownIcon } from "./chevron-down-icon";
 export { CloseIcon } from "./close-icon";
 export { DomainIcon } from "./domain-icon";
