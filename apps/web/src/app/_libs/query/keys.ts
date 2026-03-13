@@ -35,5 +35,13 @@ export const queryKeys = {
     all: ["groups"] as const,
     list: () => ["groups", "list"] as const,
     detail: (slug: string) => ["groups", "detail", slug] as const,
+    feed: (groupId: string) => ["groups", "feed", groupId] as const,
+    members: (groupId: string) => ["groups", "members", groupId] as const,
+    engagement: (groupShareId: string) =>
+      ["groups", "engagement", groupShareId] as const,
+    comments: (groupShareId: string) =>
+      ["groups", "comments", groupShareId] as const,
+    vaultItem: (userId: string, url: string) =>
+      ["groups", "vaultItem", userId, url] as const,
   },
 } as const;

@@ -20,7 +20,9 @@ export const ROUTES = {
     GROUPS: "/groups",
     DASHBOARD: "/dashboard",
     ONBOARDING: "/onboarding",
-    GROUP: (slug: string) => `/groups/${slug}`,
+    GROUP: (nameOrSlug: string) => `/groups/${nameOrSlug}`,
+    GROUP_INFO: (nameOrSlug: string) => `/groups/${nameOrSlug}/info`,
+    GROUP_JOIN: (inviteCode: string) => `/groups/join/${inviteCode}`,
   },
 
   ADMIN: {

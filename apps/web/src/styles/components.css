@@ -74,4 +74,8 @@
   }
 
   /* ─── State badges — use badgeVariants from src/lib/variants.ts ───── */
+
+  /* ─── Scrollbar utilities ─────────────────────────────────────────── */
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
 }

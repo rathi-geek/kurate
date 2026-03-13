@@ -1,139 +1,48 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useRouter, useParams } from "next/navigation";
-import { ROUTES } from "@/app/_libs/constants/routes";
-import { MOCK_GROUPS, getMembersForGroup } from "@/app/_libs/contacts";
+import { createClient } from "@/app/_libs/supabase/server";
+import type { GroupRole } from "@/app/_libs/types/groups";
+import { slugify } from "@/app/_libs/utils/slugify";
 
-interface GroupContentItem {
-  id: string;
-  title: string;
-  source: string;
-  contentType: "article" | "video" | "podcast";
-  previewImage?: string;
-  readTime?: string;
-  sharedBy: string;
-  timeLabel: string;
+import { GroupPageClient } from "./GroupPageClient";
+
+interface GroupPageProps {
+  params: Promise<{ slug: string }>;
 }
 
-const MOCK_GROUP_CONTENT: GroupContentItem[] = [
-  { id: "1", title: "The Future of AI Agents", source: "a16z.com", contentType: "article", readTime: "8 min read", sharedBy: "@suchet", timeLabel: "2 hours ago" },
-  { id: "2", title: "Building Products Users Love", source: "pmarchive.com", contentType: "article", readTime: "12 min read", sharedBy: "@naman", timeLabel: "5 hours ago" },
-  { id: "3", title: "React Server Components Deep Dive", source: "react.dev", contentType: "article", readTime: "15 min read", sharedBy: "@arshia", timeLabel: "1 day ago" },
-];
+export default async function GroupPage({ params }: GroupPageProps) {
+  const { slug } = await params;
+  const supabase = await createClient();
 
-export default function GroupPage() {
-  const router = useRouter();
-  const params = useParams();
-  const slug = params.slug as string;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
 
-  const currentGroup = MOCK_GROUPS.find((g) => g.slug === slug);
-  const members = currentGroup ? getMembersForGroup(currentGroup) : [];
+  // TODO: Once RLS on group_members is fixed, scope this to the user's groups
+  // and verify membership before rendering.
+  // For now: fetch all groups and match by slugified name for UI testing.
+  const { data: allGroups } = await supabase
+    .from("groups")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-  if (!currentGroup) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-2">Group not found</p>
-          <button
-            type="button"
-            onClick={() => router.push(ROUTES.APP.HOME)}
-            className="text-sm text-primary hover:underline"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const group = (allGroups ?? []).find(
+    (g) => slugify(g.name) === slug,
+  );
+
+  if (!group) redirect("/home");
+
+  // TODO: Once RLS is fixed, read real role from group_members.
+  // Default to "member" for UI testing so all controls are visible.
+  const userRole: GroupRole = group.created_by === user.id ? "owner" : "member";
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <button
-        type="button"
-        onClick={() => router.push(ROUTES.APP.HOME)}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 rounded-badge px-2 py-1 hover:bg-surface transition-colors"
-        aria-label="Back to home"
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-          <path d="M7.5 9.5L4 6l3.5-3.5" />
-        </svg>
-        Home
-      </button>
-
-      <div className="flex items-center gap-4 mb-6">
-        {/* Dynamic group color — runtime value, no static token */}
-        <div
-          className="w-12 h-12 flex items-center justify-center rounded-card"
-          style={{ backgroundColor: `${currentGroup.color}20` }}
-        >
-          {/* Dynamic group color — runtime value, no static token */}
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: currentGroup.color }} />
-        </div>
-        <div>
-          <h1 className="font-serif text-3xl font-normal tracking-tight text-ink">{currentGroup.name}</h1>
-          <p className="text-sm text-muted-foreground">{currentGroup.members} members</p>
-        </div>
-      </div>
-
-      <div className="mb-8">
-        <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
-          Members
-        </p>
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
-            {members.slice(0, 5).map((m) => (
-              <div
-                key={m.handle}
-                className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold rounded-full border-2 border-background"
-              >
-                {m.name[0]}
-              </div>
-            ))}
-          </div>
-          <span className="text-sm text-muted-foreground">
-            {members.map((m) => m.name).join(", ")}
-          </span>
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
-          Content
-        </p>
-        <div className="space-y-4">
-          {MOCK_GROUP_CONTENT.map((item) => (
-            <div
-              key={item.id}
-              className="p-4 bg-card border rounded-card hover:bg-surface transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className={`text-xs px-2 py-1 rounded-badge font-medium capitalize ${
-                    item.contentType === "video"
-                      ? "bg-info-bg text-info-foreground"
-                      : item.contentType === "podcast"
-                        ? "bg-warning-bg text-warning-foreground"
-                        : "bg-brand-50 text-primary"
-                  }`}
-                >
-                  {item.contentType}
-                </span>
-                {item.readTime && (
-                  <span className="text-xs text-muted-foreground">{item.readTime}</span>
-                )}
-              </div>
-              <h3 className="font-medium mb-1 hover:text-primary transition-colors cursor-pointer">{item.title}</h3>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{item.source}</span>
-                <span>·</span>
-                <span>Shared by {item.sharedBy}</span>
-                <span>·</span>
-                <span>{item.timeLabel}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <GroupPageClient
+      group={group}
+      currentUserId={user.id}
+      userRole={userRole}
+      groupSlug={slug}
+    />
   );
 }

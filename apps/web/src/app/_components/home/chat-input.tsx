@@ -18,9 +18,11 @@ interface ChatInputProps {
   placeholder?: string;
   disabled?: boolean;
   autoFocus?: boolean;
+  /** Set to false to hide the + send button (e.g. when the parent provides its own Post action) */
+  showPlusIcon?: boolean;
 }
 
-export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocus }: ChatInputProps) {
+export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocus, showPlusIcon = true }: ChatInputProps) {
   const t = useTranslations("chat");
   const resolvedPlaceholder = placeholder ?? t("placeholder");
   const prefersReducedMotion = useReducedMotion();
@@ -124,9 +126,9 @@ export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocu
         )}
       />
 
-      {/* Right: + (add/send) button — when focused or has text */}
+      {/* Right: + (add/send) button — when focused or has text, and showPlusIcon is true */}
       <AnimatePresence>
-        {showSendButton && (
+        {showPlusIcon && showSendButton && (
           <motion.button
             key="add-btn"
             type="button"
