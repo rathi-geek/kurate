@@ -41,7 +41,7 @@ export type Database = {
             foreignKeyName: "comments_group_share_id_fkey"
             columns: ["group_share_id"]
             isOneToOne: false
-            referencedRelation: "groups"
+            referencedRelation: "group_shares"
             referencedColumns: ["id"]
           },
           {
@@ -126,37 +126,26 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
-          created_by: string | null
           id: string
+          is_group: boolean | null
           name: string | null
-          type: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
           id?: string
+          is_group?: boolean | null
           name?: string | null
-          type: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          created_by?: string | null
           id?: string
+          is_group?: boolean | null
           name?: string | null
-          type?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "conversations_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       events: {
         Row: {
@@ -385,6 +374,114 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      logged_item_likes: {
+        Row: {
+          created_at: string
+          id: string
+          logged_item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logged_item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logged_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logged_item_likes_logged_item_id_fkey"
+            columns: ["logged_item_id"]
+            isOneToOne: false
+            referencedRelation: "logged_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logged_item_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logged_item_must_reads: {
+        Row: {
+          created_at: string
+          id: string
+          logged_item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logged_item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logged_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logged_item_must_reads_logged_item_id_fkey"
+            columns: ["logged_item_id"]
+            isOneToOne: false
+            referencedRelation: "logged_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logged_item_must_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logged_item_saves: {
+        Row: {
+          created_at: string
+          id: string
+          logged_item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logged_item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logged_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logged_item_saves_logged_item_id_fkey"
+            columns: ["logged_item_id"]
+            isOneToOne: false
+            referencedRelation: "logged_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logged_item_saves_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       logged_items: {
         Row: {
@@ -639,12 +736,12 @@ export type Database = {
           about: string | null
           avtar_url: string | null
           created_at: string
-          first_name: string
-          handle: string
+          first_name: string | null
+          handle: string | null
           id: string
           interests: string[] | null
           is_onboarded: boolean
-          last_name: string
+          last_name: string | null
           theme_pref: string | null
           updated_at: string
           xp: number
@@ -653,12 +750,12 @@ export type Database = {
           about?: string | null
           avtar_url?: string | null
           created_at?: string
-          first_name: string
-          handle: string
+          first_name?: string | null
+          handle?: string | null
           id: string
           interests?: string[] | null
           is_onboarded?: boolean
-          last_name: string
+          last_name?: string | null
           theme_pref?: string | null
           updated_at?: string
           xp?: number
@@ -667,12 +764,12 @@ export type Database = {
           about?: string | null
           avtar_url?: string | null
           created_at?: string
-          first_name?: string
-          handle?: string
+          first_name?: string | null
+          handle?: string | null
           id?: string
           interests?: string[] | null
           is_onboarded?: boolean
-          last_name?: string
+          last_name?: string | null
           theme_pref?: string | null
           updated_at?: string
           xp?: number
@@ -807,6 +904,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "stat_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_conversations: {
+        Row: {
+          convo_id: string
+          created_at: string
+          id: string
+          is_muted: boolean | null
+          unread_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          convo_id: string
+          created_at?: string
+          id?: string
+          is_muted?: boolean | null
+          unread_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          convo_id?: string
+          created_at?: string
+          id?: string
+          is_muted?: boolean | null
+          unread_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_conversations_convo_id_fkey"
+            columns: ["convo_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_conversations_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"

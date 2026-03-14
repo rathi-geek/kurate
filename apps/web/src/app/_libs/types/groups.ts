@@ -9,7 +9,7 @@ export type GroupProfile = {
   id: string;
   display_name: string | null; // computed: first_name + " " + last_name
   avatar_url: string | null;   // aliased from avtar_url (DB typo)
-  handle: string;
+  handle: string | null;
 };
 
 // Composed shape returned by useGroupFeed query

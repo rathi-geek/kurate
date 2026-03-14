@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
 import type { GroupDrop } from "@/app/_libs/types/groups";
+import type { TablesInsert } from "@/app/_libs/types/database.types";
 
 const supabase = createClient();
 
@@ -42,15 +43,15 @@ export function useDropEngagement() {
         if (error) throw new Error(error.message);
       } else {
         // ON CONFLICT DO NOTHING — safe even without unique constraint
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await supabase.from("reactions").upsert(
-          // TODO: reactions.comment_id is required in schema but group-share reactions
-          // don't have a comment — awaiting backend to make comment_id nullable
+          // TODO: reactions.comment_id must be made nullable in DB.
+          // Group-share reactions have no associated comment. Once the migration
+          // is applied and pnpm db:types is re-run, this cast can be removed.
           {
             group_share_id: groupShareId,
             user_id: currentUserId,
             type: reactionType,
-          } as any,
+          } as unknown as TablesInsert<"reactions">,
           { onConflict: "group_share_id,user_id,type", ignoreDuplicates: true },
         );
         if (error) throw new Error(error.message);
