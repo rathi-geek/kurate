@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ChatInput } from "@/app/_components/home/chat-input";
 import { LinkPreviewCard, type ExtractedMeta } from "@/app/_components/home/LinkPreviewCard";
+import { PreviewPhase } from "@/app/_components/home/preview-phase";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import { useSaveItem } from "@/app/_libs/hooks/useSaveItem";
 import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
@@ -18,14 +20,13 @@ import { createClient } from "@/app/_libs/supabase/client";
 const URL_REGEX = /https?:\/\/[^\s]+/;
 const supabase = createClient();
 
-type PreviewPhase = "idle" | "loading" | "loaded" | "share";
-
 interface VaultTabViewProps {
   onNavigateToDiscover?: () => void;
   onScrollDirectionChange?: (dir: "up" | "down") => void;
 }
 
 export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: VaultTabViewProps) {
+  const t = useTranslations("vault");
   const prefersReducedMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollDir = useScrollDirection(scrollRef);
@@ -33,7 +34,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   const saveItem = useSaveItem();
   const queryClient = useQueryClient();
 
-  const [previewPhase, setPreviewPhase] = useState<PreviewPhase>("idle");
+  const [previewPhase, setPreviewPhase] = useState<PreviewPhase>(PreviewPhase.Idle);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMeta, setPreviewMeta] = useState<ExtractedMeta | null>(null);
   const [savedItemId, setSavedItemId] = useState<string | null>(null);
@@ -46,14 +47,14 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   const handleUrlChange = useCallback(
     (url: string | null) => {
       if (!url) {
-        setPreviewPhase("idle");
+        setPreviewPhase(PreviewPhase.Idle);
         setPreviewUrl(null);
         setPreviewMeta(null);
         return;
       }
       if (url === previewUrl) return; // already fetching / fetched this URL
       setPreviewUrl(url);
-      setPreviewPhase("loading");
+      setPreviewPhase(PreviewPhase.Loading);
       fetch("/api/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -62,11 +63,11 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         .then((res) => (res.ok ? res.json() : null))
         .then((meta: ExtractedMeta | null) => {
           setPreviewMeta(meta);
-          setPreviewPhase("loaded");
+          setPreviewPhase(PreviewPhase.Loaded);
         })
         .catch(() => {
           setPreviewMeta(null);
-          setPreviewPhase("loaded");
+          setPreviewPhase(PreviewPhase.Loaded);
         });
     },
     [previewUrl],
@@ -103,11 +104,11 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
 
         if (result.status === "duplicate") {
           toast("Already in your Vault", { description: "This link has been saved before." });
-          setPreviewPhase("idle");
+          setPreviewPhase(PreviewPhase.Idle);
         } else if (result.status === "saved" && result.item) {
           setSavedItemId(result.item.id);
           setSavedItemGroups(result.item.shared_to_groups ?? []);
-          setPreviewPhase("share");
+          setPreviewPhase(PreviewPhase.Share);
         }
       } catch {
         // network error — silently fail
@@ -122,14 +123,14 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
       const next = [...new Set([...savedItemGroups, groupId])];
       await supabase.from("logged_items").update({ shared_to_groups: next }).eq("id", savedItemId);
       queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
-      setPreviewPhase("idle");
+      setPreviewPhase(PreviewPhase.Idle);
       toast("Shared!");
     },
     [savedItemId, savedItemGroups, queryClient],
   );
 
   const handleSkip = useCallback(() => {
-    setPreviewPhase("idle");
+    setPreviewPhase(PreviewPhase.Idle);
     toast("Saved to Vault");
   }, []);
 
@@ -146,7 +147,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         transition={springGentle}>
         {/* Preview card — floats above input, takes no layout space */}
         <AnimatePresence>
-          {previewPhase !== "idle" && (
+          {previewPhase !== PreviewPhase.Idle && (
             <motion.div
               className="absolute bottom-full left-0 right-0 z-50 px-5"
               animate={
@@ -158,12 +159,12 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
               transition={springGentle}>
               <div className="mx-auto max-w-2xl">
                 <LinkPreviewCard
-                  phase={previewPhase as "loading" | "loaded" | "share"}
+                  phase={previewPhase}
                   url={previewUrl!}
                   metadata={previewMeta ?? undefined}
                   savedItemId={savedItemId ?? undefined}
                   savedItemGroups={savedItemGroups}
-                  onClose={() => setPreviewPhase("idle")}
+                  onClose={() => setPreviewPhase(PreviewPhase.Idle)}
                   onShare={handleShare}
                   onSkip={handleSkip}
                 />
@@ -176,7 +177,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
             <ChatInput
               onSend={handleSend}
               onUrlChange={handleUrlChange}
-              placeholder="Paste a link to log it…"
+              placeholder={t("log_link_placeholder")}
               disabled={saveItem.isPending}
             />
           </div>

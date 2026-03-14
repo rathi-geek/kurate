@@ -38,7 +38,7 @@ function HomePageInner() {
 
   // Initialise tab from URL — fallback to DISCOVERING for unknown values
   const tabFromUrl = searchParams.get("tab");
-  const initialTab = tabFromUrl === HomeTab.VAULT ? HomeTab.VAULT : HomeTab.DISCOVERING;
+  const initialTab = tabFromUrl === HomeTab.DISCOVERING ? HomeTab.DISCOVERING : HomeTab.VAULT;
   const [activeTab, setActiveTab] = useState<HomeTab>(initialTab);
 
   const [isScrolledDown, setIsScrolledDown] = useState(false);
@@ -80,8 +80,8 @@ function HomePageInner() {
               value={activeTab}
               onChange={(v) => handleTabChange(v as HomeTab)}
               tabs={[
-                { value: HomeTab.DISCOVERING, label: t("tab_discovering") },
                 { value: HomeTab.VAULT, label: t("tab_vault") },
+                { value: HomeTab.DISCOVERING, label: t("tab_discovering") },
               ]}
             />
           </div>

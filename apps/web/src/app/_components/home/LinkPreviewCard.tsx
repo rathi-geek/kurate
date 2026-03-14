@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 
+import { PreviewPhase } from "@/app/_components/home/preview-phase";
 import { queryKeys } from "@/app/_libs/query/keys";
 import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import { springGentle, shadowFloating, shadowHoverGlow, successGlowBoxShadow, successGlowTransition } from "@/app/_libs/utils/motion";
@@ -110,7 +111,7 @@ export interface ExtractedMeta {
 }
 
 export interface LinkPreviewCardProps {
-  phase: "loading" | "loaded" | "share";
+  phase: Exclude<PreviewPhase, PreviewPhase.Idle>;
   url: string;
   metadata?: ExtractedMeta;
   savedItemId?: string;
@@ -135,34 +136,22 @@ export function LinkPreviewCard({
   const t = useTranslations("link_preview");
   const copy = getLinkCopy(url, t as TranslateFn);
   const [isHovered, setIsHovered] = useState(false);
-  const [autoCloseKey, setAutoCloseKey] = useState(0);
-
-  // Auto-close share phase after 2s if no hover/interaction
-  useEffect(() => {
-    if (phase !== "share" || isHovered) return;
-    const timer = setTimeout(onSkip, 2000);
-    return () => clearTimeout(timer);
-  }, [phase, isHovered, onSkip, autoCloseKey]);
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), []);
-  const handleMouseLeave = useCallback(() => {
-    setIsHovered(false);
-    // Restart the 2s countdown from zero on leave
-    setAutoCloseKey((k) => k + 1);
-  }, []);
+  const handleMouseLeave = useCallback(() => setIsHovered(false), []);
 
   // Entry: one-time spreading green ring when data arrives; then settle to floating shadow.
   // Hover: switch to steady green glow while mouse is over the card.
   const boxShadow = isHovered
     ? shadowHoverGlow
-    : phase === "loaded" || phase === "share"
+    : phase === PreviewPhase.Loaded || phase === PreviewPhase.Share
       ? successGlowBoxShadow
       : shadowFloating;
 
   const { data: groups = [], isLoading: groupsLoading } = useQuery({
     queryKey: queryKeys.groups.list(),
     queryFn: fetchUserGroups,
-    enabled: phase === "share",
+    enabled: phase === PreviewPhase.Share,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -181,7 +170,7 @@ export function LinkPreviewCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="bg-card border-border relative mb-0 overflow-hidden rounded-2xl border">
-      {phase === "loading" && (
+      {phase === PreviewPhase.Loading && (
         <div className="flex items-center gap-3 px-4 py-3">
           <DomainIcon url={url} />
           <div className="min-w-0 flex-1">
@@ -196,7 +185,7 @@ export function LinkPreviewCard({
         </div>
       )}
 
-      {phase === "loaded" && (
+      {phase === PreviewPhase.Loaded && (
         <div className="flex items-start gap-3 px-4 py-3">
           {metadata?.previewImage ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -237,7 +226,7 @@ export function LinkPreviewCard({
         </div>
       )}
 
-      {phase === "share" && (
+      {phase === PreviewPhase.Share && (
         <div className="px-4 py-3">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-primary text-sm font-semibold">✓ {t("saved_heading")}</span>
@@ -279,17 +268,6 @@ export function LinkPreviewCard({
             </button>
           </div>
         </div>
-      )}
-
-      {/* Auto-close countdown bar — only visible in share phase when not hovered */}
-      {phase === "share" && (
-        <motion.div
-          key={`progress-${autoCloseKey}`}
-          className="absolute bottom-0 left-0 h-0.5 bg-primary/40"
-          initial={{ width: "100%" }}
-          animate={{ width: isHovered ? "100%" : "0%" }}
-          transition={{ duration: isHovered ? 0 : 2, ease: "linear" }}
-        />
       )}
     </motion.div>
   );
