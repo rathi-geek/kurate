@@ -18,7 +18,7 @@ async function fetchComments(groupShareId: string): Promise<DropComment[]> {
       user_id,
       content,
       created_at,
-      author:profiles!comments_user_id_fkey(id, display_name, avatar_url)
+      author:profiles!comments_user_id_fkey(id, first_name, last_name, avtar_url, handle)
       `,
     )
     .eq("group_share_id", groupShareId)
@@ -35,8 +35,11 @@ async function fetchComments(groupShareId: string): Promise<DropComment[]> {
       updated_at: null as string | null,
       author: {
         id: rawAuthor?.id ?? row.user_id,
-        display_name: rawAuthor?.display_name ?? null,
-        avatar_url: rawAuthor?.avatar_url ?? null,
+        display_name: rawAuthor
+          ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") || null
+          : null,
+        avatar_url: rawAuthor?.avtar_url ?? null,
+        handle: rawAuthor?.handle ?? "",
       },
       replies: [] as DropComment["replies"],
     };

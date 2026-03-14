@@ -2,12 +2,15 @@ import type { Tables } from "@/app/_libs/types/database.types";
 
 export type GroupRole = "owner" | "admin" | "member";
 
-// Minimal profile shape used across group features
-// Note: profiles table has no handle column — display_name used as handle fallback
-export type GroupProfile = Pick<
-  Tables<"profiles">,
-  "id" | "display_name" | "avatar_url"
->;
+// Friendly profile shape used across group features.
+// DB stores first_name + last_name separately; we combine into display_name.
+// DB has a typo: avtar_url (not avatar_url); we alias it as avatar_url here.
+export type GroupProfile = {
+  id: string;
+  display_name: string | null; // computed: first_name + " " + last_name
+  avatar_url: string | null;   // aliased from avtar_url (DB typo)
+  handle: string;
+};
 
 // Composed shape returned by useGroupFeed query
 export type GroupDrop = Tables<"group_shares"> & {

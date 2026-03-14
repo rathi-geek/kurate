@@ -24,7 +24,7 @@ async function fetchGroupFeedPage(
       shared_by,
       note,
       shared_at,
-      sharer:profiles!group_shares_shared_by_fkey(id, display_name, avatar_url),
+      sharer:profiles!group_shares_shared_by_fkey(id, first_name, last_name, avtar_url, handle),
       item:logged_items!group_shares_logged_item_id_fkey(url, title, preview_image, source, content_type, read_time),
       reactions(id, user_id, type),
       comments(id)
@@ -80,8 +80,11 @@ async function fetchGroupFeedPage(
       shared_at: row.shared_at,
       sharer: {
         id: rawSharer?.id ?? row.shared_by,
-        display_name: rawSharer?.display_name ?? null,
-        avatar_url: rawSharer?.avatar_url ?? null,
+        display_name: rawSharer
+          ? [rawSharer.first_name, rawSharer.last_name].filter(Boolean).join(" ") || null
+          : null,
+        avatar_url: rawSharer?.avtar_url ?? null,
+        handle: rawSharer?.handle ?? "",
       },
       item: {
         url: rawItem?.url ?? "",

@@ -82,10 +82,16 @@ export function GroupInfoPanel({
     setSearching(true);
     const { data } = await supabase
       .from("profiles")
-      .select("id, display_name, avatar_url")
-      .ilike("display_name", `%${query}%`)
+      .select("id, first_name, last_name, avtar_url, handle")
+      .ilike("handle", `%${query}%`)
       .limit(5);
-    setSearchResults(data ?? []);
+    setSearchResults(
+      (data ?? []).map((p) => ({
+        id: p.id,
+        display_name: [p.first_name, p.last_name].filter(Boolean).join(" ") || null,
+        avatar_url: p.avtar_url,
+      })),
+    );
     setSearching(false);
   };
 

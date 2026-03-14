@@ -2,21 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
-import { motion, useReducedMotion } from "framer-motion";
-
-import { ChatInput } from "@/app/_components/home/chat-input";
 import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
-import { springGentle } from "@/app/_libs/utils/motion";
 
 interface DiscoveringTabViewProps {
   onScrollDirectionChange?: (dir: "up" | "down") => void;
 }
 
 export function DiscoveringTabView({ onScrollDirectionChange }: DiscoveringTabViewProps) {
-  const prefersReducedMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollDir = useScrollDirection(scrollRef);
-  const isScrolledDown = scrollDir === "down";
 
   useEffect(() => {
     if (scrollDir) onScrollDirectionChange?.(scrollDir);

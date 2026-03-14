@@ -10,12 +10,12 @@ const supabase = createClient();
 
 async function fetchGroupMembers(groupId: string): Promise<GroupMember[]> {
   // TODO: Once RLS on group_members is fixed, restore the profile join:
-  //   .select("id, group_id, user_id, role, status, joined_at,
-  //            profile:profiles!group_members_user_id_fkey(id, display_name, avatar_url)")
+  //   .select("id, group_id, user_id, role, status, joined_at, is_admin,
+  //            profile:profiles!group_members_user_id_fkey(id, first_name, last_name, avtar_url, handle)")
   //   .eq("group_id", groupId)
   const { data, error } = await supabase
     .from("group_members")
-    .select("id, group_id, user_id, role, status, joined_at")
+    .select("id, group_id, user_id, role, status, joined_at, is_admin")
     .eq("group_id", groupId);
 
   if (error) throw new Error(error.message);
@@ -27,6 +27,7 @@ async function fetchGroupMembers(groupId: string): Promise<GroupMember[]> {
       id: row.user_id,
       display_name: null,
       avatar_url: null,
+      handle: "",
     },
   }));
 }
