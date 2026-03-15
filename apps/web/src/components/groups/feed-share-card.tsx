@@ -108,7 +108,7 @@ export const FeedShareCard = memo(function FeedShareCard({
         {/* Link drop: full-width preview image + title */}
         {drop.item && (
           <>
-            {drop.item.preview_image && (
+            {drop.item.preview_image_url && (
               <a
                 href={drop.item.url}
                 target="_blank"
@@ -116,7 +116,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                 className="-mx-4 block mb-3 overflow-hidden relative h-[220px] bg-surface"
               >
                 <Image
-                  src={drop.item.preview_image}
+                  src={drop.item.preview_image_url}
                   alt={drop.item.title ?? ""}
                   fill
                   className="object-cover"
@@ -134,16 +134,16 @@ export const FeedShareCard = memo(function FeedShareCard({
                 {drop.item.title ?? drop.item.url}
               </a>
               <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[11px] text-muted-foreground font-mono">
-                {drop.item.source && (
+                {(drop.item.raw_metadata as Record<string, string> | null)?.source && (
                   <>
                     <span className="text-primary text-[8px]">●</span>
-                    <span>{drop.item.source}</span>
+                    <span>{(drop.item.raw_metadata as Record<string, string>).source}</span>
                   </>
                 )}
-                {drop.item.read_time && (
+                {(drop.item.raw_metadata as Record<string, string> | null)?.read_time && (
                   <>
                     <span>·</span>
-                    <span>{drop.item.read_time}</span>
+                    <span>{(drop.item.raw_metadata as Record<string, string>).read_time}</span>
                   </>
                 )}
                 {drop.item.content_type && (
@@ -187,7 +187,7 @@ export const FeedShareCard = memo(function FeedShareCard({
 
         <div className="border-t border-border/50 pt-2">
           <EngagementBar
-            groupShareId={drop.id}
+            groupPostId={drop.id}
             groupId={groupId}
             url={drop.item?.url ?? ""}
             currentUserId={currentUserId}
@@ -196,10 +196,10 @@ export const FeedShareCard = memo(function FeedShareCard({
               drop.item
                 ? {
                     title: drop.item.title,
-                    source: drop.item.source,
-                    preview_image: drop.item.preview_image,
+                    source: (drop.item.raw_metadata as Record<string, string> | null)?.source,
+                    preview_image: drop.item.preview_image_url,
                     content_type: drop.item.content_type as "article" | "video" | "podcast",
-                    read_time: drop.item.read_time,
+                    read_time: (drop.item.raw_metadata as Record<string, string> | null)?.read_time,
                   }
                 : undefined
             }

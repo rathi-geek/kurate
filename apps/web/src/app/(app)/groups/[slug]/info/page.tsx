@@ -20,16 +20,23 @@ export default async function GroupInfoPage({ params }: InfoPageProps) {
   if (!user) redirect("/auth/login");
 
   const { data: allGroups } = await supabase
-    .from("groups")
+    .from("conversations")
     .select("*")
+    .eq("is_group", true)
     .order("created_at", { ascending: false });
 
-  const group = (allGroups ?? []).find((g) => slugify(g.name) === slug);
+  const group = (allGroups ?? []).find((g) => slugify(g.group_name ?? "") === slug);
 
   if (!group) redirect("/home");
 
-  const userRole: GroupRole =
-    group.created_by === user.id ? "owner" : "member";
+  const { data: memberRow } = await supabase
+    .from("conversation_members")
+    .select("role")
+    .eq("convo_id", group.id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const userRole: GroupRole = (memberRow?.role as GroupRole) ?? "member";
 
   return (
     <InfoPageClient

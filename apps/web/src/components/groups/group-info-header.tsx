@@ -17,7 +17,7 @@ const supabase = createClient();
 export type InfoModal = "invite" | "edit" | null;
 
 export interface GroupInfoHeaderProps {
-  group: Tables<"groups">;
+  group: Tables<"conversations">;
   groupSlug: string;
   userRole: GroupRole;
   members: GroupMember[];
@@ -41,7 +41,7 @@ export function GroupInfoHeader({
 
   const isOwner = userRole === "owner";
   const isAdminOrOwner = userRole === "owner" || userRole === "admin";
-  const avatarInitial = (group.name?.[0] ?? "G").toUpperCase();
+  const avatarInitial = (group.group_name?.[0] ?? "G").toUpperCase();
 
   return (
     <>
@@ -76,11 +76,11 @@ export function GroupInfoHeader({
 
           <div className="pt-1">
             <h1 className="text-foreground font-serif text-xl leading-tight font-normal">
-              {group.name}
+              {group.group_name}
             </h1>
-            {group.description && (
+            {group.group_description && (
               <p className="text-muted-foreground mt-1 text-sm leading-snug">
-                {group.description}
+                {group.group_description}
               </p>
             )}
           </div>
@@ -141,12 +141,12 @@ export function GroupInfoHeader({
       <EditGroupInfoModal
         open={openModal === "edit"}
         onOpenChange={(o) => !o && setOpenModal(null)}
-        initialName={group.name ?? ""}
-        initialDescription={group.description ?? ""}
+        initialName={group.group_name ?? ""}
+        initialDescription={group.group_description ?? ""}
         onSave={async (name, description) => {
           await supabase
-            .from("groups")
-            .update({ name, description: description || null })
+            .from("conversations")
+            .update({ group_name: name, group_description: description || null })
             .eq("id", group.id);
           await queryClient.invalidateQueries({
             queryKey: queryKeys.groups.detail(groupSlug),

@@ -15,23 +15,22 @@ async function fetchGroupFeedPage(
   cursor: string | null,
 ): Promise<GroupDrop[]> {
   let query = supabase
-    .from("group_shares")
+    .from("group_posts")
     .select(
       `
       id,
-      group_id,
+      convo_id,
       logged_item_id,
       shared_by,
       note,
       shared_at,
-      sharer:profiles!group_shares_shared_by_fkey(id, first_name, last_name, avtar_url, handle),
-      item:logged_items!group_shares_logged_item_id_fkey(url, title, preview_image, source, content_type, read_time),
-      reactions(id, user_id, type, user:profiles!reactions_user_id_fkey(id, first_name, last_name, avtar_url, handle)),
-      comments(id)
+      sharer:profiles!group_posts_shared_by_fkey(id, first_name, last_name, avtar_url, handle),
+      item:logged_items!group_posts_logged_item_id_fkey(url, title, preview_image_url, content_type, raw_metadata, description),
+      reactions:group_post_reactions(id, user_id, reaction_type, user:profiles!group_post_reactions_user_id_fkey(id, first_name, last_name, avtar_url, handle)),
+      comments:group_posts_comments(id)
       `,
-      // After DB migration (group_shares.content + nullable logged_item_id), add "content" to select above
     )
-    .eq("group_id", groupId)
+    .eq("convo_id", groupId)
     .order("shared_at", { ascending: false })
     .limit(PAGE_SIZE);
 
@@ -46,7 +45,7 @@ async function fetchGroupFeedPage(
     const rawReactions = (row.reactions ?? []) as Array<{
       id: string;
       user_id: string;
-      type: string;
+      reaction_type: string;
       user: { id: string; first_name: string | null; last_name: string | null; avtar_url: string | null; handle: string | null } | null;
     }>;
     const rawItem = Array.isArray(row.item) ? row.item[0] : row.item;
@@ -54,7 +53,7 @@ async function fetchGroupFeedPage(
 
     const getReactors = (type: string) =>
       rawReactions
-        .filter((r) => r.type === type && r.user)
+        .filter((r) => r.reaction_type === type && r.user)
         .map((r) => ({
           id: r.user!.id,
           display_name:
@@ -67,37 +66,29 @@ async function fetchGroupFeedPage(
 
     const engagement = {
       like: {
-        count: rawReactions.filter((r) => r.type === "like").length,
-        didReact: rawReactions.some(
-          (r) => r.type === "like" && r.user_id === currentUserId,
-        ),
+        count: rawReactions.filter((r) => r.reaction_type === "like").length,
+        didReact: rawReactions.some((r) => r.reaction_type === "like" && r.user_id === currentUserId),
         reactors: getReactors("like"),
       },
       mustRead: {
-        count: rawReactions.filter((r) => r.type === "must_read").length,
-        didReact: rawReactions.some(
-          (r) => r.type === "must_read" && r.user_id === currentUserId,
-        ),
+        count: rawReactions.filter((r) => r.reaction_type === "must_read").length,
+        didReact: rawReactions.some((r) => r.reaction_type === "must_read" && r.user_id === currentUserId),
         reactors: getReactors("must_read"),
       },
       readBy: {
-        count: rawReactions.filter((r) => r.type === "read_by").length,
-        didReact: rawReactions.some(
-          (r) => r.type === "read_by" && r.user_id === currentUserId,
-        ),
-        reactors: getReactors("read_by"),
+        count: 0,
+        didReact: false,
+        reactors: [],
       },
     };
 
     return {
       id: row.id,
-      group_id: row.group_id,
+      convo_id: row.convo_id,
       logged_item_id: row.logged_item_id,
       shared_by: row.shared_by,
       note: row.note,
       shared_at: row.shared_at,
-      // After DB migration, map content: (row as any).content ?? null
-      content: null,
       sharer: {
         id: rawSharer?.id ?? row.shared_by,
         display_name: rawSharer
@@ -110,11 +101,10 @@ async function fetchGroupFeedPage(
         ? {
             url: rawItem.url ?? "",
             title: rawItem.title ?? null,
-            preview_image: rawItem.preview_image ?? null,
-            source: rawItem.source ?? null,
+            preview_image_url: rawItem.preview_image_url ?? null,
             content_type: rawItem.content_type ?? "article",
-            read_time: rawItem.read_time ?? null,
-            description: null,
+            raw_metadata: rawItem.raw_metadata ?? null,
+            description: rawItem.description ?? null,
           }
         : null,
       engagement,

@@ -82,7 +82,7 @@ export function useSaveItem() {
         .eq("logged_item_id", loggedItem.id)
         .maybeSingle();
 
-      if (existing) return { status: "duplicate" };
+      if (existing) return { status: "duplicate", item: { id: existing.id, logged_item_id: loggedItem.id } };
 
       // 3. Insert ownership record
       const { data: uli, error: uliError } = await supabase

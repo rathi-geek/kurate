@@ -16,7 +16,7 @@ import { GroupInviteModal } from "@/components/groups/group-invite-modal";
 import { LibraryCard } from "@/components/groups/library-card";
 
 interface InfoPageClientProps {
-  group: Tables<"groups">;
+  group: Tables<"conversations">;
   currentUserId: string;
   userRole: GroupRole;
   groupSlug: string;

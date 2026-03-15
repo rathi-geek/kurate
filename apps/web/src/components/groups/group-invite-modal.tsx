@@ -90,11 +90,10 @@ export function GroupInviteModal({
 
   const handleAddMember = async (profileId: string) => {
     setAddingId(profileId);
-    await supabase.from("group_members").insert({
-      group_id: groupId,
+    await supabase.from("conversation_members").insert({
+      convo_id: groupId,
       user_id: profileId,
       role: inviteRole,
-      status: "active",
     });
     await queryClient.invalidateQueries({
       queryKey: queryKeys.groups.members(groupId),

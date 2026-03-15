@@ -9,20 +9,21 @@ import type { DropComment } from "@/app/_libs/types/groups";
 const supabase = createClient();
 const PAGE_SIZE = 5;
 
-async function fetchComments(groupShareId: string, cursor: string | null): Promise<DropComment[]> {
+async function fetchComments(groupPostId: string, cursor: string | null): Promise<DropComment[]> {
   let query = supabase
-    .from("comments")
+    .from("group_posts_comments")
     .select(
       `
       id,
-      group_share_id,
+      group_post_id,
       user_id,
-      content,
+      comment_text,
+      parent_comment_id,
       created_at,
-      author:profiles!comments_user_id_fkey(id, first_name, last_name, avtar_url, handle)
+      author:profiles!group_posts_comments_user_id_fkey(id, first_name, last_name, avtar_url, handle)
       `,
     )
-    .eq("group_share_id", groupShareId)
+    .eq("group_post_id", groupPostId)
     .order("created_at", { ascending: true })
     .limit(PAGE_SIZE);
 
@@ -35,12 +36,8 @@ async function fetchComments(groupShareId: string, cursor: string | null): Promi
 
   const flat = (data ?? []).map((row) => {
     const rawAuthor = Array.isArray(row.author) ? row.author[0] : row.author;
-    // parent_id and updated_at not in DB types yet — read via cast once migration applied
-    const rowAny = row as Record<string, unknown>;
     return {
       ...row,
-      parent_id: (rowAny.parent_id as string | null) ?? null,
-      updated_at: (rowAny.updated_at as string | null) ?? null,
       author: {
         id: rawAuthor?.id ?? row.user_id,
         display_name: rawAuthor
@@ -53,14 +50,13 @@ async function fetchComments(groupShareId: string, cursor: string | null): Promi
     };
   });
 
-  // Build tree: nest replies under parent comments
-  // Before migration: all parent_id are null, so all are top-level
+  // Build reply tree
   const topLevel: DropComment[] = [];
   const byId = new Map<string, DropComment>();
   for (const c of flat) byId.set(c.id, c as DropComment);
   for (const c of flat) {
-    if (c.parent_id && byId.has(c.parent_id)) {
-      byId.get(c.parent_id)!.replies.push(c as DropComment["replies"][0]);
+    if (c.parent_comment_id && byId.has(c.parent_comment_id)) {
+      byId.get(c.parent_comment_id)!.replies.push(c as DropComment["replies"][0]);
     } else {
       topLevel.push(c as DropComment);
     }
@@ -69,18 +65,18 @@ async function fetchComments(groupShareId: string, cursor: string | null): Promi
   return topLevel;
 }
 
-export function useComments(groupShareId: string) {
+export function useComments(groupPostId: string) {
   const queryClient = useQueryClient();
-  const key = queryKeys.groups.comments(groupShareId);
+  const key = queryKeys.groups.comments(groupPostId);
 
   const query = useInfiniteQuery({
     queryKey: key,
-    queryFn: ({ pageParam }) => fetchComments(groupShareId, pageParam as string | null),
+    queryFn: ({ pageParam }) => fetchComments(groupPostId, pageParam as string | null),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
       lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,
     staleTime: 1000 * 30,
-    enabled: !!groupShareId,
+    enabled: !!groupPostId,
   });
 
   const addMutation = useMutation({
@@ -93,17 +89,12 @@ export function useComments(groupShareId: string) {
       userId: string;
       parentId?: string | null;
     }) => {
-      // parent_id requires DB migration: ALTER TABLE comments ADD COLUMN parent_id UUID REFERENCES comments(id) ON DELETE CASCADE
-      const insertData: Record<string, unknown> = {
-        group_share_id: groupShareId,
+      const { error } = await supabase.from("group_posts_comments").insert({
+        group_post_id: groupPostId,
         user_id: userId,
-        content,
-      };
-      // Only include parent_id once DB migration is applied
-      if (parentId) {
-        insertData.parent_id = parentId;
-      }
-      const { error } = await supabase.from("comments").insert(insertData as never);
+        comment_text: content,
+        ...(parentId ? { parent_comment_id: parentId } : {}),
+      });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
@@ -121,10 +112,9 @@ export function useComments(groupShareId: string) {
       content: string;
       currentUserId: string;
     }) => {
-      const updateData: Record<string, unknown> = { content };
       const { data, error } = await supabase
-        .from("comments")
-        .update(updateData)
+        .from("group_posts_comments")
+        .update({ comment_text: content })
         .eq("id", commentId)
         .eq("user_id", currentUserId)
         .select("id")
@@ -146,7 +136,7 @@ export function useComments(groupShareId: string) {
       currentUserId: string;
     }) => {
       const { error } = await supabase
-        .from("comments")
+        .from("group_posts_comments")
         .delete()
         .eq("id", commentId)
         .eq("user_id", currentUserId);

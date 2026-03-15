@@ -14,13 +14,16 @@ export async function fetchUserGroups(): Promise<GroupRow[]> {
   if (!user) return [];
 
   const { data, error } = await supabase
-    .from("group_members")
-    .select("groups!group_members_group_id_fkey(id, name)")
-    .eq("user_id", user.id)
-    .eq("status", "active");
+    .from("conversation_members")
+    .select("conversations!conversation_members_convo_id_fkey(id, group_name)")
+    .eq("user_id", user.id);
 
   if (error) return [];
   return (data ?? [])
-    .map((row) => row.groups)
+    .map((row) => {
+      const convo = Array.isArray(row.conversations) ? row.conversations[0] : row.conversations;
+      if (!convo) return null;
+      return { id: convo.id, name: convo.group_name ?? "" };
+    })
     .filter(Boolean) as GroupRow[];
 }

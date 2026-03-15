@@ -82,12 +82,12 @@ function CommentItem({
 
         {isEditing ? (
           <ReplyInput
-            initialValue={comment.content}
+            initialValue={comment.comment_text}
             onSubmit={handleEditSubmit}
             onCancel={() => setIsEditing(false)}
           />
         ) : (
-          <p className="text-xs text-foreground mt-0.5 break-words">{comment.content}</p>
+          <p className="text-xs text-foreground mt-0.5 break-words">{comment.comment_text}</p>
         )}
 
         <div className="flex items-center gap-2 mt-1">

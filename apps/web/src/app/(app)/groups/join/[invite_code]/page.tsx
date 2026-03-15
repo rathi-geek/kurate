@@ -17,8 +17,8 @@ export default async function JoinGroupPage({ params }: JoinGroupPageProps) {
 
   // Find group by invite code
   const { data: group } = await supabase
-    .from("groups")
-    .select("id, name, max_members")
+    .from("conversations")
+    .select("id, group_name, group_max_members")
     .eq("invite_code", invite_code)
     .maybeSingle();
 
@@ -28,31 +28,30 @@ export default async function JoinGroupPage({ params }: JoinGroupPageProps) {
 
   // Check if already a member
   const { data: existing } = await supabase
-    .from("group_members")
+    .from("conversation_members")
     .select("id")
-    .eq("group_id", group.id)
+    .eq("convo_id", group.id)
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (existing) {
-    redirect(`/groups/${slugify(group.name)}`);
+    redirect(`/groups/${slugify(group.group_name ?? "")}`);
   }
 
   // Check if group is full
   const { count } = await supabase
-    .from("group_members")
+    .from("conversation_members")
     .select("id", { count: "exact", head: true })
-    .eq("group_id", group.id)
-    .eq("status", "active");
+    .eq("convo_id", group.id);
 
-  if ((count ?? 0) >= group.max_members) {
+  if ((count ?? 0) >= (group.group_max_members ?? 50)) {
     // Render full message — can't redirect so we render inline
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center max-w-sm px-6">
-          <h2 className="font-serif text-2xl text-ink mb-2">{group.name}</h2>
+          <h2 className="font-serif text-2xl text-ink mb-2">{group.group_name}</h2>
           <p className="text-muted-foreground text-sm">
-            This group is full ({group.max_members} members max).
+            This group is full ({group.group_max_members ?? 50} members max).
           </p>
         </div>
       </div>
@@ -80,12 +79,11 @@ export default async function JoinGroupPage({ params }: JoinGroupPageProps) {
   }
 
   // Join the group
-  await supabase.from("group_members").insert({
-    group_id: group.id,
+  await supabase.from("conversation_members").insert({
+    convo_id: group.id,
     user_id: user.id,
     role: "member",
-    status: "active",
   });
 
-  redirect(`/groups/${slugify(group.name)}`);
+  redirect(`/groups/${slugify(group.group_name ?? "")}`);
 }

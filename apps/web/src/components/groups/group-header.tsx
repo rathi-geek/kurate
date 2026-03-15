@@ -13,7 +13,7 @@ import type { Tables } from "@/app/_libs/types/database.types";
 const supabase = createClient();
 
 interface GroupHeaderProps {
-  group: Tables<"groups">;
+  group: Tables<"conversations">;
   currentUserId: string;
   currentUserRole: GroupRole;
   groupSlug: string;
@@ -39,7 +39,7 @@ export function GroupHeader({
 
   const handleDeleteGroup = async () => {
     if (!window.confirm(t("delete_group_confirm"))) return;
-    await supabase.from("groups").delete().eq("id", group.id);
+    await supabase.from("conversations").delete().eq("id", group.id);
     router.push("/home");
   };
 
@@ -54,11 +54,11 @@ export function GroupHeader({
 
           <div className="min-w-0">
             <h1 className="font-serif text-xl font-normal tracking-tight text-ink truncate">
-              {group.name}
+              {group.group_name}
             </h1>
-            {group.description && (
+            {group.group_description && (
               <p className="text-xs text-muted-foreground truncate">
-                {group.description}
+                {group.group_description}
               </p>
             )}
           </div>

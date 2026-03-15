@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { createClient } from "@/app/_libs/supabase/server";
+
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -118,6 +120,12 @@ function parseMetadata(html: string, url: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "UNAUTHORIZED", message: "Authentication required." }, { status: 401 });
+    }
+
     const { url } = await req.json();
     if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "INVALID_URL", message: "Please provide a valid URL." }, { status: 400 });

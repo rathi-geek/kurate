@@ -55,15 +55,15 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
 
       // Create the group
       const { data: group, error: groupError } = await supabase
-        .from("groups")
+        .from("conversations")
         .insert({
-          name: trimmedName,
-          description: description.trim() || null,
-          created_by: user.id,
+          group_name: trimmedName,
+          group_description: description.trim() || null,
           invite_code: generateInviteCode(),
-          max_members: 50,
+          group_max_members: 50,
+          is_group: true,
         })
-        .select("id, name")
+        .select("id, group_name")
         .single();
 
       if (groupError) {
@@ -76,10 +76,10 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
 
       // Add creator as owner — upsert in case a DB trigger already inserted them
       const { error: memberError } = await supabase
-        .from("group_members")
+        .from("conversation_members")
         .upsert(
-          { group_id: group.id, user_id: user.id, role: "owner", status: "active" },
-          { onConflict: "group_id,user_id", ignoreDuplicates: true },
+          { convo_id: group.id, user_id: user.id, role: "owner" },
+          { onConflict: "convo_id,user_id", ignoreDuplicates: true },
         );
 
       if (memberError) throw new Error(memberError.message);
@@ -91,7 +91,7 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
       setName("");
       setDescription("");
 
-      router.push(`/groups/${slugify(group.name)}`);
+      router.push(`/groups/${slugify(group.group_name ?? "")}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error_generic"));
     } finally {

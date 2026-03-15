@@ -15,7 +15,7 @@ import type { Tables } from "@/app/_libs/types/database.types";
 const supabase = createClient();
 
 interface GroupInfoPanelProps {
-  group: Tables<"groups">;
+  group: Tables<"conversations">;
   currentUserId: string;
   userRole: GroupRole;
 }
@@ -40,8 +40,8 @@ export function GroupInfoPanel({
 
   const [editingName, setEditingName] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
-  const [nameValue, setNameValue] = useState(group.name ?? "");
-  const [descValue, setDescValue] = useState(group.description ?? "");
+  const [nameValue, setNameValue] = useState(group.group_name ?? "");
+  const [descValue, setDescValue] = useState(group.group_description ?? "");
   const [saving, setSaving] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,8 +56,8 @@ export function GroupInfoPanel({
     if (!nameValue.trim()) return;
     setSaving(true);
     await supabase
-      .from("groups")
-      .update({ name: nameValue.trim() })
+      .from("conversations")
+      .update({ group_name: nameValue.trim() })
       .eq("id", group.id);
     setEditingName(false);
     setSaving(false);
@@ -66,8 +66,8 @@ export function GroupInfoPanel({
   const handleSaveDesc = async () => {
     setSaving(true);
     await supabase
-      .from("groups")
-      .update({ description: descValue.trim() || null })
+      .from("conversations")
+      .update({ group_description: descValue.trim() || null })
       .eq("id", group.id);
     setEditingDesc(false);
     setSaving(false);
@@ -96,11 +96,10 @@ export function GroupInfoPanel({
   };
 
   const handleAddMember = async (profileId: string) => {
-    await supabase.from("group_members").insert({
-      group_id: group.id,
+    await supabase.from("conversation_members").insert({
+      convo_id: group.id,
       user_id: profileId,
       role: "member",
-      status: "active",
     });
     await queryClient.invalidateQueries({
       queryKey: queryKeys.groups.members(group.id),
@@ -111,7 +110,7 @@ export function GroupInfoPanel({
 
   const handleRemoveMember = async (memberId: string) => {
     if (!window.confirm(t("remove_member_confirm"))) return;
-    await supabase.from("group_members").delete().eq("id", memberId);
+    await supabase.from("conversation_members").delete().eq("id", memberId);
     await queryClient.invalidateQueries({
       queryKey: queryKeys.groups.members(group.id),
     });
@@ -119,13 +118,13 @@ export function GroupInfoPanel({
 
   const handlePromoteMember = async (memberId: string) => {
     if (!window.confirm("Promote this member to admin?")) return;
-    await supabase.from("group_members").update({ role: "admin" }).eq("id", memberId);
+    await supabase.from("conversation_members").update({ role: "admin" }).eq("id", memberId);
     await queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(group.id) });
   };
 
   const handleDemoteMember = async (memberId: string) => {
     if (!window.confirm("Demote this admin to member?")) return;
-    await supabase.from("group_members").update({ role: "member" }).eq("id", memberId);
+    await supabase.from("conversation_members").update({ role: "member" }).eq("id", memberId);
     await queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(group.id) });
   };
 
@@ -150,7 +149,7 @@ export function GroupInfoPanel({
         <div className="flex justify-center">
           <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center">
             <span className="text-2xl font-bold text-primary">
-              {(nameValue[0] ?? group.name[0] ?? "G").toUpperCase()}
+              {(nameValue[0] ?? group.group_name?.[0] ?? "G").toUpperCase()}
             </span>
           </div>
         </div>
@@ -182,7 +181,7 @@ export function GroupInfoPanel({
                   if (e.key === "Enter") handleSaveName();
                   if (e.key === "Escape") {
                     setEditingName(false);
-                    setNameValue(group.name ?? "");
+                    setNameValue(group.group_name ?? "");
                   }
                 }}
                 autoFocus
@@ -199,7 +198,7 @@ export function GroupInfoPanel({
                 type="button"
                 onClick={() => {
                   setEditingName(false);
-                  setNameValue(group.name ?? "");
+                  setNameValue(group.group_name ?? "");
                 }}
                 className="text-xs px-2 py-1.5 rounded-card border border-border text-muted-foreground"
               >
@@ -250,7 +249,7 @@ export function GroupInfoPanel({
                   type="button"
                   onClick={() => {
                     setEditingDesc(false);
-                    setDescValue(group.description ?? "");
+                    setDescValue(group.group_description ?? "");
                   }}
                   className="text-xs px-2 py-1.5 rounded-card border border-border text-muted-foreground"
                 >

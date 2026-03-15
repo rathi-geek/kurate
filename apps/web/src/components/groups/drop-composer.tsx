@@ -67,27 +67,15 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
         preview_image: metadata?.preview_image,
         content_type: metadata?.content_type ?? "article",
         read_time: metadata?.read_time,
-        save_source: "feed",
+        save_source: "shares",
       });
 
-      let loggedItemId: string | null = null;
-
-      if (saveResult.status === "saved" && saveResult.item) {
-        loggedItemId = saveResult.item.id;
-      } else if (saveResult.status === "duplicate") {
-        const { data } = await supabase
-          .from("logged_items")
-          .select("id")
-          .eq("user_id", currentUserId)
-          .eq("url", detectedUrl)
-          .maybeSingle();
-        loggedItemId = data?.id ?? null;
-      }
+      const loggedItemId = saveResult.item?.logged_item_id ?? null;
 
       if (!loggedItemId) return;
 
-      const { error } = await supabase.from("group_shares").insert({
-        group_id: groupId,
+      const { error } = await supabase.from("group_posts").insert({
+        convo_id: groupId,
         logged_item_id: loggedItemId,
         shared_by: currentUserId,
         note: note.trim() || null,
@@ -96,7 +84,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
       if (error) throw new Error(error.message);
 
       if (saveResult.status === "saved") {
-        const itemId = loggedItemId;
+        const userItemId = saveResult.item!.id;
         toast("Shared to the group", {
           action: {
             label: "Save to vault",
@@ -105,7 +93,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
           cancel: {
             label: "Remove from vault",
             onClick: async () => {
-              await supabase.from("logged_items").delete().eq("id", itemId);
+              await supabase.from("user_logged_items").delete().eq("id", userItemId);
               queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
             },
           },
@@ -130,11 +118,11 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     if (!pendingTextPost?.trim() || !currentUserId) return;
     setIsPosting(true);
     try {
-      // group_shares.content and nullable logged_item_id require DB migration
-      // After migration, remove the `as any` cast
+      // group_posts.content requires DB migration: nullable logged_item_id already exists
+      // After migration adds content column, remove the `as any` cast
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from("group_shares") as any).insert({
-        group_id: groupId,
+      const { error } = await (supabase.from("group_posts") as any).insert({
+        convo_id: groupId,
         shared_by: currentUserId,
         content: pendingTextPost.trim(),
       });

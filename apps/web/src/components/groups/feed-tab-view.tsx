@@ -57,7 +57,7 @@ export function FeedTabView({
   }, [drops]);
 
   const handleDeleteDrop = async (dropId: string) => {
-    await supabase.from("group_shares").delete().eq("id", dropId);
+    await supabase.from("group_posts").delete().eq("id", dropId);
     refetch();
   };
 

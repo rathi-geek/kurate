@@ -8,7 +8,6 @@ import { useVaultToggle } from "@/app/_libs/hooks/useVaultToggle";
 import {
   HeartIcon,
   StarIcon,
-  CheckIcon,
   BookmarkIcon,
   MessageCircleIcon,
 } from "@/components/icons";
@@ -16,7 +15,7 @@ import type { GroupDrop } from "@/app/_libs/types/groups";
 import type { SaveItemInput } from "@/app/_libs/hooks/useSaveItem";
 
 interface EngagementBarProps {
-  groupShareId: string;
+  groupPostId: string;
   groupId: string;
   url: string;
   currentUserId: string;
@@ -26,7 +25,7 @@ interface EngagementBarProps {
 }
 
 export function EngagementBar({
-  groupShareId,
+  groupPostId,
   groupId,
   url,
   currentUserId,
@@ -45,11 +44,11 @@ export function EngagementBar({
   };
 
   const handleReaction = (
-    type: "like" | "must_read" | "read_by",
+    type: "like" | "must_read",
     didReact: boolean,
   ) => {
     toggleReaction({
-      groupShareId,
+      groupPostId,
       groupId,
       reactionType: type,
       currentUserId,
@@ -98,27 +97,6 @@ export function EngagementBar({
         />
         {engagement.mustRead.count > 0 && (
           <span className="font-mono">{engagement.mustRead.count}</span>
-        )}
-      </button>
-
-      {/* Read By */}
-      <button
-        type="button"
-        onClick={() => handleReaction("read_by", engagement.readBy.didReact)}
-        className={`flex items-center gap-1 px-2 py-1 rounded-badge text-xs transition-colors hover:bg-surface ${
-          engagement.readBy.didReact
-            ? "text-success-foreground"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-        aria-label={t("reaction_read_by_aria")}
-        aria-pressed={engagement.readBy.didReact}
-      >
-        <CheckIcon
-          className="size-[14px]"
-          filled={engagement.readBy.didReact}
-        />
-        {engagement.readBy.count > 0 && (
-          <span className="font-mono">{engagement.readBy.count}</span>
         )}
       </button>
 

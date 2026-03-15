@@ -19,31 +19,28 @@ export default async function GroupPage({ params }: GroupPageProps) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  // Fetch all groups and match by slugified name
-  // TODO: Once RLS on group_members is fully fixed, add a join to verify membership
+  // Fetch all conversations (groups) and match by slugified group_name
   const { data: allGroups } = await supabase
-    .from("groups")
+    .from("conversations")
     .select("*")
+    .eq("is_group", true)
     .order("created_at", { ascending: false });
 
   const group = (allGroups ?? []).find(
-    (g) => slugify(g.name) === slug,
+    (g) => slugify(g.group_name ?? "") === slug,
   );
 
   if (!group) redirect("/home");
 
-  // Fetch the user's actual role from group_members
+  // Fetch the user's actual role from conversation_members
   const { data: memberRow } = await supabase
-    .from("group_members")
+    .from("conversation_members")
     .select("role")
-    .eq("group_id", group.id)
+    .eq("convo_id", group.id)
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Fall back to owner inference if member row is missing (e.g. RLS issue)
-  const userRole: GroupRole =
-    (memberRow?.role as GroupRole) ??
-    (group.created_by === user.id ? "owner" : "member");
+  const userRole: GroupRole = (memberRow?.role as GroupRole) ?? "member";
 
   return (
     <GroupPageClient

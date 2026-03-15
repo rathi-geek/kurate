@@ -8,7 +8,7 @@ import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
 import type { Tables } from "@/app/_libs/types/database.types";
 
 interface FeedHeaderProps {
-  group: Tables<"groups">;
+  group: Tables<"conversations">;
   groupSlug: string;
   currentUserId: string;
 }
@@ -17,7 +17,7 @@ export function FeedHeader({ group, groupSlug, currentUserId }: FeedHeaderProps)
   const t = useTranslations("groups");
   const router = useRouter();
   const { members } = useGroupMembers(group.id, currentUserId);
-  const initial = (group.name?.[0] ?? "G").toUpperCase();
+  const initial = (group.group_name?.[0] ?? "G").toUpperCase();
 
   return (
     <div className="shrink-0 px-4 py-2.5 flex items-center justify-between gap-3 border-b border-border bg-background">
@@ -28,11 +28,11 @@ export function FeedHeader({ group, groupSlug, currentUserId }: FeedHeaderProps)
         </div>
         <div className="min-w-0">
           <span className="font-semibold text-sm text-foreground block truncate">
-            {group.name}
+            {group.group_name}
           </span>
-          {group.description && (
+          {group.group_description && (
             <span className="hidden sm:block text-xs text-muted-foreground truncate max-w-xs">
-              {group.description}
+              {group.group_description}
             </span>
           )}
         </div>

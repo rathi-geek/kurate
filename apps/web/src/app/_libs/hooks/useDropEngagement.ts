@@ -9,14 +9,14 @@ import {
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
 import type { GroupDrop } from "@/app/_libs/types/groups";
-import type { TablesInsert } from "@/app/_libs/types/database.types";
+import type { Database } from "@/app/_libs/types/database.types";
 
 const supabase = createClient();
 
-type ReactionType = "like" | "must_read" | "read_by";
+type ReactionType = Database["public"]["Enums"]["reaction_type_enum"]; // "like" | "must_read"
 
 interface ToggleReactionInput {
-  groupShareId: string;
+  groupPostId: string;
   groupId: string;
   reactionType: ReactionType;
   currentUserId: string;
@@ -28,37 +28,33 @@ export function useDropEngagement() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({
-      groupShareId,
+      groupPostId,
       reactionType,
       currentUserId,
       didReact,
     }: ToggleReactionInput) => {
       if (didReact) {
         const { error } = await supabase
-          .from("reactions")
+          .from("group_post_reactions")
           .delete()
-          .eq("group_share_id", groupShareId)
+          .eq("group_post_id", groupPostId)
           .eq("user_id", currentUserId)
-          .eq("type", reactionType);
+          .eq("reaction_type", reactionType);
         if (error) throw new Error(error.message);
       } else {
-        // ON CONFLICT DO NOTHING — safe even without unique constraint
-        const { error } = await supabase.from("reactions").upsert(
-          // TODO: reactions.comment_id must be made nullable in DB.
-          // Group-share reactions have no associated comment. Once the migration
-          // is applied and pnpm db:types is re-run, this cast can be removed.
+        const { error } = await supabase.from("group_post_reactions").upsert(
           {
-            group_share_id: groupShareId,
+            group_post_id: groupPostId,
             user_id: currentUserId,
-            type: reactionType,
-          } as unknown as TablesInsert<"reactions">,
-          { onConflict: "group_share_id,user_id,type", ignoreDuplicates: true },
+            reaction_type: reactionType,
+          },
+          { onConflict: "group_post_id,user_id,reaction_type", ignoreDuplicates: true },
         );
         if (error) throw new Error(error.message);
       }
     },
     onMutate: async ({
-      groupShareId,
+      groupPostId,
       groupId,
       reactionType,
       didReact,
@@ -68,12 +64,7 @@ export function useDropEngagement() {
 
       const previous = queryClient.getQueryData(feedKey);
 
-      const engagementKey =
-        reactionType === "like"
-          ? "like"
-          : reactionType === "must_read"
-            ? "mustRead"
-            : "readBy";
+      const engagementKey = reactionType === "like" ? "like" : "mustRead";
 
       queryClient.setQueryData(
         feedKey,
@@ -83,13 +74,14 @@ export function useDropEngagement() {
             ...old,
             pages: old.pages.map((page) =>
               page.map((drop) => {
-                if (drop.id !== groupShareId) return drop;
+                if (drop.id !== groupPostId) return drop;
                 const delta = didReact ? -1 : 1;
                 return {
                   ...drop,
                   engagement: {
                     ...drop.engagement,
                     [engagementKey]: {
+                      ...drop.engagement[engagementKey],
                       count: drop.engagement[engagementKey].count + delta,
                       didReact: !didReact,
                     },
@@ -105,16 +97,11 @@ export function useDropEngagement() {
     },
     onError: (_err, vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(
-          queryKeys.groups.feed(vars.groupId),
-          context.previous,
-        );
+        queryClient.setQueryData(queryKeys.groups.feed(vars.groupId), context.previous);
       }
     },
     onSettled: (_data, _err, vars) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.groups.feed(vars.groupId),
-      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(vars.groupId) });
     },
   });
 

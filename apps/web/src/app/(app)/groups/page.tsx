@@ -14,23 +14,22 @@ export default async function GroupsPage() {
   if (!user) redirect("/auth/login");
 
   const { data: memberRows } = await supabase
-    .from("group_members")
+    .from("conversation_members")
     .select(
-      "role, joined_at, groups!group_members_group_id_fkey(id, name, description, max_members)",
+      "role, joined_at, conversations!conversation_members_convo_id_fkey(id, group_name, group_description, group_max_members)",
     )
     .eq("user_id", user.id)
-    .eq("status", "active")
     .order("joined_at", { ascending: false });
 
   const groups = (memberRows ?? [])
     .map((row) => {
-      const g = Array.isArray(row.groups) ? row.groups[0] : row.groups;
+      const g = Array.isArray(row.conversations) ? row.conversations[0] : row.conversations;
       if (!g) return null;
       return {
         id: g.id,
-        name: g.name,
-        description: g.description,
-        max_members: g.max_members,
+        name: g.group_name ?? "",
+        description: g.group_description,
+        max_members: g.group_max_members ?? 50,
         role: row.role as GroupRole,
         joined_at: row.joined_at,
       };

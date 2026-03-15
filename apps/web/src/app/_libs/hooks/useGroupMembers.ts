@@ -9,20 +9,19 @@ import type { GroupMember, GroupRole } from "@/app/_libs/types/groups";
 const supabase = createClient();
 
 async function fetchGroupMembers(groupId: string): Promise<GroupMember[]> {
-  // Attempt profile join — may fail if RLS on group_members still has recursion issues
   const { data, error } = await supabase
-    .from("group_members")
+    .from("conversation_members")
     .select(
-      "id, group_id, user_id, role, status, joined_at, is_admin, profile:profiles!group_members_user_id_fkey(id, first_name, last_name, avtar_url, handle)",
+      "id, convo_id, user_id, role, joined_at, updated_at, profile:profiles!conversation_members_user_id_fkey(id, first_name, last_name, avtar_url, handle)",
     )
-    .eq("group_id", groupId);
+    .eq("convo_id", groupId);
 
   if (error) {
-    // If the join fails (e.g. RLS recursion), fall back to members-only query
+    // Fallback without profile join
     const { data: fallback, error: fallbackError } = await supabase
-      .from("group_members")
-      .select("id, group_id, user_id, role, status, joined_at, is_admin")
-      .eq("group_id", groupId);
+      .from("conversation_members")
+      .select("id, convo_id, user_id, role, joined_at, updated_at")
+      .eq("convo_id", groupId);
 
     if (fallbackError) throw new Error(fallbackError.message);
 

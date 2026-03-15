@@ -6,7 +6,7 @@ import { FeedHeader } from "@/components/groups/feed-header";
 import { FeedTabView } from "@/components/groups/feed-tab-view";
 
 interface GroupPageClientProps {
-  group: Tables<"groups">;
+  group: Tables<"conversations">;
   currentUserId: string;
   userRole: GroupRole;
   groupSlug: string;
