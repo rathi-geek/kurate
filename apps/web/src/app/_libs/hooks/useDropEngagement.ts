@@ -10,11 +10,10 @@ import { toast } from "sonner";
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
 import type { GroupDrop } from "@/app/_libs/types/groups";
-import type { Database } from "@/app/_libs/types/database.types";
 
 const supabase = createClient();
 
-type ReactionType = Database["public"]["Enums"]["reaction_type_enum"]; // "like" | "must_read"
+type ReactionType = "like" | "must_read";
 
 interface ToggleReactionInput {
   groupPostId: string;
@@ -35,20 +34,27 @@ export function useDropEngagement() {
       didReact,
     }: ToggleReactionInput) => {
       if (didReact) {
+        // Remove reaction
+        const table = reactionType === "like" ? "group_posts_likes" : "group_posts_must_reads";
         const { error } = await supabase
-          .from("group_post_reactions")
+          .from(table)
           .delete()
           .eq("group_post_id", groupPostId)
-          .eq("user_id", currentUserId)
-          .eq("reaction_type", reactionType);
+          .eq("user_id", currentUserId);
         if (error) throw new Error(error.message);
       } else {
-        const { error } = await supabase.from("group_post_reactions").insert({
-          group_post_id: groupPostId,
-          user_id: currentUserId,
-          reaction_type: reactionType,
-        });
-        if (error) throw new Error(error.message);
+        // Add reaction
+        if (reactionType === "like") {
+          const { error } = await supabase
+            .from("group_posts_likes")
+            .insert({ group_post_id: groupPostId, user_id: currentUserId });
+          if (error) throw new Error(error.message);
+        } else {
+          const { error } = await supabase
+            .from("group_posts_must_reads")
+            .insert({ group_post_id: groupPostId, user_id: currentUserId });
+          if (error) throw new Error(error.message);
+        }
       }
     },
     onMutate: async ({

@@ -358,6 +358,8 @@
     "submitting": "Sending...",
     "cancel": "Cancel",
     "reply": "Reply",
+    "reply_to": "Reply to",
+    "editing": "Editing",
     "edit_comment_aria": "Edit comment",
     "delete_comment_aria": "Delete comment",
     "more": "more",

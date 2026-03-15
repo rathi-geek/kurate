@@ -9,6 +9,25 @@ import type { GroupDrop } from "@/app/_libs/types/groups";
 const supabase = createClient();
 const PAGE_SIZE = 20;
 
+type ProfileRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avtar_url: string | null;
+  handle: string | null;
+};
+
+function toProfile(p: ProfileRow | null) {
+  if (!p) return null;
+  return {
+    id: p.id,
+    display_name:
+      [p.first_name, p.last_name].filter(Boolean).join(" ") || p.handle || null,
+    avatar_url: p.avtar_url ?? null,
+    handle: p.handle ?? null,
+  };
+}
+
 async function fetchGroupFeedPage(
   groupId: string,
   currentUserId: string,
@@ -26,7 +45,8 @@ async function fetchGroupFeedPage(
       shared_at,
       sharer:profiles!group_posts_shared_by_fkey(id, first_name, last_name, avtar_url, handle),
       item:logged_items!group_posts_logged_item_id_fkey(url, title, preview_image_url, content_type, raw_metadata, description),
-      reactions:group_post_reactions(id, user_id, reaction_type, user:profiles!group_post_reactions_user_id_fkey(id, first_name, last_name, avtar_url, handle)),
+      likes:group_posts_likes(id, user_id, liker:profiles!group_posts_likes_user_id_fkey(id, first_name, last_name, avtar_url, handle)),
+      must_reads:group_posts_must_reads(id, user_id, reader:profiles!group_posts_must_reads_user_id_fkey(id, first_name, last_name, avtar_url, handle)),
       comments:group_posts_comments(id)
       `,
     )
@@ -42,38 +62,29 @@ async function fetchGroupFeedPage(
   if (error) throw new Error(error.message);
 
   return (data ?? []).map((row) => {
-    const rawReactions = (row.reactions ?? []) as Array<{
+    const rawLikes = (row.likes ?? []) as Array<{
       id: string;
       user_id: string;
-      reaction_type: string;
-      user: { id: string; first_name: string | null; last_name: string | null; avtar_url: string | null; handle: string | null } | null;
+      liker: ProfileRow | null;
+    }>;
+    const rawMustReads = (row.must_reads ?? []) as Array<{
+      id: string;
+      user_id: string;
+      reader: ProfileRow | null;
     }>;
     const rawItem = Array.isArray(row.item) ? row.item[0] : row.item;
     const rawSharer = Array.isArray(row.sharer) ? row.sharer[0] : row.sharer;
 
-    const getReactors = (type: string) =>
-      rawReactions
-        .filter((r) => r.reaction_type === type && r.user)
-        .map((r) => ({
-          id: r.user!.id,
-          display_name:
-            [r.user!.first_name, r.user!.last_name].filter(Boolean).join(" ") ||
-            r.user!.handle ||
-            null,
-          avatar_url: r.user!.avtar_url ?? null,
-          handle: r.user!.handle ?? null,
-        }));
-
     const engagement = {
       like: {
-        count: rawReactions.filter((r) => r.reaction_type === "like").length,
-        didReact: rawReactions.some((r) => r.reaction_type === "like" && r.user_id === currentUserId),
-        reactors: getReactors("like"),
+        count: rawLikes.length,
+        didReact: rawLikes.some((r) => r.user_id === currentUserId),
+        reactors: rawLikes.map((r) => toProfile(r.liker)).filter(Boolean) as GroupDrop["engagement"]["like"]["reactors"],
       },
       mustRead: {
-        count: rawReactions.filter((r) => r.reaction_type === "must_read").length,
-        didReact: rawReactions.some((r) => r.reaction_type === "must_read" && r.user_id === currentUserId),
-        reactors: getReactors("must_read"),
+        count: rawMustReads.length,
+        didReact: rawMustReads.some((r) => r.user_id === currentUserId),
+        reactors: rawMustReads.map((r) => toProfile(r.reader)).filter(Boolean) as GroupDrop["engagement"]["mustRead"]["reactors"],
       },
       readBy: {
         count: 0,

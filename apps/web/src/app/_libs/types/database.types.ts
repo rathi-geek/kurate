@@ -178,45 +178,6 @@ export type Database = {
           },
         ]
       }
-      group_post_reactions: {
-        Row: {
-          created_at: string
-          group_post_id: string
-          id: string
-          reaction_type: Database["public"]["Enums"]["reaction_type_enum"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          group_post_id: string
-          id?: string
-          reaction_type: Database["public"]["Enums"]["reaction_type_enum"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          group_post_id?: string
-          id?: string
-          reaction_type?: Database["public"]["Enums"]["reaction_type_enum"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_post_reactions_group_post_id_fkey"
-            columns: ["group_post_id"]
-            isOneToOne: false
-            referencedRelation: "group_posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_post_reactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       group_post_reads: {
         Row: {
           created_at: string
@@ -386,6 +347,78 @@ export type Database = {
           },
           {
             foreignKeyName: "group_posts_comments_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_posts_likes: {
+        Row: {
+          created_at: string
+          group_post_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_post_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_post_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_posts_likes_group_post_id_fkey"
+            columns: ["group_post_id"]
+            isOneToOne: false
+            referencedRelation: "group_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_posts_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_posts_must_reads: {
+        Row: {
+          created_at: string
+          group_post_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_post_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_post_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_posts_must_reads_group_post_id_fkey"
+            columns: ["group_post_id"]
+            isOneToOne: false
+            referencedRelation: "group_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_posts_must_reads_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1003,7 +1036,6 @@ export type Database = {
     Enums: {
       content_type_enum: "article" | "video" | "podcast"
       message_type_enum: "text" | "logged_item"
-      reaction_type_enum: "like" | "must_read"
       save_source_enum: "external" | "shares" | "web_extension" | "discovered"
     }
     CompositeTypes: {
@@ -1134,7 +1166,6 @@ export const Constants = {
     Enums: {
       content_type_enum: ["article", "video", "podcast"],
       message_type_enum: ["text", "logged_item"],
-      reaction_type_enum: ["like", "must_read"],
       save_source_enum: ["external", "shares", "web_extension", "discovered"],
     },
   },

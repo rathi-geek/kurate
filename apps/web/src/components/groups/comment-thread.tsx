@@ -29,46 +29,67 @@ function formatRelativeTime(dateStr: string): string {
 interface CommentItemProps {
   comment: DropComment | DropComment["replies"][number];
   currentUserId: string;
-  onEdit: (id: string, content: string) => void;
+  onEditStart: (id: string, text: string) => void;
   onDelete: (id: string) => void;
-  onReply?: () => void;
+  onReply?: (id: string, authorName: string, text: string) => void;
   isReply?: boolean;
 }
 
 function CommentItem({
   comment,
   currentUserId,
-  onEdit,
+  onEditStart,
   onDelete,
   onReply,
   isReply = false,
 }: CommentItemProps) {
   const t = useTranslations("groups");
-  const [isEditing, setIsEditing] = useState(false);
   const isOwn = comment.user_id === currentUserId;
 
-  const handleEditSubmit = (text: string) => {
-    onEdit(comment.id, text);
-    setIsEditing(false);
-  };
-
-  if (isEditing) {
-    return (
-      <div className={isReply ? "ml-8" : ""}>
-        <ReplyInput
-          initialValue={comment.comment_text}
-          onSubmit={handleEditSubmit}
-          onCancel={() => setIsEditing(false)}
-        />
-      </div>
-    );
-  }
+  /* Actions shown on hover, outside the bubble */
+  const actions = (
+    <div className="flex items-center gap-1 opacity-0 group-hover/comment:opacity-100 transition-opacity self-center shrink-0">
+      {!isReply && onReply && (
+        <button
+          type="button"
+          onClick={() => onReply(
+            comment.id,
+            comment.author.display_name ?? comment.author.handle ?? t("anonymous"),
+            comment.comment_text,
+          )}
+          className="text-[9px] text-muted-foreground hover:text-foreground transition-colors px-1"
+        >
+          {t("reply")}
+        </button>
+      )}
+      {isOwn && (
+        <>
+          <button
+            type="button"
+            onClick={() => onEditStart(comment.id, comment.comment_text)}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            aria-label={t("edit_comment_aria")}
+          >
+            <PencilIcon className="size-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(comment.id)}
+            className="text-muted-foreground hover:text-error-foreground transition-colors p-1"
+            aria-label={t("delete_comment_aria")}
+          >
+            <TrashIcon className="size-3" />
+          </button>
+        </>
+      )}
+    </div>
+  );
 
   return (
-    <div className={`flex ${isOwn ? "justify-end" : "justify-start"} ${isReply ? "ml-8" : ""}`}>
+    <div className={`group/comment flex items-end gap-1 ${isOwn ? "justify-end" : "justify-start"} ${isReply ? "ml-8" : ""}`}>
       {/* Avatar — others only */}
       {!isOwn && (
-        <div className="shrink-0 mr-2 self-end">
+        <div className="shrink-0">
           {comment.author.avatar_url ? (
             <Image
               src={comment.author.avatar_url}
@@ -85,6 +106,9 @@ function CommentItem({
         </div>
       )}
 
+      {/* Own message: actions on left, then bubble */}
+      {isOwn && actions}
+
       <div className={`max-w-[75%] flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}>
         {/* Name — others only */}
         {!isOwn && (
@@ -93,7 +117,7 @@ function CommentItem({
           </span>
         )}
 
-        {/* Bubble */}
+        {/* Bubble — time inside */}
         <div
           className={`rounded-2xl px-3 py-2 text-xs leading-relaxed break-words ${
             isOwn
@@ -102,44 +126,14 @@ function CommentItem({
           }`}
         >
           {comment.comment_text}
-        </div>
-
-        {/* Meta row */}
-        <div className={`flex items-center gap-2 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-          <span className="text-[9px] text-muted-foreground font-mono">
+          <div className={`mt-0.5 text-[9px] font-mono ${isOwn ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
             {formatRelativeTime(comment.created_at)}
-          </span>
-          {!isReply && onReply && (
-            <button
-              type="button"
-              onClick={onReply}
-              className="text-[9px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {t("reply")}
-            </button>
-          )}
-          {isOwn && (
-            <>
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="text-[9px] text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={t("edit_comment_aria")}
-              >
-                <PencilIcon className="size-3 inline" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(comment.id)}
-                className="text-[9px] text-muted-foreground hover:text-error-foreground transition-colors"
-                aria-label={t("delete_comment_aria")}
-              >
-                <TrashIcon className="size-3 inline" />
-              </button>
-            </>
-          )}
+          </div>
         </div>
       </div>
+
+      {/* Others' message: actions on right */}
+      {!isOwn && actions}
     </div>
   );
 }
@@ -161,8 +155,9 @@ export function CommentThread({
     deleteComment,
     isAdding,
   } = useComments(groupShareId);
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; authorName: string; text: string } | null>(null);
   const [collapsed, setCollapsed] = useState(true);
+  const [editingComment, setEditingComment] = useState<{ id: string; text: string } | null>(null);
 
   const totalCount = totalCommentCount ?? comments.length;
   const showAll = !collapsed || comments.length <= 1;
@@ -198,9 +193,9 @@ export function CommentThread({
             <CommentItem
               comment={comment}
               currentUserId={currentUserId}
-              onEdit={(id, content) => editComment(id, content, currentUserId)}
+              onEditStart={(id, text) => setEditingComment({ id, text })}
               onDelete={(id) => deleteComment(id, currentUserId)}
-              onReply={() => setReplyingTo(comment.id)}
+              onReply={(id, authorName, text) => setReplyingTo({ id, authorName, text })}
             />
 
             {/* Replies */}
@@ -210,34 +205,58 @@ export function CommentThread({
                   key={reply.id}
                   comment={reply}
                   currentUserId={currentUserId}
-                  onEdit={(id, content) => editComment(id, content, currentUserId)}
+                  onEditStart={(id, text) => setEditingComment({ id, text })}
                   onDelete={(id) => deleteComment(id, currentUserId)}
                   isReply
                 />
               ))}
 
-            {/* Inline reply input */}
-            {replyingTo === comment.id && (
-              <div className="ml-8 mt-2">
-                <ReplyInput
-                  placeholder={t("reply_placeholder")}
-                  onSubmit={(text) => {
-                    addComment(text, currentUserId, comment.id);
-                    setReplyingTo(null);
-                  }}
-                  onCancel={() => setReplyingTo(null)}
-                  isLoading={isAdding}
-                />
-              </div>
-            )}
           </div>
         ))}
       </div>
 
-      <ReplyInput
-        onSubmit={(text) => addComment(text, currentUserId, null)}
-        isLoading={isAdding}
-      />
+      <div className="flex flex-col gap-0">
+        {/* WhatsApp-style reply/edit context banner */}
+        {(replyingTo || editingComment) && (
+          <div className="relative flex items-stretch gap-2 rounded-t-2xl border border-b-0 border-border bg-muted/60 px-4 py-3">
+            {/* Left accent */}
+            <div className="w-0.5 shrink-0 rounded-full bg-primary" />
+            <div className="flex-1 min-w-0 pl-2">
+              <p className="text-[11px] font-semibold text-primary truncate">
+                {replyingTo ? replyingTo.authorName : t("editing")}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                {replyingTo ? replyingTo.text : editingComment?.text}
+              </p>
+            </div>
+            {/* × dismiss — circular */}
+            <button
+              type="button"
+              onClick={() => { setReplyingTo(null); setEditingComment(null); }}
+              className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-muted-foreground/20 text-muted-foreground hover:bg-muted-foreground/30 hover:text-foreground transition-colors text-[12px] leading-none"
+              aria-label="dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        <ReplyInput
+          key={editingComment ? `edit-${editingComment.id}` : replyingTo ? `reply-${replyingTo.id}` : "new"}
+          initialValue={editingComment?.text}
+          placeholder={replyingTo ? `${t("reply_to")} ${replyingTo.authorName}…` : undefined}
+          squareTop={!!(replyingTo || editingComment)}
+          onSubmit={(text) => {
+            if (editingComment) {
+              editComment(editingComment.id, text, currentUserId);
+              setEditingComment(null);
+            } else {
+              addComment(text, currentUserId, replyingTo?.id ?? null);
+              setReplyingTo(null);
+            }
+          }}
+          isLoading={isAdding}
+        />
+      </div>
     </div>
   );
 }
