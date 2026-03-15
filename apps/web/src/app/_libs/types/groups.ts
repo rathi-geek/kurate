@@ -13,20 +13,19 @@ export type GroupProfile = {
 };
 
 // Composed shape returned by useGroupFeed query
-export type GroupDrop = Tables<"group_shares"> & {
+// Base table: group_posts (replaces group_shares)
+export type GroupDrop = Tables<"group_posts"> & {
   sharer: GroupProfile;
-  // item is null for text-only posts (requires DB migration: group_shares.content + nullable logged_item_id)
+  // item is null for text-only posts (logged_item_id is nullable)
   item: (Pick<
     Tables<"logged_items">,
     | "url"
     | "title"
-    | "preview_image"
-    | "source"
+    | "preview_image_url"
     | "content_type"
-    | "read_time"
-  > & { description: string | null }) | null;
-  // content is the text body for text-only posts (requires DB migration: group_shares.content)
-  content: string | null;
+    | "raw_metadata"
+    | "description"
+  >) | null;
   engagement: {
     like: { count: number; didReact: boolean; reactors: GroupProfile[] };
     mustRead: { count: number; didReact: boolean; reactors: GroupProfile[] };
@@ -36,23 +35,20 @@ export type GroupDrop = Tables<"group_shares"> & {
 };
 
 // Composed comment with replies
-// parent_id and updated_at require DB migration: comments.parent_id UUID, comments.updated_at TIMESTAMPTZ
-export type DropComment = Tables<"comments"> & {
-  parent_id: string | null;
-  updated_at: string | null;
+// Base table: group_posts_comments (replaces comments)
+export type DropComment = Tables<"group_posts_comments"> & {
   author: GroupProfile;
-  replies: (Tables<"comments"> & {
-    parent_id: string | null;
-    updated_at: string | null;
+  replies: (Tables<"group_posts_comments"> & {
     author: GroupProfile;
   })[];
 };
 
-export type GroupMember = Tables<"group_members"> & {
+// Base table: conversation_members (replaces group_members)
+export type GroupMember = Tables<"conversation_members"> & {
   profile: GroupProfile;
 };
 
-// Group with slug (slug not in DB yet — use id as fallback)
-export type GroupWithSlug = Tables<"groups"> & {
-  slug: string | null;
+// Conversation (group) with derived slug
+export type GroupWithSlug = Tables<"conversations"> & {
+  slug: string; // derived from slugified group_name
 };

@@ -1,29 +1,35 @@
 import type { Database } from "./database.types";
 
-// Derived directly from Supabase schema — updates automatically on pnpm db:types
 type LoggedItemsRow = Database["public"]["Tables"]["logged_items"]["Row"];
+type UserLoggedItemsRow = Database["public"]["Tables"]["user_logged_items"]["Row"];
 
-export type VaultItemInsert = Database["public"]["Tables"]["logged_items"]["Insert"];
-export type VaultItemUpdate = Database["public"]["Tables"]["logged_items"]["Update"];
+export type VaultItemInsert = Database["public"]["Tables"]["user_logged_items"]["Insert"];
+export type VaultItemUpdate = Database["public"]["Tables"]["user_logged_items"]["Update"];
 
 // Narrow string columns to proper unions
 export type ContentType = "article" | "video" | "podcast";
-export type SaveSource = "logged" | "feed" | "discovered";
+export type SaveSource = "external" | "shares" | "web_extension";
 
-export type VaultItem = Omit<
-  LoggedItemsRow,
-  "content_type" | "save_source" | "tags" | "shared_to_groups"
-> & {
-  content_type: ContentType;
+// raw_metadata JSON blob shape written by frontend
+export interface RawMetadata {
+  source?: string | null;
+  author?: string | null;
+  read_time?: string | null;
+}
+
+// VaultItem is the joined shape: user_logged_items + logged_items
+export type VaultItem = Omit<UserLoggedItemsRow, "save_source"> & {
   save_source: SaveSource;
-  // REAL SCHEMA: tags and shared_to_groups are nullable in the DB
+  // Fields joined from logged_items
+  url: string;
+  title: string;
+  url_hash: string;
+  preview_image_url: string | null;
+  content_type: ContentType;
+  description: string | null;
   tags: string[] | null;
-  shared_to_groups: string[] | null;
-  // Pending backend migration — optional until columns are added to logged_items
-  is_read?: boolean;
-  read_at?: string | null;
-  reading_progress?: number;
-  last_opened_at?: string | null;
+  raw_metadata: RawMetadata | null;
+  logged_item_created_at: string;
 };
 
 export type TimeFilter = "today" | "week" | "month" | "all";
@@ -78,3 +84,6 @@ export interface VaultFilters {
   contentType: ContentTypeFilter;
   search: string;
 }
+
+// Re-export raw DB row types for hooks that need direct table access
+export type { LoggedItemsRow, UserLoggedItemsRow };
