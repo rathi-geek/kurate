@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 import { useDropEngagement } from "@/app/_libs/hooks/useDropEngagement";
 import { useVaultToggle } from "@/app/_libs/hooks/useVaultToggle";
@@ -22,7 +23,6 @@ interface EngagementBarProps {
   engagement: GroupDrop["engagement"];
   itemData?: Omit<SaveItemInput, "url" | "save_source">;
   commentCount?: number;
-  onCommentToggle?: () => void;
 }
 
 export function EngagementBar({
@@ -33,11 +33,16 @@ export function EngagementBar({
   engagement,
   itemData,
   commentCount,
-  onCommentToggle,
 }: EngagementBarProps) {
   const t = useTranslations("groups");
   const { toggleReaction } = useDropEngagement();
-  const { isSaved, toggle: toggleVault } = useVaultToggle(currentUserId, url);
+  const { isSaved, toggle: toggleVaultBase } = useVaultToggle(currentUserId, url);
+
+  const toggleVault = (data?: Parameters<typeof toggleVaultBase>[0]) => {
+    const willSave = !isSaved;
+    toggleVaultBase(data);
+    toast.success(willSave ? "Saved to vault" : "Removed from vault");
+  };
 
   const handleReaction = (
     type: "like" | "must_read" | "read_by",
@@ -132,19 +137,14 @@ export function EngagementBar({
         <BookmarkIcon className="size-[14px]" filled={isSaved} />
       </button>
 
-      {/* Comments — Feed only */}
-      {onCommentToggle !== undefined && (
-        <button
-          type="button"
-          onClick={onCommentToggle}
-          className="ml-auto flex items-center gap-1 px-2 py-1 rounded-badge text-xs text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
-          aria-label={t("comment_aria")}
-        >
+      {/* Comments count */}
+      {commentCount !== undefined && (
+        <div className="ml-auto flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground">
           <MessageCircleIcon className="size-[14px]" />
-          {(commentCount ?? 0) > 0 && (
+          {commentCount > 0 && (
             <span className="font-mono">{commentCount}</span>
           )}
-        </button>
+        </div>
       )}
     </div>
   );

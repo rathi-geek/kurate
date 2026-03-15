@@ -19,9 +19,8 @@ export default async function GroupPage({ params }: GroupPageProps) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  // TODO: Once RLS on group_members is fixed, scope this to the user's groups
-  // and verify membership before rendering.
-  // For now: fetch all groups and match by slugified name for UI testing.
+  // Fetch all groups and match by slugified name
+  // TODO: Once RLS on group_members is fully fixed, add a join to verify membership
   const { data: allGroups } = await supabase
     .from("groups")
     .select("*")
@@ -33,9 +32,18 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
   if (!group) redirect("/home");
 
-  // TODO: Once RLS is fixed, read real role from group_members.
-  // Default to "member" for UI testing so all controls are visible.
-  const userRole: GroupRole = group.created_by === user.id ? "owner" : "member";
+  // Fetch the user's actual role from group_members
+  const { data: memberRow } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", group.id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  // Fall back to owner inference if member row is missing (e.g. RLS issue)
+  const userRole: GroupRole =
+    (memberRow?.role as GroupRole) ??
+    (group.created_by === user.id ? "owner" : "member");
 
   return (
     <GroupPageClient

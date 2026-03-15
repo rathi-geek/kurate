@@ -15,7 +15,8 @@ export type GroupProfile = {
 // Composed shape returned by useGroupFeed query
 export type GroupDrop = Tables<"group_shares"> & {
   sharer: GroupProfile;
-  item: Pick<
+  // item is null for text-only posts (requires DB migration: group_shares.content + nullable logged_item_id)
+  item: (Pick<
     Tables<"logged_items">,
     | "url"
     | "title"
@@ -23,18 +24,20 @@ export type GroupDrop = Tables<"group_shares"> & {
     | "source"
     | "content_type"
     | "read_time"
-  > & { description: string | null };
+  > & { description: string | null }) | null;
+  // content is the text body for text-only posts (requires DB migration: group_shares.content)
+  content: string | null;
   engagement: {
-    like: { count: number; didReact: boolean };
-    mustRead: { count: number; didReact: boolean };
-    readBy: { count: number; didReact: boolean };
+    like: { count: number; didReact: boolean; reactors: GroupProfile[] };
+    mustRead: { count: number; didReact: boolean; reactors: GroupProfile[] };
+    readBy: { count: number; didReact: boolean; reactors: GroupProfile[] };
   };
   commentCount: number;
 };
 
 // Composed comment with replies
+// parent_id and updated_at require DB migration: comments.parent_id UUID, comments.updated_at TIMESTAMPTZ
 export type DropComment = Tables<"comments"> & {
-  // parent_id not in DB types yet — treat as nullable
   parent_id: string | null;
   updated_at: string | null;
   author: GroupProfile;

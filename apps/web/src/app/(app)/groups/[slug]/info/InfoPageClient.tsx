@@ -95,6 +95,7 @@ function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageCl
         groupId={group.id}
         inviteCode={group.invite_code ?? ""}
         memberIds={memberIds}
+        currentUserId={currentUserId}
       />
     </div>
   );

@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { AppSidebar } from "@/app/_components/app-sidebar";
+import { AppSidebar } from "@/app/_components/sidebar";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { useAuth } from "@/app/_libs/auth-context";
 import {

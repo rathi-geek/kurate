@@ -12,6 +12,7 @@ import { LinkPreviewCard, type ExtractedMeta } from "@/app/_components/home/Link
 import { PreviewPhase } from "@/app/_components/home/preview-phase";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import { useSaveItem } from "@/app/_libs/hooks/useSaveItem";
+import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
 import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
 import { springGentle } from "@/app/_libs/utils/motion";
 import { queryKeys } from "@/app/_libs/query/keys";
@@ -40,9 +41,29 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   const [savedItemId, setSavedItemId] = useState<string | null>(null);
   const [savedItemGroups, setSavedItemGroups] = useState<string[]>([]);
 
+  const { isExtracting, metadata: extractedMeta, extractionFailed, extract, reset: resetExtraction } = useExtractMetadata();
+
   useEffect(() => {
     if (scrollDir) onScrollDirectionChange?.(scrollDir);
   }, [scrollDir, onScrollDirectionChange]);
+
+  // Sync extraction result to PreviewPhase and camelCase previewMeta
+  useEffect(() => {
+    if (!isExtracting && extractedMeta) {
+      setPreviewMeta({
+        title: extractedMeta.title,
+        source: extractedMeta.source,
+        author: extractedMeta.author,
+        previewImage: extractedMeta.preview_image ?? null,
+        contentType: extractedMeta.content_type ?? null,
+        readTime: extractedMeta.read_time ?? null,
+      });
+      setPreviewPhase(PreviewPhase.Loaded);
+    } else if (!isExtracting && extractionFailed) {
+      // extraction completed but failed — show card with no metadata
+      setPreviewPhase(PreviewPhase.Loaded);
+    }
+  }, [isExtracting, extractedMeta, extractionFailed]);
 
   const handleUrlChange = useCallback(
     (url: string | null) => {
@@ -50,27 +71,15 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         setPreviewPhase(PreviewPhase.Idle);
         setPreviewUrl(null);
         setPreviewMeta(null);
+        resetExtraction();
         return;
       }
       if (url === previewUrl) return; // already fetching / fetched this URL
       setPreviewUrl(url);
       setPreviewPhase(PreviewPhase.Loading);
-      fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((meta: ExtractedMeta | null) => {
-          setPreviewMeta(meta);
-          setPreviewPhase(PreviewPhase.Loaded);
-        })
-        .catch(() => {
-          setPreviewMeta(null);
-          setPreviewPhase(PreviewPhase.Loaded);
-        });
+      void extract(url);
     },
-    [previewUrl],
+    [previewUrl, extract, resetExtraction],
   );
 
   const handleSend = useCallback(

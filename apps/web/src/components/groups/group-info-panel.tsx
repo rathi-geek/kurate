@@ -117,6 +117,18 @@ export function GroupInfoPanel({
     });
   };
 
+  const handlePromoteMember = async (memberId: string) => {
+    if (!window.confirm("Promote this member to admin?")) return;
+    await supabase.from("group_members").update({ role: "admin" }).eq("id", memberId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(group.id) });
+  };
+
+  const handleDemoteMember = async (memberId: string) => {
+    if (!window.confirm("Demote this admin to member?")) return;
+    await supabase.from("group_members").update({ role: "member" }).eq("id", memberId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(group.id) });
+  };
+
   const handleCopyInvite = async () => {
     const url = `${window.location.origin}/groups/join/${group.invite_code}`;
     await navigator.clipboard.writeText(url);
@@ -149,7 +161,7 @@ export function GroupInfoPanel({
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t("group_name")}
             </span>
-            {isOwner && !editingName && (
+            {isAdminOrOwner && !editingName && (
               <button
                 type="button"
                 onClick={() => setEditingName(true)}
@@ -205,7 +217,7 @@ export function GroupInfoPanel({
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t("group_description")}
             </span>
-            {isOwner && !editingDesc && (
+            {isAdminOrOwner && !editingDesc && (
               <button
                 type="button"
                 onClick={() => setEditingDesc(true)}
@@ -288,15 +300,39 @@ export function GroupInfoPanel({
                 <span className="text-[10px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-surface border border-border/50 shrink-0">
                   {ROLE_LABELS[m.role] ?? m.role}
                 </span>
-                {isOwner && m.user_id !== currentUserId && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveMember(m.id)}
-                    aria-label={t("remove_member_aria")}
-                    className="text-sm text-error-foreground hover:opacity-70 transition-opacity shrink-0 leading-none"
-                  >
-                    ×
-                  </button>
+                {isOwner && m.user_id !== currentUserId && m.role !== "owner" && (
+                  <>
+                    {m.role === "member" && (
+                      <button
+                        type="button"
+                        onClick={() => handlePromoteMember(m.id)}
+                        aria-label="Promote to admin"
+                        className="text-[10px] text-primary hover:opacity-70 transition-opacity shrink-0"
+                        title="Promote to admin"
+                      >
+                        ↑
+                      </button>
+                    )}
+                    {m.role === "admin" && (
+                      <button
+                        type="button"
+                        onClick={() => handleDemoteMember(m.id)}
+                        aria-label="Demote to member"
+                        className="text-[10px] text-muted-foreground hover:opacity-70 transition-opacity shrink-0"
+                        title="Demote to member"
+                      >
+                        ↓
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(m.id)}
+                      aria-label={t("remove_member_aria")}
+                      className="text-sm text-error-foreground hover:opacity-70 transition-opacity shrink-0 leading-none"
+                    >
+                      ×
+                    </button>
+                  </>
                 )}
               </div>
             ))}

@@ -7,17 +7,20 @@ export interface GroupRow {
   name: string;
 }
 
-// TODO: Once RLS policy on group_members is fixed (infinite recursion),
-// replace this with a user-scoped query:
-//   supabase.from("group_members")
-//     .select("groups!group_members_group_id_fkey(id, name)")
-//     .eq("user_id", user.id)
 export async function fetchUserGroups(): Promise<GroupRow[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data, error } = await supabase
-    .from("groups")
-    .select("id, name")
-    .order("created_at", { ascending: false });
+    .from("group_members")
+    .select("groups!group_members_group_id_fkey(id, name)")
+    .eq("user_id", user.id)
+    .eq("status", "active");
 
   if (error) return [];
-  return data ?? [];
+  return (data ?? [])
+    .map((row) => row.groups)
+    .filter(Boolean) as GroupRow[];
 }

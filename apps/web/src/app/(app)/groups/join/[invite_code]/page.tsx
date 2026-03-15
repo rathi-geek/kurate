@@ -59,6 +59,26 @@ export default async function JoinGroupPage({ params }: JoinGroupPageProps) {
     );
   }
 
+  // Mark email invite as accepted if one exists for this user
+  // Requires DB migration: CREATE TABLE group_invites (...)
+  // After migration, remove the try/catch and the `as any` cast
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { data: emailInvite } = await db
+      .from("group_invites")
+      .select("id")
+      .eq("group_id", group.id)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (emailInvite?.id) {
+      await db.from("group_invites").update({ status: "accepted" }).eq("id", emailInvite.id);
+    }
+  } catch {
+    // group_invites table not created yet — continue with join
+  }
+
   // Join the group
   await supabase.from("group_members").insert({
     group_id: group.id,

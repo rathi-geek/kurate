@@ -4,26 +4,23 @@ import { useCallback, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Typewriter } from "@/components/ui/typewriter";
+import { CyclingText } from "@/components/ui/cycling-text";
 
 import { ChatInput } from "@/app/_components/home/chat-input";
 import { useSaveItem } from "@/app/_libs/hooks/useSaveItem";
+import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
+import { getLinkCopy } from "@/app/_libs/utils/getLinkCopy";
 import { springGentle } from "@/app/_libs/utils/motion";
 import { createClient } from "@/app/_libs/supabase/client";
+import { queryKeys } from "@/app/_libs/query/keys";
 
 const supabase = createClient();
-
-interface ExtractedMetadata {
-  url: string;
-  title?: string | null;
-  source?: string | null;
-  author?: string | null;
-  preview_image?: string | null;
-  content_type?: "article" | "video" | "podcast";
-  read_time?: string | null;
-}
 
 interface DropComposerProps {
   groupId: string;
@@ -33,40 +30,30 @@ interface DropComposerProps {
 
 export function DropComposer({ groupId, currentUserId, onDropPosted }: DropComposerProps) {
   const t = useTranslations("groups");
+  const tLinkPreview = useTranslations("link_preview");
   const prefersReducedMotion = useReducedMotion();
   const saveItem = useSaveItem();
+  const queryClient = useQueryClient();
 
   const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
-  const [preview, setPreview] = useState<ExtractedMetadata | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [note, setNote] = useState("");
   const [isPosting, setIsPosting] = useState(false);
+  // Text-only post state (requires DB migration: group_shares.content + nullable logged_item_id)
+  const [pendingTextPost, setPendingTextPost] = useState<string | null>(null);
 
-  const showPopup = isExtracting || !!preview || !!detectedUrl;
+  const { isExtracting, metadata, extractionFailed, extract, reset } = useExtractMetadata();
+  const linkCopy = getLinkCopy(detectedUrl ?? "", tLinkPreview as (key: string) => string);
+
+  const showPopup = isExtracting || !!metadata || !!detectedUrl || extractionFailed || !!pendingTextPost;
 
   const handleUrlChange = useCallback(async (url: string | null) => {
     setDetectedUrl(url);
     if (!url) {
-      setPreview(null);
+      reset();
       return;
     }
-    setIsExtracting(true);
-    try {
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setPreview({ url, ...data });
-      }
-    } catch {
-      // ignore extraction errors — user can still post without preview
-    } finally {
-      setIsExtracting(false);
-    }
-  }, []);
+    await extract(url);
+  }, [extract, reset]);
 
   const handlePost = async () => {
     if (!detectedUrl || !currentUserId) return;
@@ -74,12 +61,12 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     try {
       const saveResult = await saveItem.mutateAsync({
         url: detectedUrl,
-        title: preview?.title,
-        source: preview?.source,
-        author: preview?.author,
-        preview_image: preview?.preview_image,
-        content_type: preview?.content_type ?? "article",
-        read_time: preview?.read_time,
+        title: metadata?.title,
+        source: metadata?.source,
+        author: metadata?.author,
+        preview_image: metadata?.preview_image,
+        content_type: metadata?.content_type ?? "article",
+        read_time: metadata?.read_time,
         save_source: "feed",
       });
 
@@ -108,8 +95,28 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
 
       if (error) throw new Error(error.message);
 
+      if (saveResult.status === "saved") {
+        const itemId = loggedItemId;
+        toast("Shared to the group", {
+          action: {
+            label: "Save to vault",
+            onClick: () => {},
+          },
+          cancel: {
+            label: "Remove from vault",
+            onClick: async () => {
+              await supabase.from("logged_items").delete().eq("id", itemId);
+              queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
+            },
+          },
+          duration: 6000,
+        });
+      } else {
+        toast.success("Shared to the group");
+      }
+
       setDetectedUrl(null);
-      setPreview(null);
+      reset();
       setNote("");
       onDropPosted();
     } finally {
@@ -117,11 +124,39 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     }
   };
 
+  // Text-only post handler — requires DB migration before insert will work
+  // Migration needed: group_shares.content TEXT, logged_item_id nullable
+  const handleTextPost = async () => {
+    if (!pendingTextPost?.trim() || !currentUserId) return;
+    setIsPosting(true);
+    try {
+      // group_shares.content and nullable logged_item_id require DB migration
+      // After migration, remove the `as any` cast
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from("group_shares") as any).insert({
+        group_id: groupId,
+        shared_by: currentUserId,
+        content: pendingTextPost.trim(),
+      });
+      if (error) throw new Error(error.message);
+      setPendingTextPost(null);
+      onDropPosted();
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleSend = (text: string) => {
+    // URL path is handled by onUrlChange; this fires for text-only input
+    if (detectedUrl) return;
+    if (text.trim()) setPendingTextPost(text.trim());
+  };
+
   return (
     <div className="relative px-4 pt-3 pb-1">
       {/* ── Input bar ─────────────────────────────────────────────────── */}
       <ChatInput
-        onSend={() => {}}
+        onSend={handleSend}
         onUrlChange={handleUrlChange}
         placeholder={t("composer_placeholder")}
         showPlusIcon={false}
@@ -138,38 +173,51 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
             transition={springGentle}
           >
             <div className="bg-card rounded-card border shadow-lg p-3 space-y-3">
-              {/* Extracting state */}
-              {isExtracting && (
-                <p className="text-muted-foreground animate-pulse text-xs px-0.5">
-                  {t("extracting")}
-                </p>
+              {/* Extraction animation */}
+              {isExtracting && detectedUrl && (
+                <div className="space-y-1 px-0.5 py-1">
+                  <p className="text-xs font-medium text-foreground">
+                    <Typewriter text={linkCopy.heading} />
+                  </p>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    <CyclingText phrases={linkCopy.subtitles} />
+                  </p>
+                </div>
+              )}
+
+              {/* Extraction failure fallback */}
+              {extractionFailed && !metadata && detectedUrl && (
+                <div className="rounded-card bg-surface border px-3 py-2">
+                  <p className="text-sm text-muted-foreground font-mono truncate">{detectedUrl}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Could not load preview</p>
+                </div>
               )}
 
               {/* Link preview */}
-              {preview && !isExtracting && (
+              {metadata && !isExtracting && (
                 <div className="rounded-card bg-surface border overflow-hidden">
-                  {preview.preview_image && (
+                  {metadata.preview_image && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={preview.preview_image}
-                      alt={preview.title ?? ""}
+                      src={metadata.preview_image}
+                      alt={metadata.title ?? ""}
                       className="h-24 w-full object-cover"
                     />
                   )}
                   <div className="p-2.5">
                     <p className="text-foreground line-clamp-2 text-sm font-medium">
-                      {preview.title ?? preview.url}
+                      {metadata.title ?? metadata.url}
                     </p>
-                    {preview.source && (
+                    {metadata.source && (
                       <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-                        {preview.source}
+                        {metadata.source}
                       </p>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Note + Post */}
+              {/* Note + Post (URL path) */}
               {detectedUrl && (
                 <>
                   <Textarea
@@ -187,7 +235,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
                       disabled={isPosting}
                       onClick={() => {
                         setDetectedUrl(null);
-                        setPreview(null);
+                        reset();
                         setNote("");
                       }}
                     >
@@ -198,6 +246,35 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
                       onClick={handlePost}
                       disabled={isPosting || !detectedUrl}
                       size="sm"
+                    >
+                      {isPosting ? t("posting") : t("post")}
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {/* Text-only post (requires DB migration: group_shares.content + nullable logged_item_id) */}
+              {pendingTextPost && !detectedUrl && (
+                <>
+                  <p className="text-sm text-foreground leading-relaxed px-0.5">
+                    {pendingTextPost}
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isPosting}
+                      onClick={() => setPendingTextPost(null)}
+                    >
+                      {t("cancel")}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleTextPost}
+                      disabled={isPosting}
+                      size="sm"
+                      title="Requires DB migration"
                     >
                       {isPosting ? t("posting") : t("post")}
                     </Button>

@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 
 import { useComments } from "@/app/_libs/hooks/useComments";
 import { ReplyInput } from "@/components/groups/reply-input";
-import { ChevronDownIcon, PencilIcon, TrashIcon } from "@/components/icons";
+import { PencilIcon, TrashIcon } from "@/components/icons";
 import type { GroupRole, DropComment } from "@/app/_libs/types/groups";
 
 interface CommentThreadProps {
   groupShareId: string;
   currentUserId: string;
   userRole: GroupRole;
-  isExpanded: boolean;
-  onCollapse: () => void;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -67,7 +65,7 @@ function CommentItem({
           />
         ) : (
           <div className="size-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">
-            {(comment.author.display_name ?? "?")[0]?.toUpperCase()}
+            {(comment.author.display_name ?? comment.author.handle ?? "?")[0]?.toUpperCase()}
           </div>
         )}
       </div>
@@ -75,7 +73,7 @@ function CommentItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-xs font-medium text-foreground">
-            {comment.author.display_name ?? t("anonymous")}
+            {comment.author.display_name ?? comment.author.handle ?? t("anonymous")}
           </span>
           <span className="text-[10px] text-muted-foreground font-mono">
             {formatRelativeTime(comment.created_at)}
@@ -131,54 +129,34 @@ function CommentItem({
 export function CommentThread({
   groupShareId,
   currentUserId,
-  isExpanded,
-  onCollapse,
 }: CommentThreadProps) {
   const t = useTranslations("groups");
-  const { comments, addComment, editComment, deleteComment, isAdding } =
-    useComments(groupShareId);
+  const {
+    comments,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    addComment,
+    editComment,
+    deleteComment,
+    isAdding,
+  } = useComments(groupShareId);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Collapse when main page scrolls
-  useEffect(() => {
-    const mainContent = document.getElementById("main-content");
-    if (!mainContent || !isExpanded) return;
-
-    const handleScroll = () => onCollapse();
-    mainContent.addEventListener("scroll", handleScroll, { passive: true });
-    return () => mainContent.removeEventListener("scroll", handleScroll);
-  }, [isExpanded, onCollapse]);
-
-  const latest = comments[comments.length - 1];
-
-  if (!isExpanded) {
-    if (comments.length === 0) return null;
-    return (
-      <button
-        type="button"
-        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
-        onClick={() => {}}
-      >
-        <ChevronDownIcon className="size-3 rotate-180" />
-        <span className="truncate">
-          {latest?.content}
-        </span>
-        {comments.length > 1 && (
-          <span className="shrink-0 text-[10px]">
-            +{comments.length - 1} {t("more")}
-          </span>
-        )}
-      </button>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-3">
-      <div
-        ref={scrollRef}
-        className="max-h-64 overflow-y-auto flex flex-col gap-3 pr-1"
-      >
+      {/* Load more — older comments above */}
+      {hasNextPage && (
+        <button
+          type="button"
+          onClick={() => fetchNextPage()}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left"
+        >
+          {isFetchingNextPage ? t("loading") : t("load_more_comments")}
+        </button>
+      )}
+
+      <div className="flex flex-col gap-3">
         {comments.map((comment) => (
           <div key={comment.id}>
             <CommentItem

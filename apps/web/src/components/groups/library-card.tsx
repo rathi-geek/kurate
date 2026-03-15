@@ -34,10 +34,10 @@ export const LibraryCard = memo(function LibraryCard({
       className="rounded-card border bg-card hover:bg-surface transition-colors cursor-pointer overflow-hidden"
       onClick={handleClick}
       role="article"
-      aria-label={drop.item.title ?? t("drop_aria_fallback")}
+      aria-label={drop.item?.title ?? drop.content ?? t("drop_aria_fallback")}
     >
-      {/* Preview image */}
-      {drop.item.preview_image ? (
+      {/* Preview image (link drops only) */}
+      {drop.item?.preview_image ? (
         <div className="relative w-full aspect-video bg-surface">
           <Image
             src={drop.item.preview_image}
@@ -47,22 +47,29 @@ export const LibraryCard = memo(function LibraryCard({
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
           />
         </div>
-      ) : (
+      ) : drop.item ? (
         <div className="w-full aspect-video bg-surface" />
-      )}
+      ) : null}
 
       <div className="p-3">
-        {/* Title */}
-        <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
-          {drop.item.title ?? drop.item.url}
-        </p>
+        {/* Link drop content */}
+        {drop.item && (
+          <>
+            <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
+              {drop.item.title ?? drop.item.url}
+            </p>
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono mb-2 flex-wrap">
+              {drop.item.source && <span>{drop.item.source}</span>}
+              {drop.item.source && drop.item.read_time && <span>·</span>}
+              {drop.item.read_time && <span>{drop.item.read_time}</span>}
+            </div>
+          </>
+        )}
 
-        {/* Metadata */}
-        <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono mb-2 flex-wrap">
-          {drop.item.source && <span>{drop.item.source}</span>}
-          {drop.item.source && drop.item.read_time && <span>·</span>}
-          {drop.item.read_time && <span>{drop.item.read_time}</span>}
-        </div>
+        {/* Text-only drop content */}
+        {!drop.item && drop.content && (
+          <p className="text-sm text-foreground line-clamp-3 mb-2">{drop.content}</p>
+        )}
 
         <div
           className="border-t border-border/50 pt-2"
@@ -71,16 +78,20 @@ export const LibraryCard = memo(function LibraryCard({
           <EngagementBar
             groupShareId={drop.id}
             groupId={groupId}
-            url={drop.item.url}
+            url={drop.item?.url ?? ""}
             currentUserId={currentUserId}
             engagement={drop.engagement}
-            itemData={{
-              title: drop.item.title,
-              source: drop.item.source,
-              preview_image: drop.item.preview_image,
-              content_type: drop.item.content_type as "article" | "video" | "podcast",
-              read_time: drop.item.read_time,
-            }}
+            itemData={
+              drop.item
+                ? {
+                    title: drop.item.title,
+                    source: drop.item.source,
+                    preview_image: drop.item.preview_image,
+                    content_type: drop.item.content_type as "article" | "video" | "podcast",
+                    read_time: drop.item.read_time,
+                  }
+                : undefined
+            }
             // No commentCount / onCommentToggle — Library omits comments
           />
         </div>

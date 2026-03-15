@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 
 import { useGroupFeed } from "@/app/_libs/hooks/useGroupFeed";
@@ -25,7 +25,6 @@ export function FeedTabView({
   const t = useTranslations("groups");
   const { drops, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage, refetch } =
     useGroupFeed(groupId, currentUserId);
-  const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // IntersectionObserver for infinite scroll
@@ -62,10 +61,6 @@ export function FeedTabView({
     refetch();
   };
 
-  const handleCommentToggle = (dropId: string) => {
-    setExpandedCommentId((prev) => (prev === dropId ? null : dropId));
-  };
-
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Composer — outside scroll so its popup can overflow downward */}
@@ -85,9 +80,7 @@ export function FeedTabView({
           currentUserId={currentUserId}
           groupId={groupId}
           userRole={userRole}
-          expandedCommentId={expandedCommentId}
           onDelete={handleDeleteDrop}
-          onCommentToggle={handleCommentToggle}
         />
 
         <div ref={sentinelRef} className="h-1" />
@@ -110,9 +103,7 @@ interface FeedBodyProps {
   currentUserId: string;
   groupId: string;
   userRole: GroupRole;
-  expandedCommentId: string | null;
   onDelete: (id: string) => void;
-  onCommentToggle: (id: string) => void;
 }
 
 function FeedBody({
@@ -121,9 +112,7 @@ function FeedBody({
   currentUserId,
   groupId,
   userRole,
-  expandedCommentId,
   onDelete,
-  onCommentToggle,
 }: FeedBodyProps) {
   const t = useTranslations("groups");
 
@@ -155,8 +144,6 @@ function FeedBody({
           groupId={groupId}
           userRole={userRole}
           onDelete={onDelete}
-          isCommentExpanded={expandedCommentId === drop.id}
-          onCommentToggle={() => onCommentToggle(drop.id)}
         />
       ))}
     </div>

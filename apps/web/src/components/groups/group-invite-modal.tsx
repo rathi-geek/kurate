@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 import {
   Dialog,
@@ -14,6 +15,9 @@ import { Input } from "@/components/ui/input";
 import { queryKeys } from "@/app/_libs/query/keys";
 import { createClient } from "@/app/_libs/supabase/client";
 import { PlusIcon } from "@/components/icons";
+import type { GroupRole } from "@/app/_libs/types/groups";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const supabase = createClient();
 
@@ -23,6 +27,7 @@ export interface GroupInviteModalProps {
   groupId: string;
   inviteCode: string;
   memberIds: Set<string>;
+  currentUserId: string;
 }
 
 type SearchProfile = {
@@ -37,6 +42,7 @@ export function GroupInviteModal({
   groupId,
   inviteCode,
   memberIds,
+  currentUserId,
 }: GroupInviteModalProps) {
   const t = useTranslations("groups");
   const queryClient = useQueryClient();
@@ -46,6 +52,11 @@ export function GroupInviteModal({
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [inviteRole, setInviteRole] = useState<Exclude<GroupRole, "owner">>("member");
+  const [sendingEmailInvite, setSendingEmailInvite] = useState(false);
+
+  const isEmail = EMAIL_REGEX.test(searchQuery.trim());
+  const hasNoResults = searchQuery.trim() && !searching && searchResults.length === 0;
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
@@ -82,7 +93,7 @@ export function GroupInviteModal({
     await supabase.from("group_members").insert({
       group_id: groupId,
       user_id: profileId,
-      role: "member",
+      role: inviteRole,
       status: "active",
     });
     await queryClient.invalidateQueries({
@@ -91,6 +102,32 @@ export function GroupInviteModal({
     setAddingId(null);
     setSearchQuery("");
     setSearchResults([]);
+  };
+
+  const handleEmailInvite = async () => {
+    if (!isEmail) return;
+    setSendingEmailInvite(true);
+    try {
+      // Requires DB migration: CREATE TABLE group_invites (...)
+      // After migration, remove the `as any` cast
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const { error } = await db.from("group_invites").insert({
+        group_id: groupId,
+        invited_by: currentUserId,
+        email: searchQuery.trim().toLowerCase(),
+        invite_code: inviteCode,
+        status: "pending",
+      });
+      if (error) throw new Error(error.message);
+      toast.success(`Invite sent to ${searchQuery.trim()}`);
+      setSearchQuery("");
+      setSearchResults([]);
+    } catch {
+      toast.error("Failed to send invite. DB migration may be needed.");
+    } finally {
+      setSendingEmailInvite(false);
+    }
   };
 
   const handleCopyInvite = async () => {
@@ -113,6 +150,34 @@ export function GroupInviteModal({
             onChange={(e) => handleSearch(e.target.value)}
             autoFocus
           />
+
+          {/* Role selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-xs">Add as:</span>
+            <button
+              type="button"
+              onClick={() => setInviteRole("member")}
+              className={`text-xs px-2 py-0.5 rounded-badge border transition-colors ${
+                inviteRole === "member"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/50"
+              }`}
+            >
+              Member
+            </button>
+            <button
+              type="button"
+              onClick={() => setInviteRole("admin")}
+              className={`text-xs px-2 py-0.5 rounded-badge border transition-colors ${
+                inviteRole === "admin"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/50"
+              }`}
+            >
+              Admin
+            </button>
+          </div>
+
           {searching && (
             <p className="text-muted-foreground px-1 text-xs">{t("searching")}</p>
           )}
@@ -153,11 +218,28 @@ export function GroupInviteModal({
               })}
             </div>
           )}
-          {searchQuery && !searching && searchResults.length === 0 && (
+
+          {/* Email invite — show when query looks like an email or no platform users found */}
+          {hasNoResults && isEmail && (
+            <button
+              type="button"
+              onClick={handleEmailInvite}
+              disabled={sendingEmailInvite}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left border border-border rounded-card hover:bg-surface transition-colors disabled:opacity-60"
+            >
+              <PlusIcon className="text-primary size-3.5 shrink-0" />
+              <span>
+                {sendingEmailInvite ? "Sending..." : `Invite ${searchQuery.trim()} by email`}
+              </span>
+            </button>
+          )}
+
+          {hasNoResults && !isEmail && (
             <p className="text-muted-foreground px-1 text-xs">
               {t("no_members_found")}
             </p>
           )}
+
           <div className="border-border/50 border-t pt-1">
             <button
               type="button"

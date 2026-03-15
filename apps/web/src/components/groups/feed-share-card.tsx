@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { EngagementBar } from "@/components/groups/engagement-bar";
 import { CommentThread } from "@/components/groups/comment-thread";
 import { TrashIcon } from "@/components/icons";
-import type { GroupDrop, GroupRole } from "@/app/_libs/types/groups";
+import type { GroupDrop, GroupProfile, GroupRole } from "@/app/_libs/types/groups";
 
 interface FeedShareCardProps {
   drop: GroupDrop;
@@ -15,8 +15,6 @@ interface FeedShareCardProps {
   groupId: string;
   userRole: GroupRole;
   onDelete?: (dropId: string) => void;
-  isCommentExpanded: boolean;
-  onCommentToggle: () => void;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -31,14 +29,30 @@ function formatRelativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
+function ReactionPill({ reactors, label }: { reactors: GroupProfile[]; label: string }) {
+  return (
+    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface border border-border/50 text-[11px] text-muted-foreground">
+      <div className="flex -space-x-1">
+        {reactors.slice(0, 3).map((r) => (
+          <div
+            key={r.id}
+            className="size-4 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center ring-1 ring-card"
+          >
+            {(r.display_name ?? r.handle ?? "?")[0]?.toUpperCase()}
+          </div>
+        ))}
+      </div>
+      <span>{label}</span>
+    </div>
+  );
+}
+
 export const FeedShareCard = memo(function FeedShareCard({
   drop,
   currentUserId,
   groupId,
   userRole,
   onDelete,
-  isCommentExpanded,
-  onCommentToggle,
 }: FeedShareCardProps) {
   const t = useTranslations("groups");
   const isSharer = drop.sharer.id === currentUserId;
@@ -65,20 +79,20 @@ export const FeedShareCard = memo(function FeedShareCard({
               />
             ) : (
               <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
-                {(drop.sharer.display_name ?? "?")[0]?.toUpperCase()}
+                {(drop.sharer.display_name ?? drop.sharer.handle ?? "?")[0]?.toUpperCase()}
               </div>
             )}
             <div className="min-w-0">
-              <span className="text-sm font-medium text-foreground">
-                {drop.sharer.display_name ?? t("anonymous")}
+              <span className="text-sm font-semibold text-foreground">
+                {drop.sharer.display_name ?? drop.sharer.handle ?? t("anonymous")}
               </span>
-              <span className="text-xs text-muted-foreground font-mono ml-2">
-                {formatRelativeTime(drop.shared_at)}
+              <span className="text-xs text-muted-foreground ml-1.5">
+                dropped · {formatRelativeTime(drop.shared_at)}
               </span>
             </div>
           </div>
 
-          {/* Delete — sharer only */}
+          {/* Delete — sharer or owner only */}
           {(isSharer || userRole === "owner") && onDelete && (
             <button
               type="button"
@@ -91,80 +105,117 @@ export const FeedShareCard = memo(function FeedShareCard({
           )}
         </div>
 
-        {/* Preview image */}
-        {drop.item.preview_image && (
-          <a
-            href={drop.item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block mb-3 rounded-card overflow-hidden relative h-[180px] bg-surface"
-          >
-            <Image
-              src={drop.item.preview_image}
-              alt={drop.item.title ?? ""}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 600px"
-            />
-          </a>
+        {/* Link drop: full-width preview image + title */}
+        {drop.item && (
+          <>
+            {drop.item.preview_image && (
+              <a
+                href={drop.item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="-mx-4 block mb-3 overflow-hidden relative h-[220px] bg-surface"
+              >
+                <Image
+                  src={drop.item.preview_image}
+                  alt={drop.item.title ?? ""}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 600px"
+                />
+              </a>
+            )}
+            <div className="mb-2">
+              <a
+                href={drop.item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-base text-foreground hover:text-primary transition-colors line-clamp-2"
+              >
+                {drop.item.title ?? drop.item.url}
+              </a>
+              <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[11px] text-muted-foreground font-mono">
+                {drop.item.source && (
+                  <>
+                    <span className="text-primary text-[8px]">●</span>
+                    <span>{drop.item.source}</span>
+                  </>
+                )}
+                {drop.item.read_time && (
+                  <>
+                    <span>·</span>
+                    <span>{drop.item.read_time}</span>
+                  </>
+                )}
+                {drop.item.content_type && (
+                  <span className="uppercase text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded-full border border-border bg-surface">
+                    {drop.item.content_type}
+                  </span>
+                )}
+                {drop.engagement.mustRead.count > 0 && (
+                  <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-warning-bg text-warning-foreground border border-warning-foreground/20">
+                    MUST READ · {drop.engagement.mustRead.count}
+                  </span>
+                )}
+              </div>
+            </div>
+          </>
         )}
 
-        {/* Title & metadata */}
-        <div className="mb-2">
-          <a
-            href={drop.item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-sm text-foreground hover:text-primary transition-colors line-clamp-2"
-          >
-            {drop.item.title ?? drop.item.url}
-          </a>
-          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground font-mono flex-wrap">
-            {drop.item.source && <span>{drop.item.source}</span>}
-            {drop.item.source && drop.item.read_time && <span>·</span>}
-            {drop.item.read_time && <span>{drop.item.read_time}</span>}
-          </div>
-        </div>
+        {/* Text-only drop */}
+        {!drop.item && drop.content && (
+          <p className="text-sm text-foreground leading-relaxed mb-2">{drop.content}</p>
+        )}
 
-        {/* Sharer note */}
+        {/* Sharer note with left border */}
         {drop.note && (
-          <p className="text-xs text-muted-foreground italic mb-3 leading-relaxed">
-            &ldquo;{drop.note}&rdquo;
-          </p>
+          <blockquote className="border-l-2 border-border pl-3 my-3 text-xs text-muted-foreground italic leading-relaxed">
+            {drop.note}
+          </blockquote>
+        )}
+
+        {/* Reaction summary pills */}
+        {(drop.engagement.like.count > 0 || drop.engagement.mustRead.count > 0) && (
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            {drop.engagement.like.count > 0 && (
+              <ReactionPill reactors={drop.engagement.like.reactors} label="liked" />
+            )}
+            {drop.engagement.mustRead.count > 0 && (
+              <ReactionPill reactors={drop.engagement.mustRead.reactors} label="must read" />
+            )}
+          </div>
         )}
 
         <div className="border-t border-border/50 pt-2">
           <EngagementBar
             groupShareId={drop.id}
             groupId={groupId}
-            url={drop.item.url}
+            url={drop.item?.url ?? ""}
             currentUserId={currentUserId}
             engagement={drop.engagement}
-            itemData={{
-              title: drop.item.title,
-              source: drop.item.source,
-              preview_image: drop.item.preview_image,
-              content_type: drop.item.content_type as "article" | "video" | "podcast",
-              read_time: drop.item.read_time,
-            }}
+            itemData={
+              drop.item
+                ? {
+                    title: drop.item.title,
+                    source: drop.item.source,
+                    preview_image: drop.item.preview_image,
+                    content_type: drop.item.content_type as "article" | "video" | "podcast",
+                    read_time: drop.item.read_time,
+                  }
+                : undefined
+            }
             commentCount={drop.commentCount}
-            onCommentToggle={onCommentToggle}
           />
         </div>
       </div>
 
-      {/* Comment thread */}
-      {isCommentExpanded && (
-        <div className="border-t border-border/50 px-4 pb-4 pt-3">
-          <CommentThread
-            groupShareId={drop.id}
-            currentUserId={currentUserId}
-            userRole={userRole}
-            isExpanded={isCommentExpanded}
-            onCollapse={onCommentToggle}
-          />
-        </div>
-      )}
+      {/* Comment thread — always visible */}
+      <div className="border-t border-border/50 px-4 pb-4 pt-3">
+        <CommentThread
+          groupShareId={drop.id}
+          currentUserId={currentUserId}
+          userRole={userRole}
+        />
+      </div>
     </article>
   );
 });

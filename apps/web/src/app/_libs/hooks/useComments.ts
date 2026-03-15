@@ -1,15 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
 import type { DropComment } from "@/app/_libs/types/groups";
 
 const supabase = createClient();
+const PAGE_SIZE = 5;
 
-async function fetchComments(groupShareId: string): Promise<DropComment[]> {
-  const { data, error } = await supabase
+async function fetchComments(groupShareId: string, cursor: string | null): Promise<DropComment[]> {
+  let query = supabase
     .from("comments")
     .select(
       `
@@ -22,21 +23,28 @@ async function fetchComments(groupShareId: string): Promise<DropComment[]> {
       `,
     )
     .eq("group_share_id", groupShareId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(PAGE_SIZE);
 
+  if (cursor) {
+    query = query.gt("created_at", cursor);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  // Build flat list with parent_id/updated_at injected as null (not in DB yet)
   const flat = (data ?? []).map((row) => {
     const rawAuthor = Array.isArray(row.author) ? row.author[0] : row.author;
+    // parent_id and updated_at not in DB types yet — read via cast once migration applied
+    const rowAny = row as Record<string, unknown>;
     return {
       ...row,
-      parent_id: null as string | null,
-      updated_at: null as string | null,
+      parent_id: (rowAny.parent_id as string | null) ?? null,
+      updated_at: (rowAny.updated_at as string | null) ?? null,
       author: {
         id: rawAuthor?.id ?? row.user_id,
         display_name: rawAuthor
-          ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") || null
+          ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") || rawAuthor.handle || null
           : null,
         avatar_url: rawAuthor?.avtar_url ?? null,
         handle: rawAuthor?.handle ?? "",
@@ -45,17 +53,32 @@ async function fetchComments(groupShareId: string): Promise<DropComment[]> {
     };
   });
 
-  // All top-level since no parent_id column yet
-  return flat;
+  // Build tree: nest replies under parent comments
+  // Before migration: all parent_id are null, so all are top-level
+  const topLevel: DropComment[] = [];
+  const byId = new Map<string, DropComment>();
+  for (const c of flat) byId.set(c.id, c as DropComment);
+  for (const c of flat) {
+    if (c.parent_id && byId.has(c.parent_id)) {
+      byId.get(c.parent_id)!.replies.push(c as DropComment["replies"][0]);
+    } else {
+      topLevel.push(c as DropComment);
+    }
+  }
+
+  return topLevel;
 }
 
 export function useComments(groupShareId: string) {
   const queryClient = useQueryClient();
   const key = queryKeys.groups.comments(groupShareId);
 
-  const query = useQuery({
+  const query = useInfiniteQuery({
     queryKey: key,
-    queryFn: () => fetchComments(groupShareId),
+    queryFn: ({ pageParam }) => fetchComments(groupShareId, pageParam as string | null),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,
     staleTime: 1000 * 30,
     enabled: !!groupShareId,
   });
@@ -64,17 +87,23 @@ export function useComments(groupShareId: string) {
     mutationFn: async ({
       content,
       userId,
+      parentId,
     }: {
       content: string;
       userId: string;
       parentId?: string | null;
     }) => {
-      // parent_id not in DB schema yet — omit until backend adds it
-      const { error } = await supabase.from("comments").insert({
+      // parent_id requires DB migration: ALTER TABLE comments ADD COLUMN parent_id UUID REFERENCES comments(id) ON DELETE CASCADE
+      const insertData: Record<string, unknown> = {
         group_share_id: groupShareId,
         user_id: userId,
         content,
-      });
+      };
+      // Only include parent_id once DB migration is applied
+      if (parentId) {
+        insertData.parent_id = parentId;
+      }
+      const { error } = await supabase.from("comments").insert(insertData as never);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
@@ -93,7 +122,6 @@ export function useComments(groupShareId: string) {
       currentUserId: string;
     }) => {
       const updateData: Record<string, unknown> = { content };
-      // updated_at not in DB schema yet — omit until backend adds it
       const { data, error } = await supabase
         .from("comments")
         .update(updateData)
@@ -130,8 +158,11 @@ export function useComments(groupShareId: string) {
   });
 
   return {
-    comments: query.data ?? [],
+    comments: query.data?.pages.flat() ?? [],
     isLoading: query.isLoading,
+    fetchNextPage: query.fetchNextPage,
+    hasNextPage: query.hasNextPage ?? false,
+    isFetchingNextPage: query.isFetchingNextPage,
     addComment: (content: string, userId: string, parentId?: string | null) =>
       addMutation.mutate({ content, userId, parentId }),
     editComment: (commentId: string, content: string, currentUserId: string) =>

@@ -1,21 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 
-import { createClient } from "@/app/_libs/supabase/client";
-import { slugify } from "@/app/_libs/utils/slugify";
-import { queryKeys } from "@/app/_libs/query/keys";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
+
+import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+
+import { queryKeys } from "@/app/_libs/query/keys";
+import { createClient } from "@/app/_libs/supabase/client";
+import { slugify } from "@/app/_libs/utils/slugify";
+
+// Postgres unique-violation code
+const PG_UNIQUE_VIOLATION = "23505";
 
 const supabase = createClient();
 
@@ -29,6 +31,7 @@ interface CreateGroupDialogProps {
 }
 
 export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps) {
+  const t = useTranslations("groups");
   const router = useRouter();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -58,12 +61,18 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
           description: description.trim() || null,
           created_by: user.id,
           invite_code: generateInviteCode(),
-          max_members: 20,
+          max_members: 50,
         })
         .select("id, name")
         .single();
 
-      if (groupError) throw new Error(groupError.message);
+      if (groupError) {
+        if (groupError.code === PG_UNIQUE_VIOLATION) {
+          setError(t("name_taken"));
+          return;
+        }
+        throw new Error(groupError.message);
+      }
 
       // Add creator as owner — upsert in case a DB trigger already inserted them
       const { error: memberError } = await supabase
@@ -84,7 +93,7 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
 
       router.push(`/groups/${slugify(group.name)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("error_generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -92,44 +101,47 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Create a group</DialogTitle>
+          <DialogTitle>{t("create_title")}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="group-name" className="text-sm font-medium text-foreground">
-              Name
+            <label htmlFor="group-name" className="text-foreground text-sm font-medium">
+              {t("create_name_label")}
             </label>
             <Input
               id="group-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Design Team"
+              placeholder={t("create_name_placeholder")}
               autoFocus
               required
             />
+            {name.trim() && (
+              <p className="text-muted-foreground mt-1 font-mono text-xs">
+                /groups/{slugify(name.trim())}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="group-desc" className="text-sm font-medium text-foreground">
-              Description{" "}
-              <span className="text-muted-foreground font-normal">(optional)</span>
+            <label htmlFor="group-desc" className="text-foreground text-sm font-medium">
+              {t("group_description")}{" "}
+              <span className="text-muted-foreground font-normal">{t("create_desc_optional")}</span>
             </label>
             <Textarea
               id="group-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What is this group about?"
+              placeholder={t("create_desc_placeholder")}
               rows={2}
               className="resize-none"
             />
           </div>
 
-          {error && (
-            <p className="text-xs text-error-foreground">{error}</p>
-          )}
+          {error && <p className="text-error-foreground text-xs">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button
@@ -137,16 +149,11 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
+              disabled={isSubmitting}>
+              {t("cancel")}
             </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!name.trim() || isSubmitting}
-            >
-              {isSubmitting ? "Creating…" : "Create group"}
+            <Button type="submit" size="sm" disabled={!name.trim() || isSubmitting}>
+              {isSubmitting ? t("create_creating") : t("create_submit")}
             </Button>
           </div>
         </form>
