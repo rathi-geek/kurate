@@ -39,10 +39,10 @@ export function MediaPlayerProvider({ children }: { children: React.ReactNode })
       <ArticleReader
         url={item?.content_type === "article" ? item.url : null}
         title={item?.content_type === "article" ? (item.title ?? undefined) : undefined}
-        hostname={item?.content_type === "article" ? (item.source ?? undefined) : undefined}
+        hostname={item?.content_type === "article" ? (item.raw_metadata?.source ?? undefined) : undefined}
         readTime={
-          item?.content_type === "article" && item.read_time != null
-            ? Number(item.read_time)
+          item?.content_type === "article" && item.raw_metadata?.read_time != null
+            ? Number(item.raw_metadata.read_time)
             : undefined
         }
         onClose={closeItem}
@@ -61,7 +61,7 @@ export function MediaPlayerProvider({ children }: { children: React.ReactNode })
         <PodcastPlayer
           url={item.url}
           title={item.title}
-          source={item.source}
+          source={item.raw_metadata?.source ?? undefined}
           onClose={closeItem}
         />
       )}

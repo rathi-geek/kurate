@@ -38,7 +38,9 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   const [previewPhase, setPreviewPhase] = useState<PreviewPhase>(PreviewPhase.Idle);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMeta, setPreviewMeta] = useState<ExtractedMeta | null>(null);
-  const [savedItemId, setSavedItemId] = useState<string | null>(null);
+  // logged_items.id — used for sharing to group_posts
+  const [savedLoggedItemId, setSavedLoggedItemId] = useState<string | null>(null);
+  // track which groups this item was shared to in the current session
   const [savedItemGroups, setSavedItemGroups] = useState<string[]>([]);
 
   const { isExtracting, metadata: extractedMeta, extractionFailed, extract, reset: resetExtraction } = useExtractMetadata();
@@ -108,15 +110,15 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
           preview_image: meta?.previewImage ?? null,
           content_type: (meta?.contentType as "article" | "video" | "podcast") ?? "article",
           read_time: meta?.readTime != null ? String(meta.readTime) : null,
-          save_source: "logged",
+          save_source: "external",
         });
 
         if (result.status === "duplicate") {
           toast("Already in your Vault", { description: "This link has been saved before." });
           setPreviewPhase(PreviewPhase.Idle);
         } else if (result.status === "saved" && result.item) {
-          setSavedItemId(result.item.id);
-          setSavedItemGroups(result.item.shared_to_groups ?? []);
+          setSavedLoggedItemId(result.item.logged_item_id);
+          setSavedItemGroups([]);
           setPreviewPhase(PreviewPhase.Share);
         }
       } catch {
@@ -128,14 +130,20 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
 
   const handleShare = useCallback(
     async (groupId: string) => {
-      if (!savedItemId) return;
-      const next = [...new Set([...savedItemGroups, groupId])];
-      await supabase.from("logged_items").update({ shared_to_groups: next }).eq("id", savedItemId);
+      if (!savedLoggedItemId) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("group_posts").insert({
+        convo_id: groupId,
+        logged_item_id: savedLoggedItemId,
+        shared_by: user.id,
+      });
+      setSavedItemGroups((prev) => [...new Set([...prev, groupId])]);
       queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
       setPreviewPhase(PreviewPhase.Idle);
       toast("Shared!");
     },
-    [savedItemId, savedItemGroups, queryClient],
+    [savedLoggedItemId, queryClient],
   );
 
   const handleSkip = useCallback(() => {
@@ -171,7 +179,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
                   phase={previewPhase}
                   url={previewUrl!}
                   metadata={previewMeta ?? undefined}
-                  savedItemId={savedItemId ?? undefined}
+                  savedItemId={savedLoggedItemId ?? undefined}
                   savedItemGroups={savedItemGroups}
                   onClose={() => setPreviewPhase(PreviewPhase.Idle)}
                   onShare={handleShare}

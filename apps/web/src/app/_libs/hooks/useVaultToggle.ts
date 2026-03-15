@@ -14,17 +14,26 @@ export function useVaultToggle(userId: string, url: string) {
   const saveItem = useSaveItem();
   const key = queryKeys.groups.vaultItem(userId, url);
 
+  // Returns the user_logged_items.id if saved, null otherwise
   const savedQuery = useQuery({
     queryKey: key,
     queryFn: async () => {
-      if (!userId || !url) return false;
-      const { data } = await supabase
+      if (!userId || !url) return null;
+      // Look up the shared catalog entry by URL
+      const { data: li } = await supabase
         .from("logged_items")
         .select("id")
-        .eq("user_id", userId)
         .eq("url", url)
         .maybeSingle();
-      return !!data;
+      if (!li) return null;
+      // Check if this user has saved it
+      const { data: uli } = await supabase
+        .from("user_logged_items")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("logged_item_id", li.id)
+        .maybeSingle();
+      return uli?.id ?? null;
     },
     staleTime: 1000 * 60,
     enabled: !!userId && !!url,
@@ -32,11 +41,12 @@ export function useVaultToggle(userId: string, url: string) {
 
   const removeMutation = useMutation({
     mutationFn: async () => {
+      const uliId = savedQuery.data;
+      if (!uliId) return;
       const { error } = await supabase
-        .from("logged_items")
+        .from("user_logged_items")
         .delete()
-        .eq("user_id", userId)
-        .eq("url", url);
+        .eq("id", uliId);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
@@ -47,7 +57,7 @@ export function useVaultToggle(userId: string, url: string) {
 
   const save = (itemData: Omit<SaveItemInput, "url" | "save_source">) => {
     saveItem.mutate(
-      { ...itemData, url, save_source: "discovered" },
+      { ...itemData, url, save_source: "shares" },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: key });
@@ -65,7 +75,7 @@ export function useVaultToggle(userId: string, url: string) {
   };
 
   return {
-    isSaved: savedQuery.data ?? false,
+    isSaved: !!savedQuery.data,
     toggle,
     isLoading: savedQuery.isLoading || saveItem.isPending || removeMutation.isPending,
   };

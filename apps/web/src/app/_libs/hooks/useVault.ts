@@ -13,27 +13,42 @@ import { queryKeys } from "@/app/_libs/query/keys";
 import type {
   ContentType,
   SaveSource,
+  RawMetadata,
   VaultFilters,
   VaultItem,
 } from "@/app/_libs/types/vault";
 
-// saveItem logic lives in useSaveItem.ts — import from there when needed outside vault context
-
 const PAGE_SIZE = 20;
-
-// Module-level singleton — avoids recreating the client on every call
 const supabase = createClient();
 
 function toVaultItem(row: Record<string, unknown>): VaultItem {
+  const li = (Array.isArray(row.logged_item) ? row.logged_item[0] : row.logged_item) as
+    | Record<string, unknown>
+    | null;
+
   return {
-    ...row,
-    content_type: ((row.content_type as ContentType) ?? "article") as ContentType,
-    save_source: ((row.save_source as SaveSource) ?? "logged") as SaveSource,
-    tags: Array.isArray(row.tags) ? (row.tags as string[]) : null,
-    shared_to_groups: Array.isArray(row.shared_to_groups)
-      ? (row.shared_to_groups as string[])
-      : null,
-  } as VaultItem;
+    // user_logged_items fields
+    id: row.id as string,
+    user_id: row.user_id as string,
+    logged_item_id: row.logged_item_id as string,
+    save_source: ((row.save_source as SaveSource) ?? "external") as SaveSource,
+    remarks: (row.remarks as string | null) ?? null,
+    is_read: (row.is_read as boolean) ?? false,
+    created_at: row.created_at as string,
+    author: null,
+    saved_from_group: null,
+    shared_by: null,
+    // logged_items fields (from join)
+    url: (li?.url as string) ?? "",
+    title: (li?.title as string) ?? "",
+    url_hash: (li?.url_hash as string) ?? "",
+    preview_image_url: (li?.preview_image_url as string | null) ?? null,
+    content_type: ((li?.content_type as ContentType) ?? "article") as ContentType,
+    description: (li?.description as string | null) ?? null,
+    tags: Array.isArray(li?.tags) ? (li.tags as string[]) : null,
+    raw_metadata: (li?.raw_metadata as RawMetadata | null) ?? null,
+    logged_item_created_at: (li?.created_at as string) ?? (row.created_at as string),
+  };
 }
 
 async function fetchVaultPage(
@@ -46,8 +61,10 @@ async function fetchVaultPage(
   if (!user) return [];
 
   let query = supabase
-    .from("logged_items")
-    .select("*")
+    .from("user_logged_items")
+    .select(
+      "id, user_id, logged_item_id, save_source, remarks, is_read, created_at, logged_item:logged_items!user_logged_items_logged_item_id_fkey(url, title, url_hash, preview_image_url, content_type, description, tags, raw_metadata, created_at)",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
@@ -69,22 +86,22 @@ async function fetchVaultPage(
     query = query.gte("created_at", from);
   }
 
-  if (contentType !== "all") {
-    query = query.eq("content_type", contentType);
-  }
-
   if (search.trim()) {
     const q = search.trim().replace(/%/g, "\\%");
-    query = query.or(
-      `title.ilike.%${q}%,source.ilike.%${q}%,author.ilike.%${q}%,remarks.ilike.%${q}%`,
-    );
+    query = query.or(`remarks.ilike.%${q}%`);
   }
 
   const { data, error } = await query;
-
-  // Throw so TanStack can track isError, trigger retry (retry: 1 in client.ts), and expose error
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => toVaultItem(row as Record<string, unknown>));
+
+  const items = (data ?? []).map((row) => toVaultItem(row as Record<string, unknown>));
+
+  // Client-side content type filter (field lives on joined logged_items)
+  if (contentType !== "all") {
+    return items.filter((item) => item.content_type === contentType);
+  }
+
+  return items;
 }
 
 export function useVault(filters: VaultFilters) {
@@ -106,8 +123,9 @@ export function useVault(filters: VaultFilters) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // id is user_logged_items.id
       const { error } = await supabase
-        .from("logged_items")
+        .from("user_logged_items")
         .delete()
         .eq("id", id);
       if (error) throw error;
@@ -131,10 +149,7 @@ export function useVault(filters: VaultFilters) {
     },
     onError: (_err, _id, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(
-          queryKeys.vault.list(filters),
-          context.previous,
-        );
+        queryClient.setQueryData(queryKeys.vault.list(filters), context.previous);
       }
     },
     onSettled: () => {
@@ -143,12 +158,10 @@ export function useVault(filters: VaultFilters) {
   });
 
   const remarksMutation = useMutation({
-    mutationFn: async ({
-      id,
-      remarks,
-    }: { id: string; remarks: string }) => {
+    mutationFn: async ({ id, remarks }: { id: string; remarks: string }) => {
+      // remarks live on user_logged_items
       const { error } = await supabase
-        .from("logged_items")
+        .from("user_logged_items")
         .update({ remarks })
         .eq("id", id);
       if (error) throw error;
@@ -174,20 +187,16 @@ export function useVault(filters: VaultFilters) {
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(
-          queryKeys.vault.list(filters),
-          context.previous,
-        );
+        queryClient.setQueryData(queryKeys.vault.list(filters), context.previous);
       }
     },
   });
 
-  // TODO: wire toggleRead when is_read column is added to logged_items by backend team
   const toggleReadMutation = useMutation({
     mutationFn: async ({ id, is_read }: { id: string; is_read: boolean }) => {
       const { error } = await supabase
-        .from("logged_items")
-        .update({ is_read } as Record<string, unknown>)
+        .from("user_logged_items")
+        .update({ is_read })
         .eq("id", id);
       if (error) throw error;
     },

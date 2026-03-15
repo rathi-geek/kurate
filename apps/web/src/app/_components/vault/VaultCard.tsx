@@ -100,9 +100,9 @@ function VaultCardInner({
         >
           {/* Image / type badge area */}
           <div className="relative h-[150px] w-full shrink-0 overflow-hidden">
-            {item.preview_image ? (
+            {item.preview_image_url ? (
               <Image
-                src={item.preview_image}
+                src={item.preview_image_url}
                 alt=""
                 fill
                 className="object-cover"
@@ -172,7 +172,7 @@ function VaultCardInner({
             )}
 
             <p className="mt-1.5 shrink-0 font-mono text-xs text-muted-foreground">
-              {item.source ?? "—"} · {timeAgo}
+              {item.raw_metadata?.source ?? "—"} · {timeAgo}
             </p>
           </div>
         </div>

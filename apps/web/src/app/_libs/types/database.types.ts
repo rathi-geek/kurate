@@ -826,6 +826,7 @@ export type Database = {
           author: string | null
           created_at: string
           id: string
+          is_read: boolean
           logged_item_id: string
           remarks: string | null
           save_source: Database["public"]["Enums"]["save_source_enum"]
@@ -837,6 +838,7 @@ export type Database = {
           author?: string | null
           created_at?: string
           id?: string
+          is_read?: boolean
           logged_item_id: string
           remarks?: string | null
           save_source?: Database["public"]["Enums"]["save_source_enum"]
@@ -848,6 +850,7 @@ export type Database = {
           author?: string | null
           created_at?: string
           id?: string
+          is_read?: boolean
           logged_item_id?: string
           remarks?: string | null
           save_source?: Database["public"]["Enums"]["save_source_enum"]
@@ -1001,7 +1004,7 @@ export type Database = {
       content_type_enum: "article" | "video" | "podcast"
       message_type_enum: "text" | "logged_item"
       reaction_type_enum: "like" | "must_read"
-      save_source_enum: "external" | "shares" | "web_extension"
+      save_source_enum: "external" | "shares" | "web_extension" | "discovered"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1132,7 +1135,7 @@ export const Constants = {
       content_type_enum: ["article", "video", "podcast"],
       message_type_enum: ["text", "logged_item"],
       reaction_type_enum: ["like", "must_read"],
-      save_source_enum: ["external", "shares", "web_extension"],
+      save_source_enum: ["external", "shares", "web_extension", "discovered"],
     },
   },
 } as const

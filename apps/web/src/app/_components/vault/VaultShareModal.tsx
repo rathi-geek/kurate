@@ -24,6 +24,8 @@ export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
   const t = useTranslations("vault");
   const queryClient = useQueryClient();
   const [sharingId, setSharingId] = useState<string | null>(null);
+  // Track groups shared to in this session for optimistic "already shared" display
+  const [sharedGroups, setSharedGroups] = useState<Set<string>>(new Set());
 
   const { data: groups = [], isLoading } = useQuery({
     queryKey: queryKeys.groups.list(),
@@ -36,12 +38,14 @@ export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
     if (!item) return;
     setSharingId(groupId);
     try {
-      const current = item.shared_to_groups ?? [];
-      const next = current.includes(groupId) ? current : [...current, groupId];
-      await supabase
-        .from("logged_items")
-        .update({ shared_to_groups: next })
-        .eq("id", item.id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("group_posts").insert({
+        convo_id: groupId,
+        logged_item_id: item.logged_item_id,
+        shared_by: user.id,
+      });
+      setSharedGroups((prev) => new Set([...prev, groupId]));
       queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
       onClose();
     } finally {
@@ -49,7 +53,7 @@ export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
     }
   }
 
-  const sharedSet = new Set(item?.shared_to_groups ?? []);
+  const sharedSet = sharedGroups;
 
   return (
     <VaultModal open={open} onClose={onClose} title={t("share_modal_title")}>
