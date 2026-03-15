@@ -9,14 +9,12 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Typewriter } from "@/components/ui/typewriter";
-import { CyclingText } from "@/components/ui/cycling-text";
 
 import { ChatInput } from "@/app/_components/home/chat-input";
+import { UrlExtractPreview } from "@/app/_components/shared/url-extract-preview";
 import { useSaveItem } from "@/app/_libs/hooks/useSaveItem";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
-import { getLinkCopy } from "@/app/_libs/utils/getLinkCopy";
-import { springGentle } from "@/app/_libs/utils/motion";
+import { springGentle, shadowFloating, shadowHoverGlow, successGlowBoxShadow, successGlowTransition } from "@/app/_libs/utils/motion";
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
 
@@ -30,7 +28,6 @@ interface DropComposerProps {
 
 export function DropComposer({ groupId, currentUserId, onDropPosted }: DropComposerProps) {
   const t = useTranslations("groups");
-  const tLinkPreview = useTranslations("link_preview");
   const prefersReducedMotion = useReducedMotion();
   const saveItem = useSaveItem();
   const queryClient = useQueryClient();
@@ -38,11 +35,18 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
   const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [isPosting, setIsPosting] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [inputKey, setInputKey] = useState(0);
   // Text-only post state (requires DB migration: group_shares.content + nullable logged_item_id)
   const [pendingTextPost, setPendingTextPost] = useState<string | null>(null);
 
   const { isExtracting, metadata, extractionFailed, extract, reset } = useExtractMetadata();
-  const linkCopy = getLinkCopy(detectedUrl ?? "", tLinkPreview as (key: string) => string);
+
+  const boxShadow = isHovered
+    ? shadowHoverGlow
+    : metadata && !isExtracting
+      ? successGlowBoxShadow
+      : shadowFloating;
 
   const showPopup = isExtracting || !!metadata || !!detectedUrl || extractionFailed || !!pendingTextPost;
 
@@ -85,27 +89,28 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
 
       if (saveResult.status === "saved") {
         const userItemId = saveResult.item!.id;
-        toast("Shared to the group", {
-          action: {
-            label: "Save to vault",
-            onClick: () => {},
-          },
+        toast("Shared to group · Save to vault?", {
           cancel: {
-            label: "Remove from vault",
+            label: "No",
             onClick: async () => {
               await supabase.from("user_logged_items").delete().eq("id", userItemId);
               queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
             },
           },
+          action: {
+            label: "Yes",
+            onClick: () => {},
+          },
           duration: 6000,
         });
       } else {
-        toast.success("Shared to the group");
+        toast.success("Shared to group");
       }
 
       setDetectedUrl(null);
       reset();
       setNote("");
+      setInputKey((k) => k + 1);
       onDropPosted();
     } finally {
       setIsPosting(false);
@@ -144,6 +149,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     <div className="relative px-4 pt-3 pb-1">
       {/* ── Input bar ─────────────────────────────────────────────────── */}
       <ChatInput
+        key={inputKey}
         onSend={handleSend}
         onUrlChange={handleUrlChange}
         placeholder={t("composer_placeholder")}
@@ -160,49 +166,33 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
             exit={prefersReducedMotion ? undefined : { opacity: 0, y: -6 }}
             transition={springGentle}
           >
-            <div className="bg-card rounded-card border shadow-lg p-3 space-y-3">
-              {/* Extraction animation */}
-              {isExtracting && detectedUrl && (
-                <div className="space-y-1 px-0.5 py-1">
-                  <p className="text-xs font-medium text-foreground">
-                    <Typewriter text={linkCopy.heading} />
-                  </p>
-                  <p className="text-[11px] text-muted-foreground font-mono">
-                    <CyclingText phrases={linkCopy.subtitles} />
-                  </p>
-                </div>
-              )}
-
-              {/* Extraction failure fallback */}
-              {extractionFailed && !metadata && detectedUrl && (
-                <div className="rounded-card bg-surface border px-3 py-2">
-                  <p className="text-sm text-muted-foreground font-mono truncate">{detectedUrl}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Could not load preview</p>
-                </div>
-              )}
-
-              {/* Link preview */}
-              {metadata && !isExtracting && (
-                <div className="rounded-card bg-surface border overflow-hidden">
-                  {metadata.preview_image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={metadata.preview_image}
-                      alt={metadata.title ?? ""}
-                      className="h-24 w-full object-cover"
-                    />
-                  )}
-                  <div className="p-2.5">
-                    <p className="text-foreground line-clamp-2 text-sm font-medium">
-                      {metadata.title ?? metadata.url}
-                    </p>
-                    {metadata.source && (
-                      <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-                        {metadata.source}
-                      </p>
-                    )}
-                  </div>
-                </div>
+            <motion.div
+              animate={{
+                boxShadow: (Array.isArray(boxShadow) ? [...boxShadow] : boxShadow) as string | string[],
+              }}
+              transition={{ ...springGentle, boxShadow: successGlowTransition }}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              className="bg-card rounded-card border p-3 space-y-3"
+            >
+              {/* URL extraction preview (loading / loaded / failed) */}
+              {detectedUrl && (
+                <UrlExtractPreview
+                  url={detectedUrl}
+                  isLoading={isExtracting}
+                  extractionFailed={extractionFailed}
+                  metadata={
+                    metadata
+                      ? {
+                          title: metadata.title,
+                          source: metadata.source,
+                          previewImage: metadata.preview_image ?? null,
+                          contentType: metadata.content_type ?? null,
+                          readTime: metadata.read_time ?? null,
+                        }
+                      : null
+                  }
+                />
               )}
 
               {/* Note + Post (URL path) */}
@@ -225,6 +215,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
                         setDetectedUrl(null);
                         reset();
                         setNote("");
+                        setInputKey((k) => k + 1);
                       }}
                     >
                       {t("cancel")}
@@ -269,7 +260,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
                   </div>
                 </>
               )}
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

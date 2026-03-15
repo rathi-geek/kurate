@@ -88,7 +88,10 @@ export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocu
       animate={
         prefersReducedMotion
           ? undefined
-          : { marginLeft: isUrl ? -10 : 0, marginRight: isUrl ? -10 : 0 }
+          : {
+              marginLeft: isUrl || focused ? -10 : 0,
+              marginRight: isUrl || focused ? -10 : 0,
+            }
       }
       transition={{ type: "spring", stiffness: 380, damping: 32 }}
       style={{ boxShadow, transition: "box-shadow 0.3s ease-out" }}>

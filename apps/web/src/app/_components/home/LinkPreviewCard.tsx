@@ -9,11 +9,9 @@ import { useTranslations } from "next-intl";
 import { PreviewPhase } from "@/app/_components/home/preview-phase";
 import { queryKeys } from "@/app/_libs/query/keys";
 import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
-import { getLinkCopy, type LinkCopy } from "@/app/_libs/utils/getLinkCopy";
 import { springGentle, shadowFloating, shadowHoverGlow, successGlowBoxShadow, successGlowTransition } from "@/app/_libs/utils/motion";
-import { CloseIcon, DomainIcon } from "@/components/icons";
-import { Typewriter } from "@/components/ui/typewriter";
-import { CyclingText } from "@/components/ui/cycling-text";
+import { UrlExtractPreview } from "@/app/_components/shared/url-extract-preview";
+import { CloseIcon } from "@/components/icons";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,7 +49,6 @@ export function LinkPreviewCard({
   onSkip,
 }: LinkPreviewCardProps) {
   const t = useTranslations("link_preview");
-  const copy: LinkCopy = getLinkCopy(url, t as (key: string) => string);
   const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), []);
@@ -88,56 +85,17 @@ export function LinkPreviewCard({
       onMouseLeave={handleMouseLeave}
       className="bg-card border-border relative mb-0 overflow-hidden rounded-2xl border">
       {phase === PreviewPhase.Loading && (
-        <div className="flex items-center gap-3 px-4 py-3">
-          <DomainIcon url={url} />
-          <div className="min-w-0 flex-1">
-            <Typewriter
-              text={copy.heading}
-              className="text-foreground text-sm font-medium"
-            />
-            <p className="text-muted-foreground mt-0.5 text-xs">
-              <CyclingText phrases={copy.subtitles} />
-            </p>
-          </div>
-        </div>
+        <UrlExtractPreview url={url} isLoading={true} />
       )}
 
       {phase === PreviewPhase.Loaded && (
-        <div className="flex items-start gap-3 px-4 py-3">
-          {metadata?.previewImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={metadata.previewImage}
-              alt=""
-              className="size-14 shrink-0 rounded-lg object-cover"
-            />
-          ) : (
-            <DomainIcon url={url} />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-foreground line-clamp-2 text-sm font-medium">
-              {metadata?.title ?? url}
-            </p>
-            {metadata?.description && (
-              <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
-                {metadata.description}
-              </p>
-            )}
-            <p className="text-muted-foreground mt-1 text-xs">
-              {[
-                metadata?.source,
-                metadata?.contentType,
-                metadata?.readTime ? `${metadata.readTime} min` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          </div>
+        <div className="relative">
+          <UrlExtractPreview url={url} isLoading={false} metadata={metadata} />
           <button
             type="button"
             onClick={onClose}
             aria-label={t("close_aria")}
-            className="text-muted-foreground hover:text-foreground shrink-0 p-1 transition-colors">
+            className="text-muted-foreground hover:text-foreground absolute top-3 right-3 shrink-0 p-1 transition-colors">
             <CloseIcon className="size-4" />
           </button>
         </div>
