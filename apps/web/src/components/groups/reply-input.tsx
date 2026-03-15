@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { SendIcon } from "@/components/icons";
 
 interface ReplyInputProps {
   placeholder?: string;
@@ -49,38 +48,38 @@ export function ReplyInput({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <Textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder ?? t("comment_placeholder")}
-        rows={1}
-        className="min-h-0 resize-none text-sm"
-        disabled={isLoading}
-      />
-      <div className="flex items-center justify-end gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
-            {t("cancel")}
-          </Button>
-        )}
-        <Button
+    <div className="flex items-end gap-2">
+      <div className="flex flex-1 items-end gap-2 rounded-full border bg-surface px-3 py-1.5">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder ?? t("comment_placeholder")}
+          rows={1}
+          className="flex-1 resize-none bg-transparent text-sm outline-none max-h-24 disabled:opacity-50"
+          disabled={isLoading}
+        />
+        <button
           type="button"
-          size="sm"
           onClick={handleSubmit}
           disabled={!value.trim() || isLoading}
+          className="shrink-0 text-primary disabled:opacity-40 transition-opacity pb-0.5"
+          aria-label={t("comment_submit")}
         >
-          {isLoading ? t("submitting") : t("comment_submit")}
-        </Button>
+          <SendIcon className="size-4" />
+        </button>
       </div>
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+        >
+          {t("cancel")}
+        </button>
+      )}
     </div>
   );
 }

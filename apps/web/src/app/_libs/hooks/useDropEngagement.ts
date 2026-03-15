@@ -5,6 +5,7 @@ import {
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
@@ -42,14 +43,11 @@ export function useDropEngagement() {
           .eq("reaction_type", reactionType);
         if (error) throw new Error(error.message);
       } else {
-        const { error } = await supabase.from("group_post_reactions").upsert(
-          {
-            group_post_id: groupPostId,
-            user_id: currentUserId,
-            reaction_type: reactionType,
-          },
-          { onConflict: "group_post_id,user_id,reaction_type", ignoreDuplicates: true },
-        );
+        const { error } = await supabase.from("group_post_reactions").insert({
+          group_post_id: groupPostId,
+          user_id: currentUserId,
+          reaction_type: reactionType,
+        });
         if (error) throw new Error(error.message);
       }
     },
@@ -99,6 +97,7 @@ export function useDropEngagement() {
       if (context?.previous) {
         queryClient.setQueryData(queryKeys.groups.feed(vars.groupId), context.previous);
       }
+      toast.error("Could not update — check your connection and try again");
     },
     onSettled: (_data, _err, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(vars.groupId) });

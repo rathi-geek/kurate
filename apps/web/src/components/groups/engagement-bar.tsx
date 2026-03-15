@@ -22,6 +22,7 @@ interface EngagementBarProps {
   engagement: GroupDrop["engagement"];
   itemData?: Omit<SaveItemInput, "url" | "save_source">;
   commentCount?: number;
+  onCommentIconClick?: () => void;
 }
 
 export function EngagementBar({
@@ -32,6 +33,7 @@ export function EngagementBar({
   engagement,
   itemData,
   commentCount,
+  onCommentIconClick,
 }: EngagementBarProps) {
   const t = useTranslations("groups");
   const { toggleReaction } = useDropEngagement();
@@ -115,14 +117,19 @@ export function EngagementBar({
         <BookmarkIcon className="size-[14px]" filled={isSaved} />
       </button>
 
-      {/* Comments count */}
+      {/* Comments toggle */}
       {commentCount !== undefined && (
-        <div className="ml-auto flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground">
+        <button
+          type="button"
+          onClick={onCommentIconClick}
+          className="ml-auto flex items-center gap-1 px-2 py-1 rounded-badge text-xs text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
+          aria-label="Toggle comments"
+        >
           <MessageCircleIcon className="size-[14px]" />
           {commentCount > 0 && (
             <span className="font-mono">{commentCount}</span>
           )}
-        </div>
+        </button>
       )}
     </div>
   );

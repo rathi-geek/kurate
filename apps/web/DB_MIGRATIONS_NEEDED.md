@@ -33,17 +33,9 @@ ALTER TABLE group_shares ALTER COLUMN logged_item_id DROP NOT NULL;
 
 ---
 
-## Phase 3 — Fix Reactions for Group Shares
+## Phase 3 — ~~Fix Reactions for Group Shares~~ **SUPERSEDED**
 
-Blocks: `reactions.comment_id` is required; group-share reactions have no comment.
-
-```sql
-ALTER TABLE reactions ALTER COLUMN comment_id DROP NOT NULL;
-```
-
-**Frontend action after migration:**
-1. Run `pnpm db:types` to regenerate Supabase types
-2. In `useDropEngagement.ts` → remove the `as unknown as TablesInsert<"reactions">` cast
+> This phase is no longer relevant. The codebase was migrated to the new `group_post_reactions` table (separate from the old `reactions` table). See Phase 7 below for the current requirement.
 
 ---
 
@@ -141,13 +133,48 @@ CREATE INDEX group_invites_email_idx ON group_invites(email);
 
 ---
 
+## Phase 7 — Fix Like + Must Read Reactions (`group_post_reactions`)
+
+Blocks: Like (❤️) and Must Read (⭐) buttons silently fail — reactions are not persisted.
+
+**Root causes:**
+1. Missing RLS policies on `group_post_reactions` — SELECT returns empty (counts always 0, `didReact` always false); INSERT/DELETE are blocked.
+2. Missing UNIQUE constraint — needed for safe deduplication.
+
+```sql
+-- 7a: Unique constraint (prevents duplicate reactions per user per post)
+ALTER TABLE group_post_reactions
+  ADD CONSTRAINT group_post_reactions_unique
+  UNIQUE (group_post_id, user_id, reaction_type);
+
+-- 7b: RLS — allow authenticated users to read all reactions
+CREATE POLICY "group members can read reactions"
+  ON group_post_reactions FOR SELECT
+  TO authenticated USING (true);
+
+-- 7c: RLS — allow users to insert their own reactions
+CREATE POLICY "users can insert own reactions"
+  ON group_post_reactions FOR INSERT
+  TO authenticated WITH CHECK (user_id = auth.uid());
+
+-- 7d: RLS — allow users to delete their own reactions
+CREATE POLICY "users can delete own reactions"
+  ON group_post_reactions FOR DELETE
+  TO authenticated USING (user_id = auth.uid());
+```
+
+**Frontend action after migration:** None — `useDropEngagement.ts` already uses plain `insert` (upsert was removed) and will work once RLS is enabled.
+
+---
+
 ## Summary Table
 
 | Migration | Phase | Status | Frontend Ready? |
 |-----------|-------|--------|-----------------|
 | `groups.name` UNIQUE | Phase 1 | Pending | ✅ Yes — error handling in dialog |
 | `group_shares.content` TEXT + nullable `logged_item_id` | Phase 2 | Pending | ✅ Yes — UI built, needs activation |
-| `reactions.comment_id` nullable | Phase 3 | Pending | ✅ Yes — cast to remove after migration |
+| `reactions.comment_id` nullable | Phase 3 | **Superseded** | — (code moved to `group_post_reactions`) |
 | `comments.parent_id` + `updated_at` | Phase 4 | Pending | ✅ Yes — tree logic ready |
 | RLS fix on `group_members` | Phase 5 | Pending | ✅ Yes — fallback already in place |
 | `group_invites` table | Phase 6 | Pending | ✅ Yes — UI built with `as any` cast |
+| RLS + UNIQUE on `group_post_reactions` | Phase 7 | **Pending** | ✅ Yes — frontend updated |

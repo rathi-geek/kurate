@@ -25,5 +25,6 @@ export { HeartIcon } from "./heart-icon";
 export { BookmarkIcon } from "./bookmark-icon";
 export { MessageCircleIcon } from "./message-circle-icon";
 export { CheckIcon } from "./check-icon";
+export { SendIcon } from "./send-icon";
 export { StarIcon } from "./star-icon";
 export { IconName } from "./types";

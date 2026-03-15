@@ -1,7 +1,8 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 
 import { EngagementBar } from "@/components/groups/engagement-bar";
@@ -57,13 +58,20 @@ export const FeedShareCard = memo(function FeedShareCard({
   const t = useTranslations("groups");
   const isSharer = drop.sharer.id === currentUserId;
   const hasMustRead = drop.engagement.mustRead.count > 0;
+  const [showComments, setShowComments] = useState(false);
 
   return (
-    <article
+    <motion.article
       id={`drop-${drop.id}`}
+      whileHover={{
+        y: -4,
+        boxShadow: "0 16px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08)",
+        transition: { duration: 0.2, ease: "easeOut" },
+      }}
       className={`rounded-card border bg-card transition-colors ${
         hasMustRead ? "border-warning-foreground/30 bg-warning-bg/40" : "border-border"
       }`}
+      style={{ transformStyle: "preserve-3d" }}
     >
       <div className="p-4">
         {/* Header */}
@@ -161,16 +169,18 @@ export const FeedShareCard = memo(function FeedShareCard({
           </>
         )}
 
-        {/* Text-only drop */}
-        {!drop.item && drop.content && (
-          <p className="text-sm text-foreground leading-relaxed mb-2">{drop.content}</p>
+        {/* Text-only drop — content field added in pending DB migration (Phase 2) */}
+        {!drop.item && (drop as GroupDrop & { content?: string }).content && (
+          <p className="text-sm text-foreground leading-relaxed mb-2">
+            {(drop as GroupDrop & { content?: string }).content}
+          </p>
         )}
 
-        {/* Sharer note with left border */}
+        {/* Sharer note — green tinted card */}
         {drop.note && (
-          <blockquote className="border-l-2 border-border pl-3 my-3 text-xs text-muted-foreground italic leading-relaxed">
-            {drop.note}
-          </blockquote>
+          <div className="rounded-lg bg-primary/10 border border-primary/20 px-3 py-2 my-3">
+            <p className="text-xs text-foreground/80 italic leading-relaxed">{drop.note}</p>
+          </div>
         )}
 
         {/* Reaction summary pills */}
@@ -204,18 +214,32 @@ export const FeedShareCard = memo(function FeedShareCard({
                 : undefined
             }
             commentCount={drop.commentCount}
+            onCommentIconClick={() => setShowComments((v) => !v)}
           />
         </div>
       </div>
 
-      {/* Comment thread — always visible */}
-      <div className="border-t border-border/50 px-4 pb-4 pt-3">
-        <CommentThread
-          groupShareId={drop.id}
-          currentUserId={currentUserId}
-          userRole={userRole}
-        />
-      </div>
-    </article>
+      {/* Comment thread — shown on demand */}
+      <AnimatePresence>
+        {showComments && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden border-t border-border/50"
+          >
+            <div className="px-4 pb-4 pt-3">
+              <CommentThread
+                groupShareId={drop.id}
+                currentUserId={currentUserId}
+                userRole={userRole}
+                totalCommentCount={drop.commentCount}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.article>
   );
 });
