@@ -13,44 +13,35 @@ const DASH = "—";
 
 export default function ProfilePage() {
   const t = useTranslations("profile");
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number | null>(null);
-  const [readCount, setReadCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
 
     async function fetchCounts() {
-      const [{ count: saved }, { count: read }] = await Promise.all([
-        supabase
-          .from("logged_items")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user!.id),
-        supabase
-          .from("logged_items")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user!.id)
-          .eq("is_read", true),
-      ]);
-      setSavedCount(saved ?? 0);
-      setReadCount(read ?? 0);
+      const { count } = await supabase
+        .from("user_logged_items")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id);
+      setSavedCount(count ?? 0);
     }
 
     fetchCounts();
   }, [user]);
 
-  const name = user?.user_metadata?.name ?? "";
-  const username = user?.user_metadata?.username ?? "";
-  const bio = user?.user_metadata?.bio ?? "";
-  const interests: string[] = user?.user_metadata?.interests ?? [];
-  const avatarUrl: string = user?.user_metadata?.avatar_url ?? "";
-  const avatarLetter = name ? name[0].toUpperCase() : "?";
+  const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
+  const handle = profile?.handle ?? "";
+  const bio = profile?.about ?? "";
+  const interests: string[] = profile?.interests ?? [];
+  const avatarUrl = profile?.avtar_url ?? "";
+  const avatarLetter = displayName ? displayName[0].toUpperCase() : "?";
 
   const profileStats = [
     { labelKey: "stat_saved" as const, value: savedCount !== null ? savedCount : DASH },
-    { labelKey: "stat_read" as const, value: readCount !== null ? readCount : DASH },
+    { labelKey: "stat_read" as const, value: DASH },
     { labelKey: "stat_shared" as const, value: DASH },
     { labelKey: "stat_following" as const, value: DASH },
     { labelKey: "stat_trust_score" as const, value: DASH },
@@ -65,7 +56,7 @@ export default function ProfilePage() {
       <div className="flex items-start gap-4 mb-6">
         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-primary">
           {avatarUrl ? (
-            <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="64px" />
+            <Image src={avatarUrl} alt={displayName} fill className="object-cover" sizes="64px" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-primary-foreground">
               {avatarLetter}
@@ -75,7 +66,7 @@ export default function ProfilePage() {
 
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold">{name || DASH}</h1>
+            <h1 className="text-2xl font-bold">{displayName || DASH}</h1>
             <button
               onClick={() => setEditOpen(true)}
               className="text-xs px-3 py-1.5 border rounded-full hover:bg-accent transition-colors">
@@ -83,7 +74,7 @@ export default function ProfilePage() {
             </button>
           </div>
           <p className="font-mono text-sm text-muted-foreground mb-2">
-            {username ? `@${username}` : ""}
+            {handle ? `@${handle}` : ""}
           </p>
           {bio && (
             <p className="text-sm text-muted-foreground leading-relaxed mb-3">

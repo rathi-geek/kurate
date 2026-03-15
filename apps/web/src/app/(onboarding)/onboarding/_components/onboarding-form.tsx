@@ -51,8 +51,24 @@ export function OnboardingForm() {
     e.preventDefault();
     setLoading(true);
     const supabase = createClient();
-    await supabase.auth.updateUser({
-      data: { name, username, interests, onboarded: true },
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.replace(ROUTES.AUTH.LOGIN);
+      return;
+    }
+    // Split full name into first/last
+    const trimmed = name.trim();
+    const spaceIdx = trimmed.indexOf(" ");
+    const first_name = spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
+    const last_name = spaceIdx === -1 ? null : trimmed.slice(spaceIdx + 1) || null;
+
+    await supabase.from("profiles").upsert({
+      id: user.id,
+      first_name,
+      last_name,
+      handle: username,
+      interests,
+      is_onboarded: true,
     });
     router.replace(ROUTES.APP.HOME);
   }

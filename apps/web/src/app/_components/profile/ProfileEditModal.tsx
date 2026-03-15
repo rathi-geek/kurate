@@ -35,7 +35,7 @@ interface ProfileEditModalProps {
 export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   const t = useTranslations("profile");
   const tCommon = useTranslations("common");
-  const { user, refreshUser } = useAuth();
+  const { user, profile, refreshUser } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
@@ -48,16 +48,16 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open && user) {
-      setName(user.user_metadata?.name ?? "");
-      setUsername(user.user_metadata?.username ?? "");
-      setBio(user.user_metadata?.bio ?? "");
-      const raw = user.user_metadata?.interests;
-      setInterests(Array.isArray(raw) ? raw : []);
-      setAvatarUrl(user.user_metadata?.avatar_url ?? "");
+    if (open && profile) {
+      const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+      setName(displayName);
+      setUsername(profile.handle ?? "");
+      setBio(profile.about ?? "");
+      setInterests(Array.isArray(profile.interests) ? profile.interests : []);
+      setAvatarUrl(profile.avtar_url ?? "");
       setExpanded(false);
     }
-  }, [open, user]);
+  }, [open, profile]);
 
   function toggleInterest(interest: string) {
     setInterests((prev) =>
@@ -81,9 +81,18 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     if (!user) return;
     setSaving(true);
     const supabase = createClient();
-    await supabase.auth.updateUser({
-      data: { name, username, bio, interests, avatar_url: avatarUrl },
-    });
+    const trimmed = name.trim();
+    const spaceIdx = trimmed.indexOf(" ");
+    const first_name = spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
+    const last_name = spaceIdx === -1 ? null : trimmed.slice(spaceIdx + 1) || null;
+    await supabase.from("profiles").update({
+      first_name,
+      last_name,
+      handle: username,
+      about: bio,
+      interests,
+      avtar_url: avatarUrl,
+    }).eq("id", user.id);
     await refreshUser();
     setSaving(false);
     onClose();

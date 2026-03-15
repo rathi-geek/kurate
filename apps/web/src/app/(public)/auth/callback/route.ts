@@ -34,8 +34,12 @@ export async function GET(request: NextRequest) {
       if (user?.user_metadata?.role === "admin") {
         redirectPath = ROUTES.ADMIN.DASHBOARD;
       } else {
-        const isOnboarded = user?.user_metadata?.onboarded === true;
-        redirectPath = isOnboarded ? ROUTES.APP.HOME : ROUTES.APP.ONBOARDING;
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("is_onboarded")
+          .eq("id", user!.id)
+          .single();
+        redirectPath = profileData?.is_onboarded ? ROUTES.APP.HOME : ROUTES.APP.ONBOARDING;
       }
 
       const response = NextResponse.redirect(`${origin}${redirectPath}`);

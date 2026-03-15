@@ -84,15 +84,18 @@ export async function proxy(request: NextRequest) {
   }
 
   // Logged in but not yet onboarded → onboarding (only from app routes; admins bypass)
-  if (
-    user &&
-    isAppRoute &&
-    !isAdmin &&
-    user.user_metadata?.onboarded !== true
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = ROUTES.APP.ONBOARDING;
-    return NextResponse.redirect(url);
+  if (user && isAppRoute && !isAdmin) {
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("is_onboarded")
+      .eq("id", user.id)
+      .single();
+
+    if (!profileData?.is_onboarded) {
+      const url = request.nextUrl.clone();
+      url.pathname = ROUTES.APP.ONBOARDING;
+      return NextResponse.redirect(url);
+    }
   }
 
   // Auth pages: redirect logged-in users to the right destination
@@ -106,8 +109,12 @@ export async function proxy(request: NextRequest) {
     if (isAdmin) {
       url.pathname = ROUTES.ADMIN.DASHBOARD;
     } else {
-      const isOnboarded = user.user_metadata?.onboarded === true;
-      url.pathname = isOnboarded ? ROUTES.APP.HOME : ROUTES.APP.ONBOARDING;
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("is_onboarded")
+        .eq("id", user.id)
+        .single();
+      url.pathname = profileData?.is_onboarded ? ROUTES.APP.HOME : ROUTES.APP.ONBOARDING;
     }
     return NextResponse.redirect(url);
   }
