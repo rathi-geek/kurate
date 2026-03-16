@@ -12,6 +12,7 @@ import { FormField } from "@/app/_components/form-field";
 import { Spinner } from "@/app/_components/spinner";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { INTEREST_OPTIONS } from "@/app/_libs/constants/interests";
+import { saveUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { createClient } from "@/app/_libs/supabase/client";
 import { cn } from "@/app/_libs/utils/cn";
 import { fadeUp } from "@/app/_libs/utils/motion";
@@ -33,6 +34,8 @@ export function OnboardingForm() {
   const [interests, setInterests] = useState<string[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -49,6 +52,21 @@ export function OnboardingForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const trimmedName = name.trim();
+    const trimmedUsername = username.trim();
+
+    let hasError = false;
+    if (!trimmedName) {
+      setNameError("Required");
+      hasError = true;
+    }
+    if (!trimmedUsername) {
+      setUsernameError("Required");
+      hasError = true;
+    }
+    if (hasError) return;
+
     setLoading(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -56,20 +74,20 @@ export function OnboardingForm() {
       router.replace(ROUTES.AUTH.LOGIN);
       return;
     }
-    // Split full name into first/last
-    const trimmed = name.trim();
-    const spaceIdx = trimmed.indexOf(" ");
-    const first_name = spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
-    const last_name = spaceIdx === -1 ? null : trimmed.slice(spaceIdx + 1) || null;
+    const spaceIdx = trimmedName.indexOf(" ");
+    const first_name = spaceIdx === -1 ? trimmedName : trimmedName.slice(0, spaceIdx);
+    const last_name = spaceIdx === -1 ? null : trimmedName.slice(spaceIdx + 1) || null;
 
     await supabase.from("profiles").upsert({
       id: user.id,
       first_name,
       last_name,
-      handle: username,
-      interests,
+      handle: trimmedUsername,
       is_onboarded: true,
     });
+
+    await saveUserInterests(user.id, interests);
+
     router.replace(ROUTES.APP.HOME);
   }
 
@@ -81,6 +99,7 @@ export function OnboardingForm() {
   });
 
   const visibleInterests = expanded ? INTEREST_OPTIONS : INTEREST_OPTIONS.slice(0, VISIBLE_COUNT);
+  const canSubmit = name.trim().length > 0 && username.trim().length > 0;
 
   return (
     <AuthPageShell>
@@ -100,8 +119,10 @@ export function OnboardingForm() {
             type="text"
             placeholder={t("name_placeholder")}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); setNameError(null); }}
+            onBlur={() => { if (!name.trim()) setNameError("Required"); }}
           />
+          {nameError && <p className="text-destructive text-xs mt-1">{nameError}</p>}
         </FormField>
 
         <FormField htmlFor="onboarding-username" label={t("username_label")}>
@@ -110,8 +131,10 @@ export function OnboardingForm() {
             type="text"
             placeholder={t("username_placeholder")}
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => { setUsername(e.target.value); setUsernameError(null); }}
+            onBlur={() => { if (!username.trim()) setUsernameError("Required"); }}
           />
+          {usernameError && <p className="text-destructive text-xs mt-1">{usernameError}</p>}
         </FormField>
 
         <div>
@@ -143,7 +166,7 @@ export function OnboardingForm() {
         </div>
 
         <div className="pt-2">
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button type="submit" disabled={loading || !canSubmit} className="w-full">
             {loading ? <Spinner /> : <>{t("submit")} <Arrow s={14} /></>}
           </Button>
         </div>

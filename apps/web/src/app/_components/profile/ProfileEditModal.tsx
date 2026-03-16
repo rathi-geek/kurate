@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 
 import Image from "next/image";
 
@@ -20,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { useAuth } from "@/app/_libs/auth-context";
 import { INTEREST_OPTIONS } from "@/app/_libs/constants/interests";
+import { useUserInterests, saveUserInterests } from "@/app/_libs/hooks/useUserInterests";
+import { queryKeys } from "@/app/_libs/query/keys";
 import { createClient } from "@/app/_libs/supabase/client";
 import { cn } from "@/app/_libs/utils/cn";
 import { fadeUpHero, springGentle } from "@/app/_libs/utils/motion";
@@ -36,7 +39,10 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   const t = useTranslations("profile");
   const tCommon = useTranslations("common");
   const { user, profile, refreshUser } = useAuth();
+  const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const interestsQuery = useUserInterests(user?.id);
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -46,6 +52,8 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && profile) {
@@ -53,11 +61,19 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
       setName(displayName);
       setUsername(profile.handle ?? "");
       setBio(profile.about ?? "");
-      setInterests(Array.isArray(profile.interests) ? profile.interests : []);
       setAvatarUrl(profile.avtar_url ?? "");
       setExpanded(false);
+      setNameError(null);
+      setUsernameError(null);
     }
   }, [open, profile]);
+
+  // Sync interests from query when modal opens or data loads
+  useEffect(() => {
+    if (open && interestsQuery.data) {
+      setInterests(interestsQuery.data);
+    }
+  }, [open, interestsQuery.data]);
 
   function toggleInterest(interest: string) {
     setInterests((prev) =>
@@ -78,21 +94,37 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   }
 
   async function handleSave() {
-    if (!user) return;
+    const trimmedName = name.trim();
+    const trimmedUsername = username.trim();
+
+    let hasError = false;
+    if (!trimmedName) {
+      setNameError("Required");
+      hasError = true;
+    }
+    if (!trimmedUsername) {
+      setUsernameError("Required");
+      hasError = true;
+    }
+    if (hasError || !user) return;
+
     setSaving(true);
     const supabase = createClient();
-    const trimmed = name.trim();
-    const spaceIdx = trimmed.indexOf(" ");
-    const first_name = spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
-    const last_name = spaceIdx === -1 ? null : trimmed.slice(spaceIdx + 1) || null;
+    const spaceIdx = trimmedName.indexOf(" ");
+    const first_name = spaceIdx === -1 ? trimmedName : trimmedName.slice(0, spaceIdx);
+    const last_name = spaceIdx === -1 ? null : trimmedName.slice(spaceIdx + 1) || null;
+
     await supabase.from("profiles").update({
       first_name,
       last_name,
-      handle: username,
+      handle: trimmedUsername,
       about: bio,
-      interests,
       avtar_url: avatarUrl,
     }).eq("id", user.id);
+
+    await saveUserInterests(user.id, interests);
+
+    await queryClient.invalidateQueries({ queryKey: queryKeys.user.interests(user.id) });
     await refreshUser();
     setSaving(false);
     onClose();
@@ -100,6 +132,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
 
   const avatarLetter = name ? name[0].toUpperCase() : "?";
   const visibleInterests = expanded ? INTEREST_OPTIONS : INTEREST_OPTIONS.slice(0, VISIBLE_COUNT);
+  const canSave = name.trim().length > 0 && username.trim().length > 0;
   const busy = saving || uploading;
 
   return (
@@ -160,9 +193,11 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
                 </label>
                 <Input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => { setName(e.target.value); setNameError(null); }}
+                  onBlur={() => { if (!name.trim()) setNameError("Required"); }}
                   placeholder={t("display_name_placeholder")}
                 />
+                {nameError && <p className="text-destructive text-xs">{nameError}</p>}
               </div>
               <div className="space-y-1">
                 <label className="text-muted-foreground font-mono text-[10px] font-medium tracking-wider uppercase">
@@ -170,9 +205,11 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
                 </label>
                 <Input
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => { setUsername(e.target.value); setUsernameError(null); }}
+                  onBlur={() => { if (!username.trim()) setUsernameError("Required"); }}
                   placeholder={t("username_placeholder")}
                 />
+                {usernameError && <p className="text-destructive text-xs">{usernameError}</p>}
               </div>
               <div className="space-y-1">
                 <label className="text-muted-foreground font-mono text-[10px] font-medium tracking-wider uppercase">
@@ -224,7 +261,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
               <Button size="sm" variant="outline" onClick={onClose} disabled={busy}>
                 {tCommon("cancel")}
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={busy}>
+              <Button size="sm" onClick={handleSave} disabled={busy || !canSave}>
                 {saving ? t("saving") : t("save_changes")}
               </Button>
             </DialogFooter>

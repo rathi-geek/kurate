@@ -28,6 +28,7 @@ export const queryKeys = {
   user: {
     all: ["user"] as const,
     profile: (id: string) => ["user", "profile", id] as const,
+    interests: (id: string) => ["user", "interests", id] as const,
   },
 
   // ─── Groups ───────────────────────────────────────────────────────

@@ -9,7 +9,7 @@ import type { Tables } from "@/app/_libs/types/database.types";
 
 export type UserProfile = Pick<
   Tables<"profiles">,
-  "first_name" | "last_name" | "handle" | "about" | "interests" | "avtar_url" | "is_onboarded"
+  "first_name" | "last_name" | "handle" | "about" | "avtar_url" | "is_onboarded"
 >;
 
 interface AuthContextType {
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     const { data } = await supabase
       .from("profiles")
-      .select("first_name, last_name, handle, about, interests, avtar_url, is_onboarded")
+      .select("first_name, last_name, handle, about, avtar_url, is_onboarded")
       .eq("id", userId)
       .single();
     const profileData = data ?? null;

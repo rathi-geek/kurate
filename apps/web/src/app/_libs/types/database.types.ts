@@ -669,7 +669,6 @@ export type Database = {
           first_name: string | null
           handle: string | null
           id: string
-          interests: string[] | null
           is_onboarded: boolean
           last_name: string | null
           theme_pref: string | null
@@ -683,7 +682,6 @@ export type Database = {
           first_name?: string | null
           handle?: string | null
           id: string
-          interests?: string[] | null
           is_onboarded?: boolean
           last_name?: string | null
           theme_pref?: string | null
@@ -697,7 +695,6 @@ export type Database = {
           first_name?: string | null
           handle?: string | null
           id?: string
-          interests?: string[] | null
           is_onboarded?: boolean
           last_name?: string | null
           theme_pref?: string | null
@@ -848,6 +845,42 @@ export type Database = {
           {
             foreignKeyName: "user_events_target_user_id_fkey"
             columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_interests: {
+        Row: {
+          created_at: string
+          id: string
+          interest_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_interests_interest_id_fkey"
+            columns: ["interest_id"]
+            isOneToOne: true
+            referencedRelation: "interests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_interests_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

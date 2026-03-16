@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 
 import { ProfileEditModal } from "@/app/_components/profile/ProfileEditModal";
 import { useAuth } from "@/app/_libs/auth-context";
+import { useUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { createClient } from "@/app/_libs/supabase/client";
 
 const DASH = "—";
@@ -14,6 +15,7 @@ const DASH = "—";
 export default function ProfilePage() {
   const t = useTranslations("profile");
   const { user, profile } = useAuth();
+  const { data: interests = [] } = useUserInterests(user?.id);
   const [editOpen, setEditOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number | null>(null);
 
@@ -35,7 +37,6 @@ export default function ProfilePage() {
   const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
   const handle = profile?.handle ?? "";
   const bio = profile?.about ?? "";
-  const interests: string[] = profile?.interests ?? [];
   const avatarUrl = profile?.avtar_url ?? "";
   const avatarLetter = displayName ? displayName[0].toUpperCase() : "?";
 
