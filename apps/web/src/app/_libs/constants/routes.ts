@@ -18,6 +18,8 @@ export const ROUTES = {
     PROFILE: "/profile",
     SHARED: "/shared",
     GROUPS: "/groups",
+    PEOPLE: "/people",
+    PERSON: (id: string) => `/people/${id}`,
     DASHBOARD: "/dashboard",
     ONBOARDING: "/onboarding",
     GROUP: (nameOrSlug: string) => `/groups/${nameOrSlug}`,

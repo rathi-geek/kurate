@@ -2,10 +2,7 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
-import type { Contact } from "@/app/_libs/contacts";
-
 export interface SidebarContextValue {
-  contacts: Contact[];
   activeChatHandle: string | null | undefined;
   onPersonClick: ((handle: string) => void) | undefined;
 }
@@ -13,14 +10,13 @@ export interface SidebarContextValue {
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
 export function SidebarProvider({
-  contacts,
   activeChatHandle,
   onPersonClick,
   children,
 }: SidebarContextValue & { children: ReactNode }) {
   const value = useMemo(
-    () => ({ contacts, activeChatHandle, onPersonClick }),
-    [contacts, activeChatHandle, onPersonClick],
+    () => ({ activeChatHandle, onPersonClick }),
+    [activeChatHandle, onPersonClick],
   );
   return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
 }

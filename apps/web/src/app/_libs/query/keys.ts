@@ -45,4 +45,11 @@ export const queryKeys = {
     vaultItem: (userId: string, url: string) =>
       ["groups", "vaultItem", userId, url] as const,
   },
+
+  // ─── People / DMs ─────────────────────────────────────────────────
+  people: {
+    all: ["people"] as const,
+    conversations: () => ["people", "conversations"] as const,
+    messages: (convoId: string) => ["people", "messages", convoId] as const,
+  },
 } as const;

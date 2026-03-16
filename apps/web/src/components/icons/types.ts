@@ -4,13 +4,16 @@
  */
 export enum IconName {
   ChevronDown = "ChevronDown",
+  DotsHorizontal = "DotsHorizontal",
   ExclamationCircle = "ExclamationCircle",
   ExternalLink = "ExternalLink",
   Eye = "Eye",
   EyeOff = "EyeOff",
   Google = "Google",
   Pencil = "Pencil",
+  Reply = "Reply",
   Search = "Search",
+  Smile = "Smile",
   Share = "Share",
   Trash = "Trash",
 }

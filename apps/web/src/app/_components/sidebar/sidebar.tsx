@@ -16,7 +16,6 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { useTranslations } from "next-intl";
 
-import { MOCK_CONTACTS } from "@/app/_libs/contacts";
 import { BrandArch, BrandCircle, BrandConcentricArch } from "@/components/brand";
 import { CloseIcon } from "@/components/icons";
 
@@ -74,7 +73,6 @@ export function AppSidebar({
 
   return (
     <SidebarProvider
-      contacts={MOCK_CONTACTS}
       activeChatHandle={activeChatHandle}
       onPersonClick={onPersonClick}>
       {/* Desktop sidebar */}
