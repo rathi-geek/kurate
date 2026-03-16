@@ -11,10 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { queryKeys } from "@/app/_libs/query/keys";
 import { createClient } from "@/app/_libs/supabase/client";
-import { PlusIcon } from "@/components/icons";
 import type { GroupRole } from "@/app/_libs/types/groups";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -37,6 +37,25 @@ type SearchProfile = {
   handle: string | null;
 };
 
+function CircleCheck({ checked, disabled }: { checked: boolean; disabled?: boolean }) {
+  if (checked) {
+    return (
+      <div
+        className={`size-4 rounded-full flex items-center justify-center shrink-0 ${
+          disabled ? "bg-primary/40" : "bg-primary"
+        }`}
+      >
+        <svg viewBox="0 0 10 10" className="size-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={2}>
+          <polyline points="2,5 4,7.5 8,3" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div className="size-4 rounded-full border-2 border-muted-foreground/40 shrink-0" />
+  );
+}
+
 export function GroupInviteModal({
   open,
   onOpenChange,
@@ -51,9 +70,10 @@ export function GroupInviteModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchProfile[]>([]);
   const [searching, setSearching] = useState(false);
-  const [addingId, setAddingId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [selectedProfiles, setSelectedProfiles] = useState<SearchProfile[]>([]);
+  const [addingAll, setAddingAll] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [emailProfile, setEmailProfile] = useState<SearchProfile | null>(null);
   const [inviteRole, setInviteRole] = useState<Exclude<GroupRole, "owner">>("member");
   const [sendingEmailInvite, setSendingEmailInvite] = useState(false);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,16 +81,41 @@ export function GroupInviteModal({
   const isEmail = EMAIL_REGEX.test(searchQuery.trim());
   const hasNoResults = searchQuery.trim() && !searching && searchResults.length === 0;
 
+  const reset = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setEmailProfile(null);
+    setSelectedProfiles([]);
+  };
+
   const handleOpenChange = (next: boolean) => {
-    if (!next) {
-      setSearchQuery("");
-      setSearchResults([]);
-    }
+    if (!next) reset();
     onOpenChange(next);
+  };
+
+  const toggleSelect = (profile: SearchProfile) => {
+    if (memberIds.has(profile.id)) return;
+    setSelectedProfiles((prev) =>
+      prev.some((p) => p.id === profile.id)
+        ? prev.filter((p) => p.id !== profile.id)
+        : [...prev, profile],
+    );
+  };
+
+  const handleAddAll = async () => {
+    if (!selectedProfiles.length) return;
+    setAddingAll(true);
+    await supabase.from("conversation_members").insert(
+      selectedProfiles.map((p) => ({ convo_id: groupId, user_id: p.id, role: inviteRole })),
+    );
+    await queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(groupId) });
+    setAddingAll(false);
+    reset();
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+    setEmailProfile(null);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     if (!query.trim()) {
       setSearchResults([]);
@@ -79,17 +124,30 @@ export function GroupInviteModal({
     }
     setSearching(true);
     searchTimerRef.current = setTimeout(async () => {
-      const words = query.trim().split(/\s+/);
+      const trimmed = query.trim();
+      const isQueryEmail = EMAIL_REGEX.test(trimmed);
 
-      // Primary: match handle OR first_name OR last_name (ilike = case-insensitive)
+      if (isQueryEmail) {
+        const res = await fetch(`/api/groups/invite?email=${encodeURIComponent(trimmed.toLowerCase())}`);
+        const json = await res.json();
+        if (json.exists && json.profile) {
+          setEmailProfile(json.profile as SearchProfile);
+        }
+        setSearchResults([]);
+        setSearching(false);
+        return;
+      }
+
+      const words = trimmed.split(/\s+/);
+
       const primaryQuery = supabase
         .from("profiles")
         .select("id, first_name, last_name, avtar_url, handle")
-        .or(`handle.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+        .or(`handle.ilike.%${trimmed}%,first_name.ilike.%${trimmed}%,last_name.ilike.%${trimmed}%`)
+        .eq("is_onboarded", true)
         .neq("id", currentUserId)
         .limit(8);
 
-      // Secondary: full-name match when query has multiple words (e.g. "john doe")
       const secondaryQuery =
         words.length >= 2
           ? supabase
@@ -97,6 +155,7 @@ export function GroupInviteModal({
               .select("id, first_name, last_name, avtar_url, handle")
               .ilike("first_name", `%${words[0]}%`)
               .ilike("last_name", `%${words[words.length - 1]}%`)
+              .eq("is_onboarded", true)
               .neq("id", currentUserId)
               .limit(8)
           : Promise.resolve({ data: null });
@@ -106,7 +165,6 @@ export function GroupInviteModal({
         secondaryQuery,
       ]);
 
-      // Merge and deduplicate by id
       const seen = new Set<string>();
       const merged = [...(primaryData ?? []), ...(secondaryData ?? [])].filter((p) => {
         if (seen.has(p.id)) return false;
@@ -126,19 +184,15 @@ export function GroupInviteModal({
     }, 300);
   };
 
-  const handleAddMember = async (profileId: string) => {
-    setAddingId(profileId);
-    await supabase.from("conversation_members").insert({
-      convo_id: groupId,
-      user_id: profileId,
-      role: inviteRole,
-    });
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.groups.members(groupId),
-    });
-    setAddingId(null);
-    setSearchQuery("");
-    setSearchResults([]);
+  const encodeEmail = (email: string): string =>
+    btoa(email).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+  const handleCopyEmailInvite = async () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/groups/join/${inviteCode}?e=${encodeEmail(searchQuery.trim().toLowerCase())}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedEmail(true);
+    setTimeout(() => setCopiedEmail(false), 2000);
   };
 
   const handleEmailInvite = async () => {
@@ -166,23 +220,29 @@ export function GroupInviteModal({
     }
   };
 
-  const encodeEmail = (email: string): string => {
-    return btoa(email).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-
-  const handleCopyEmailInvite = async () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/groups/join/${inviteCode}?e=${encodeEmail(searchQuery.trim().toLowerCase())}`;
-    await navigator.clipboard.writeText(url);
-    setCopiedEmail(true);
-    setTimeout(() => setCopiedEmail(false), 2000);
-  };
-
-  const handleCopyInvite = async () => {
-    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/groups/join/${inviteCode}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const renderProfileRow = (profile: SearchProfile, key: string) => {
+    const alreadyMember = memberIds.has(profile.id);
+    const isSelected = selectedProfiles.some((p) => p.id === profile.id);
+    return (
+      <button
+        key={key}
+        type="button"
+        disabled={alreadyMember}
+        onClick={() => toggleSelect(profile)}
+        className="hover:bg-surface border-border/50 flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left transition-colors last:border-0 disabled:opacity-50"
+      >
+        <div className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-full">
+          <span className="text-primary text-[10px] font-bold">
+            {(profile.display_name?.[0] ?? "?").toUpperCase()}
+          </span>
+        </div>
+        <span className="text-foreground flex-1 text-sm">{profile.display_name}</span>
+        {profile.handle && (
+          <span className="text-muted-foreground text-xs">@{profile.handle}</span>
+        )}
+        <CircleCheck checked={alreadyMember || isSelected} disabled={alreadyMember} />
+      </button>
+    );
   };
 
   return (
@@ -198,6 +258,28 @@ export function GroupInviteModal({
             onChange={(e) => handleSearch(e.target.value)}
             autoFocus
           />
+
+          {/* Selected chips */}
+          {selectedProfiles.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedProfiles.map((p) => (
+                <span
+                  key={p.id}
+                  className="bg-primary/10 text-primary flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs"
+                >
+                  {p.display_name ?? p.handle ?? "?"}
+                  <button
+                    type="button"
+                    onClick={() => toggleSelect(p)}
+                    className="hover:text-primary/70 leading-none"
+                    aria-label="Remove"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Role selector */}
           <div className="flex items-center gap-2">
@@ -229,47 +311,22 @@ export function GroupInviteModal({
           {searching && (
             <p className="text-muted-foreground px-1 text-xs">{t("searching")}</p>
           )}
+
           {searchResults.length > 0 && (
             <div className="border-border rounded-card overflow-hidden border">
-              {searchResults.map((profile) => {
-                const alreadyMember = memberIds.has(profile.id);
-                return (
-                  <button
-                    key={profile.id}
-                    type="button"
-                    disabled={alreadyMember || addingId === profile.id}
-                    onClick={() =>
-                      !alreadyMember && handleAddMember(profile.id)
-                    }
-                    className="hover:bg-surface border-border/50 flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left transition-colors last:border-0 disabled:opacity-60">
-                    <div className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-full">
-                      <span className="text-primary text-[10px] font-bold">
-                        {(profile.display_name?.[0] ?? "?").toUpperCase()}
-                      </span>
-                    </div>
-                    <span className="text-foreground flex-1 text-sm">{profile.display_name}</span>
-                    {profile.handle && (
-                      <span className="text-muted-foreground text-xs">@{profile.handle}</span>
-                    )}
-                    {alreadyMember ? (
-                      <span className="text-muted-foreground text-[10px]">
-                        {t("member_role_member")}
-                      </span>
-                    ) : addingId === profile.id ? (
-                      <span className="text-muted-foreground text-[10px]">
-                        {t("saving")}
-                      </span>
-                    ) : (
-                      <PlusIcon className="text-primary size-3.5" />
-                    )}
-                  </button>
-                );
-              })}
+              {searchResults.map((profile) => renderProfileRow(profile, profile.id))}
             </div>
           )}
 
-          {/* Email invite — show when query looks like an email and no platform users found */}
-          {hasNoResults && isEmail && (
+          {/* Email matches a platform user — show their profile to select */}
+          {emailProfile && (
+            <div className="border-border rounded-card overflow-hidden border">
+              {renderProfileRow(emailProfile, `email-${emailProfile.id}`)}
+            </div>
+          )}
+
+          {/* Email invite — show when email typed but NOT already a platform user */}
+          {isEmail && !emailProfile && hasNoResults && (
             <div className="space-y-2">
               <button
                 type="button"
@@ -277,7 +334,7 @@ export function GroupInviteModal({
                 disabled={sendingEmailInvite}
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left border border-border rounded-card hover:bg-surface transition-colors disabled:opacity-60"
               >
-                <PlusIcon className="text-primary size-3.5 shrink-0" />
+                <span className="text-primary text-base leading-none">✉</span>
                 <span>
                   {sendingEmailInvite ? "Sending..." : `Invite ${searchQuery.trim()} by email`}
                 </span>
@@ -287,7 +344,7 @@ export function GroupInviteModal({
                 onClick={handleCopyEmailInvite}
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left border border-border rounded-card hover:bg-surface transition-colors"
               >
-                <PlusIcon className="text-primary size-3.5 shrink-0" />
+                <span className="text-primary text-base leading-none">🔗</span>
                 <span>{copiedEmail ? "Copied!" : `Copy invite link for ${searchQuery.trim()}`}</span>
               </button>
             </div>
@@ -295,18 +352,23 @@ export function GroupInviteModal({
 
           {hasNoResults && !isEmail && (
             <p className="text-muted-foreground px-1 text-xs">
-              {t("no_members_found")}
+              Not able to find user? Enter their email to send an invite to join.
             </p>
           )}
 
-          <div className="border-border/50 border-t pt-1">
-            <button
-              type="button"
-              onClick={handleCopyInvite}
-              className="text-primary text-xs transition-opacity hover:opacity-70">
-              {copied ? t("invite_copied") : t("invite_link")}
-            </button>
-          </div>
+          {/* Batch add button */}
+          {selectedProfiles.length > 0 && (
+            <Button
+              onClick={handleAddAll}
+              disabled={addingAll}
+              className="w-full"
+              size="sm"
+            >
+              {addingAll
+                ? "Adding..."
+                : `Add ${selectedProfiles.length} member${selectedProfiles.length > 1 ? "s" : ""}`}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

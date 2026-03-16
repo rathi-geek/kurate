@@ -3,6 +3,42 @@ import { createClient } from "@/app/_libs/supabase/server";
 import { createAdminClient } from "@/app/_libs/supabase/admin";
 import { env } from "env";
 
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const email = request.nextUrl.searchParams.get("email")?.toLowerCase();
+  if (!email) return NextResponse.json({ exists: false });
+
+  const adminSupabase = createAdminClient();
+  const { data } = await adminSupabase.auth.admin.listUsers();
+  const found = data?.users?.find((u) => u.email?.toLowerCase() === email);
+  if (!found) return NextResponse.json({ exists: false });
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name, avtar_url, handle")
+    .eq("id", found.id)
+    .eq("is_onboarded", true)
+    .single();
+
+  if (!profile) return NextResponse.json({ exists: false });
+
+  return NextResponse.json({
+    exists: true,
+    profile: {
+      id: profile.id,
+      display_name:
+        [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null,
+      avatar_url: profile.avtar_url,
+      handle: profile.handle,
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -21,7 +57,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const joinUrl = `${env.NEXT_PUBLIC_APP_URL}/groups/join/${inviteCode}`;
+  const encodedEmail = Buffer.from(email.toLowerCase()).toString("base64url");
+  const joinUrl = `${env.NEXT_PUBLIC_APP_URL}/groups/join/${inviteCode}?e=${encodedEmail}`;
   const adminSupabase = createAdminClient();
 
   const { error } = await adminSupabase.auth.admin.inviteUserByEmail(email.toLowerCase(), {

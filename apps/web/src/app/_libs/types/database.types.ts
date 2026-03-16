@@ -671,7 +671,7 @@ export type Database = {
           id: string
           is_onboarded: boolean
           last_name: string | null
-          theme_pref: string | null
+          theme_pref: Database["public"]["Enums"]["theme_pref_enum"]
           updated_at: string
           xp: number
         }
@@ -684,7 +684,7 @@ export type Database = {
           id: string
           is_onboarded?: boolean
           last_name?: string | null
-          theme_pref?: string | null
+          theme_pref?: Database["public"]["Enums"]["theme_pref_enum"]
           updated_at?: string
           xp?: number
         }
@@ -697,7 +697,7 @@ export type Database = {
           id?: string
           is_onboarded?: boolean
           last_name?: string | null
-          theme_pref?: string | null
+          theme_pref?: Database["public"]["Enums"]["theme_pref_enum"]
           updated_at?: string
           xp?: number
         }
@@ -1070,6 +1070,7 @@ export type Database = {
       content_type_enum: "article" | "video" | "podcast"
       message_type_enum: "text" | "logged_item"
       save_source_enum: "external" | "shares" | "web_extension" | "discovered"
+      theme_pref_enum: "light" | "dark" | "auto"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1200,6 +1201,7 @@ export const Constants = {
       content_type_enum: ["article", "video", "podcast"],
       message_type_enum: ["text", "logged_item"],
       save_source_enum: ["external", "shares", "web_extension", "discovered"],
+      theme_pref_enum: ["light", "dark", "auto"],
     },
   },
 } as const

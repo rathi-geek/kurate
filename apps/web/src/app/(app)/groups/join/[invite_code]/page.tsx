@@ -6,6 +6,29 @@ import { ROUTES } from "@/app/_libs/constants/routes";
 
 interface Props {
   params: Promise<{ invite_code: string }>;
+  searchParams: Promise<{ e?: string }>;
+}
+
+function decodeEmail(encoded: string): string {
+  const padded = encoded.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = (4 - (padded.length % 4)) % 4;
+  return atob(padded + "=".repeat(padding));
+}
+
+function EmailMismatchError({ invitedEmail, userEmail }: { invitedEmail: string; userEmail: string }) {
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <div className="text-center max-w-sm px-6">
+        <h2 className="font-serif text-2xl mb-2">Wrong account</h2>
+        <p className="text-muted-foreground text-sm mb-1">
+          This invite was sent to <strong>{invitedEmail}</strong>.
+        </p>
+        <p className="text-muted-foreground text-sm">
+          You&apos;re signed in as <strong>{userEmail}</strong>. Please sign in with the correct account.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -30,8 +53,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function JoinGroupPage({ params }: Props) {
+export default async function JoinGroupPage({ params, searchParams }: Props) {
   const { invite_code } = await params;
+  const { e: encodedEmail } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -39,7 +63,10 @@ export default async function JoinGroupPage({ params }: Props) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`${ROUTES.AUTH.LOGIN}?next=${encodeURIComponent(ROUTES.APP.GROUP_JOIN(invite_code))}`);
+    const fullPath = encodedEmail
+      ? `${ROUTES.APP.GROUP_JOIN(invite_code)}?e=${encodedEmail}`
+      : ROUTES.APP.GROUP_JOIN(invite_code);
+    redirect(`${ROUTES.AUTH.LOGIN}?next=${encodeURIComponent(fullPath)}`);
   }
 
   // Check onboarding status
@@ -50,9 +77,18 @@ export default async function JoinGroupPage({ params }: Props) {
     .single();
 
   if (!profile?.is_onboarded) {
-    redirect(
-      `${ROUTES.APP.ONBOARDING}?next=${encodeURIComponent(ROUTES.APP.GROUP_JOIN(invite_code))}`,
-    );
+    const fullPath = encodedEmail
+      ? `${ROUTES.APP.GROUP_JOIN(invite_code)}?e=${encodedEmail}`
+      : ROUTES.APP.GROUP_JOIN(invite_code);
+    redirect(`${ROUTES.APP.ONBOARDING}?next=${encodeURIComponent(fullPath)}`);
+  }
+
+  // Validate invited email if present
+  if (encodedEmail) {
+    const invitedEmail = decodeEmail(encodedEmail);
+    if (user.email !== invitedEmail) {
+      return <EmailMismatchError invitedEmail={invitedEmail} userEmail={user.email ?? ""} />;
+    }
   }
 
   // Find group by invite code
