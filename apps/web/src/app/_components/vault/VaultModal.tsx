@@ -9,6 +9,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { cn } from "@/app/_libs/utils/cn";
+
 export interface VaultModalProps {
   open: boolean;
   onClose: () => void;
@@ -17,6 +19,8 @@ export interface VaultModalProps {
   children?: React.ReactNode;
   footer?: React.ReactNode;
   showCloseButton?: boolean;
+  /** Override dialog content width (e.g. "max-w-md sm:max-w-md" for share modal) */
+  contentClassName?: string;
 }
 
 export function VaultModal({
@@ -27,10 +31,13 @@ export function VaultModal({
   children,
   footer,
   showCloseButton = true,
+  contentClassName,
 }: VaultModalProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent showCloseButton={showCloseButton} className="max-w-sm">
+      <DialogContent
+        showCloseButton={showCloseButton}
+        className={cn("max-w-sm sm:max-w-sm", contentClassName)}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

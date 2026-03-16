@@ -37,7 +37,7 @@ export function LibraryView({
   if (isLoading) {
     return (
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="grid grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="rounded-card border bg-card aspect-video animate-pulse" />
           ))}
@@ -54,7 +54,7 @@ export function LibraryView({
           <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
             {t("must_read")}
           </p>
-          <div className="grid grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {mustReadDrops.map((drop: GroupDrop) => (
               <LibraryCard
                 key={drop.id}
@@ -78,7 +78,7 @@ export function LibraryView({
             {t("library_empty")}
           </div>
         ) : (
-          <div className="grid grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {drops.map((drop: GroupDrop) => (
               <LibraryCard
                 key={drop.id}

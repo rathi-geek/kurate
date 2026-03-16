@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { type Variants, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, type Variants, motion, useReducedMotion } from "framer-motion";
 
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
 import type { VaultItem } from "@/app/_libs/types/vault";
@@ -16,7 +16,7 @@ export interface VaultGridProps {
   animationKey: string;
   onLoadMore: () => void;
   onDelete: (id: string) => void;
-  onShare: (item: VaultItem) => void;
+  onShare?: (item: VaultItem) => void;
   onToggleRead: (item: VaultItem) => void;
   onOpenRemarkModal?: (item: VaultItem) => void;
 }
@@ -61,21 +61,26 @@ export function VaultGrid({
         initial={prefersReducedMotion ? false : "hidden"}
         animate={prefersReducedMotion ? undefined : "visible"}
       >
-        {items.map((item) => (
-          <motion.div
-            key={item.id}
-            className="h-full min-h-0"
-            variants={staggerItem as Variants}
-          >
-            <VaultCard
-              item={item}
-              onDelete={onDelete}
-              onShare={onShare}
-              onToggleRead={onToggleRead}
-              onOpenRemarkModal={onOpenRemarkModal}
-            />
-          </motion.div>
-        ))}
+        <AnimatePresence>
+          {items.map((item) => (
+            <motion.div
+              key={item.id}
+              className="h-full min-h-0"
+              variants={staggerItem as Variants}
+              initial={prefersReducedMotion ? false : "hidden"}
+              animate="visible"
+              exit="hidden"
+            >
+              <VaultCard
+                item={item}
+                onDelete={onDelete}
+                onShare={onShare}
+                onToggleRead={onToggleRead}
+                onOpenRemarkModal={onOpenRemarkModal}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </motion.div>
 
       <div ref={sentinelRef} className="h-1 w-full" aria-hidden />

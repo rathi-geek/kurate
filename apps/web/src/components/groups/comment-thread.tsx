@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 
@@ -11,9 +11,9 @@ import type { GroupRole, DropComment } from "@/app/_libs/types/groups";
 
 interface CommentThreadProps {
   groupShareId: string;
+  groupId?: string;
   currentUserId: string;
   userRole: GroupRole;
-  totalCommentCount?: number;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -33,6 +33,8 @@ interface CommentItemProps {
   onDelete: (id: string) => void;
   onReply?: (id: string, authorName: string, text: string) => void;
   isReply?: boolean;
+  quotedAuthor?: string;
+  quotedText?: string;
 }
 
 function CommentItem({
@@ -42,6 +44,8 @@ function CommentItem({
   onDelete,
   onReply,
   isReply = false,
+  quotedAuthor,
+  quotedText,
 }: CommentItemProps) {
   const t = useTranslations("groups");
   const isOwn = comment.user_id === currentUserId;
@@ -86,7 +90,7 @@ function CommentItem({
   );
 
   return (
-    <div className={`group/comment flex items-end gap-1 ${isOwn ? "justify-end" : "justify-start"} ${isReply ? "ml-8" : ""}`}>
+    <div className={`group/comment flex items-end gap-1 ${isOwn ? "justify-end" : "justify-start"} ${isReply ? "mt-2" : ""}`}>
       {/* Avatar — others only */}
       {!isOwn && (
         <div className="shrink-0">
@@ -125,6 +129,19 @@ function CommentItem({
               : "bg-surface border border-border/60 text-foreground rounded-tl-sm"
           }`}
         >
+          {quotedAuthor && quotedText && (
+            <div className={`mb-2 flex gap-2 rounded-lg px-2 py-1.5 ${isOwn ? "bg-primary-foreground/10" : "bg-muted/60"}`}>
+              <div className={`w-0.5 shrink-0 rounded-full ${isOwn ? "bg-primary-foreground/50" : "bg-primary"}`} />
+              <div className="min-w-0">
+                <p className={`text-[10px] font-semibold truncate ${isOwn ? "text-primary-foreground/80" : "text-primary"}`}>
+                  {quotedAuthor}
+                </p>
+                <p className={`text-[10px] truncate mt-0.5 ${isOwn ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                  {quotedText}
+                </p>
+              </div>
+            </div>
+          )}
           {comment.comment_text}
           <div className={`mt-0.5 text-[9px] font-mono ${isOwn ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
             {formatRelativeTime(comment.created_at)}
@@ -140,9 +157,9 @@ function CommentItem({
 
 export function CommentThread({
   groupShareId,
+  groupId,
   currentUserId,
   userRole: _userRole,
-  totalCommentCount,
 }: CommentThreadProps) {
   const t = useTranslations("groups");
   const {
@@ -154,41 +171,26 @@ export function CommentThread({
     editComment,
     deleteComment,
     isAdding,
-  } = useComments(groupShareId);
+  } = useComments(groupShareId, groupId);
   const [replyingTo, setReplyingTo] = useState<{ id: string; authorName: string; text: string } | null>(null);
-  const [collapsed, setCollapsed] = useState(true);
   const [editingComment, setEditingComment] = useState<{ id: string; text: string } | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const totalCount = totalCommentCount ?? comments.length;
-  const showAll = !collapsed || comments.length <= 1;
-  const visibleComments = showAll ? comments : [comments[comments.length - 1]!].filter(Boolean);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasNextPage || isFetchingNextPage) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry?.isIntersecting) fetchNextPage(); },
+      { rootMargin: "60px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Collapse toggle — show only when there are multiple comments */}
-      {collapsed && totalCount > 1 && (
-        <button
-          type="button"
-          onClick={() => setCollapsed(false)}
-          className="text-xs text-primary hover:text-primary/80 transition-colors text-left"
-        >
-          View all {totalCount} comments
-        </button>
-      )}
-
-      {/* Load more — only when expanded */}
-      {!collapsed && hasNextPage && (
-        <button
-          type="button"
-          onClick={() => fetchNextPage()}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left"
-        >
-          {isFetchingNextPage ? t("loading") : t("load_more_comments")}
-        </button>
-      )}
-
-      <div className="flex flex-col gap-3">
-        {visibleComments.map((comment) => (
+      <div className="no-scrollbar max-h-[300px] overflow-y-auto flex flex-col gap-3">
+        {comments.map((comment) => (
           <div key={comment.id}>
             <CommentItem
               comment={comment}
@@ -208,11 +210,15 @@ export function CommentThread({
                   onEditStart={(id, text) => setEditingComment({ id, text })}
                   onDelete={(id) => deleteComment(id, currentUserId)}
                   isReply
+                  quotedAuthor={comment.author.display_name ?? comment.author.handle ?? t("anonymous")}
+                  quotedText={comment.comment_text}
                 />
               ))}
 
           </div>
         ))}
+        {/* Infinite scroll sentinel */}
+        <div ref={sentinelRef} className="h-1 w-full" aria-hidden />
       </div>
 
       <div className="flex flex-col gap-0">

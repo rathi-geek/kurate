@@ -53,7 +53,7 @@ export function ReplyInput({
 
   return (
     <div className="flex items-end gap-2">
-      <div className={`flex flex-1 items-center gap-2 border bg-surface px-3 py-1.5 transition-[color,box-shadow] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 ${squareTop ? "rounded-b-full rounded-t-2xl" : "rounded-full"}`}>
+      <div className={`flex flex-1 items-center gap-2 border bg-surface px-3 py-1.5 transition-[color,box-shadow] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 ${squareTop ? "rounded-b-2xl rounded-t-none" : "rounded-full"}`}>
         <Input
           ref={textareaRef}
           value={value}

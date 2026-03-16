@@ -31,14 +31,14 @@ export const LibraryCard = memo(function LibraryCard({
 
   return (
     <div
-      className="rounded-card border bg-card hover:bg-surface transition-colors cursor-pointer overflow-hidden"
+      className="flex h-full flex-col rounded-card border bg-card overflow-hidden transition-colors hover:bg-surface cursor-pointer"
       onClick={handleClick}
       role="article"
       aria-label={drop.item?.title ?? drop.content ?? t("drop_aria_fallback")}
     >
       {/* Preview image (link drops only) */}
       {drop.item?.preview_image_url ? (
-        <div className="relative w-full aspect-video bg-surface">
+        <div className="relative w-full shrink-0 aspect-video bg-surface">
           <Image
             src={drop.item.preview_image_url}
             alt={drop.item.title ?? ""}
@@ -48,17 +48,17 @@ export const LibraryCard = memo(function LibraryCard({
           />
         </div>
       ) : drop.item ? (
-        <div className="w-full aspect-video bg-surface" />
+        <div className="w-full shrink-0 aspect-video bg-surface" />
       ) : null}
 
-      <div className="p-3">
+      <div className="flex min-h-0 flex-1 flex-col p-3">
         {/* Link drop content */}
         {drop.item && (
           <>
-            <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
+            <p className="text-foreground line-clamp-2 mb-1 text-sm font-medium">
               {drop.item.title ?? drop.item.url}
             </p>
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono mb-2 flex-wrap">
+            <div className="mb-2 flex flex-wrap items-center gap-1 font-mono text-[11px] text-muted-foreground">
               {(drop.item.raw_metadata as Record<string, string> | null)?.source && (
                 <span>{(drop.item.raw_metadata as Record<string, string>).source}</span>
               )}
@@ -75,11 +75,11 @@ export const LibraryCard = memo(function LibraryCard({
 
         {/* Text-only drop content */}
         {!drop.item && drop.content && (
-          <p className="text-sm text-foreground line-clamp-3 mb-2">{drop.content}</p>
+          <p className="text-foreground line-clamp-3 mb-2 text-sm">{drop.content}</p>
         )}
 
         <div
-          className="border-t border-border/50 pt-2"
+          className="mt-auto border-t border-border/50 pt-2"
           onClick={(e) => e.stopPropagation()}
         >
           <EngagementBar

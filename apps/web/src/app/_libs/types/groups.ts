@@ -32,6 +32,7 @@ export type GroupDrop = Tables<"group_posts"> & {
     readBy: { count: number; didReact: boolean; reactors: GroupProfile[] };
   };
   commentCount: number;
+  latestComment: { text: string; authorName: string | null } | null;
 };
 
 // Composed comment with replies

@@ -40,7 +40,7 @@ const contentTypePillClass: Record<
 export interface VaultCardProps {
   item: VaultItem;
   onDelete: (id: string) => void;
-  onShare: (item: VaultItem) => void;
+  onShare?: (item: VaultItem) => void;
   onToggleRead: (item: VaultItem) => void;
   onOpenRemarkModal?: (item: VaultItem) => void;
 }
@@ -210,19 +210,21 @@ function VaultCardInner({
               <EyeIcon className="size-3.5" />
             )}
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onShare(item);
-            }}
-            aria-label={t("share_aria")}
-          >
-            <ShareIcon className="size-3.5" />
-          </Button>
+          {onShare && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onShare(item);
+              }}
+              aria-label={t("share_aria")}
+            >
+              <ShareIcon className="size-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

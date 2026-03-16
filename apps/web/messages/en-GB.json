@@ -329,6 +329,8 @@
     "invite_copied": "Copied!",
     "invite_link": "Copy invite link",
     "info_aria": "Group info",
+    "show_library": "Show library",
+    "show_feed": "Show feed",
     "back_to_feed": "Back to feed",
     "settings_aria": "Group settings",
     "delete_group": "Delete group",

@@ -2,18 +2,14 @@
 
 import { Suspense, useState } from "react";
 
-import { useTranslations } from "next-intl";
-
-import { useGroupFeed } from "@/app/_libs/hooks/useGroupFeed";
 import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
 import type { Tables } from "@/app/_libs/types/database.types";
-import type { GroupDrop, GroupRole } from "@/app/_libs/types/groups";
+import type { GroupRole } from "@/app/_libs/types/groups";
 import {
   GroupInfoHeader,
   type InfoModal,
 } from "@/components/groups/group-info-header";
 import { GroupInviteModal } from "@/components/groups/group-invite-modal";
-import { LibraryCard } from "@/components/groups/library-card";
 
 interface InfoPageClientProps {
   group: Tables<"conversations">;
@@ -31,19 +27,10 @@ export function InfoPageClient(props: InfoPageClientProps) {
 }
 
 function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageClientProps) {
-  const t = useTranslations("groups");
   const { members, isLoading: membersLoading } = useGroupMembers(
     group.id,
     currentUserId,
   );
-  const {
-    drops,
-    isLoading: feedLoading,
-    fetchNextPage,
-    hasNextPage,
-  } = useGroupFeed(group.id, currentUserId);
-
-  if (hasNextPage) fetchNextPage();
 
   const [openModal, setOpenModal] = useState<InfoModal>(null);
   const memberIds = new Set(members.map((m) => m.user_id));
@@ -60,33 +47,6 @@ function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageCl
           openModal={openModal}
           setOpenModal={setOpenModal}
         />
-
-        {/* ── Library grid ───────────────────────────────────────── */}
-        <div className="px-1 py-1">
-          {feedLoading ? (
-            <div className="grid grid-cols-3 gap-1">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="bg-surface aspect-square animate-pulse" />
-              ))}
-            </div>
-          ) : drops.length === 0 ? (
-            <div className="text-muted-foreground py-16 text-center text-sm">
-              {t("library_empty")}
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-0.5 sm:grid-cols-3">
-              {drops.map((drop: GroupDrop) => (
-                <LibraryCard
-                  key={drop.id}
-                  drop={drop}
-                  currentUserId={currentUserId}
-                  groupId={group.id}
-                  groupSlug={groupSlug}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       <GroupInviteModal

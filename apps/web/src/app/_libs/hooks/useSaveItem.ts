@@ -8,7 +8,7 @@ import type { ContentType, SaveSource } from "@/app/_libs/types/vault";
 
 const supabase = createClient();
 
-async function generateUrlHash(url: string): Promise<string> {
+export async function generateUrlHash(url: string): Promise<string> {
   const normalized = url.toLowerCase().trim();
   const encoder = new TextEncoder();
   const data = encoder.encode(normalized);
@@ -104,7 +104,7 @@ export function useSaveItem() {
     },
     onSuccess: (result) => {
       if (result.status === "saved") {
-        queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
+        void queryClient.refetchQueries({ queryKey: queryKeys.vault.all });
       }
     },
   });

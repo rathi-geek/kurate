@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -10,6 +9,7 @@ import { createClient } from "@/app/_libs/supabase/client";
 import type { Tables } from "@/app/_libs/types/database.types";
 import type { GroupMember, GroupRole } from "@/app/_libs/types/groups";
 import { EditGroupInfoModal } from "@/components/groups/edit-group-info-modal";
+import { GroupInfoMembersList } from "@/components/groups/group-info-members-list";
 import { ChevronLeftIcon, PencilIcon, PlusIcon } from "@/components/icons";
 
 const supabase = createClient();
@@ -86,55 +86,23 @@ export function GroupInfoHeader({
           </div>
         </div>
 
-        <div className="no-scrollbar flex w-full items-center gap-4 overflow-x-auto pb-1">
+        <div className="flex w-full flex-col gap-2">
           {isAdminOrOwner && (
             <button
               type="button"
               onClick={() => setOpenModal("invite")}
               aria-label={t("add_member")}
-              className="group flex shrink-0 flex-col items-center gap-1.5">
-              <div className="border-border bg-card text-muted-foreground group-hover:border-primary group-hover:text-primary flex size-11 items-center justify-center rounded-full border-2 border-dashed transition-colors">
+              className="group flex w-full items-center gap-3 rounded-card border border-dashed border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary hover:bg-surface">
+              <div className="border-border text-muted-foreground group-hover:border-primary group-hover:text-primary flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed transition-colors">
                 <PlusIcon className="size-4" />
               </div>
-              <span className="text-muted-foreground group-hover:text-primary text-[10px] leading-none transition-colors">
+              <span className="text-muted-foreground group-hover:text-primary text-sm font-medium transition-colors">
                 {t("add_member")}
               </span>
             </button>
           )}
 
-          {membersLoading
-            ? [1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex shrink-0 flex-col items-center gap-1.5">
-                  <div className="bg-surface size-11 animate-pulse rounded-full" />
-                  <div className="bg-surface h-2.5 w-8 animate-pulse rounded" />
-                </div>
-              ))
-            : members.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex shrink-0 flex-col items-center gap-1.5">
-                  {m.profile.avatar_url ? (
-                    <Image
-                      src={m.profile.avatar_url}
-                      alt={m.profile.display_name ?? ""}
-                      width={44}
-                      height={44}
-                      className="border-border size-11 rounded-full border object-cover"
-                    />
-                  ) : (
-                    <div className="bg-primary/10 border-border/50 flex size-11 items-center justify-center rounded-full border">
-                      <span className="text-primary text-sm font-bold">
-                        {(m.profile.display_name?.[0] ?? "?").toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <span className="text-muted-foreground max-w-[44px] truncate text-center text-[10px] leading-none">
-                    {m.profile.display_name ?? t("anonymous")}
-                  </span>
-                </div>
-              ))}
+          <GroupInfoMembersList members={members} membersLoading={membersLoading} />
         </div>
       </div>
 

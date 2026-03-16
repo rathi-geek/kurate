@@ -56,7 +56,12 @@ export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
   const sharedSet = sharedGroups;
 
   return (
-    <VaultModal open={open} onClose={onClose} title={t("share_modal_title")}>
+    <VaultModal
+      open={open}
+      onClose={onClose}
+      title={t("share_modal_title")}
+      contentClassName="max-w-md sm:max-w-md"
+    >
       {isLoading ? (
         <p className="font-sans text-sm text-muted-foreground">…</p>
       ) : groups.length === 0 ? (

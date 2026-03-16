@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -16,7 +14,6 @@ import { useSaveItem } from "@/app/_libs/hooks/useSaveItem";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
 import { springGentle, shadowFloating, shadowHoverGlow, successGlowBoxShadow, successGlowTransition } from "@/app/_libs/utils/motion";
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
 
 const supabase = createClient();
 
@@ -30,7 +27,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
   const t = useTranslations("groups");
   const prefersReducedMotion = useReducedMotion();
   const saveItem = useSaveItem();
-  const queryClient = useQueryClient();
+  const pendingVaultSave = useRef<Parameters<typeof saveItem.mutate>[0] | null>(null);
 
   const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -63,49 +60,66 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     if (!detectedUrl || !currentUserId) return;
     setIsPosting(true);
     try {
-      const saveResult = await saveItem.mutateAsync({
-        url: detectedUrl,
-        title: metadata?.title,
-        source: metadata?.source,
-        author: metadata?.author,
-        preview_image: metadata?.preview_image,
-        content_type: metadata?.content_type ?? "article",
-        read_time: metadata?.read_time,
-        save_source: "shares",
-      });
+      async function generateUrlHash(url: string): Promise<string> {
+        const normalized = url.toLowerCase().trim();
+        const data = new TextEncoder().encode(normalized);
+        const buf = await crypto.subtle.digest("SHA-256", data);
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+      }
 
-      const loggedItemId = saveResult.item?.logged_item_id ?? null;
-
-      if (!loggedItemId) return;
+      const url_hash = await generateUrlHash(detectedUrl);
+      const { data: loggedItem, error: liError } = await supabase
+        .from("logged_items")
+        .upsert(
+          {
+            url: detectedUrl,
+            url_hash,
+            title: metadata?.title ?? detectedUrl,
+            content_type: metadata?.content_type ?? "article",
+            preview_image_url: metadata?.preview_image ?? null,
+            raw_metadata: { source: metadata?.source ?? null, read_time: metadata?.read_time ?? null },
+          },
+          { onConflict: "url_hash" },
+        )
+        .select("id")
+        .single();
+      if (liError) throw new Error(liError.message);
 
       const { error } = await supabase.from("group_posts").insert({
         convo_id: groupId,
-        logged_item_id: loggedItemId,
+        logged_item_id: loggedItem.id,
         shared_by: currentUserId,
         note: note.trim() || null,
       });
 
       if (error) throw new Error(error.message);
 
-      if (saveResult.status === "saved") {
-        const userItemId = saveResult.item!.id;
-        toast("Shared to group · Save to vault?", {
-          cancel: {
-            label: "No",
-            onClick: async () => {
-              await supabase.from("user_logged_items").delete().eq("id", userItemId);
-              queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
-            },
+      pendingVaultSave.current = {
+        url: detectedUrl,
+        title: metadata?.title,
+        source: metadata?.source,
+        preview_image: metadata?.preview_image,
+        content_type: metadata?.content_type ?? "article",
+        read_time: metadata?.read_time,
+        save_source: "shares",
+      };
+
+      toast("Shared to group · Save to vault?", {
+        action: {
+          label: "Yes",
+          onClick: () => {
+            if (pendingVaultSave.current) {
+              saveItem.mutate(pendingVaultSave.current, {
+                onError: () => toast.error("Failed to save to vault"),
+              });
+              pendingVaultSave.current = null;
+            }
           },
-          action: {
-            label: "Yes",
-            onClick: () => {},
-          },
-          duration: 6000,
-        });
-      } else {
-        toast.success("Shared to group");
-      }
+        },
+        cancel: { label: "No", onClick: () => { pendingVaultSave.current = null; } },
+        duration: 6000,
+        actionButtonStyle: { backgroundColor: "var(--color-primary)", color: "var(--color-primary-foreground)" },
+      });
 
       setDetectedUrl(null);
       reset();

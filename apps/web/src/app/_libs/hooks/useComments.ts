@@ -65,7 +65,7 @@ async function fetchComments(groupPostId: string, cursor: string | null): Promis
   return topLevel;
 }
 
-export function useComments(groupPostId: string) {
+export function useComments(groupPostId: string, groupId?: string) {
   const queryClient = useQueryClient();
   const key = queryKeys.groups.comments(groupPostId);
 
@@ -99,6 +99,7 @@ export function useComments(groupPostId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
+      if (groupId) queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
     },
   });
 
@@ -144,6 +145,7 @@ export function useComments(groupPostId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
+      if (groupId) queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
     },
   });
 

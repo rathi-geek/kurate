@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
+
 import type { Tables } from "@/app/_libs/types/database.types";
 import type { GroupRole } from "@/app/_libs/types/groups";
 import { FeedHeader } from "@/components/groups/feed-header";
 import { FeedTabView } from "@/components/groups/feed-tab-view";
+import { LibraryView } from "@/components/groups/library-view";
 
 interface GroupPageClientProps {
   group: Tables<"conversations">;
@@ -18,10 +21,27 @@ export function GroupPageClient({
   userRole,
   groupSlug,
 }: GroupPageClientProps) {
+  const [view, setView] = useState<"feed" | "library">("feed");
+
   return (
     <div className="mx-auto flex h-full max-w-md flex-col overflow-hidden">
-      <FeedHeader group={group} groupSlug={groupSlug} currentUserId={currentUserId} />
-      <FeedTabView groupId={group.id} currentUserId={currentUserId} userRole={userRole} />
+      <FeedHeader
+        group={group}
+        groupSlug={groupSlug}
+        currentUserId={currentUserId}
+        view={view}
+        onToggleLibrary={() => setView((v) => (v === "feed" ? "library" : "feed"))}
+      />
+      {view === "feed" ? (
+        <FeedTabView groupId={group.id} currentUserId={currentUserId} userRole={userRole} />
+      ) : (
+        <LibraryView
+          groupId={group.id}
+          groupSlug={groupSlug}
+          currentUserId={currentUserId}
+          userRole={userRole}
+        />
+      )}
     </div>
   );
 }

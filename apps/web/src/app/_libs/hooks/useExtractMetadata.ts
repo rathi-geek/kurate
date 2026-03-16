@@ -36,7 +36,13 @@ export function useExtractMetadata(): UseExtractMetadataResult {
       });
       if (res.ok) {
         const data = await res.json();
-        setMetadata({ url, ...data });
+        setMetadata({
+          url,
+          ...data,
+          preview_image: (data as { previewImage?: string }).previewImage ?? null,
+          content_type: (data as { contentType?: "article" | "video" | "podcast" }).contentType ?? undefined,
+          read_time: (data as { readTime?: string }).readTime ?? null,
+        });
       } else {
         setExtractionFailed(true);
       }

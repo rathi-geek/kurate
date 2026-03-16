@@ -73,7 +73,7 @@ export function FeedTabView({
       </div>
 
       {/* Scrollable feed */}
-      <div id="main-content" className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div id="main-content" className="no-scrollbar flex-1 overflow-y-auto px-4 py-4 space-y-4">
         <FeedBody
           drops={drops}
           isLoading={isLoading}

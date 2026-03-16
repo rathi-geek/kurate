@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -17,6 +18,8 @@ import { VaultRemarkModal } from "@/app/_components/vault/VaultRemarkModal";
 import { VaultSearch } from "@/app/_components/vault/VaultSearch";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useVault } from "@/app/_libs/hooks/useVault";
+import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
+import { queryKeys } from "@/app/_libs/query/keys";
 import type { VaultFilters as VaultFiltersType, VaultItem } from "@/app/_libs/types/vault";
 import { SlidersIcon } from "@/components/icons";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -36,6 +39,13 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
   const isMobile = useIsMobile();
 
   const [filters, setFilters] = useState<VaultFiltersType>(DEFAULT_FILTERS);
+
+  const { data: groups = [] } = useQuery({
+    queryKey: queryKeys.groups.list(),
+    queryFn: fetchUserGroups,
+    staleTime: 1000 * 60 * 5,
+  });
+  const hasGroups = groups.length > 0;
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const {
@@ -166,7 +176,7 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
             animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
             onLoadMore={loadMore}
             onDelete={handleDelete}
-            onShare={(item) => setShareModal({ open: true, targetItem: item })}
+            onShare={hasGroups ? (item) => setShareModal({ open: true, targetItem: item }) : undefined}
             onToggleRead={toggleRead}
             onOpenRemarkModal={(item) => setRemarkModal({ open: true, targetItem: item })}
           />

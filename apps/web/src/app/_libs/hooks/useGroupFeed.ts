@@ -47,7 +47,7 @@ async function fetchGroupFeedPage(
       item:logged_items!group_posts_logged_item_id_fkey(url, title, preview_image_url, content_type, raw_metadata, description),
       likes:group_posts_likes(id, user_id, liker:profiles!group_posts_likes_user_id_fkey(id, first_name, last_name, avtar_url, handle)),
       must_reads:group_posts_must_reads(id, user_id, reader:profiles!group_posts_must_reads_user_id_fkey(id, first_name, last_name, avtar_url, handle)),
-      comments:group_posts_comments(id)
+      comments:group_posts_comments(id, comment_text, created_at, user_id, author:profiles!group_posts_comments_user_id_fkey(id, first_name, last_name, avtar_url, handle))
       `,
     )
     .eq("convo_id", groupId)
@@ -120,6 +120,23 @@ async function fetchGroupFeedPage(
         : null,
       engagement,
       commentCount: Array.isArray(row.comments) ? row.comments.length : 0,
+      latestComment: (() => {
+        const allComments = Array.isArray(row.comments) ? row.comments as Array<{
+          id: string; comment_text: string; created_at: string; user_id: string;
+          author: ProfileRow | ProfileRow[] | null;
+        }> : [];
+        if (!allComments.length) return null;
+        const latest = [...allComments].sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )[0]!;
+        const rawAuthor = Array.isArray(latest.author) ? latest.author[0] : latest.author;
+        return {
+          text: latest.comment_text,
+          authorName: rawAuthor
+            ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") || rawAuthor.handle || null
+            : null,
+        };
+      })(),
     } satisfies GroupDrop;
   });
 }
