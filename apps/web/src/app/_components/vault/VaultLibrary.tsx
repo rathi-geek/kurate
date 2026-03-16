@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 
@@ -21,13 +22,14 @@ import { useVault } from "@/app/_libs/hooks/useVault";
 import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import { queryKeys } from "@/app/_libs/query/keys";
 import type { VaultFilters as VaultFiltersType, VaultItem } from "@/app/_libs/types/vault";
-import { SlidersIcon } from "@/components/icons";
+import { SearchIcon, SlidersIcon } from "@/components/icons";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DEFAULT_FILTERS: VaultFiltersType = {
   time: "all",
   contentType: "all",
   search: "",
+  readStatus: "all",
 };
 
 export interface VaultLibraryProps {
@@ -37,6 +39,7 @@ export interface VaultLibraryProps {
 export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
   const t = useTranslations("vault");
   const isMobile = useIsMobile();
+  const prefersReducedMotion = useReducedMotion();
 
   const [filters, setFilters] = useState<VaultFiltersType>(DEFAULT_FILTERS);
 
@@ -47,6 +50,7 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
   });
   const hasGroups = groups.length > 0;
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const {
     items,
@@ -112,15 +116,43 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
           </p>
 
           <div className="flex items-center gap-3">
-            {isFetching && !isLoading && (
+            {isFetching && !isLoading && !filters.search.trim() && (
               <span className="bg-primary/60 h-1.5 w-1.5 animate-pulse rounded-full" />
             )}
 
-            {!isLoading && !isError && (
-              <span className="text-muted-foreground font-mono text-xs">
-                {t("items_count", { count: items.length })}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              <AnimatePresence initial={false}>
+                {searchOpen ? (
+                  <motion.div
+                    key="vault-search-open"
+                    initial={prefersReducedMotion ? false : { width: 0, opacity: 0 }}
+                    animate={{ width: 220, opacity: 1 }}
+                    exit={prefersReducedMotion ? undefined : { width: 0, opacity: 0 }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 0.2, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <VaultSearch
+                      value={filters.search}
+                      onChange={(s) => setFilters((f) => ({ ...f, search: s }))}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.button
+                    key="vault-search-closed"
+                    type="button"
+                    onClick={() => setSearchOpen(true)}
+                    className="rounded-button hover:bg-muted hover:text-foreground flex items-center justify-center px-2.5 py-1.5 text-muted-foreground transition-colors"
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.9 }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+                    aria-label={t("search_placeholder")}
+                  >
+                    <SearchIcon className="size-3.5" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Mobile: opens bottom sheet; Desktop: opens popover */}
             {isMobile ? (
@@ -128,7 +160,7 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
             ) : (
               <Popover>
                 <PopoverTrigger asChild>{filterTrigger}</PopoverTrigger>
-                <PopoverContent align="end" className="w-80 space-y-3 p-4">
+                <PopoverContent align="end" className="w-[520px] space-y-3 p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-foreground font-sans text-sm font-semibold">
                       {t("filters")}
@@ -142,10 +174,6 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
                       </button>
                     )}
                   </div>
-                  <VaultSearch
-                    value={filters.search}
-                    onChange={(s) => setFilters((f) => ({ ...f, search: s }))}
-                  />
                   <VaultFilters filters={filters} onChange={setFilters} />
                 </PopoverContent>
               </Popover>

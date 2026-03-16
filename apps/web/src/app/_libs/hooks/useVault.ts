@@ -73,7 +73,7 @@ async function fetchVaultPage(
     query = query.lt("created_at", cursor);
   }
 
-  const { time, contentType, search } = filters;
+  const { time, contentType, search, readStatus } = filters;
 
   if (time !== "all") {
     const now = new Date();
@@ -86,15 +86,27 @@ async function fetchVaultPage(
     query = query.gte("created_at", from);
   }
 
-  if (search.trim()) {
-    const q = search.trim().replace(/%/g, "\\%");
-    query = query.or(`remarks.ilike.%${q}%`);
-  }
-
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  const items = (data ?? []).map((row) => toVaultItem(row as Record<string, unknown>));
+  let items = (data ?? []).map((row) => toVaultItem(row as Record<string, unknown>));
+
+  if (search.trim()) {
+    const q = search.trim().toLowerCase();
+    items = items.filter((item) => {
+      const inRemarks = item.remarks?.toLowerCase().includes(q) ?? false;
+      const inTitle = item.title.toLowerCase().includes(q);
+      const inUrl = item.url.toLowerCase().includes(q);
+      const inDescription = (item.description ?? "").toLowerCase().includes(q);
+      return inRemarks || inTitle || inUrl || inDescription;
+    });
+  }
+
+  if (readStatus === "read") {
+    items = items.filter((item) => item.is_read);
+  } else if (readStatus === "unread") {
+    items = items.filter((item) => !item.is_read);
+  }
 
   // Client-side content type filter (field lives on joined logged_items)
   if (contentType !== "all") {

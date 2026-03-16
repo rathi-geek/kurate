@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { springGentle } from "@/app/_libs/utils/motion";
-import { VaultSearch } from "@/app/_components/vault/VaultSearch";
 import { VaultFilters } from "@/app/_components/vault/VaultFilters";
 import type { VaultFilters as VaultFiltersType } from "@/app/_libs/types/vault";
 
@@ -13,6 +12,7 @@ const DEFAULT_FILTERS: VaultFiltersType = {
   time: "all",
   contentType: "all",
   search: "",
+  readStatus: "all",
 };
 
 export interface VaultFilterSheetProps {
@@ -84,10 +84,6 @@ export function VaultFilterSheet({
 
             {/* Content */}
             <div className="space-y-4 px-5 pb-4">
-              <VaultSearch
-                value={filters.search}
-                onChange={(s) => onChange({ ...filters, search: s })}
-              />
               <VaultFilters filters={filters} onChange={onChange} />
             </div>
 

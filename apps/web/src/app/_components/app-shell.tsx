@@ -14,11 +14,11 @@ import { createClient } from "@/app/_libs/supabase/client";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [sidebarOverrides, setSidebarOverrides] = useState<SidebarOverrides>({});
 
   const userEmail = user?.email ?? "";
-  const userName = user?.user_metadata?.name ?? "";
+  const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
 
   const handleLogout = useCallback(async () => {
     const supabase = createClient();

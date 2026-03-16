@@ -10,15 +10,14 @@ export interface GroupInfoMembersListProps {
   membersLoading: boolean;
 }
 
-function getRoleTranslationKey(role: GroupRole): string {
-  switch (role) {
-    case "owner":
-      return "member_role_owner";
-    case "admin":
-      return "member_role_admin";
-    default:
-      return "member_role_member";
-  }
+const ROLE_KEYS = {
+  owner: "member_role_owner",
+  admin: "member_role_admin",
+  member: "member_role_member",
+} as const satisfies Record<GroupRole, string>;
+
+function getRoleTranslationKey(role: GroupRole): (typeof ROLE_KEYS)[GroupRole] {
+  return ROLE_KEYS[role];
 }
 
 export function GroupInfoMembersList({

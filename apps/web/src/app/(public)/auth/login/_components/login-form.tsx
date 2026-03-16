@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { env } from "env";
 import { type Variants, motion, useReducedMotion } from "framer-motion";
@@ -22,6 +23,12 @@ export function LoginForm() {
   const t = useTranslations("auth.login");
   const tApp = useTranslations("app");
   const prefersReducedMotion = useReducedMotion();
+  const searchParams = useSearchParams();
+
+  const nextUrl = searchParams.get("next") ?? "";
+  const callbackUrl = nextUrl
+    ? `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(nextUrl)}`
+    : `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}`;
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");
@@ -50,7 +57,7 @@ export function LoginForm() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}` },
+      options: { redirectTo: callbackUrl },
     });
     // signInWithOAuth redirects the browser — loading stays true until navigation completes
   }
@@ -63,7 +70,7 @@ export function LoginForm() {
     const supabase = createClient();
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: magicEmail,
-      options: { emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}` },
+      options: { emailRedirectTo: callbackUrl },
     });
 
     if (otpError) {

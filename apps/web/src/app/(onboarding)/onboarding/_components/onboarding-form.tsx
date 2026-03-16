@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { type Variants, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -28,6 +29,8 @@ export function OnboardingForm() {
   const t = useTranslations("auth.onboarding");
   const tApp = useTranslations("app");
   const prefersReducedMotion = useReducedMotion();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next");
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -88,7 +91,7 @@ export function OnboardingForm() {
 
     await saveUserInterests(user.id, interests);
 
-    router.replace(ROUTES.APP.HOME);
+    router.replace(nextUrl ?? ROUTES.APP.HOME);
   }
 
   const mp = (custom: number) => ({

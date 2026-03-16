@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
       }
     );
 
+    const next = searchParams.get("next");
+    const safeNext = next && next.startsWith("/") ? next : null;
+
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
@@ -39,7 +42,14 @@ export async function GET(request: NextRequest) {
           .select("is_onboarded")
           .eq("id", user!.id)
           .single();
-        redirectPath = profileData?.is_onboarded ? ROUTES.APP.HOME : ROUTES.APP.ONBOARDING;
+
+        if (!profileData?.is_onboarded) {
+          redirectPath = safeNext
+            ? `${ROUTES.APP.ONBOARDING}?next=${encodeURIComponent(safeNext)}`
+            : ROUTES.APP.ONBOARDING;
+        } else {
+          redirectPath = safeNext ?? ROUTES.APP.HOME;
+        }
       }
 
       const response = NextResponse.redirect(`${origin}${redirectPath}`);

@@ -81,28 +81,36 @@ export const FeedShareCard = memo(function FeedShareCard({
     <div ref={cardRef}>
       {/* Header */}
       <div className="mb-3 flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          {drop.sharer.avatar_url ? (
-            <Image
-              src={drop.sharer.avatar_url}
-              alt={drop.sharer.display_name ?? ""}
-              width={32}
-              height={32}
-              className="shrink-0 rounded-full object-cover"
-            />
-          ) : (
-            <div className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
-              {(drop.sharer.display_name ?? drop.sharer.handle ?? "?")[0]?.toUpperCase()}
+        <div className="flex flex-col">
+          <div className="flex min-w-0 items-center gap-2">
+            {drop.sharer.avatar_url ? (
+              <Image
+                src={drop.sharer.avatar_url}
+                alt={drop.sharer.display_name ?? ""}
+                width={32}
+                height={32}
+                className="shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                {(drop.sharer.display_name ?? drop.sharer.handle ?? "?")[0]?.toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <span className="text-foreground text-sm font-semibold">
+                {drop.sharer.display_name ?? drop.sharer.handle ?? t("anonymous")}
+              </span>
+              <span className="text-muted-foreground ml-1.5 text-xs">
+                dropped · {formatRelativeTime(drop.shared_at)}
+              </span>
+            </div>
+          </div>
+          {/* Sharer note — green tinted card */}
+          {drop.note && (
+            <div className="px-3 py-2">
+              <p className="text-foreground/80 text-xs leading-relaxed italic">{drop.note}</p>
             </div>
           )}
-          <div className="min-w-0">
-            <span className="text-foreground text-sm font-semibold">
-              {drop.sharer.display_name ?? drop.sharer.handle ?? t("anonymous")}
-            </span>
-            <span className="text-muted-foreground ml-1.5 text-xs">
-              dropped · {formatRelativeTime(drop.shared_at)}
-            </span>
-          </div>
         </div>
 
         {/* Delete — sharer or owner only */}
@@ -110,7 +118,10 @@ export const FeedShareCard = memo(function FeedShareCard({
           <button
             type="button"
             disabled={isDeleting}
-            onClick={() => { setIsDeleting(true); onDelete(drop.id); }}
+            onClick={() => {
+              setIsDeleting(true);
+              onDelete(drop.id);
+            }}
             className={`rounded-badge shrink-0 p-1 transition-colors ${
               isDeleting
                 ? "text-muted-foreground/40 pointer-events-none"
@@ -196,13 +207,6 @@ export const FeedShareCard = memo(function FeedShareCard({
             </p>
           )}
 
-          {/* Sharer note — green tinted card */}
-          {drop.note && (
-            <div className="bg-primary/10 border-primary/20 my-3 rounded-lg border px-3 py-2">
-              <p className="text-foreground/80 text-xs leading-relaxed italic">{drop.note}</p>
-            </div>
-          )}
-
           {/* Reaction summary pills */}
           {(drop.engagement.like.count > 0 || drop.engagement.mustRead.count > 0) && (
             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -245,7 +249,7 @@ export const FeedShareCard = memo(function FeedShareCard({
           <button
             type="button"
             onClick={() => setShowComments(true)}
-            className="w-full border-t border-border/50 px-4 py-3 text-left transition-colors hover:bg-muted/30">
+            className="border-border/50 hover:bg-muted/30 w-full border-t px-4 py-3 text-left transition-colors">
             <div className="flex items-center gap-2">
               {/* Avatar */}
               <div className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
@@ -254,12 +258,18 @@ export const FeedShareCard = memo(function FeedShareCard({
               {/* Author + extra count + text */}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs leading-relaxed">
-                  <span className="text-foreground font-semibold">{drop.latestComment.authorName}</span>
+                  <span className="text-foreground font-semibold">
+                    {drop.latestComment.authorName}
+                  </span>
                   {drop.commentCount > 1 && (
-                    <span className="text-muted-foreground ml-1 text-[10px]">+{drop.commentCount - 1} more</span>
+                    <span className="text-muted-foreground ml-1 text-[10px]">
+                      +{drop.commentCount - 1} more
+                    </span>
                   )}
                 </p>
-                <p className="text-muted-foreground line-clamp-1 text-xs">{drop.latestComment.text}</p>
+                <p className="text-muted-foreground line-clamp-1 text-xs">
+                  {drop.latestComment.text}
+                </p>
               </div>
               {/* Chevron */}
               <ChevronDownIcon className="text-muted-foreground size-3.5 shrink-0" />

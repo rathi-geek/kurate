@@ -34,6 +34,7 @@ export type VaultItem = Omit<UserLoggedItemsRow, "save_source"> & {
 
 export type TimeFilter = "today" | "week" | "month" | "all";
 export type ContentTypeFilter = "all" | ContentType;
+export type ReadStatusFilter = "all" | "read" | "unread";
 
 /** Viewport rect for expand-from-card animation (e.g. VideoPlayer). */
 export interface SourceRect {
@@ -57,6 +58,11 @@ export type VaultContentTypeFilterLabelKey =
   | "filter_videos"
   | "filter_podcasts";
 
+export type VaultReadStatusFilterLabelKey =
+  | "filter_all_items"
+  | "filter_read"
+  | "filter_unread";
+
 /** Enum-derived time filter options (single source of truth). Use when backend does not provide options. */
 export const TIME_FILTER_OPTIONS: readonly {
   value: TimeFilter;
@@ -79,10 +85,20 @@ export const CONTENT_TYPE_FILTER_OPTIONS: readonly {
   { value: "podcast", labelKey: "filter_podcasts" },
 ] as const;
 
+export const READ_STATUS_FILTER_OPTIONS: readonly {
+  value: ReadStatusFilter;
+  labelKey: VaultReadStatusFilterLabelKey;
+}[] = [
+  { value: "all", labelKey: "filter_all_items" },
+  { value: "read", labelKey: "filter_read" },
+  { value: "unread", labelKey: "filter_unread" },
+] as const;
+
 export interface VaultFilters {
   time: TimeFilter;
   contentType: ContentTypeFilter;
   search: string;
+  readStatus: ReadStatusFilter;
 }
 
 // Re-export raw DB row types for hooks that need direct table access

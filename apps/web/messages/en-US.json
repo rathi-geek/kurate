@@ -94,7 +94,13 @@
     "filters": "Filters",
     "filters_aria": "Open filters",
     "clear_filters": "Clear all",
-    "filter_done": "Done"
+    "filter_done": "Done",
+    "filter_all_items": "All items",
+    "filter_read": "Read",
+    "filter_unread": "Unread",
+    "filter_section_time": "Time",
+    "filter_section_type": "Type",
+    "filter_section_read_status": "Read status"
   },
   "landing": {
     "announcement": "Join the early access waitlist — spots are limited.",

@@ -4,10 +4,13 @@ import { useMemo } from "react";
 
 import {
   CONTENT_TYPE_FILTER_OPTIONS,
+  READ_STATUS_FILTER_OPTIONS,
   TIME_FILTER_OPTIONS,
   type ContentTypeFilter,
+  type ReadStatusFilter,
   type TimeFilter,
   type VaultContentTypeFilterLabelKey,
+  type VaultReadStatusFilterLabelKey,
   type VaultTimeFilterLabelKey,
 } from "@/app/_libs/types/vault";
 
@@ -21,9 +24,15 @@ export interface ContentTypeOption {
   labelKey: VaultContentTypeFilterLabelKey;
 }
 
+export interface ReadStatusOption {
+  value: ReadStatusFilter;
+  labelKey: VaultReadStatusFilterLabelKey;
+}
+
 export interface VaultFilterOptionsResult {
   timeOptions: readonly TimeOption[];
   contentTypeOptions: readonly ContentTypeOption[];
+  readStatusOptions: readonly ReadStatusOption[];
 }
 
 /**
@@ -47,6 +56,7 @@ export function useVaultFilterOptions(): VaultFilterOptionsResult {
       return {
         timeOptions: TIME_FILTER_OPTIONS,
         contentTypeOptions: CONTENT_TYPE_FILTER_OPTIONS,
+        readStatusOptions: READ_STATUS_FILTER_OPTIONS,
       };
     },
     [],

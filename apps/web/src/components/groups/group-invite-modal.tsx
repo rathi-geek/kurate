@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ type SearchProfile = {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
+  handle: string | null;
 };
 
 export function GroupInviteModal({
@@ -52,8 +53,10 @@ export function GroupInviteModal({
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const [inviteRole, setInviteRole] = useState<Exclude<GroupRole, "owner">>("member");
   const [sendingEmailInvite, setSendingEmailInvite] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isEmail = EMAIL_REGEX.test(searchQuery.trim());
   const hasNoResults = searchQuery.trim() && !searching && searchResults.length === 0;
@@ -66,26 +69,61 @@ export function GroupInviteModal({
     onOpenChange(next);
   };
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     if (!query.trim()) {
       setSearchResults([]);
+      setSearching(false);
       return;
     }
     setSearching(true);
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, first_name, last_name, avtar_url, handle")
-      .ilike("handle", `%${query}%`)
-      .limit(8);
-    setSearchResults(
-      (data ?? []).map((p) => ({
-        id: p.id,
-        display_name: [p.first_name, p.last_name].filter(Boolean).join(" ") || null,
-        avatar_url: p.avtar_url,
-      })),
-    );
-    setSearching(false);
+    searchTimerRef.current = setTimeout(async () => {
+      const words = query.trim().split(/\s+/);
+
+      // Primary: match handle OR first_name OR last_name (ilike = case-insensitive)
+      const primaryQuery = supabase
+        .from("profiles")
+        .select("id, first_name, last_name, avtar_url, handle")
+        .or(`handle.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+        .neq("id", currentUserId)
+        .limit(8);
+
+      // Secondary: full-name match when query has multiple words (e.g. "john doe")
+      const secondaryQuery =
+        words.length >= 2
+          ? supabase
+              .from("profiles")
+              .select("id, first_name, last_name, avtar_url, handle")
+              .ilike("first_name", `%${words[0]}%`)
+              .ilike("last_name", `%${words[words.length - 1]}%`)
+              .neq("id", currentUserId)
+              .limit(8)
+          : Promise.resolve({ data: null });
+
+      const [{ data: primaryData }, { data: secondaryData }] = await Promise.all([
+        primaryQuery,
+        secondaryQuery,
+      ]);
+
+      // Merge and deduplicate by id
+      const seen = new Set<string>();
+      const merged = [...(primaryData ?? []), ...(secondaryData ?? [])].filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
+
+      setSearchResults(
+        merged.map((p) => ({
+          id: p.id,
+          display_name: [p.first_name, p.last_name].filter(Boolean).join(" ") || null,
+          avatar_url: p.avtar_url,
+          handle: p.handle ?? null,
+        })),
+      );
+      setSearching(false);
+    }, 300);
   };
 
   const handleAddMember = async (profileId: string) => {
@@ -107,26 +145,37 @@ export function GroupInviteModal({
     if (!isEmail) return;
     setSendingEmailInvite(true);
     try {
-      // Requires DB migration: CREATE TABLE group_invites (...)
-      // After migration, remove the `as any` cast
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = supabase as any;
-      const { error } = await db.from("group_invites").insert({
-        group_id: groupId,
-        invited_by: currentUserId,
-        email: searchQuery.trim().toLowerCase(),
-        invite_code: inviteCode,
-        status: "pending",
+      const res = await fetch("/api/groups/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: searchQuery.trim().toLowerCase(),
+          groupId,
+          inviteCode,
+        }),
       });
-      if (error) throw new Error(error.message);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to send invite");
       toast.success(`Invite sent to ${searchQuery.trim()}`);
       setSearchQuery("");
       setSearchResults([]);
-    } catch {
-      toast.error("Failed to send invite. DB migration may be needed.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send invite");
     } finally {
       setSendingEmailInvite(false);
     }
+  };
+
+  const encodeEmail = (email: string): string => {
+    return btoa(email).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
+
+  const handleCopyEmailInvite = async () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/groups/join/${inviteCode}?e=${encodeEmail(searchQuery.trim().toLowerCase())}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedEmail(true);
+    setTimeout(() => setCopiedEmail(false), 2000);
   };
 
   const handleCopyInvite = async () => {
@@ -198,9 +247,10 @@ export function GroupInviteModal({
                         {(profile.display_name?.[0] ?? "?").toUpperCase()}
                       </span>
                     </div>
-                    <span className="text-foreground flex-1 text-sm">
-                      {profile.display_name}
-                    </span>
+                    <span className="text-foreground flex-1 text-sm">{profile.display_name}</span>
+                    {profile.handle && (
+                      <span className="text-muted-foreground text-xs">@{profile.handle}</span>
+                    )}
                     {alreadyMember ? (
                       <span className="text-muted-foreground text-[10px]">
                         {t("member_role_member")}
@@ -218,19 +268,29 @@ export function GroupInviteModal({
             </div>
           )}
 
-          {/* Email invite — show when query looks like an email or no platform users found */}
+          {/* Email invite — show when query looks like an email and no platform users found */}
           {hasNoResults && isEmail && (
-            <button
-              type="button"
-              onClick={handleEmailInvite}
-              disabled={sendingEmailInvite}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left border border-border rounded-card hover:bg-surface transition-colors disabled:opacity-60"
-            >
-              <PlusIcon className="text-primary size-3.5 shrink-0" />
-              <span>
-                {sendingEmailInvite ? "Sending..." : `Invite ${searchQuery.trim()} by email`}
-              </span>
-            </button>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleEmailInvite}
+                disabled={sendingEmailInvite}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left border border-border rounded-card hover:bg-surface transition-colors disabled:opacity-60"
+              >
+                <PlusIcon className="text-primary size-3.5 shrink-0" />
+                <span>
+                  {sendingEmailInvite ? "Sending..." : `Invite ${searchQuery.trim()} by email`}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyEmailInvite}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left border border-border rounded-card hover:bg-surface transition-colors"
+              >
+                <PlusIcon className="text-primary size-3.5 shrink-0" />
+                <span>{copiedEmail ? "Copied!" : `Copy invite link for ${searchQuery.trim()}`}</span>
+              </button>
+            </div>
           )}
 
           {hasNoResults && !isEmail && (
