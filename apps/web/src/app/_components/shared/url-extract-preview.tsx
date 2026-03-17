@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
+
 import { useTranslations } from "next-intl";
+
+import { CyclingText } from "@/components/ui/cycling-text";
+import { Typewriter } from "@/components/ui/typewriter";
 
 import { getLinkCopy } from "@/app/_libs/utils/getLinkCopy";
 import { DomainIcon } from "@/components/icons";
-import { Typewriter } from "@/components/ui/typewriter";
-import { CyclingText } from "@/components/ui/cycling-text";
 
 export interface UrlExtractPreviewMeta {
   title?: string | null;
@@ -52,7 +54,7 @@ export function UrlExtractPreview({
       <div className="flex items-center gap-3 px-4 py-3">
         <DomainIcon url={url} />
         <div className="min-w-0 flex-1">
-          <p className="text-muted-foreground truncate text-sm font-mono">{url}</p>
+          <p className="text-muted-foreground truncate font-mono text-sm">{url}</p>
           <p className="text-muted-foreground mt-0.5 text-xs">Could not load preview</p>
         </div>
       </div>
@@ -63,7 +65,7 @@ export function UrlExtractPreview({
     const metaRow = [
       metadata.source,
       metadata.contentType,
-      metadata.readTime ? `${metadata.readTime} min` : null,
+      metadata.readTime ? `${metadata.readTime}` : null,
     ]
       .filter(Boolean)
       .join(" · ");
@@ -91,9 +93,7 @@ export function UrlExtractPreview({
               {metadata.description}
             </p>
           )}
-          {metaRow && (
-            <p className="text-muted-foreground mt-1 text-xs">{metaRow}</p>
-          )}
+          {metaRow && <p className="text-muted-foreground mt-1 text-xs">{metaRow}</p>}
         </div>
       </div>
     );

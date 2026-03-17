@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/app/_libs/supabase/server";
 import { createAdminClient } from "@/app/_libs/supabase/admin";
 import { env } from "env";
+import { ROUTES } from "@/app/_libs/constants/routes";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -47,22 +48,22 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { email, groupId, inviteCode } = body as {
+  const { email, groupId } = body as {
     email: string;
     groupId: string;
-    inviteCode: string;
   };
 
-  if (!email || !groupId || !inviteCode) {
+  if (!email || !groupId) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
   const encodedEmail = Buffer.from(email.toLowerCase()).toString("base64url");
-  const joinUrl = `${env.NEXT_PUBLIC_APP_URL}/groups/join/${inviteCode}?e=${encodedEmail}`;
+  const joinPath = `/groups/join/${groupId}?e=${encodedEmail}`;
+  const callbackUrl = `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(joinPath)}`;
   const adminSupabase = createAdminClient();
 
   const { error } = await adminSupabase.auth.admin.inviteUserByEmail(email.toLowerCase(), {
-    redirectTo: joinUrl,
+    redirectTo: callbackUrl,
   });
 
   if (error) {
@@ -94,7 +95,6 @@ export async function POST(request: NextRequest) {
       group_id: groupId,
       invited_by: user.id,
       email: email.toLowerCase(),
-      invite_code: inviteCode,
       status: "pending",
     });
   } catch {

@@ -14,6 +14,19 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  button,
+  a,
+  [role="button"],
+  label[for],
+  select {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   /* Override for serif headlines */
   .font-serif {
     font-family: var(--font-serif);

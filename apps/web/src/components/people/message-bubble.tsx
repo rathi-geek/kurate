@@ -10,7 +10,7 @@ import { useTranslations } from "next-intl";
 import { queryKeys } from "@/app/_libs/query/keys";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { DMMessage } from "@/app/_libs/types/people";
-import { ReplyIcon, SmileIcon, TrashIcon } from "@/components/icons";
+import { PencilIcon, ReplyIcon, SmileIcon, TrashIcon } from "@/components/icons";
 import { Link } from "@/i18n";
 
 const supabase = createClient();
@@ -33,6 +33,7 @@ interface MessageBubbleProps {
   convoId: string;
   allMessages?: DMMessage[];
   onReply?: (msg: DMMessage) => void;
+  onEdit?: (msg: DMMessage) => void;
   isContinuation?: boolean;
 }
 
@@ -42,6 +43,7 @@ export function MessageBubble({
   convoId,
   allMessages = [],
   onReply,
+  onEdit,
   isContinuation = false,
 }: MessageBubbleProps) {
   const t = useTranslations("people");
@@ -134,6 +136,20 @@ export function MessageBubble({
               </button>
             )}
 
+            {/* Edit button — own text messages only */}
+            {isOwn && message.message_type === "text" && onEdit && (
+              <>
+                <div className="bg-border/60 mx-0.5 h-4 w-px" />
+                <button
+                  type="button"
+                  onClick={() => onEdit(message)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Edit message">
+                  <PencilIcon className="h-3 w-3" />
+                </button>
+              </>
+            )}
+
             {/* Delete button — own messages only */}
             {isOwn && (
               <>
@@ -190,7 +206,7 @@ export function MessageBubble({
                   {parentMessage.sender.display_name ?? `@${parentMessage.sender.handle}`}
                 </p>
                 <p className={`line-clamp-2 ${isOwn ? "text-white/60" : "text-muted-foreground"}`}>
-                  {parentMessage.message_text ?? parentMessage.item?.title ?? t("link_fallback")}
+                  {parentMessage.message_text || parentMessage.item?.title || t("link_fallback")}
                 </p>
               </div>
             )}
@@ -243,13 +259,15 @@ export function MessageBubble({
             <div className="flex flex-row items-end justify-between gap-2">
               {/* Plain text */}
               {message.message_type === "text" && (
-                <p className="wrap-break-word whitespace-pre-wrap">{message.message_text}</p>
+                <p className="leading-none wrap-break-word whitespace-pre-wrap">
+                  {message.message_text}
+                </p>
               )}
 
               {/* Timestamp — inside pill, bottom-right like WhatsApp */}
-              <div className="mt-1 flex justify-end">
+              <div className="flex justify-end">
                 <span
-                  className={`text-[9px] ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>
+                  className={`text-[9px] leading-none ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>
                   {formatTime(message.created_at)}
                 </span>
               </div>

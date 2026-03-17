@@ -24,6 +24,8 @@ interface DmComposerProps {
   onMessageSent?: () => void;
   replyTo?: { messageId: string; senderName: string; text: string } | null;
   onCancelReply?: () => void;
+  editingMessage?: { messageId: string; text: string } | null;
+  onCancelEdit?: () => void;
 }
 
 export function DmComposer({
@@ -32,6 +34,8 @@ export function DmComposer({
   onMessageSent,
   replyTo,
   onCancelReply,
+  editingMessage,
+  onCancelEdit,
 }: DmComposerProps) {
   const t = useTranslations("people");
   const queryClient = useQueryClient();
@@ -52,6 +56,18 @@ export function DmComposer({
   useEffect(() => {
     if (replyTo) textareaRef.current?.focus();
   }, [replyTo]);
+
+  // Prefill text and focus when editing starts
+  useEffect(() => {
+    if (editingMessage) {
+      setText(editingMessage.text);
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }
+  }, [editingMessage?.messageId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTextChange = useCallback(
     async (value: string) => {
@@ -76,6 +92,28 @@ export function DmComposer({
 
   const handleSend = async () => {
     const trimmedText = text.trim();
+
+    // Edit mode — update existing message
+    if (editingMessage) {
+      if (!trimmedText) return;
+      setSending(true);
+      try {
+        await supabase
+          .from("messages")
+          .update({ message_text: trimmedText })
+          .eq("id", editingMessage.messageId)
+          .eq("sender_id", currentUserId);
+        setText("");
+        onCancelEdit?.();
+        await queryClient.invalidateQueries({ queryKey: queryKeys.people.messages(convoId) });
+        onMessageSent?.();
+        textareaRef.current?.focus();
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
+
     const hasLink = !!metadata && !!detectedUrlRef.current;
     if (!trimmedText && !hasLink) return;
 
@@ -150,6 +188,24 @@ export function DmComposer({
 
   return (
     <div className="border-border/60 border-t bg-white px-4 py-3">
+      {/* Edit context banner */}
+      {editingMessage && (
+        <div className="border-border/50 bg-surface mb-2 flex items-center gap-2 rounded-lg border px-3 py-2">
+          <div className="bg-primary w-0.5 self-stretch rounded-full" />
+          <div className="min-w-0 flex-1">
+            <p className="text-primary text-[11px] font-semibold">{t("composer_editing")}</p>
+            <p className="text-muted-foreground line-clamp-1 text-[11px]">{editingMessage.text}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setText(""); onCancelEdit?.(); }}
+            className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            aria-label="Cancel edit">
+            <CloseIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Reply context banner */}
       {replyTo && (
         <div className="border-border/50 bg-surface mb-2 flex items-center gap-2 rounded-lg border px-3 py-2">

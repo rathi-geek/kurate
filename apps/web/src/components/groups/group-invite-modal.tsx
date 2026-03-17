@@ -25,7 +25,6 @@ export interface GroupInviteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   groupId: string;
-  inviteCode: string;
   memberIds: Set<string>;
   currentUserId: string;
 }
@@ -60,7 +59,6 @@ export function GroupInviteModal({
   open,
   onOpenChange,
   groupId,
-  inviteCode,
   memberIds,
   currentUserId,
 }: GroupInviteModalProps) {
@@ -189,7 +187,7 @@ export function GroupInviteModal({
 
   const handleCopyEmailInvite = async () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/groups/join/${inviteCode}?e=${encodeEmail(searchQuery.trim().toLowerCase())}`;
+    const url = `${origin}/groups/join/${groupId}?e=${encodeEmail(searchQuery.trim().toLowerCase())}`;
     await navigator.clipboard.writeText(url);
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2000);
@@ -205,14 +203,11 @@ export function GroupInviteModal({
         body: JSON.stringify({
           email: searchQuery.trim().toLowerCase(),
           groupId,
-          inviteCode,
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to send invite");
       toast.success(`Invite sent to ${searchQuery.trim()}`);
-      setSearchQuery("");
-      setSearchResults([]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send invite");
     } finally {
@@ -334,7 +329,10 @@ export function GroupInviteModal({
                 disabled={sendingEmailInvite}
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left border border-border rounded-card hover:bg-surface transition-colors disabled:opacity-60"
               >
-                <span className="text-primary text-base leading-none">✉</span>
+                <svg className="size-4 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="m2 7 10 7 10-7" />
+                </svg>
                 <span>
                   {sendingEmailInvite ? "Sending..." : `Invite ${searchQuery.trim()} by email`}
                 </span>
@@ -344,7 +342,10 @@ export function GroupInviteModal({
                 onClick={handleCopyEmailInvite}
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left border border-border rounded-card hover:bg-surface transition-colors"
               >
-                <span className="text-primary text-base leading-none">🔗</span>
+                <svg className="size-4 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
                 <span>{copiedEmail ? "Copied!" : `Copy invite link for ${searchQuery.trim()}`}</span>
               </button>
             </div>

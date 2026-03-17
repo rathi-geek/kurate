@@ -57,8 +57,10 @@ export function VaultRemarkModal({
           )}
         </DialogHeader>
         <Textarea
+          autoFocus
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onFocus={(e) => { const len = e.target.value.length; e.target.setSelectionRange(len, len); }}
           placeholder={t("remark_placeholder")}
           rows={4}
           aria-label={t("remark_placeholder")}

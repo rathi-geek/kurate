@@ -71,8 +71,10 @@ export async function proxy(request: NextRequest) {
 
   // Not logged in → login
   if (!bypassAuth && !user && isProtectedRoute) {
+    const fullPath = request.nextUrl.pathname + request.nextUrl.search;
     const url = request.nextUrl.clone();
     url.pathname = ROUTES.AUTH.LOGIN;
+    url.search = `?next=${encodeURIComponent(fullPath)}`;
     return NextResponse.redirect(url);
   }
 
@@ -92,8 +94,10 @@ export async function proxy(request: NextRequest) {
       .single();
 
     if (!profileData?.is_onboarded) {
+      const fullPath = request.nextUrl.pathname + request.nextUrl.search;
       const url = request.nextUrl.clone();
       url.pathname = ROUTES.APP.ONBOARDING;
+      url.search = `?next=${encodeURIComponent(fullPath)}`;
       return NextResponse.redirect(url);
     }
   }

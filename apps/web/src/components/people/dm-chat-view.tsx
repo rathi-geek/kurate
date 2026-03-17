@@ -42,6 +42,11 @@ export function DmChatView({ convoId, currentUserId, otherUserName }: DmChatView
     text: string;
   } | null>(null);
 
+  const [editingMessage, setEditingMessage] = useState<{
+    messageId: string;
+    text: string;
+  } | null>(null);
+
   // Initial scroll to bottom once messages load
   useEffect(() => {
     if (!isLoading && messages.length > 0 && !initialLoadDoneRef.current) {
@@ -86,11 +91,17 @@ export function DmChatView({ convoId, currentUserId, otherUserName }: DmChatView
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleReply = (msg: DMMessage) => {
+    setEditingMessage(null);
     setReplyingTo({
       messageId: msg.id,
       senderName: msg.sender.display_name ?? `@${msg.sender.handle}`,
-      text: msg.message_text ?? (msg.item?.title ?? "Link"),
+      text: msg.message_text || msg.item?.title || "Link",
     });
+  };
+
+  const handleEdit = (msg: DMMessage) => {
+    setReplyingTo(null);
+    setEditingMessage({ messageId: msg.id, text: msg.message_text ?? "" });
   };
 
   return (
@@ -150,6 +161,7 @@ export function DmChatView({ convoId, currentUserId, otherUserName }: DmChatView
             convoId={convoId}
             allMessages={messages}
             onReply={handleReply}
+            onEdit={handleEdit}
             isContinuation={index > 0 && messages[index - 1]?.sender_id === msg.sender_id}
           />
         ))}
@@ -162,6 +174,8 @@ export function DmChatView({ convoId, currentUserId, otherUserName }: DmChatView
         currentUserId={currentUserId}
         replyTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
+        editingMessage={editingMessage}
+        onCancelEdit={() => setEditingMessage(null)}
         onMessageSent={() => {
           setTimeout(() => {
             bottomRef.current?.scrollIntoView({ behavior: "smooth" });

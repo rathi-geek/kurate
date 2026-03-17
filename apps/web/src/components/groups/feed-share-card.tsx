@@ -105,12 +105,6 @@ export const FeedShareCard = memo(function FeedShareCard({
               </span>
             </div>
           </div>
-          {/* Sharer note — green tinted card */}
-          {drop.note && (
-            <div className="px-3 py-2">
-              <p className="text-ink text-md leading-relaxed italic">{drop.note}</p>
-            </div>
-          )}
         </div>
 
         {/* Delete — sharer or owner only */}
@@ -146,6 +140,12 @@ export const FeedShareCard = memo(function FeedShareCard({
         }`}
         style={{ transformStyle: "preserve-3d" }}>
         <div className="p-4 pt-0">
+          {/* Sharer note — green tinted card */}
+          {drop.note && (
+            <div className="py-2">
+              <p className="text-ink text-md leading-relaxed italic">Note: {drop.note}</p>
+            </div>
+          )}
           {/* Link drop: full-width preview image + title */}
           {drop.item && (
             <>

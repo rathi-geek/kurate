@@ -17,6 +17,7 @@ import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
 import { springGentle } from "@/app/_libs/utils/motion";
 import { queryKeys } from "@/app/_libs/query/keys";
 import { createClient } from "@/app/_libs/supabase/client";
+import { fetchShareableConversations, type ShareableConversation } from "@/app/_libs/utils/fetchShareableConversations";
 
 const URL_REGEX = /https?:\/\/[^\s]+/;
 const supabase = createClient();
@@ -117,9 +118,16 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
           toast("Already in your Vault", { description: "This link has been saved before." });
           setPreviewPhase(PreviewPhase.Idle);
         } else if (result.status === "saved" && result.item) {
-          setSavedLoggedItemId(result.item.logged_item_id);
-          setSavedItemGroups([]);
-          setPreviewPhase(PreviewPhase.Share);
+          const cached = queryClient.getQueryData<ShareableConversation[]>(queryKeys.vault.shareConversations());
+          const convos = cached ?? await fetchShareableConversations();
+          if (convos.length === 0) {
+            setPreviewPhase(PreviewPhase.Idle);
+            toast("Saved to Vault");
+          } else {
+            setSavedLoggedItemId(result.item.logged_item_id);
+            setSavedItemGroups([]);
+            setPreviewPhase(PreviewPhase.Share);
+          }
         }
       } catch {
         // network error — silently fail

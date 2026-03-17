@@ -1,0 +1,23 @@
+interface DoubleCheckIconProps {
+  className?: string;
+}
+
+export function DoubleCheckIcon({ className }: DoubleCheckIconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {/* Left tick */}
+      <polyline points="1.5 12 6.5 17 15 7" stroke="currentColor" />
+      {/* Right tick — brand green */}
+      <polyline points="7.5 12 12.5 17 22 6.5" stroke="#1a5c4b" />
+    </svg>
+  );
+}

@@ -24,6 +24,7 @@ export interface SaveItemInput {
   content_type?: ContentType;
   description?: string | null;
   save_source?: SaveSource;
+  saved_from_group?: string | null;
   // raw_metadata fields (stored as JSON blob on logged_items)
   source?: string | null;
   author?: string | null;
@@ -91,6 +92,7 @@ export function useSaveItem() {
           user_id: user.id,
           logged_item_id: loggedItem.id,
           save_source: input.save_source ?? "external",
+          saved_from_group: input.saved_from_group ?? null,
         })
         .select("id")
         .single();

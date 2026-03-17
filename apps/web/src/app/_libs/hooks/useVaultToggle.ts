@@ -9,7 +9,7 @@ import type { SaveItemInput } from "@/app/_libs/hooks/useSaveItem";
 
 const supabase = createClient();
 
-export function useVaultToggle(userId: string, url: string) {
+export function useVaultToggle(userId: string, url: string, groupId?: string | null) {
   const queryClient = useQueryClient();
   const key = queryKeys.groups.vaultItem(userId, url);
 
@@ -93,7 +93,7 @@ export function useVaultToggle(userId: string, url: string) {
 
       const { data: uli, error: uliErr } = await supabase
         .from("user_logged_items")
-        .insert({ user_id: user.id, logged_item_id: li.id, save_source: "shares" })
+        .insert({ user_id: user.id, logged_item_id: li.id, save_source: "shares", saved_from_group: groupId ?? null })
         .select("id")
         .single();
       if (uliErr) throw new Error(uliErr.message);

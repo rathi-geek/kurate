@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { data: group } = await supabase
     .from("conversations")
     .select("group_name, group_description")
-    .eq("invite_code", invite_code)
+    .eq("id", invite_code)
     .single();
 
   if (!group) return { title: "Join a group" };
@@ -95,7 +95,7 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
   const { data: group } = await supabase
     .from("conversations")
     .select("id, group_name, group_max_members")
-    .eq("invite_code", invite_code)
+    .eq("id", invite_code)
     .maybeSingle();
 
   if (!group) {

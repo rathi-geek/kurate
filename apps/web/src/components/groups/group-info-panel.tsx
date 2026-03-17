@@ -47,7 +47,6 @@ export function GroupInfoPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ProfileResult[]>([]);
   const [searching, setSearching] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const isOwner = userRole === "owner";
   const isAdminOrOwner = userRole === "owner" || userRole === "admin";
@@ -126,13 +125,6 @@ export function GroupInfoPanel({
     if (!window.confirm("Demote this admin to member?")) return;
     await supabase.from("conversation_members").update({ role: "member" }).eq("id", memberId);
     await queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(group.id) });
-  };
-
-  const handleCopyInvite = async () => {
-    const url = `${window.location.origin}/groups/join/${group.invite_code}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const ROLE_LABELS: Record<string, string> = {
@@ -382,14 +374,6 @@ export function GroupInfoPanel({
             </p>
           )}
 
-          {/* Copy invite link */}
-          <button
-            type="button"
-            onClick={handleCopyInvite}
-            className="text-xs text-primary hover:opacity-70 transition-opacity"
-          >
-            {copied ? t("invite_copied") : t("invite_link")}
-          </button>
         </section>
       )}
     </div>

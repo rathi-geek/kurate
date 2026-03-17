@@ -27,15 +27,7 @@ export function GroupHeader({
   const t = useTranslations("groups");
   const router = useRouter();
   const { members } = useGroupMembers(group.id, currentUserId);
-  const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-
-  const handleCopyInvite = async () => {
-    const url = `${window.location.origin}/groups/join/${group.invite_code}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleDeleteGroup = async () => {
     if (!window.confirm(t("delete_group_confirm"))) return;
@@ -89,15 +81,6 @@ export function GroupHeader({
           <span className="text-xs text-muted-foreground font-mono">
             {members.length} {t("members")}
           </span>
-
-          {/* Invite button */}
-          <button
-            type="button"
-            onClick={handleCopyInvite}
-            className="text-xs px-2.5 py-1 rounded-badge border border-border hover:bg-surface transition-colors text-muted-foreground"
-          >
-            {copied ? t("invite_copied") : t("invite")}
-          </button>
 
           {/* Owner settings */}
           {currentUserRole === "owner" && (

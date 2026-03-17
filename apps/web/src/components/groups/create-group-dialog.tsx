@@ -21,10 +21,6 @@ const PG_UNIQUE_VIOLATION = "23505";
 
 const supabase = createClient();
 
-function generateInviteCode(): string {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
-}
-
 interface CreateGroupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -59,7 +55,6 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
         .insert({
           group_name: trimmedName,
           group_description: description.trim() || null,
-          invite_code: generateInviteCode(),
           group_max_members: 50,
           is_group: true,
         })

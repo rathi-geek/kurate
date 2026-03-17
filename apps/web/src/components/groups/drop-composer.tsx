@@ -102,6 +102,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
         content_type: metadata?.content_type ?? "article",
         read_time: metadata?.read_time,
         save_source: "shares",
+        saved_from_group: groupId,
       };
 
       toast("Shared to group · Save to vault?", {

@@ -53,7 +53,6 @@ function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageCl
         open={openModal === "invite"}
         onOpenChange={(o) => !o && setOpenModal(null)}
         groupId={group.id}
-        inviteCode={group.invite_code ?? ""}
         memberIds={memberIds}
         currentUserId={currentUserId}
       />

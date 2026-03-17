@@ -25,6 +25,9 @@ function toVaultItem(row: Record<string, unknown>): VaultItem {
   const li = (Array.isArray(row.logged_item) ? row.logged_item[0] : row.logged_item) as
     | Record<string, unknown>
     | null;
+  const sg = (Array.isArray(row.saved_group) ? row.saved_group[0] : row.saved_group) as
+    | Record<string, unknown>
+    | null;
 
   return {
     // user_logged_items fields
@@ -36,7 +39,8 @@ function toVaultItem(row: Record<string, unknown>): VaultItem {
     is_read: (row.is_read as boolean) ?? false,
     created_at: row.created_at as string,
     author: null,
-    saved_from_group: null,
+    saved_from_group: (row.saved_from_group as string | null) ?? null,
+    saved_from_group_name: (sg?.group_name as string | null) ?? null,
     shared_by: null,
     // logged_items fields (from join)
     url: (li?.url as string) ?? "",
@@ -63,7 +67,7 @@ async function fetchVaultPage(
   let query = supabase
     .from("user_logged_items")
     .select(
-      "id, user_id, logged_item_id, save_source, remarks, is_read, created_at, logged_item:logged_items!user_logged_items_logged_item_id_fkey(url, title, url_hash, preview_image_url, content_type, description, tags, raw_metadata, created_at)",
+      "id, user_id, logged_item_id, save_source, remarks, is_read, created_at, saved_from_group, saved_group:conversations!saved_from_group(group_name), logged_item:logged_items!user_logged_items_logged_item_id_fkey(url, title, url_hash, preview_image_url, content_type, description, tags, raw_metadata, created_at)",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })

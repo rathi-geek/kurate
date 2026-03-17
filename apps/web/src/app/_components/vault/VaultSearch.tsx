@@ -19,8 +19,6 @@ export function VaultSearch({ value, onChange }: VaultSearchProps) {
   const t = useTranslations("vault");
   const [localValue, setLocalValue] = useDebouncedValue(value, onChange, DEBOUNCE_MS);
 
-  const showClear = localValue.length > 0;
-
   return (
     <div className="relative w-full min-w-0">
       <span
@@ -33,7 +31,10 @@ export function VaultSearch({ value, onChange }: VaultSearchProps) {
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         placeholder={t("search_placeholder")}
-        className={cn("pl-9", showClear && "pr-9")}
+        className={cn(
+          "pl-9",
+          "[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:hidden",
+        )}
         aria-label={t("search_placeholder")}
       />
     </div>

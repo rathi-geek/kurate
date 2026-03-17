@@ -15,6 +15,7 @@ export interface RawMetadata {
   source?: string | null;
   author?: string | null;
   read_time?: string | null;
+  duration?: string | null;
 }
 
 // VaultItem is the joined shape: user_logged_items + logged_items
@@ -30,6 +31,8 @@ export type VaultItem = Omit<UserLoggedItemsRow, "save_source"> & {
   tags: string[] | null;
   raw_metadata: RawMetadata | null;
   logged_item_created_at: string;
+  // Group name joined from conversations (when saved_from_group is set)
+  saved_from_group_name: string | null;
 };
 
 export type TimeFilter = "today" | "week" | "month" | "all";

@@ -37,7 +37,7 @@ export function EngagementBar({
 }: EngagementBarProps) {
   const t = useTranslations("groups");
   const { toggleReaction } = useDropEngagement();
-  const { isSaved, toggle: toggleVaultBase } = useVaultToggle(currentUserId, url);
+  const { isSaved, toggle: toggleVaultBase } = useVaultToggle(currentUserId, url, groupId);
 
   const toggleVault = (data?: Parameters<typeof toggleVaultBase>[0]) => {
     const willSave = !isSaved;

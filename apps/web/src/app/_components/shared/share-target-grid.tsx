@@ -7,6 +7,8 @@ import { useTranslations } from "next-intl";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+
 import { queryKeys } from "@/app/_libs/query/keys";
 import { cn } from "@/app/_libs/utils/cn";
 import {
@@ -54,14 +56,14 @@ export function ShareTargetGrid({
     queryKey: queryKeys.vault.shareConversations(),
     queryFn: fetchShareableConversations,
     enabled,
+    /** Treat data as fresh for 5 min so reopening the share modal uses cache instead of refetching */
     staleTime: 1000 * 60 * 5,
   });
 
   const filtered = useMemo(
     () =>
       conversations.filter(
-        (c) =>
-          !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()),
+        (c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()),
       ),
     [conversations, search],
   );
@@ -80,6 +82,56 @@ export function ShareTargetGrid({
 
   const avatarClass = avatarSize === "sm" ? "h-12 w-12" : "h-14 w-14";
   const nameMaxW = avatarSize === "sm" ? "max-w-[80px]" : "max-w-[72px]";
+
+  function renderItem(c: ShareableConversation) {
+    const already = alreadySharedIds.has(c.id);
+    const selected = selectedIds.has(c.id);
+    const initial = (c.name?.[0] ?? "?").toUpperCase();
+
+    return (
+      <button
+        key={c.id}
+        type="button"
+        disabled={already}
+        onClick={() => !already && toggle(c.id)}
+        className={cn(
+          "flex flex-col items-center gap-1.5 outline-none",
+          already && "cursor-not-allowed opacity-60",
+        )}
+        aria-pressed={selected}
+        aria-label={c.name}>
+        <div className="relative mt-2">
+          <Avatar className={cn("rounded-pill", avatarClass)}>
+            {c.avatar_url && <AvatarImage src={c.avatar_url} alt={c.name} />}
+            <AvatarFallback className="rounded-pill bg-muted text-foreground font-sans text-base font-medium">
+              {initial}
+            </AvatarFallback>
+          </Avatar>
+          {selected && (
+            <span
+              className="bg-success absolute -right-0.5 -bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full text-white"
+              aria-hidden>
+              <CheckIcon className="h-3 w-3" />
+            </span>
+          )}
+          {already && (
+            <span
+              className="bg-muted-foreground/80 text-card absolute -right-0.5 -bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full"
+              aria-hidden>
+              <CheckIcon className="h-3 w-3" />
+            </span>
+          )}
+        </div>
+        <span
+          className={cn(
+            "text-foreground truncate px-1 pb-2 font-sans text-xs",
+            nameMaxW,
+          )}>
+          {c.name}
+        </span>
+      </button>
+    );
+  }
 
   return (
     <div className={cn("flex flex-col", className)}>
@@ -100,71 +152,21 @@ export function ShareTargetGrid({
 
       <div className={cn("min-h-0 flex-1 overflow-y-auto", maxHeight)}>
         {isLoading ? (
-          <p className="text-muted-foreground font-sans text-sm">…</p>
+          <div className="flex flex-wrap gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <Skeleton className={cn("rounded-pill", avatarClass)} />
+                <Skeleton className={cn("h-3 rounded", nameMaxW)} />
+              </div>
+            ))}
+          </div>
         ) : conversations.length === 0 ? (
           <p className="text-muted-foreground font-sans text-sm">{emptyLabel}</p>
         ) : filtered.length === 0 ? (
           <p className="text-muted-foreground font-sans text-sm">{noMatchLabel}</p>
         ) : (
           <div className="flex flex-wrap gap-3">
-            {filtered.map((c: ShareableConversation) => {
-              const already = alreadySharedIds.has(c.id);
-              const selected = selectedIds.has(c.id);
-              const initial = (c.name?.[0] ?? "?").toUpperCase();
-              const disabled = already;
-
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => !disabled && toggle(c.id)}
-                  className={cn(
-                    "rounded-button bg-card focus-visible:ring-ring flex flex-col items-center gap-1.5 border-2 transition-colors outline-none focus-visible:ring-2",
-                    disabled && "cursor-not-allowed opacity-60",
-                    !disabled && "hover:border-border hover:bg-surface",
-                    selected && "border-primary bg-primary/5",
-                  )}
-                  aria-pressed={selected}
-                  aria-label={c.name}
-                >
-                  <div className="relative mt-2">
-                    <Avatar className={cn("rounded-pill", avatarClass)}>
-                      {c.avatar_url && (
-                        <AvatarImage src={c.avatar_url} alt={c.name} />
-                      )}
-                      <AvatarFallback className="rounded-pill bg-muted text-foreground font-sans text-base font-medium">
-                        {initial}
-                      </AvatarFallback>
-                    </Avatar>
-                    {selected && (
-                      <span
-                        className="bg-success absolute -right-0.5 -bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full text-white"
-                        aria-hidden
-                      >
-                        <CheckIcon className="h-3 w-3" />
-                      </span>
-                    )}
-                    {already && (
-                      <span
-                        className="bg-muted-foreground/80 text-card absolute -right-0.5 -bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full"
-                        aria-hidden
-                      >
-                        <CheckIcon className="h-3 w-3" />
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-foreground truncate px-1 pb-2 font-sans text-xs",
-                      nameMaxW,
-                    )}
-                  >
-                    {c.name}
-                  </span>
-                </button>
-              );
-            })}
+            {filtered.map(renderItem)}
           </div>
         )}
       </div>
