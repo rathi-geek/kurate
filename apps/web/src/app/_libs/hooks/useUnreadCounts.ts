@@ -61,7 +61,7 @@ export function useUnreadCounts(userId: string | null) {
           });
         },
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         if (err) console.error("[useUnreadCounts] subscription error:", err);
       });
 

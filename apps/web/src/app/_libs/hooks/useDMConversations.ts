@@ -116,7 +116,7 @@ export function useDMConversations(userId: string | null) {
           void queryClient.invalidateQueries({ queryKey: queryKeys.people.conversations() });
         },
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         if (err) console.error("[useDMConversations] subscription error:", err);
       });
 

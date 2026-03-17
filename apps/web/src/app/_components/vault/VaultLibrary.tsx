@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 
@@ -19,9 +18,7 @@ import { VaultRemarkModal } from "@/app/_components/vault/VaultRemarkModal";
 import { VaultSearch } from "@/app/_components/vault/VaultSearch";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useVault } from "@/app/_libs/hooks/useVault";
-import { queryKeys } from "@/app/_libs/query/keys";
 import type { VaultFilters as VaultFiltersType, VaultItem } from "@/app/_libs/types/vault";
-import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import { SearchIcon, SlidersIcon } from "@/components/icons";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -43,11 +40,6 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
 
   const [filters, setFilters] = useState<VaultFiltersType>(DEFAULT_FILTERS);
 
-  const { data: groups = [] } = useQuery({
-    queryKey: queryKeys.groups.list(),
-    queryFn: fetchUserGroups,
-    staleTime: 1000 * 60 * 5,
-  });
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 

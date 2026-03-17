@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 
 import { useVaultFilterOptions } from "@/app/_libs/hooks/useVaultFilterOptions";
-import type { ContentTypeFilter, VaultFilters } from "@/app/_libs/types/vault";
+import type { VaultFilters } from "@/app/_libs/types/vault";
 import { cn } from "@/app/_libs/utils/cn";
 
 export interface VaultFiltersProps {
@@ -60,7 +60,7 @@ export function VaultFilters({ filters, onChange }: VaultFiltersProps) {
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-muted/80",
                   )}>
-                  {t(labelKey)}
+                  {t(labelKey as Parameters<typeof t>[0])}
                 </button>
               );
             })}

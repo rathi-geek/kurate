@@ -7,7 +7,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
-import { AnimationPreview } from "@/app/_components/dev/animation-preview";
 import GoogleAnalyticsScripts from "@/app/_components/google-analytics";
 import SonnarToaster from "@/app/_components/sonner-toaster";
 import { dmMono, dmSans } from "@/app/_config/fonts";

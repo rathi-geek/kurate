@@ -135,7 +135,7 @@ export function useMessages(convoId: string | null) {
           void queryClient.invalidateQueries({ queryKey: queryKeys.people.messages(convoId) });
         },
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         if (err) console.error("[useMessages] subscription error:", err);
       });
 

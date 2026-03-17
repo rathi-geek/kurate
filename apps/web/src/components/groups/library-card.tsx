@@ -34,7 +34,7 @@ export const LibraryCard = memo(function LibraryCard({
       className="flex h-full flex-col rounded-card border bg-card overflow-hidden transition-colors hover:bg-surface cursor-pointer"
       onClick={handleClick}
       role="article"
-      aria-label={drop.item?.title ?? drop.content ?? t("drop_aria_fallback")}
+      aria-label={drop.item?.title ?? drop.note ?? t("drop_aria_fallback")}
     >
       {/* Preview image (link drops only) */}
       {drop.item?.preview_image_url ? (
@@ -74,8 +74,8 @@ export const LibraryCard = memo(function LibraryCard({
         )}
 
         {/* Text-only drop content */}
-        {!drop.item && drop.content && (
-          <p className="text-foreground line-clamp-3 mb-2 text-sm">{drop.content}</p>
+        {!drop.item && drop.note && (
+          <p className="text-foreground line-clamp-3 mb-2 text-sm">{drop.note}</p>
         )}
 
         <div

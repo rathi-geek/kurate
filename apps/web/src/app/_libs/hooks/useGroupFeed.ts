@@ -174,7 +174,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
           void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
         },
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         if (err) console.error("[useGroupFeed] subscription error:", err);
       });
 
