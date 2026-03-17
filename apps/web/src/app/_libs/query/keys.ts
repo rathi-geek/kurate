@@ -15,6 +15,7 @@ export const queryKeys = {
   vault: {
     all: ["vault"] as const,
     list: (filters: VaultFilters) => ["vault", "list", filters] as const,
+    shareConversations: () => ["vault", "shareConversations"] as const,
   },
 
   // ─── Feed / Discover ──────────────────────────────────────────────
@@ -51,5 +52,6 @@ export const queryKeys = {
     all: ["people"] as const,
     conversations: () => ["people", "conversations"] as const,
     messages: (convoId: string) => ["people", "messages", convoId] as const,
+    unreadCounts: () => ["people", "unreadCounts"] as const,
   },
 } as const;

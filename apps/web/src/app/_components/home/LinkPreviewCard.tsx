@@ -1,16 +1,22 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 
+import { Button } from "@/components/ui/button";
+
 import { PreviewPhase } from "@/app/_components/home/preview-phase";
-import { queryKeys } from "@/app/_libs/query/keys";
-import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
-import { springGentle, shadowFloating, shadowHoverGlow, successGlowBoxShadow, successGlowTransition } from "@/app/_libs/utils/motion";
+import { ShareTargetGrid } from "@/app/_components/shared/share-target-grid";
 import { UrlExtractPreview } from "@/app/_components/shared/url-extract-preview";
+import {
+  shadowFloating,
+  shadowHoverGlow,
+  springGentle,
+  successGlowBoxShadow,
+  successGlowTransition,
+} from "@/app/_libs/utils/motion";
 import { CloseIcon } from "@/components/icons";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -32,7 +38,7 @@ export interface LinkPreviewCardProps {
   savedItemId?: string;
   savedItemGroups?: string[];
   onClose: () => void;
-  onShare: (groupId: string) => void;
+  onShare: (groupIds: string[]) => void;
   onSkip: () => void;
 }
 
@@ -50,24 +56,20 @@ export function LinkPreviewCard({
 }: LinkPreviewCardProps) {
   const t = useTranslations("link_preview");
   const [isHovered, setIsHovered] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), []);
   const handleMouseLeave = useCallback(() => setIsHovered(false), []);
 
-  // Entry: one-time spreading green ring when data arrives; then settle to floating shadow.
-  // Hover: switch to steady green glow while mouse is over the card.
   const boxShadow = isHovered
     ? shadowHoverGlow
     : phase === PreviewPhase.Loaded || phase === PreviewPhase.Share
       ? successGlowBoxShadow
       : shadowFloating;
 
-  const { data: groups = [], isLoading: groupsLoading } = useQuery({
-    queryKey: queryKeys.groups.list(),
-    queryFn: fetchUserGroups,
-    enabled: phase === PreviewPhase.Share,
-    staleTime: 1000 * 60 * 5,
-  });
+  function handleSelectionChange(ids: string[]) {
+    setSelectedIds(new Set(ids));
+  }
 
   const sharedSet = new Set(savedItemGroups);
 
@@ -84,9 +86,7 @@ export function LinkPreviewCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="bg-card border-border relative mb-0 overflow-hidden rounded-2xl border">
-      {phase === PreviewPhase.Loading && (
-        <UrlExtractPreview url={url} isLoading={true} />
-      )}
+      {phase === PreviewPhase.Loading && <UrlExtractPreview url={url} isLoading={true} />}
 
       {phase === PreviewPhase.Loaded && (
         <div className="relative">
@@ -103,44 +103,42 @@ export function LinkPreviewCard({
 
       {phase === PreviewPhase.Share && (
         <div className="px-4 py-3">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-primary text-sm font-semibold">✓ {t("saved_heading")}</span>
-            <span className="text-muted-foreground text-sm">{t("share_prompt")}</span>
+          <div className="mb-3 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-primary text-sm font-semibold">✓ {t("saved_heading")}</span>
+              <span className="text-muted-foreground text-sm">{t("share_prompt")}</span>
+            </div>
           </div>
-          <div className="border-border mb-2 border-t" />
-          {groupsLoading ? (
-            <p className="text-muted-foreground py-2 text-sm">…</p>
-          ) : groups.length === 0 ? (
-            <p className="text-muted-foreground py-2 text-sm">{t("no_groups")}</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {groups.map((group) => {
-                const already = sharedSet.has(group.id);
-                return (
-                  <li key={group.id} className="flex items-center justify-between">
-                    <span className="text-foreground text-sm">{group.name}</span>
-                    {already ? (
-                      <span className="text-muted-foreground text-xs">✓</span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => onShare(group.id)}
-                        className="text-primary hover:text-primary/80 text-sm font-medium transition-colors">
-                        {t("share_btn")}
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <div className="mt-2 flex justify-end">
+
+          <div className="border-border mb-3 border-t" />
+
+          <ShareTargetGrid
+            selectedIds={selectedIds}
+            onSelectionChange={handleSelectionChange}
+            alreadySharedIds={sharedSet}
+            enabled={true}
+            searchPlaceholder={t("search_placeholder")}
+            noItemsText={t("no_groups")}
+            noResultsText={t("no_results")}
+            maxHeight="max-h-48"
+            avatarSize="sm"
+          />
+
+          <div className="mt-3 flex w-full items-center justify-end gap-2">
             <button
               type="button"
               onClick={onSkip}
               className="text-muted-foreground hover:text-foreground text-sm transition-colors">
               {t("skip")}
             </button>
+
+            <Button
+              size="sm"
+              onClick={() => onShare(Array.from(selectedIds))}
+              className={selectedIds.size === 0 ? "opacity-50" : undefined}
+              disabled={selectedIds.size === 0}>
+              {t("share_btn_send")}
+            </Button>
           </div>
         </div>
       )}

@@ -32,6 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AppSidebar
           userEmail={userEmail}
           userName={userName}
+          userId={user?.id ?? null}
           onLogout={handleLogout}
           {...sidebarOverrides}
         />

@@ -129,16 +129,20 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   );
 
   const handleShare = useCallback(
-    async (groupId: string) => {
-      if (!savedLoggedItemId) return;
+    async (groupIds: string[]) => {
+      if (!savedLoggedItemId || groupIds.length === 0) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from("group_posts").insert({
-        convo_id: groupId,
-        logged_item_id: savedLoggedItemId,
-        shared_by: user.id,
-      });
-      setSavedItemGroups((prev) => [...new Set([...prev, groupId])]);
+      await Promise.all(
+        groupIds.map((convo_id) =>
+          supabase.from("group_posts").insert({
+            convo_id,
+            logged_item_id: savedLoggedItemId,
+            shared_by: user.id,
+          }),
+        ),
+      );
+      setSavedItemGroups((prev) => [...new Set([...prev, ...groupIds])]);
       queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
       setPreviewPhase(PreviewPhase.Idle);
       toast("Shared!");

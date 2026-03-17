@@ -51,7 +51,7 @@ export type Database = {
           convo_id: string
           id: string
           joined_at: string
-          role: string | null
+          role: Database["public"]["Enums"]["role_enum"]
           updated_at: string
           user_id: string
         }
@@ -59,7 +59,7 @@ export type Database = {
           convo_id: string
           id?: string
           joined_at?: string
-          role?: string | null
+          role?: Database["public"]["Enums"]["role_enum"]
           updated_at?: string
           user_id: string
         }
@@ -67,7 +67,7 @@ export type Database = {
           convo_id?: string
           id?: string
           joined_at?: string
-          role?: string | null
+          role?: Database["public"]["Enums"]["role_enum"]
           updated_at?: string
           user_id?: string
         }
@@ -95,7 +95,6 @@ export type Database = {
           group_max_members: number
           group_name: string | null
           id: string
-          invite_code: string
           is_group: boolean | null
           updated_at: string
         }
@@ -105,7 +104,6 @@ export type Database = {
           group_max_members?: number
           group_name?: string | null
           id?: string
-          invite_code: string
           is_group?: boolean | null
           updated_at?: string
         }
@@ -115,7 +113,6 @@ export type Database = {
           group_max_members?: number
           group_name?: string | null
           id?: string
-          invite_code?: string
           is_group?: boolean | null
           updated_at?: string
         }
@@ -144,21 +141,21 @@ export type Database = {
           comment_id: string
           delivered_at: string
           id: string
-          read_at: string
+          read_at: string | null
           user_id: string
         }
         Insert: {
           comment_id: string
           delivered_at?: string
           id?: string
-          read_at?: string
+          read_at?: string | null
           user_id: string
         }
         Update: {
           comment_id?: string
           delivered_at?: string
           id?: string
-          read_at?: string
+          read_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -180,21 +177,18 @@ export type Database = {
       }
       group_post_reads: {
         Row: {
-          created_at: string
           group_post_id: string
           id: string
           read_at: string
           user_id: string
         }
         Insert: {
-          created_at?: string
           group_post_id: string
           id?: string
           read_at?: string
           user_id: string
         }
         Update: {
-          created_at?: string
           group_post_id?: string
           id?: string
           read_at?: string
@@ -562,21 +556,21 @@ export type Database = {
           delivered_at: string
           id: string
           message_id: string
-          read_at: string
+          read_at: string | null
           user_id: string
         }
         Insert: {
           delivered_at?: string
           id?: string
           message_id: string
-          read_at?: string
+          read_at?: string | null
           user_id: string
         }
         Update: {
           delivered_at?: string
           id?: string
           message_id?: string
-          read_at?: string
+          read_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1069,6 +1063,7 @@ export type Database = {
     Enums: {
       content_type_enum: "article" | "video" | "podcast"
       message_type_enum: "text" | "logged_item"
+      role_enum: "owner" | "admin" | "member"
       save_source_enum: "external" | "shares" | "web_extension" | "discovered"
       theme_pref_enum: "light" | "dark" | "auto"
     }
@@ -1200,6 +1195,7 @@ export const Constants = {
     Enums: {
       content_type_enum: ["article", "video", "podcast"],
       message_type_enum: ["text", "logged_item"],
+      role_enum: ["owner", "admin", "member"],
       save_source_enum: ["external", "shares", "web_extension", "discovered"],
       theme_pref_enum: ["light", "dark", "auto"],
     },

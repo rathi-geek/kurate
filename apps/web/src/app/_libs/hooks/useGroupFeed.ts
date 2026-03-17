@@ -1,6 +1,8 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
@@ -142,6 +144,8 @@ async function fetchGroupFeedPage(
 }
 
 export function useGroupFeed(groupId: string, currentUserId: string) {
+  const queryClient = useQueryClient();
+
   const query = useInfiniteQuery({
     queryKey: queryKeys.groups.feed(groupId),
     queryFn: ({ pageParam }) =>
@@ -154,6 +158,30 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
     staleTime: 1000 * 30,
     enabled: !!groupId && !!currentUserId,
   });
+
+  // Realtime subscription: invalidate on new group post
+  useEffect(() => {
+    if (!groupId) return;
+
+    const channel = supabase
+      .channel(`group-feed:${groupId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "group_posts" },
+        (payload) => {
+          const post = payload.new as { convo_id: string };
+          if (post.convo_id !== groupId) return;
+          void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+        },
+      )
+      .subscribe((status, err) => {
+        if (err) console.error("[useGroupFeed] subscription error:", err);
+      });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [groupId, queryClient]);
 
   return {
     drops: query.data?.pages.flat() ?? [],

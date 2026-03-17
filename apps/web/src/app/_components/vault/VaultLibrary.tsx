@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 
+import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -19,9 +19,9 @@ import { VaultRemarkModal } from "@/app/_components/vault/VaultRemarkModal";
 import { VaultSearch } from "@/app/_components/vault/VaultSearch";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useVault } from "@/app/_libs/hooks/useVault";
-import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import { queryKeys } from "@/app/_libs/query/keys";
 import type { VaultFilters as VaultFiltersType, VaultItem } from "@/app/_libs/types/vault";
+import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import { SearchIcon, SlidersIcon } from "@/components/icons";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -48,7 +48,6 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
     queryFn: fetchUserGroups,
     staleTime: 1000 * 60 * 5,
   });
-  const hasGroups = groups.length > 0;
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -129,8 +128,7 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
                     animate={{ width: 220, opacity: 1 }}
                     exit={prefersReducedMotion ? undefined : { width: 0, opacity: 0 }}
                     transition={{ duration: prefersReducedMotion ? 0 : 0.2, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                  >
+                    className="overflow-hidden">
                     <VaultSearch
                       value={filters.search}
                       onChange={(s) => setFilters((f) => ({ ...f, search: s }))}
@@ -141,13 +139,12 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
                     key="vault-search-closed"
                     type="button"
                     onClick={() => setSearchOpen(true)}
-                    className="rounded-button hover:bg-muted hover:text-foreground flex items-center justify-center px-2.5 py-1.5 text-muted-foreground transition-colors"
+                    className="rounded-button hover:bg-muted hover:text-foreground text-muted-foreground flex items-center justify-center px-2.5 py-1.5 transition-colors"
                     initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.9 }}
                     transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-                    aria-label={t("search_placeholder")}
-                  >
+                    aria-label={t("search_placeholder")}>
                     <SearchIcon className="size-3.5" />
                   </motion.button>
                 )}
@@ -160,7 +157,7 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
             ) : (
               <Popover>
                 <PopoverTrigger asChild>{filterTrigger}</PopoverTrigger>
-                <PopoverContent align="end" className="w-[520px] space-y-3 p-4">
+                <PopoverContent align="end" className="w-[450px] space-y-3 rounded-md p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-foreground font-sans text-sm font-semibold">
                       {t("filters")}
@@ -204,7 +201,7 @@ export function VaultLibrary({ onNavigateToDiscover }: VaultLibraryProps) {
             animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
             onLoadMore={loadMore}
             onDelete={handleDelete}
-            onShare={hasGroups ? (item) => setShareModal({ open: true, targetItem: item }) : undefined}
+            onShare={(item) => setShareModal({ open: true, targetItem: item })}
             onToggleRead={toggleRead}
             onOpenRemarkModal={(item) => setRemarkModal({ open: true, targetItem: item })}
           />

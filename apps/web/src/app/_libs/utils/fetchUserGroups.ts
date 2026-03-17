@@ -22,8 +22,8 @@ export async function fetchUserGroups(): Promise<GroupRow[]> {
   return (data ?? [])
     .map((row) => {
       const convo = Array.isArray(row.conversations) ? row.conversations[0] : row.conversations;
-      if (!convo) return null;
-      return { id: convo.id, name: convo.group_name ?? "" };
+      if (!convo || convo.group_name === null) return null;
+      return { id: convo.id, name: convo.group_name };
     })
     .filter(Boolean) as GroupRow[];
 }

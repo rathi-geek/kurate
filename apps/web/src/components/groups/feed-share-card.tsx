@@ -108,7 +108,7 @@ export const FeedShareCard = memo(function FeedShareCard({
           {/* Sharer note — green tinted card */}
           {drop.note && (
             <div className="px-3 py-2">
-              <p className="text-foreground/80 text-xs leading-relaxed italic">{drop.note}</p>
+              <p className="text-ink text-md leading-relaxed italic">{drop.note}</p>
             </div>
           )}
         </div>

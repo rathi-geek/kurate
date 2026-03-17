@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CommentList } from "@/app/_components/threads/CommentList";
+import { useCallback, useState } from "react";
+
+import { AnimatePresence, motion } from "framer-motion";
+
 import { CommentInput, type ReplyContext } from "@/app/_components/threads/CommentInput";
-import { SharedContentStrip } from "./SharedContentStrip";
-import { getSharedContentForPerson } from "@/app/_mocks/mock-person-content";
-import { getDMMessages } from "@/app/_mocks/mock-dm-messages";
+import { CommentList } from "@/app/_components/threads/CommentList";
+import type { ThreadComment } from "@/app/_libs/chat-types";
 import { MOCK_CONTACTS } from "@/app/_libs/contacts";
 import { springSnappy } from "@/app/_libs/utils/motion";
-import type { ThreadComment } from "@/app/_libs/chat-types";
+import { getDMMessages } from "@/app/_mocks/mock-dm-messages";
+import { getSharedContentForPerson } from "@/app/_mocks/mock-person-content";
+
+import { SharedContentStrip } from "./SharedContentStrip";
 
 interface PersonChatViewProps {
   handle: string;
@@ -17,11 +20,7 @@ interface PersonChatViewProps {
   onOpenArticle: (url: string) => void;
 }
 
-export function PersonChatView({
-  handle,
-  onClose,
-  onOpenArticle,
-}: PersonChatViewProps) {
+export function PersonChatView({ handle, onClose, onOpenArticle }: PersonChatViewProps) {
   const contact = MOCK_CONTACTS.find((c) => c.handle === handle);
   const name = contact?.name ?? handle.slice(1);
   const initial = name[0]?.toUpperCase() ?? "?";
@@ -48,43 +47,49 @@ export function PersonChatView({
       setMessages((prev) => [...prev, newMsg]);
       setReplyTo(null);
     },
-    [handle, replyTo]
+    [handle, replyTo],
   );
 
   return (
     <motion.div
       initial={false}
       animate={{ opacity: 1 }}
-      className="flex-1 flex flex-col overflow-hidden bg-background"
-    >
-      <header className="shrink-0 bg-white px-4 py-3 flex items-center gap-3 border-b border-ink/[0.08]">
+      className="bg-background flex flex-1 flex-col overflow-hidden">
+      <header className="border-ink/[0.08] flex shrink-0 items-center gap-3 border-b bg-white px-4 py-3">
         <button
           onClick={() => (vaultOpen ? setVaultOpen(false) : onClose())}
-          className="shrink-0 w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-ink/[0.05] transition-colors rounded-full min-h-[44px] min-w-[44px]"
+          className="hover:bg-ink/[0.05] flex h-10 min-h-[44px] w-10 min-w-[44px] shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
           type="button"
-          aria-label="Back"
-        >
-          <svg width={20} height={20} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          aria-label="Back">
+          <svg
+            width={20}
+            height={20}
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round">
             <path d="M10 3L5 8l5 5" />
           </svg>
         </button>
-        <div className="w-10 h-10 bg-teal text-primary-foreground flex items-center justify-center font-sans text-sm font-bold shrink-0 rounded-full">
+        <div className="bg-teal text-primary-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-bold">
           {initial}
         </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-sans text-base font-bold text-ink leading-tight truncate">
-            {name}
-          </h2>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-ink truncate font-sans text-base leading-tight font-bold">{name}</h2>
           {items.length > 0 && (
             <button
               onClick={() => setVaultOpen((v) => !v)}
               type="button"
-              className={`flex items-center gap-1.5 mt-1 px-2.5 py-1.5 rounded-full font-mono text-xs font-bold cursor-pointer transition-all min-h-[44px] ${
-                vaultOpen ? "bg-teal text-primary-foreground" : "bg-ink/[0.06] text-ink/50 hover:bg-ink/[0.1]"
-              }`}
-            >
+              className={`mt-1 flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1.5 font-mono text-xs font-bold transition-all ${
+                vaultOpen
+                  ? "bg-teal text-primary-foreground"
+                  : "bg-ink/[0.06] text-ink/50 hover:bg-ink/[0.1]"
+              }`}>
               Shared Vault
-              <span className={`font-mono text-xs px-1.5 py-0.5 rounded-full ${vaultOpen ? "bg-white/20" : "bg-ink/[0.08] text-ink/40"}`}>
+              <span
+                className={`rounded-full px-1.5 py-0.5 font-mono text-xs ${vaultOpen ? "bg-white/20" : "bg-ink/[0.08] text-ink/40"}`}>
                 {items.length}
               </span>
             </button>
@@ -100,8 +105,7 @@ export function PersonChatView({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={springSnappy}
-            className="flex-1 overflow-hidden"
-          >
+            className="flex-1 overflow-hidden">
             <SharedContentStrip
               items={items}
               expanded
@@ -116,13 +120,8 @@ export function PersonChatView({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={springSnappy}
-            className="flex-1 flex flex-col overflow-hidden"
-          >
-            <CommentList
-              comments={messages}
-              currentUserHandle="@vivek"
-              onReply={() => {}}
-            />
+            className="flex flex-1 flex-col overflow-hidden">
+            <CommentList comments={messages} currentUserHandle="@vivek" onReply={() => {}} />
             <CommentInput
               onSend={handleSend}
               placeholder={`Message ${name}...`}

@@ -5,6 +5,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 export interface SidebarContextValue {
   activeChatHandle: string | null | undefined;
   onPersonClick: ((handle: string) => void) | undefined;
+  markRead: ((convoId: string) => Promise<void>) | undefined;
 }
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
@@ -12,11 +13,12 @@ const SidebarContext = createContext<SidebarContextValue | null>(null);
 export function SidebarProvider({
   activeChatHandle,
   onPersonClick,
+  markRead,
   children,
 }: SidebarContextValue & { children: ReactNode }) {
   const value = useMemo(
-    () => ({ activeChatHandle, onPersonClick }),
-    [activeChatHandle, onPersonClick],
+    () => ({ activeChatHandle, onPersonClick, markRead }),
+    [activeChatHandle, onPersonClick, markRead],
   );
   return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
 }

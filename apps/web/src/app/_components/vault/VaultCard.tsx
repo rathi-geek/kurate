@@ -1,23 +1,19 @@
 "use client";
 
 import React, { useCallback, useRef } from "react";
+
 import Image from "next/image";
+
 import { formatDistanceToNow } from "date-fns";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
-import {
-  EyeIcon,
-  EyeOffIcon,
-  ExternalLinkIcon,
-  PencilIcon,
-  ShareIcon,
-  TrashIcon,
-} from "@/components/icons";
+
+import type { VaultItem } from "@/app/_libs/types/vault";
 // TODO: restore when in-app reader is re-enabled
 // import { useMediaPlayer } from "@/app/_libs/context/MediaPlayerContext";
 import { cn } from "@/app/_libs/utils/cn";
-import type { VaultItem } from "@/app/_libs/types/vault";
+import { CheckIcon, ExternalLinkIcon, PencilIcon, ShareIcon, TrashIcon } from "@/components/icons";
 
 function getDescription(item: VaultItem): string | undefined {
   const raw = item.raw_metadata;
@@ -28,10 +24,7 @@ function getDescription(item: VaultItem): string | undefined {
   return undefined;
 }
 
-const contentTypePillClass: Record<
-  "article" | "video" | "podcast",
-  string
-> = {
+const contentTypePillClass: Record<"article" | "video" | "podcast", string> = {
   article: "bg-brand-50 text-primary",
   video: "bg-info-bg text-info-foreground",
   podcast: "bg-warning-bg text-warning-foreground",
@@ -85,19 +78,17 @@ function VaultCardInner({
     <div
       ref={cardRef}
       className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden rounded-card border border-border bg-card transition-shadow duration-200 hover:shadow-md",
+        "rounded-card border-border bg-card relative flex h-full min-h-0 flex-col overflow-hidden border transition-shadow duration-200 hover:shadow-md",
         item.is_read && "opacity-60",
-      )}
-    >
-      <div className="relative z-10 flex h-full min-h-0 flex-col bg-card">
+      )}>
+      <div className="bg-card relative z-10 flex h-full min-h-0 flex-col">
         <div
           role="button"
           tabIndex={0}
           // TODO: restore openItem(item, getSourceRect()) once in-app reader is ready
           onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
           onKeyDown={handleCardKeyDown}
-          className="flex min-h-0 flex-1 flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-card"
-        >
+          className="focus-visible:ring-primary rounded-card flex min-h-0 flex-1 flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
           {/* Image / type badge area */}
           <div className="relative h-[150px] w-full shrink-0 overflow-hidden">
             {item.preview_image_url ? (
@@ -109,13 +100,12 @@ function VaultCardInner({
                 sizes="(max-width: 640px) 100vw, 300px"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-muted">
+              <div className="bg-muted flex h-full w-full items-center justify-center">
                 <span
                   className={cn(
-                    "rounded-badge px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider",
+                    "rounded-badge px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase",
                     contentTypePillClass[item.content_type],
-                  )}
-                >
+                  )}>
                   {item.content_type}
                 </span>
               </div>
@@ -123,119 +113,112 @@ function VaultCardInner({
             {/* Content type pill top-left */}
             <span
               className={cn(
-                "absolute left-2 top-2 rounded-badge px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider",
+                "rounded-badge absolute top-2 left-2 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase",
                 contentTypePillClass[item.content_type],
-              )}
-            >
+              )}>
               {item.content_type}
             </span>
             {/* Pencil: add/edit remark — opens modal (not nested in card button) */}
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-2 top-2 z-10 h-7 w-7 rounded-button bg-card/80 text-muted-foreground hover:bg-card hover:text-foreground"
+              className="rounded-button bg-card/80 text-muted-foreground hover:bg-card hover:text-foreground absolute top-2 right-2 z-10 h-7 w-7"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onOpenRemarkModal?.(item);
               }}
               aria-label={t("edit_remark_aria")}
-            >
+              title={t("edit_remark_aria")}>
               <PencilIcon className="size-3.5" />
             </Button>
-            {/* Read state eye badge */}
-            {item.is_read && (
-              <span className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-full bg-card/90">
-                <EyeIcon className="size-3.5 text-muted-foreground" />
-              </span>
-            )}
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col p-3">
-            <h3 className="line-clamp-2 shrink-0 font-sans text-sm font-bold leading-snug text-foreground">
+            <h3 className="text-foreground line-clamp-2 shrink-0 font-sans text-sm leading-snug font-bold">
               {item.title || item.url}
             </h3>
 
             {/* Remark (read-only on card; edit via pencil → modal) */}
             {(item.remarks ?? "").trim() ? (
-              <p className="mt-1 line-clamp-2 font-sans text-sm text-muted-foreground">
+              <p className="text-muted-foreground mt-1 line-clamp-2 font-sans text-sm">
                 {item.remarks}
               </p>
             ) : null}
 
             {description ? (
-              <p className="mt-1 line-clamp-2 flex-1 font-sans text-xs text-muted-foreground min-h-0">
+              <p className="text-muted-foreground mt-1 line-clamp-2 min-h-0 flex-1 font-sans text-xs">
                 {description}
               </p>
             ) : (
               <div className="min-h-0 flex-1" />
             )}
 
-            <p className="mt-1.5 shrink-0 font-mono text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1.5 shrink-0 font-mono text-xs">
               {item.raw_metadata?.source ?? "—"} · {timeAgo}
             </p>
           </div>
         </div>
 
         {/* Footer actions — always at bottom */}
-        <div className="mt-auto flex shrink-0 items-center gap-1 border-t border-border px-3 py-2">
+        <div className="border-border mt-auto flex shrink-0 items-center gap-1 border-t px-3 py-2">
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 rounded-button"
+            className="rounded-button h-7 w-7"
+            title={t("open_aria")}
             // TODO: restore openItem(item, getSourceRect()) once in-app reader is ready
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               window.open(item.url, "_blank", "noopener,noreferrer");
             }}
-            aria-label={t("open_aria")}
-          >
+            aria-label={t("open_aria")}>
             <ExternalLinkIcon className="size-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 rounded-button"
+            className={cn(
+              "rounded-button h-7 w-7",
+              item.is_read &&
+                "bg-success-foreground text-primary-foreground hover:bg-success-foreground/90 hover:text-primary-foreground",
+            )}
+            title={item.is_read ? t("mark_unread_aria") : t("mark_read_aria")}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onToggleRead(item);
             }}
-            aria-label={item.is_read ? t("mark_unread_aria") : t("mark_read_aria")}
-          >
-            {item.is_read ? (
-              <EyeOffIcon className="size-3.5" />
-            ) : (
-              <EyeIcon className="size-3.5" />
-            )}
+            aria-label={item.is_read ? t("mark_unread_aria") : t("mark_read_aria")}>
+            <CheckIcon className="size-3.5" />
           </Button>
           {onShare && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-button"
+              className="rounded-button h-7 w-7"
+              title={t("share_aria")}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onShare(item);
               }}
-              aria-label={t("share_aria")}
-            >
+              aria-label={t("share_aria")}>
               <ShareIcon className="size-3.5" />
             </Button>
           )}
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 rounded-button text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="rounded-button text-destructive hover:bg-destructive/10 hover:text-destructive h-7 w-7"
+            title={t("delete_aria")}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onDelete(item.id);
             }}
-            aria-label={t("delete_aria")}
-          >
+            aria-label={t("delete_aria")}>
             <TrashIcon className="size-3.5" />
           </Button>
         </div>

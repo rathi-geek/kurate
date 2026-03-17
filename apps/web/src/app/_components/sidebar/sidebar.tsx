@@ -9,6 +9,8 @@
 
 import { useState } from "react";
 
+import { useUnreadCounts } from "@/app/_libs/hooks/useUnreadCounts";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -44,6 +46,7 @@ const NAV_ITEMS = [
 interface AppSidebarProps {
   userEmail?: string;
   userName?: string;
+  userId?: string | null;
   onLogout?: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -55,6 +58,7 @@ interface AppSidebarProps {
 export function AppSidebar({
   userEmail,
   userName,
+  userId = null,
   onLogout,
   mobileOpen = false,
   onMobileClose,
@@ -65,6 +69,7 @@ export function AppSidebar({
   const t = useTranslations("sidebar");
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const { counts: unreadCounts, markRead } = useUnreadCounts(userId);
 
   function isActive(href: string) {
     if (href === "/home") return pathname === "/home" || pathname === "/";
@@ -74,7 +79,8 @@ export function AppSidebar({
   return (
     <SidebarProvider
       activeChatHandle={activeChatHandle}
-      onPersonClick={onPersonClick}>
+      onPersonClick={onPersonClick}
+      markRead={markRead}>
       {/* Desktop sidebar */}
       <motion.div
         animate={{ width: collapsed ? 60 : 220 }}
@@ -158,8 +164,17 @@ export function AppSidebar({
 
         {/* Scrollable middle section */}
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <SidebarPeopleSection collapsed={collapsed} />
-          <SidebarGroupsSection collapsed={collapsed} />
+          <SidebarPeopleSection
+            collapsed={collapsed}
+            currentUserId={userId}
+            unreadCounts={unreadCounts}
+            markRead={markRead}
+          />
+          <SidebarGroupsSection
+            collapsed={collapsed}
+            unreadCounts={unreadCounts}
+            markRead={markRead}
+          />
         </div>
 
         {/* Footer */}
@@ -245,10 +260,19 @@ export function AppSidebar({
 
               <div className="border-ink/6 mx-4 mb-3 shrink-0 border-t" />
 
-              {/* Scrollable content — People section gets contacts/activeChatHandle/onPersonClick from SidebarProvider; only pass onItemClick to close drawer */}
+              {/* Scrollable content */}
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <SidebarPeopleSection onItemClick={onMobileClose} />
-                <SidebarGroupsSection onItemClick={onMobileClose} />
+                <SidebarPeopleSection
+                  onItemClick={onMobileClose}
+                  currentUserId={userId}
+                  unreadCounts={unreadCounts}
+                  markRead={markRead}
+                />
+                <SidebarGroupsSection
+                  onItemClick={onMobileClose}
+                  unreadCounts={unreadCounts}
+                  markRead={markRead}
+                />
               </div>
 
               {/* Footer */}

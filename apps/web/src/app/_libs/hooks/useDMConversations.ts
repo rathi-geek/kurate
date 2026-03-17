@@ -1,6 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
@@ -93,13 +95,35 @@ async function fetchDMConversations(userId: string): Promise<DMConversation[]> {
 }
 
 export function useDMConversations(userId: string | null) {
+  const queryClient = useQueryClient();
+
   const query = useQuery({
     queryKey: queryKeys.people.conversations(),
     queryFn: () => fetchDMConversations(userId!),
     enabled: !!userId,
-    refetchInterval: 10_000,
-    staleTime: 5_000,
   });
+
+  // Realtime subscription: invalidate conversations list on any new message
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel("dm-conversations")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (_payload) => {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.people.conversations() });
+        },
+      )
+      .subscribe((status, err) => {
+        if (err) console.error("[useDMConversations] subscription error:", err);
+      });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, queryClient]);
 
   return {
     conversations: query.data ?? [],

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useMessages } from "@/app/_libs/hooks/useMessages";
 import type { DMMessage } from "@/app/_libs/types/people";
 import { ROUTES } from "@/app/_libs/constants/routes";
+import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
 import { ChevronLeftIcon } from "@/components/icons";
 import { Link } from "@/i18n";
 import { MessageBubble } from "./message-bubble";
@@ -20,8 +21,14 @@ interface DmChatViewProps {
 
 export function DmChatView({ convoId, currentUserId, otherUserName }: DmChatViewProps) {
   const t = useTranslations("people");
+  const sidebarCtx = useSidebarContextOptional();
   const { messages, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useMessages(convoId);
+
+  useEffect(() => {
+    void sidebarCtx?.markRead?.(convoId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [convoId, messages.length]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -135,7 +142,7 @@ export function DmChatView({ convoId, currentUserId, otherUserName }: DmChatView
             <p className="text-muted-foreground text-sm">{t("chat_empty", { name: otherUserName })}</p>
           </div>
         )}
-        {messages.map((msg) => (
+        {messages.map((msg, index) => (
           <MessageBubble
             key={msg.id}
             message={msg}
@@ -143,6 +150,7 @@ export function DmChatView({ convoId, currentUserId, otherUserName }: DmChatView
             convoId={convoId}
             allMessages={messages}
             onReply={handleReply}
+            isContinuation={index > 0 && messages[index - 1]?.sender_id === msg.sender_id}
           />
         ))}
         <div ref={bottomRef} />

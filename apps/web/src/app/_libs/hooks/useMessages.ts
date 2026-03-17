@@ -1,6 +1,8 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@/app/_libs/query/keys";
@@ -104,6 +106,8 @@ async function fetchMessages(convoId: string, before?: string): Promise<DMMessag
 }
 
 export function useMessages(convoId: string | null) {
+  const queryClient = useQueryClient();
+
   const query = useInfiniteQuery({
     queryKey: queryKeys.people.messages(convoId ?? ""),
     queryFn: ({ pageParam }) => fetchMessages(convoId!, pageParam as string | undefined),
@@ -114,9 +118,31 @@ export function useMessages(convoId: string | null) {
       return lastPage[0]?.created_at;
     },
     enabled: !!convoId,
-    refetchInterval: 10_000,
-    staleTime: 5_000,
   });
+
+  // Realtime subscription: invalidate on new message in this conversation
+  useEffect(() => {
+    if (!convoId) return;
+
+    const channel = supabase
+      .channel(`messages:${convoId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const msg = payload.new as { convo_id: string };
+          if (msg.convo_id !== convoId) return;
+          void queryClient.invalidateQueries({ queryKey: queryKeys.people.messages(convoId) });
+        },
+      )
+      .subscribe((status, err) => {
+        if (err) console.error("[useMessages] subscription error:", err);
+      });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [convoId, queryClient]);
 
   // pages[0] = most recent batch, pages[N] = oldest batch
   // Reverse so display order is oldest (top) → newest (bottom)

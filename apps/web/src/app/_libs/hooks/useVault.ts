@@ -131,7 +131,12 @@ export function useVault(filters: VaultFilters) {
     staleTime: 1000 * 60,
   });
 
-  const items = query.data?.pages.flat() ?? [];
+  const rawItems = query.data?.pages.flat() ?? [];
+  // Unread first, read at end (like WhatsApp); within each group, newest first
+  const items = [...rawItems].sort((a, b) => {
+    if (a.is_read !== b.is_read) return a.is_read ? 1 : -1;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {

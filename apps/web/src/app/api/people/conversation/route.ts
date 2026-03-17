@@ -2,10 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { createClient } from "@/app/_libs/supabase/server";
 
-function generateInviteCode(): string {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
-}
-
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -59,7 +55,7 @@ export async function POST(request: NextRequest) {
   // Create a new DM conversation
   const { data: convo, error: convoError } = await supabase
     .from("conversations")
-    .insert({ is_group: false, invite_code: generateInviteCode() })
+    .insert({ is_group: false })
     .select("id")
     .single();
 

@@ -2,10 +2,12 @@
 
 import { useState, useRef } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { ROUTES } from "@/app/_libs/constants/routes";
+import { queryKeys } from "@/app/_libs/query/keys";
 import { useRouter } from "@/i18n";
 import {
   Dialog,
@@ -35,6 +37,7 @@ export interface FindUserSheetProps {
 export function FindUserSheet({ open, onOpenChange, currentUserId }: FindUserSheetProps) {
   const t = useTranslations("people");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchProfile[]>([]);
   const [searching, setSearching] = useState(false);
@@ -64,6 +67,7 @@ export function FindUserSheet({ open, onOpenChange, currentUserId }: FindUserShe
       });
       const json = await res.json() as { convoId?: string; error?: string };
       if (json.convoId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.people.conversations() });
         handleOpenChange(false);
         router.push(ROUTES.APP.PERSON(json.convoId));
       }

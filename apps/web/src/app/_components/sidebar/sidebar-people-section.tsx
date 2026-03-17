@@ -1,37 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useTranslations } from "next-intl";
 
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { useDMConversations } from "@/app/_libs/hooks/useDMConversations";
-import { createClient } from "@/app/_libs/supabase/client";
 import { DotsHorizontalIcon, PlusIcon } from "@/components/icons";
 import { FindUserSheet } from "@/components/people/find-user-sheet";
 import { Link } from "@/i18n";
-
-const supabase = createClient();
+import { UnreadBadge } from "@/app/_components/sidebar/unread-badge";
 
 export interface SidebarPeopleSectionProps {
   collapsed?: boolean;
   /** Called when an item is clicked (e.g. to close mobile drawer) */
   onItemClick?: () => void;
+  currentUserId?: string | null;
+  unreadCounts?: Map<string, number>;
+  markRead?: (convoId: string) => Promise<void>;
 }
 
 export function SidebarPeopleSection({
   collapsed = false,
   onItemClick,
+  currentUserId = null,
+  unreadCounts,
+  markRead,
 }: SidebarPeopleSectionProps) {
   const t = useTranslations("sidebar");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [newMessageOpen, setNewMessageOpen] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setCurrentUserId(data.user?.id ?? null);
-    });
-  }, []);
 
   const { conversations } = useDMConversations(currentUserId);
   const displayed = conversations.slice(0, 5);
@@ -59,23 +56,36 @@ export function SidebarPeopleSection({
               convo.otherUser.display_name ??
               (convo.otherUser.handle ? `@${convo.otherUser.handle}` : "Unknown");
             const initial = (displayName[0] ?? "?").toUpperCase();
+            const unread = unreadCounts?.get(convo.id) ?? 0;
+
+            const handleClick = () => {
+              onItemClick?.();
+              if (unread > 0) void markRead?.(convo.id);
+            };
 
             return collapsed ? (
               <Link
                 key={convo.id}
                 href={ROUTES.APP.PERSON(convo.id)}
                 title={displayName}
-                onClick={onItemClick}
+                onClick={handleClick}
                 className="hover:bg-ink/4 flex w-full cursor-pointer items-center justify-center rounded-md py-1.5 transition-colors">
-                <div className="bg-ink text-cream flex h-[26px] w-[26px] items-center justify-center rounded-full font-sans text-xs font-bold">
-                  {initial}
+                <div className="relative">
+                  <div className="bg-ink text-cream flex h-[26px] w-[26px] items-center justify-center rounded-full font-sans text-xs font-bold">
+                    {initial}
+                  </div>
+                  <UnreadBadge
+                    count={unread}
+                    variant="dot"
+                    className="absolute -top-0.5 -right-0.5"
+                  />
                 </div>
               </Link>
             ) : (
               <Link
                 key={convo.id}
                 href={ROUTES.APP.PERSON(convo.id)}
-                onClick={onItemClick}
+                onClick={handleClick}
                 className="rounded-badge hover:bg-ink/4 flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left transition-colors">
                 <div className="bg-ink text-cream flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full font-sans text-xs font-bold">
                   {initial}
@@ -88,6 +98,7 @@ export function SidebarPeopleSection({
                     </div>
                   )}
                 </div>
+                <UnreadBadge count={unread} variant="inline" className="ml-auto" />
               </Link>
             );
           })}
