@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/_libs/supabase/server";
 import { slugify } from "@/app/_libs/utils/slugify";
@@ -120,7 +121,7 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
     .maybeSingle();
 
   if (existing) {
-    redirect(ROUTES.APP.GROUP(slugify(group.group_name ?? "")));
+    redirect(ROUTES.APP.GROUP(slugify(group.group_name ?? "")) as Route);
   }
 
   // Check if group is full
@@ -162,5 +163,5 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
     role: "member",
   });
 
-  redirect(ROUTES.APP.GROUP(slugify(group.group_name ?? "")));
+  redirect(ROUTES.APP.GROUP(slugify(group.group_name ?? "")) as Route);
 }
