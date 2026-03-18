@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 
 import Image from "next/image";
 
@@ -13,6 +13,7 @@ import type { VaultItem } from "@/app/_libs/types/vault";
 // import { useMediaPlayer } from "@/app/_libs/context/MediaPlayerContext";
 import { cn } from "@/app/_libs/utils/cn";
 import { CheckIcon, DoubleCheckIcon, PencilIcon, ShareIcon, TrashIcon } from "@/components/icons";
+import { ContentTypePill } from "@/components/ui/content-type-pill";
 
 function getDescription(item: VaultItem): string | undefined {
   const raw = item.raw_metadata;
@@ -23,11 +24,6 @@ function getDescription(item: VaultItem): string | undefined {
   return undefined;
 }
 
-const contentTypePillClass: Record<"article" | "video" | "podcast", string> = {
-  article: "bg-brand-50 text-primary",
-  video: "bg-info-bg text-info-foreground",
-  podcast: "bg-warning-bg text-warning-foreground",
-};
 
 export interface VaultCardProps {
   item: VaultItem;
@@ -57,6 +53,7 @@ function VaultCardInner({
     [item],
   );
 
+  const [imgError, setImgError] = useState(false);
   const description = getDescription(item);
   const timeLabel = item.raw_metadata?.read_time ?? item.raw_metadata?.duration;
 
@@ -76,34 +73,29 @@ function VaultCardInner({
           className="focus-visible:ring-primary rounded-card flex min-h-0 flex-1 flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
           {/* Image / type badge area */}
           <div className="relative h-[150px] w-full shrink-0 overflow-hidden">
-            {item.preview_image_url ? (
+            {item.preview_image_url && !imgError ? (
               <Image
                 src={item.preview_image_url}
                 alt=""
                 fill
+                unoptimized
                 className="object-cover transition-[filter] duration-200 group-hover:blur-sm"
                 sizes="(max-width: 640px) 100vw, 300px"
+                onError={() => setImgError(true)}
               />
             ) : (
               <div className="bg-muted flex h-full w-full items-center justify-center transition-[filter] duration-200 group-hover:blur-sm">
-                <span
-                  className={cn(
-                    "rounded-badge px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase",
-                    contentTypePillClass[item.content_type],
-                  )}>
-                  {item.content_type}
-                </span>
+                <ContentTypePill contentType={item.content_type} />
               </div>
             )}
 
-            {/* Content type pill — hidden on hover */}
-            <span
-              className={cn(
-                "rounded-badge absolute top-2 left-2 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase transition-opacity duration-200 group-hover:opacity-0",
-                contentTypePillClass[item.content_type],
-              )}>
-              {item.content_type}
-            </span>
+            {/* Content type pill — hidden on hover, only when image is showing */}
+            {item.preview_image_url && !imgError && (
+              <ContentTypePill
+                contentType={item.content_type}
+                className="absolute top-2 left-2 transition-opacity duration-200 group-hover:opacity-0"
+              />
+            )}
 
             {/* Hover overlay — dark scrim + action icons */}
             <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">

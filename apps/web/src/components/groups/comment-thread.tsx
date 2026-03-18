@@ -33,6 +33,7 @@ interface CommentItemProps {
   onDelete: (id: string) => void;
   onReply?: (id: string, authorName: string, text: string) => void;
   isReply?: boolean;
+  isContinuation?: boolean;
   quotedAuthor?: string;
   quotedText?: string;
 }
@@ -44,6 +45,7 @@ function CommentItem({
   onDelete,
   onReply,
   isReply = false,
+  isContinuation = false,
   quotedAuthor,
   quotedText,
 }: CommentItemProps) {
@@ -114,8 +116,8 @@ function CommentItem({
       {isOwn && actions}
 
       <div className={`max-w-[75%] flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}>
-        {/* Name — others only */}
-        {!isOwn && (
+        {/* Name — others only, hidden for continuation runs */}
+        {!isOwn && !isContinuation && (
           <span className="text-[10px] text-muted-foreground font-medium px-1">
             {comment.author.display_name ?? comment.author.handle ?? t("anonymous")}
           </span>
@@ -142,10 +144,12 @@ function CommentItem({
               </div>
             </div>
           )}
-          {comment.comment_text}
-          <div className={`mt-0.5 text-[9px] font-mono ${isOwn ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
-            {formatRelativeTime(comment.created_at)}
-          </div>
+          <span className="break-words">
+            {comment.comment_text}
+            <span className={`inline-block align-bottom ml-2 text-[9px] font-mono leading-none ${isOwn ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+              {formatRelativeTime(comment.created_at)}
+            </span>
+          </span>
         </div>
       </div>
 
@@ -189,12 +193,16 @@ export function CommentThread({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="no-scrollbar max-h-[300px] overflow-y-auto flex flex-col gap-3">
-        {comments.map((comment) => (
-          <div key={comment.id}>
+      <div className="no-scrollbar max-h-[300px] overflow-y-auto flex flex-col">
+        {comments.map((comment, index) => {
+          const prev = comments[index - 1];
+          const isContinuation = !!prev && prev.user_id === comment.user_id;
+          return (
+          <div key={comment.id} className={isContinuation ? "mt-1" : index === 0 ? "" : "mt-3"}>
             <CommentItem
               comment={comment}
               currentUserId={currentUserId}
+              isContinuation={isContinuation}
               onEditStart={(id, text) => setEditingComment({ id, text })}
               onDelete={(id) => deleteComment(id, currentUserId)}
               onReply={(id, authorName, text) => setReplyingTo({ id, authorName, text })}
@@ -216,7 +224,8 @@ export function CommentThread({
               ))}
 
           </div>
-        ))}
+          );
+        })}
         {/* Infinite scroll sentinel */}
         <div ref={sentinelRef} className="h-1 w-full" aria-hidden />
       </div>

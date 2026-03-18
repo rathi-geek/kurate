@@ -1,11 +1,12 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { EngagementBar } from "@/components/groups/engagement-bar";
+import { ContentTypePill } from "@/components/ui/content-type-pill";
 import type { GroupDrop } from "@/app/_libs/types/groups";
 
 interface LibraryCardProps {
@@ -23,6 +24,7 @@ export const LibraryCard = memo(function LibraryCard({
 }: LibraryCardProps) {
   const router = useRouter();
   const t = useTranslations("groups");
+  const [imgError, setImgError] = useState(false);
 
   const handleClick = () => {
     // Navigate to group feed and scroll to the specific drop
@@ -37,18 +39,21 @@ export const LibraryCard = memo(function LibraryCard({
       aria-label={drop.item?.title ?? drop.note ?? t("drop_aria_fallback")}
     >
       {/* Preview image (link drops only) */}
-      {drop.item?.preview_image_url ? (
-        <div className="relative w-full shrink-0 aspect-video bg-surface">
+      {drop.item?.preview_image_url && !imgError ? (
+        <div className="relative w-full shrink-0 aspect-video bg-surface overflow-hidden">
           <Image
             src={drop.item.preview_image_url}
             alt={drop.item.title ?? ""}
             fill
+            unoptimized
             className="object-cover"
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+            onError={() => { console.log("[LibraryCard] image error for:", drop.item?.preview_image_url); setImgError(true); }}
           />
         </div>
       ) : drop.item ? (
-        <div className="w-full shrink-0 aspect-video bg-surface" />
+        <div className="bg-muted/40 flex aspect-video w-full shrink-0 items-center justify-center">
+          <ContentTypePill contentType={drop.item.content_type} />
+        </div>
       ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col p-3">

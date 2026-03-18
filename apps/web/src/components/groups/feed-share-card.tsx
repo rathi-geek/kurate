@@ -11,6 +11,7 @@ import type { GroupDrop, GroupProfile, GroupRole } from "@/app/_libs/types/group
 import { CommentThread } from "@/components/groups/comment-thread";
 import { EngagementBar } from "@/components/groups/engagement-bar";
 import { ChevronDownIcon, TrashIcon } from "@/components/icons";
+import { ContentTypePill } from "@/components/ui/content-type-pill";
 
 interface FeedShareCardProps {
   drop: GroupDrop;
@@ -61,6 +62,7 @@ export const FeedShareCard = memo(function FeedShareCard({
   const hasMustRead = drop.engagement.mustRead.count > 0;
   const [showComments, setShowComments] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -129,16 +131,10 @@ export const FeedShareCard = memo(function FeedShareCard({
 
       <motion.article
         id={`drop-${drop.id}`}
-        initial={{ y: 0, boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}
-        whileHover={{
-          y: -6,
-          boxShadow: "0 18px 38px rgba(0,0,0,0.12), 0 6px 14px rgba(0,0,0,0.07)",
-          transition: { type: "spring", stiffness: 280, damping: 22 },
-        }}
-        className={`rounded-card bg-card overflow-hidden border transition-colors ${
+        whileHover={{ boxShadow: "0 8px 20px rgba(0,0,0,0.09)", transition: { duration: 0.15 } }}
+        className={`rounded-card bg-card overflow-hidden border shadow-sm transition-colors ${
           hasMustRead ? "border-warning-foreground/30 bg-warning-bg/40" : "border-border"
-        }`}
-        style={{ transformStyle: "preserve-3d" }}>
+        }`}>
         <div className="p-4 pt-0">
           {/* Sharer note — green tinted card */}
           {drop.note && (
@@ -149,7 +145,7 @@ export const FeedShareCard = memo(function FeedShareCard({
           {/* Link drop: full-width preview image + title */}
           {drop.item && (
             <>
-              {drop.item.preview_image_url && (
+              {drop.item.preview_image_url && !imgError ? (
                 <a
                   href={drop.item.url}
                   target="_blank"
@@ -159,9 +155,18 @@ export const FeedShareCard = memo(function FeedShareCard({
                     src={drop.item.preview_image_url}
                     alt={drop.item.title ?? ""}
                     fill
+                    unoptimized
                     className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 600px"
+                    onError={() => setImgError(true)}
                   />
+                </a>
+              ) : (
+                <a
+                  href={drop.item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-muted/40 border-border/40 relative -mx-4 mb-3 flex h-[220px] items-center justify-center overflow-hidden border-b">
+                  <ContentTypePill contentType={drop.item.content_type} />
                 </a>
               )}
               <div className="mb-2">
