@@ -1,6 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
+
+import { useSearchParams } from "next/navigation";
 
 import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
 import type { Tables } from "@/app/_libs/types/database.types";
@@ -32,7 +34,20 @@ function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageCl
     currentUserId,
   );
 
-  const [openModal, setOpenModal] = useState<InfoModal>(null);
+  const searchParams = useSearchParams();
+  const [openModal, setOpenModal] = useState<InfoModal>(() =>
+    searchParams.get("invite") === "1" ? "invite" : null,
+  );
+
+  useEffect(() => {
+    if (searchParams.get("invite") === "1") {
+      setOpenModal("invite");
+      // Clean the URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete("invite");
+      window.history.replaceState(null, "", url.toString());
+    }
+  }, [searchParams]);
   const memberIds = new Set(members.map((m) => m.user_id));
 
   return (

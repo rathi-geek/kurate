@@ -86,7 +86,7 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
       setName("");
       setDescription("");
 
-      router.push(`/groups/${slugify(group.group_name ?? "")}`);
+      router.push(`/groups/${slugify(group.group_name ?? "")}/info?invite=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error_generic"));
     } finally {

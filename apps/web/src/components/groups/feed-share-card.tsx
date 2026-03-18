@@ -98,7 +98,7 @@ export const FeedShareCard = memo(function FeedShareCard({
             )}
             <div className="min-w-0">
               <span className="text-foreground text-sm font-semibold">
-                {drop.sharer.display_name ?? drop.sharer.handle ?? t("anonymous")}
+                {isSharer ? "YOU" : (drop.sharer.display_name ?? drop.sharer.handle ?? t("anonymous"))}
               </span>
               <span className="text-muted-foreground ml-1.5 text-xs">
                 dropped · {formatRelativeTime(drop.shared_at)}
