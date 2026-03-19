@@ -22,8 +22,8 @@ export const ROUTES = {
     PERSON: (id: string) => `/people/${id}`,
     DASHBOARD: "/dashboard",
     ONBOARDING: "/onboarding",
-    GROUP: (nameOrSlug: string) => `/groups/${nameOrSlug}`,
-    GROUP_INFO: (nameOrSlug: string) => `/groups/${nameOrSlug}/info`,
+    GROUP: (id: string) => `/groups/${id}`,
+    GROUP_INFO: (id: string) => `/groups/${id}/info`,
     GROUP_JOIN: (inviteCode: string) => `/groups/join/${inviteCode}`,
   },
 

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/app/_libs/supabase/server";
-import { slugify } from "@/app/_libs/utils/slugify";
 import type { GroupRole } from "@/app/_libs/types/groups";
 
 export default async function GroupsPage() {
@@ -64,7 +63,7 @@ export default async function GroupsPage() {
           {groups.map((g) => (
             <Link
               key={g.id}
-              href={`/groups/${slugify(g.name)}`}
+              href={`/groups/${g.id}`}
               className="block rounded-card border border-border bg-card p-4 hover:bg-surface transition-colors"
             >
               <div className="flex items-start justify-between gap-3">

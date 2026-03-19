@@ -13,14 +13,12 @@ interface LibraryCardProps {
   drop: GroupDrop;
   currentUserId: string;
   groupId: string;
-  groupSlug: string;
 }
 
 export const LibraryCard = memo(function LibraryCard({
   drop,
   currentUserId,
   groupId,
-  groupSlug,
 }: LibraryCardProps) {
   const router = useRouter();
   const t = useTranslations("groups");
@@ -28,7 +26,7 @@ export const LibraryCard = memo(function LibraryCard({
 
   const handleClick = () => {
     // Navigate to group feed and scroll to the specific drop
-    router.push(`/groups/${groupSlug}#drop-${drop.id}`);
+    router.push(`/groups/${groupId}#drop-${drop.id}`);
   };
 
   return (

@@ -16,7 +16,7 @@ interface GroupHeaderProps {
   group: Tables<"conversations">;
   currentUserId: string;
   currentUserRole: GroupRole;
-  groupSlug: string;
+  groupId: string;
 }
 
 export function GroupHeader({

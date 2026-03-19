@@ -18,7 +18,7 @@ export type InfoModal = "invite" | "edit" | null;
 
 export interface GroupInfoHeaderProps {
   group: Tables<"conversations">;
-  groupSlug: string;
+  groupId: string;
   userRole: GroupRole;
   members: GroupMember[];
   membersLoading: boolean;
@@ -28,7 +28,7 @@ export interface GroupInfoHeaderProps {
 
 export function GroupInfoHeader({
   group,
-  groupSlug,
+  groupId,
   userRole,
   members,
   membersLoading,
@@ -50,7 +50,7 @@ export function GroupInfoHeader({
           <div className="flex shrink-0 flex-row items-center gap-3">
             <button
               type="button"
-              onClick={() => router.push(`/groups/${groupSlug}`)}
+              onClick={() => router.push(`/groups/${groupId}`)}
               aria-label={t("back_to_feed")}
               className="text-muted-foreground hover:text-foreground hover:bg-surface shrink-0 rounded-md p-1.5 transition-colors">
               <ChevronLeftIcon className="size-[18px]" />
@@ -117,7 +117,7 @@ export function GroupInfoHeader({
             .update({ group_name: name, group_description: description || null })
             .eq("id", group.id);
           await queryClient.invalidateQueries({
-            queryKey: queryKeys.groups.detail(groupSlug),
+            queryKey: queryKeys.groups.detail(groupId),
           });
         }}
       />

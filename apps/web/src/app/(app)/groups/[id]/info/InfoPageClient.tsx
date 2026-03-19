@@ -12,12 +12,13 @@ import {
   type InfoModal,
 } from "@/components/groups/group-info-header";
 import { GroupInviteModal } from "@/components/groups/group-invite-modal";
+import { GroupDangerZone } from "@/components/groups/group-danger-zone";
 
 interface InfoPageClientProps {
   group: Tables<"conversations">;
   currentUserId: string;
   userRole: GroupRole;
-  groupSlug: string;
+  groupId: string;
 }
 
 export function InfoPageClient(props: InfoPageClientProps) {
@@ -28,7 +29,7 @@ export function InfoPageClient(props: InfoPageClientProps) {
   );
 }
 
-function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageClientProps) {
+function InfoPageInner({ group, currentUserId, userRole, groupId }: InfoPageClientProps) {
   const { members, isLoading: membersLoading } = useGroupMembers(
     group.id,
     currentUserId,
@@ -42,12 +43,12 @@ function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageCl
   useEffect(() => {
     if (searchParams.get("invite") === "1") {
       setOpenModal("invite");
-      // Clean the URL without reload
       const url = new URL(window.location.href);
       url.searchParams.delete("invite");
       window.history.replaceState(null, "", url.toString());
     }
   }, [searchParams]);
+
   const memberIds = new Set(members.map((m) => m.user_id));
 
   return (
@@ -55,7 +56,7 @@ function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageCl
       <div className="flex-1 overflow-y-auto">
         <GroupInfoHeader
           group={group}
-          groupSlug={groupSlug}
+          groupId={groupId}
           userRole={userRole}
           members={members}
           membersLoading={membersLoading}
@@ -63,6 +64,13 @@ function InfoPageInner({ group, currentUserId, userRole, groupSlug }: InfoPageCl
           setOpenModal={setOpenModal}
         />
       </div>
+
+      <GroupDangerZone
+        group={group}
+        currentUserId={currentUserId}
+        userRole={userRole}
+        members={members}
+      />
 
       <GroupInviteModal
         open={openModal === "invite"}

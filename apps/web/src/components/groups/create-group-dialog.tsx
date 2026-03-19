@@ -14,8 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { queryKeys } from "@/app/_libs/query/keys";
 import { createClient } from "@/app/_libs/supabase/client";
-import { slugify } from "@/app/_libs/utils/slugify";
-
 // Postgres unique-violation code
 const PG_UNIQUE_VIOLATION = "23505";
 
@@ -86,7 +84,7 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
       setName("");
       setDescription("");
 
-      router.push(`/groups/${slugify(group.group_name ?? "")}/info?invite=1`);
+      router.push(`/groups/${group.id}/info?invite=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error_generic"));
     } finally {
@@ -114,11 +112,6 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
               autoFocus
               required
             />
-            {name.trim() && (
-              <p className="text-muted-foreground mt-1 font-mono text-xs">
-                /groups/{slugify(name.trim())}
-              </p>
-            )}
           </div>
 
           <div className="space-y-1.5">

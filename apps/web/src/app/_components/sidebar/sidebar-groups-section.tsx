@@ -8,7 +8,6 @@ import { useTranslations } from "next-intl";
 import { ROUTES } from "@/app/_libs/constants/routes";
 import { queryKeys } from "@/app/_libs/query/keys";
 import { type GroupRow, fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
-import { slugify } from "@/app/_libs/utils/slugify";
 import { BrandStar } from "@/components/brand";
 import { CreateGroupDialog } from "@/components/groups/create-group-dialog";
 import { PlusIcon } from "@/components/icons";
@@ -48,7 +47,7 @@ function GroupListContent({
           return (
             <Link
               key={g.id}
-              href={ROUTES.APP.GROUP(slugify(g.name))}
+              href={ROUTES.APP.GROUP(g.id)}
               title={g.name}
               onClick={handleClick}
               className="hover:bg-ink/4 flex w-full cursor-pointer items-center justify-center rounded-md py-1.5 transition-colors">
@@ -81,7 +80,7 @@ function GroupListContent({
             key={g.id}
             className="hover:bg-ink/4 group/grp rounded-badge flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors">
             <Link
-              href={ROUTES.APP.GROUP(slugify(g.name))}
+              href={ROUTES.APP.GROUP(g.id)}
               onClick={handleClick}
               className="flex min-w-0 flex-1 items-center gap-2.5">
               <div className="bg-primary/10 flex h-7 w-7 shrink-0 items-center justify-center rounded-md">

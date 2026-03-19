@@ -10,13 +10,13 @@ import type { Tables } from "@/app/_libs/types/database.types";
 
 interface FeedHeaderProps {
   group: Tables<"conversations">;
-  groupSlug: string;
+  groupId: string;
   currentUserId: string;
   view: "feed" | "library";
   onToggleLibrary: () => void;
 }
 
-export function FeedHeader({ group, groupSlug, currentUserId, view, onToggleLibrary }: FeedHeaderProps) {
+export function FeedHeader({ group, groupId, currentUserId, view, onToggleLibrary }: FeedHeaderProps) {
   const t = useTranslations("groups");
   const router = useRouter();
   const { members } = useGroupMembers(group.id, currentUserId);
@@ -82,7 +82,7 @@ export function FeedHeader({ group, groupSlug, currentUserId, view, onToggleLibr
         {/* Info / settings → /info page */}
         <button
           type="button"
-          onClick={() => router.push(`/groups/${groupSlug}/info`)}
+          onClick={() => router.push(`/groups/${groupId}/info`)}
           aria-label={t("info_aria")}
           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
         >

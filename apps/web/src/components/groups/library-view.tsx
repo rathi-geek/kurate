@@ -8,14 +8,12 @@ import type { GroupRole, GroupDrop } from "@/app/_libs/types/groups";
 
 interface LibraryViewProps {
   groupId: string;
-  groupSlug: string;
   currentUserId: string;
   userRole: GroupRole;
 }
 
 export function LibraryView({
   groupId,
-  groupSlug,
   currentUserId,
 }: LibraryViewProps) {
   const t = useTranslations("groups");
@@ -61,7 +59,6 @@ export function LibraryView({
                 drop={drop}
                 currentUserId={currentUserId}
                 groupId={groupId}
-                groupSlug={groupSlug}
               />
             ))}
           </div>
@@ -85,7 +82,6 @@ export function LibraryView({
                 drop={drop}
                 currentUserId={currentUserId}
                 groupId={groupId}
-                groupSlug={groupSlug}
               />
             ))}
           </div>

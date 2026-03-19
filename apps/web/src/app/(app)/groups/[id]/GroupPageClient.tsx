@@ -13,14 +13,14 @@ interface GroupPageClientProps {
   group: Tables<"conversations">;
   currentUserId: string;
   userRole: GroupRole;
-  groupSlug: string;
+  groupId: string;
 }
 
 export function GroupPageClient({
   group,
   currentUserId,
   userRole,
-  groupSlug,
+  groupId,
 }: GroupPageClientProps) {
   const [view, setView] = useState<"feed" | "library">("feed");
   const sidebarCtx = useSidebarContextOptional();
@@ -34,7 +34,7 @@ export function GroupPageClient({
     <div className="mx-auto flex h-full max-w-md flex-col overflow-hidden">
       <FeedHeader
         group={group}
-        groupSlug={groupSlug}
+        groupId={groupId}
         currentUserId={currentUserId}
         view={view}
         onToggleLibrary={() => setView((v) => (v === "feed" ? "library" : "feed"))}
@@ -44,7 +44,6 @@ export function GroupPageClient({
       ) : (
         <LibraryView
           groupId={group.id}
-          groupSlug={groupSlug}
           currentUserId={currentUserId}
           userRole={userRole}
         />

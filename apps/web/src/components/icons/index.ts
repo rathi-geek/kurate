@@ -8,6 +8,7 @@ export { DomainIcon } from "./domain-icon";
 export { ExclamationCircleIcon } from "./exclamation-circle-icon";
 export { ExternalLinkIcon } from "./external-link-icon";
 export { LinkIcon } from "./link-icon";
+export { LogOutIcon } from "./log-out-icon";
 export { EyeIcon } from "./eye-icon";
 export { EyeOffIcon } from "./eye-off-icon";
 export { GoogleIcon } from "./google-icon";
