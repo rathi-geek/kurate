@@ -1,0 +1,103 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import type { Notification } from "@/app/_libs/hooks/useNotifications";
+import { NotificationItem } from "./notification-item";
+
+interface NotificationPanelProps {
+  open: boolean;
+  onClose: () => void;
+  notifications: Notification[];
+  unreadCount: number;
+  isLoading: boolean;
+  markAllRead: () => Promise<void>;
+  markRead: (id: string) => Promise<void>;
+}
+
+export function NotificationPanel({
+  open,
+  onClose,
+  notifications,
+  unreadCount,
+  isLoading,
+  markAllRead,
+  markRead,
+}: NotificationPanelProps) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Mark all read 1.5s after panel opens (so user sees badge before it clears)
+  useEffect(() => {
+    if (open && unreadCount > 0) {
+      timerRef.current = setTimeout(() => {
+        void markAllRead();
+      }, 1500);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="flex w-full max-w-sm flex-col p-0">
+        <SheetHeader className="border-b px-4 py-3">
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-base">Notifications</SheetTitle>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={() => void markAllRead()}
+                className="text-muted-foreground hover:text-foreground text-xs transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto">
+          {isLoading && (
+            <div className="flex flex-col gap-3 p-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="bg-muted size-9 shrink-0 animate-pulse rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="bg-muted h-3 w-3/4 animate-pulse rounded" />
+                    <div className="bg-muted h-3 w-1/2 animate-pulse rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!isLoading && notifications.length === 0 && (
+            <div className="text-muted-foreground flex flex-col items-center justify-center px-4 py-16 text-center">
+              <p className="text-sm font-medium">No notifications yet</p>
+              <p className="mt-1 text-xs">
+                You&apos;ll see activity from your groups here
+              </p>
+            </div>
+          )}
+
+          {!isLoading &&
+            notifications.map((n) => (
+              <NotificationItem
+                key={n.id}
+                notification={n}
+                onNavigate={onClose}
+                markRead={markRead}
+              />
+            ))}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

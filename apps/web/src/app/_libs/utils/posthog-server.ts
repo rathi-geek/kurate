@@ -5,8 +5,8 @@ let posthogInstance: PostHog | null = null;
 
 export function getPostHogServer() {
   if (!posthogInstance) {
-    posthogInstance = new PostHog("phc_4vV3IEEOtQjqPBn4U6n63UF8LsUvC19FLS2ffYMBBIK", {
-      host: "https://eu.i.posthog.com",
+    posthogInstance = new PostHog(env.NEXT_PUBLIC_POSTHOG_KEY ?? "", {
+      host: env.NEXT_PUBLIC_POSTHOG_HOST,
       flushAt: 1,
       flushInterval: 0, // Because server-side functions in Next.js can be short-lived we flush regularly
     });

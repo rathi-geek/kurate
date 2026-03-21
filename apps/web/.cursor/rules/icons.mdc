@@ -1,0 +1,34 @@
+---
+description: All SVG icons must live in a single folder; use IconName enum when referring to icons by name
+globs: ["src/**/*.tsx", "src/**/*.ts"]
+alwaysApply: true
+---
+
+# Icons — Single Source of Truth
+
+## Rule: All SVGs in One Place
+
+- **All SVG icons** (inline or component) must live in **`src/components/icons/`**.
+- Do **not** define SVG icons inline in feature components, vault, reader, or elsewhere.
+- Add new icons as a component file in `src/components/icons/` (e.g. `chevron-down-icon.tsx`) and export from `src/components/icons/index.ts`.
+
+## Usage
+
+- **Import icon components** from `@/components/icons`:
+  ```ts
+  import { SearchIcon, ChevronDownIcon, GoogleIcon } from "@/components/icons";
+  ```
+- **Refer to icons by name** using the **`IconName` enum** (e.g. in configs, props, or maps):
+  ```ts
+  import { IconName } from "@/components/icons";
+  // e.g. IconName.Search, IconName.ChevronDown
+  ```
+- When adding a new icon:
+  1. Create `src/components/icons/<name>-icon.tsx` (kebab-case file, PascalCase component).
+  2. Export the component from `src/components/icons/index.ts`.
+  3. Add the corresponding value to the **`IconName`** enum in `src/components/icons/types.ts`.
+
+## Icon Component Pattern
+
+- Props: `{ className?: string }` (size/color via `className`, e.g. `h-4 w-4`).
+- SVG: `fill="none"`, `stroke="currentColor"`, `strokeWidth={1.5}`, `strokeLinecap="round"`, `strokeLinejoin="round"`, `aria-hidden`.
