@@ -1,0 +1,22 @@
+:root {
+  /* Radius — base for size scale; component tokens below */
+  --radius-base: 0.4rem;
+  --radius-button: 10px;
+  --radius-card: 12px;
+  --radius-input: 10px;
+  --radius-badge: 6px;
+  --radius-pill: 999px;
+}
+
+@theme inline {
+  /* Border Radius — size scale (from --radius-base) and component tokens */
+  --radius-sm: calc(var(--radius-base) - 4px);
+  --radius-md: calc(var(--radius-base) - 2px);
+  --radius-lg: var(--radius-base);
+  --radius-xl: calc(var(--radius-base) + 4px);
+  --radius-button: var(--radius-button);
+  --radius-card: var(--radius-card);
+  --radius-input: var(--radius-input);
+  --radius-badge: var(--radius-badge);
+  --radius-pill: var(--radius-pill);
+}

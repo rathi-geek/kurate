@@ -68,8 +68,8 @@ export function CommentInput({
           >
             <div className="flex items-center gap-2 px-4 pt-2.5 pb-0">
               <div className="flex-1 min-w-0 border-l-[3px] border-teal/50 pl-2.5 py-1">
-                <p className="font-sans text-[11px] font-bold text-teal truncate">{replyTo.senderName}</p>
-                <p className="font-sans text-[11px] text-ink/50 truncate">{replyTo.content.slice(0, 50)}...</p>
+                <p className="font-sans text-xs font-bold text-teal truncate">{replyTo.senderName}</p>
+                <p className="font-sans text-xs text-ink/50 truncate">{replyTo.content.slice(0, 50)}...</p>
               </div>
               <button
                 onClick={onCancelReply}
@@ -93,12 +93,12 @@ export function CommentInput({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border border-ink/10 bg-ink/[0.03] px-3 py-2 font-sans text-[13px] text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-teal/30"
+          className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border border-ink/10 bg-ink/[0.03] px-3 py-2 font-sans text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-teal/30"
         />
         <button
           onClick={handleSubmit}
           disabled={!value.trim() || disabled}
-          className="shrink-0 px-4 py-2 rounded-xl bg-teal text-primary-foreground font-sans text-[12px] font-semibold disabled:opacity-40 cursor-pointer hover:opacity-90 transition-opacity"
+          className="shrink-0 px-4 py-2 rounded-xl bg-teal text-primary-foreground font-sans text-xs font-semibold disabled:opacity-40 cursor-pointer hover:opacity-90 transition-opacity"
           type="button"
         >
           Send

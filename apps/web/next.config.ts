@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
+import path from "node:path";
+
 import withBundleAnalyzer from "@next/bundle-analyzer";
+import createNextIntlPlugin from "next-intl/plugin";
 import { withPostHogConfig } from "@posthog/nextjs-config";
 import { withSentryConfig } from "@sentry/nextjs";
 import { env } from "env";
@@ -12,9 +15,15 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: true, // sentry and posthog config
   skipTrailingSlashRedirect: true,
   serverExternalPackages: ["import-in-the-middle", "require-in-the-middle"], // posthog config
+  turbopack: {
+    root: path.resolve(__dirname, "../.."),
+  },
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [],
+    remotePatterns: [
+      { protocol: "https", hostname: "**" },
+      { protocol: "http", hostname: "**" },
+    ],
   },
   async rewrites() {
     return [
@@ -61,19 +70,10 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
     optimizePackageImports: [
-      "date-fns",
       "react-hook-form",
-      "lodash-es",
       "react-icons",
-      "recharts",
-      "react-day-picker",
-      "react-resizable-panels",
-      "vaul",
       "tailwind-merge",
       "zod",
-      "embla-carousel-react",
-      "input-otp",
-      "cmdk",
     ],
     webVitalsAttribution: ["FCP", "LCP", "CLS", "FID", "TTFB", "INP"],
   },
@@ -92,8 +92,8 @@ const withPostHog =
 // Conditionally apply Sentry configuration only if auth token is provided
 const withSentry = env.SENTRY_AUTH_TOKEN
   ? withSentryConfig(withPostHog, {
-      org: "test-organisation-qk",
-      project: "create-next-coe",
+      org: "kurate", // TODO: replace with your Sentry org slug
+      project: "kurate",
       silent: !process.env.CI,
       widenClientFileUpload: true,
       tunnelRoute: "/monitoring", // ?!monitoring in next.config.ts when using proxy.ts file
@@ -101,7 +101,7 @@ const withSentry = env.SENTRY_AUTH_TOKEN
       automaticVercelMonitors: true,
       authToken: env.SENTRY_AUTH_TOKEN,
       sourcemaps: {
-        deleteSourcemapsAfterUpload: false,
+        deleteSourcemapsAfterUpload: true,
       },
       reactComponentAnnotation: {
         enabled: true,
@@ -109,10 +109,15 @@ const withSentry = env.SENTRY_AUTH_TOKEN
     })
   : withPostHog;
 
-export default withBundleAnalyzer({
-  enabled: env.ANALYZE === "true",
-})(
-  env.NEXT_PUBLIC_APP_ENV === "production" || env.NEXT_PUBLIC_APP_ENV === "staging"
-    ? withSentry
-    : nextConfig,
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(
+  withBundleAnalyzer({
+    enabled: env.ANALYZE === "true",
+  })(
+    env.NEXT_PUBLIC_APP_ENV === "production" ||
+      env.NEXT_PUBLIC_APP_ENV === "staging"
+      ? withSentry
+      : nextConfig,
+  ),
 );

@@ -1,18 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { env } from "env";
+import { ROUTES } from "@/app/_libs/constants/routes";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const type = searchParams.get("type"); // "signup" | "recovery" etc.
 
   if (code) {
-    const response = NextResponse.redirect(
-      type === "recovery"
-        ? `${origin}/auth/reset-password`
-        : `${origin}/chat`
-    );
+    const collectedCookies: Array<{ name: string; value: string; options: object }> = [];
 
     const supabase = createServerClient(
       env.NEXT_PUBLIC_SUPABASE_URL,
@@ -20,33 +16,49 @@ export async function GET(request: Request) {
       {
         cookies: {
           getAll() {
-            return (
-              request.headers
-                .get("cookie")
-                ?.split("; ")
-                .map((c) => {
-                  const [name, ...rest] = c.split("=");
-                  return { name: name ?? "", value: rest.join("=") };
-                }) ?? []
-            );
+            return request.cookies.getAll();
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
+            cookiesToSet.forEach((c) => collectedCookies.push(c));
           },
         },
       }
     );
 
+    const next = searchParams.get("next");
+    const safeNext = next && next.startsWith("/") ? next : null;
+
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+      let redirectPath: string;
+
+      if (user?.user_metadata?.role === "admin") {
+        redirectPath = ROUTES.ADMIN.DASHBOARD;
+      } else {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("is_onboarded")
+          .eq("id", user!.id)
+          .single();
+
+        if (!profileData?.is_onboarded) {
+          redirectPath = safeNext
+            ? `${ROUTES.APP.ONBOARDING}?next=${encodeURIComponent(safeNext)}`
+            : ROUTES.APP.ONBOARDING;
+        } else {
+          redirectPath = safeNext ?? ROUTES.APP.HOME;
+        }
+      }
+
+      const response = NextResponse.redirect(`${origin}${redirectPath}`);
+      collectedCookies.forEach(({ name, value, options }) =>
+        response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
+      );
       return response;
     }
   }
 
-  // If code exchange fails or no code, redirect to login
-  const { origin: o } = new URL(request.url);
-  return NextResponse.redirect(`${o}/auth/login`);
+  return NextResponse.redirect(`${origin}${ROUTES.AUTH.LOGIN}`);
 }

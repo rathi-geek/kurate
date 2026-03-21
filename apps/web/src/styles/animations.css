@@ -1,0 +1,26 @@
+/* Keyframes used by page.tsx (home) and CTA */
+@keyframes ctaBreathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(26, 26, 26, 0.04);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(26, 26, 26, 0.02);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

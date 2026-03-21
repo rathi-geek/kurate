@@ -44,7 +44,7 @@ Build for a seated user with a mouse, keyboard, and a viewport at least 768px wi
 ### Layout Rules
 - **Responsive grid progression: 1 → 2 → 3 → 4 columns**.
 - **Account for the sidebar offset.** Content must not visually overlap the sidebar.
-- Max content width is `--width-page: 1200px`, centred with `mx-auto`.
+- Use `container-page` utility class for full-width page wrappers (max-width: var(--container-xl) = 1280px). Use `container-content` for readable content (max-width: var(--container-content) = 800px).
 
 ### Component Behaviour
 - **Hover states are required** on all interactive elements.
@@ -52,7 +52,7 @@ Build for a seated user with a mouse, keyboard, and a viewport at least 768px wi
 - **Overlays are side panels or dropdowns**, not bottom sheets.
 
 ### Animation
-- **Card hover lift:** `whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}` with `springSnappy`.
+- **Card hover lift:** `whileHover={{ y: -2 }}` with `springSnappy` and `className="shadow-sm hover:shadow-md transition-shadow"`. Use CSS shadow tokens instead of raw `boxShadow` in Framer Motion — keeps shadows consistent with the design system.
 - **Button press:** `whileTap={{ scale: 0.98 }}`.
 - **Side panel entry:** `x: "100%" → x: 0` with `springHeavy`.
 - Respect `prefers-reduced-motion`.
@@ -63,8 +63,13 @@ Build for a seated user with a mouse, keyboard, and a viewport at least 768px wi
 
 ### Design Language
 - **shadcn/ui** base with Kurate brand customization
-- Cards use standard border radius from shadcn
-- Pills use `--radius-pill: 999px`
+- Design tokens live in `src/styles/tokens/` — check the CSS files before introducing a new color, radius, or shadow
+- Brand colors: cream (background), ink (text), teal (primary), lavender (secondary), amber (accent)
+- Cards: `rounded-card` (12px) with `shadow-sm` at rest, `shadow-md` on hover
+- Buttons: `rounded-button` (10px)
+- Inputs: `rounded-input` (10px)
+- Badges/chips/tags: `rounded-badge` (6px) or `rounded-pill` (999px) for full pills
+- State colors: success-bg/success-foreground, warning-bg/warning-foreground, info-bg/info-foreground, destructive/destructive-foreground
 
 ### Spring Physics
 All animation must use spring physics. Never use CSS `ease-in-out`, `linear`, or `cubic-bezier`.
@@ -95,3 +100,25 @@ export const springGentle = { type: "spring", stiffness: 260, damping: 25 };
 export const springBouncy = { type: "spring", stiffness: 200, damping: 22 };
 export const springHeavy = { type: "spring", stiffness: 300, damping: 30 };
 ```
+
+---
+
+## Design Tokens Quick Reference
+
+When building any UI, pull from this palette. Never invent new values.
+
+| Need | Class to use |
+|------|--------------|
+| Page background | `bg-background` |
+| Body text | `text-foreground` |
+| Subtle text | `text-muted-foreground` |
+| Primary button | `bg-primary text-primary-foreground rounded-button` |
+| Card surface | `bg-card rounded-card shadow-sm` |
+| Danger action | `bg-destructive text-destructive-foreground rounded-button` |
+| Success badge | `bg-success-bg text-success-foreground rounded-badge` |
+| Warning badge | `bg-warning-bg text-warning-foreground rounded-badge` |
+| Info badge | `bg-info-bg text-info-foreground rounded-badge` |
+| All borders | `border-border` |
+| Focus ring | `ring-ring` |
+
+Full token list: `src/styles/tokens/` (colors.css, radius.css, typography.css, shadows.css)

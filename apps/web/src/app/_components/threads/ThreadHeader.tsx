@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ContentThread } from "@/app/_libs/chat-types";
-import { getOtherParticipants } from "@/app/_libs/mockThreadData";
+import { getOtherParticipants } from "@/app/_mocks/mock-thread-data";
 import { springGentle } from "@/app/_libs/utils/motion";
 
 interface ThreadHeaderProps {
@@ -33,13 +33,13 @@ export function ThreadHeader({
         {others.slice(0, 3).map((p) => (
           <div
             key={p.userHandle}
-            className="w-8 h-8 bg-ink text-cream flex items-center justify-center font-sans text-[11px] font-bold border-2 border-white rounded-full"
+            className="w-8 h-8 bg-ink text-cream flex items-center justify-center font-sans text-xs font-bold border-2 border-white rounded-full"
           >
             {p.userName[0]}
           </div>
         ))}
         {others.length > 3 && (
-          <div className="w-8 h-8 bg-ink/20 text-ink flex items-center justify-center font-mono text-[10px] font-bold border-2 border-white rounded-full">
+          <div className="w-8 h-8 bg-ink/20 text-ink flex items-center justify-center font-mono text-xs font-bold border-2 border-white rounded-full">
             +{others.length - 3}
           </div>
         )}
@@ -49,10 +49,10 @@ export function ThreadHeader({
         className="flex-1 min-w-0 text-left cursor-pointer"
         type="button"
       >
-        <h3 className="font-sans text-[13px] font-bold text-ink truncate">
+        <h3 className="font-sans text-sm font-bold text-ink truncate">
           {thread.contentTitle || "Untitled"}
         </h3>
-        <p className="font-mono text-[10px] text-ink/35 truncate">with {participantNames}</p>
+        <p className="font-mono text-xs text-ink/35 truncate">with {participantNames}</p>
       </button>
       <div className="flex items-center gap-1">
         <button
@@ -100,7 +100,7 @@ export function ThreadHeader({
               >
                 <button
                   onClick={() => { onToggleInfo(); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left font-sans text-[12px] text-ink/70 hover:bg-ink/5 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 text-left font-sans text-xs text-ink/70 hover:bg-ink/5 cursor-pointer transition-colors"
                   type="button"
                 >
                   Thread info
@@ -108,7 +108,7 @@ export function ThreadHeader({
                 <div className="mx-2 my-1 border-t border-ink/6" />
                 <button
                   onClick={() => { onClose(); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left font-sans text-[12px] text-destructive hover:bg-destructive/5 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 text-left font-sans text-xs text-destructive hover:bg-destructive/5 cursor-pointer transition-colors"
                   type="button"
                 >
                   Close thread

@@ -1,5 +1,0 @@
-enable-pre-post-scripts=true
-auto-install-peers=false
-
-# Allow build scripts for these packages by removing them from ignored list
-# This will allow @swc/core, core-js, core-js-pure, and oxc-resolver to run build scripts

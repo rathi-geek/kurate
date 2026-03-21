@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { createClient } from "@/app/_libs/supabase/server";
+
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -76,6 +78,16 @@ function estimateReadTime(wordCount: number): string {
   return `${minutes} min read`;
 }
 
+function formatIsoDuration(iso: string): string | undefined {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return undefined;
+  const h = parseInt(m[1] ?? "0");
+  const min = parseInt(m[2] ?? "0");
+  const totalMin = h * 60 + min;
+  if (totalMin === 0) return undefined;
+  return h > 0 ? `${h}h ${min}m watch` : `${totalMin} min watch`;
+}
+
 function getMeta(html: string, property: string): string | undefined {
   const esc = property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const patterns = [
@@ -106,18 +118,34 @@ function parseMetadata(html: string, url: string) {
   const description = getMeta(html, "og:description") || getMeta(html, "twitter:description");
   const contentType = detectContentType(url);
   let readTime: string | undefined;
+  let duration: string | undefined;
   if (contentType === "article") {
     const bodyText = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     const wordCount = bodyText.split(/\s+/).length;
     if (wordCount > 100) {
       readTime = estimateReadTime(wordCount);
     }
+  } else if (contentType === "podcast") {
+    const rawSecs = getMeta(html, "music:duration");
+    if (rawSecs) {
+      const secs = parseInt(rawSecs);
+      if (!isNaN(secs) && secs > 0) {
+        const min = Math.round(secs / 60);
+        duration = min >= 60 ? `${Math.floor(min / 60)}h ${min % 60}m` : `${min} min`;
+      }
+    }
   }
-  return { url, title, source: cleanSource(url), author, previewImage, contentType, readTime, description };
+  return { url, title, source: cleanSource(url), author, previewImage, contentType, readTime, duration, description };
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "UNAUTHORIZED", message: "Authentication required." }, { status: 401 });
+    }
+
     const { url } = await req.json();
     if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "INVALID_URL", message: "Please provide a valid URL." }, { status: 400 });
@@ -144,7 +172,18 @@ export async function POST(req: NextRequest) {
           if (oembed.thumbnail_url) ytThumbnail = oembed.thumbnail_url;
         }
       } catch {}
-      return NextResponse.json({ url, title: ytTitle, source: "youtube.com", author: ytAuthor, contentType: "video" as const, previewImage: ytThumbnail });
+      let ytDuration: string | undefined;
+      try {
+        const pageRes = await fetch(`https://www.youtube.com/watch?v=${ytVideoId}`, {
+          headers: { "User-Agent": BROWSER_UA },
+        });
+        if (pageRes.ok) {
+          const pageHtml = await pageRes.text();
+          const dMatch = pageHtml.match(/"duration"\s*:\s*"(PT[^"]+)"/);
+          if (dMatch?.[1]) ytDuration = formatIsoDuration(dMatch[1]);
+        }
+      } catch {}
+      return NextResponse.json({ url, title: ytTitle, source: "youtube.com", author: ytAuthor, contentType: "video" as const, previewImage: ytThumbnail, duration: ytDuration });
     }
 
     if (isXUrl(url) || url.includes("t.co/")) {

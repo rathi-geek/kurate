@@ -1,0 +1,14 @@
+:root {
+  --container-auth: 440px;
+}
+
+@theme inline {
+  /* Container Widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-content: 800px;
+  --container-narrow: 560px;
+  --container-auth: var(--container-auth);
+}

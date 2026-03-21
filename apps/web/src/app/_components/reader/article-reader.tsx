@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-
-const PANEL_TRANSITION = { type: "spring" as const, stiffness: 280, damping: 30 };
+import { useTranslations } from "next-intl";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { springGentle } from "@/app/_libs/utils/motion";
 
 export interface ArticleReaderProps {
   url: string | null;
@@ -27,6 +27,9 @@ export function ArticleReader({
   readTime,
   onClose,
 }: ArticleReaderProps) {
+  const t = useTranslations("reader");
+  const tCommon = useTranslations("common");
+  const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [data, setData] = useState<ReaderResponse | null>(null);
@@ -117,44 +120,46 @@ export function ArticleReader({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-ink/20 z-40 md:bg-ink/10"
+            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+            className="fixed inset-0 z-40 bg-foreground/20 md:bg-foreground/10"
             aria-hidden
             onClick={onClose}
           />
           <motion.div
             key="reader-panel"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={PANEL_TRANSITION}
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-[720px] bg-background flex flex-col shadow-xl"
+            initial={{ y: prefersReducedMotion ? 0 : "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: prefersReducedMotion ? 0 : "100%" }}
+            transition={springGentle}
+            className="fixed bottom-0 left-0 right-0 z-50 flex max-h-[95vh] w-full flex-col rounded-t-card border-t border-border bg-background shadow-xl"
           >
             <div
-              className="h-0.5 shrink-0 bg-teal transition-[width] duration-150"
+              className="h-0.5 shrink-0 bg-primary transition-[width] duration-150"
               style={{ width: `${scrollPct}%` }}
             />
-            <header className="sticky top-0 z-10 shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b bg-background">
+            <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-4 border-b border-border bg-background px-4 py-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex items-center gap-1 font-sans text-sm font-medium text-ink/70 hover:text-ink"
+                className="flex items-center gap-1 font-sans text-sm font-medium text-muted-foreground hover:text-foreground"
               >
-                ← Back
+                ← {tCommon("back")}
               </button>
-              <span className="font-mono text-xs text-ink/50 truncate flex-1 text-center px-2">
+              <span className="font-mono text-xs text-muted-foreground truncate flex-1 text-center px-2">
                 {displayHostname}
               </span>
               <div className="flex items-center gap-3 shrink-0">
                 {readTime != null && (
-                  <span className="font-mono text-xs text-ink/40">{readTime} min read</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {t("reading_time", { minutes: readTime })}
+                  </span>
                 )}
                 <button
                   type="button"
                   onClick={openOriginal}
-                  className="font-sans text-[13px] font-medium text-teal hover:underline"
+                  className="font-sans text-sm font-medium text-primary hover:underline"
                 >
-                  Open original
+                  {t("open_original_label")}
                 </button>
               </div>
             </header>
@@ -166,8 +171,8 @@ export function ArticleReader({
               <article className="max-w-[680px] mx-auto px-6 py-10">
                 {loading && !data && (
                   <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <span className="inline-block w-8 h-8 border-2 border-teal border-t-transparent rounded-full animate-spin" />
-                    <p className="font-sans text-sm text-muted-foreground">Loading article…</p>
+                    <span className="inline-block w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="font-sans text-sm text-muted-foreground">{t("loading")}</p>
                   </div>
                 )}
                 {data && !loading && (
@@ -176,7 +181,7 @@ export function ArticleReader({
                       {title ?? "Untitled"}
                     </h1>
                     {(data.author ?? data.date) && (
-                      <p className="font-mono text-xs text-ink/40 mt-2">
+                      <p className="font-mono text-xs text-muted-foreground mt-2">
                         {[data.author, data.date].filter(Boolean).join(" · ")}
                       </p>
                     )}

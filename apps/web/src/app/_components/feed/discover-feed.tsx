@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { BrandSunburst } from "@/components/brand";
-import { MOCK_FEED_ITEMS, type FeedItem } from "@/app/_libs/mock-data";
+import { MOCK_FEED_ITEMS, type FeedItem } from "@/app/_mocks/mock-data";
 
 const CARD_STAGGER_MS = 80;
 const cardVariants = {
@@ -32,7 +32,7 @@ const FILTER_LABELS: { value: ContentFilter; label: string }[] = [
 function ContentTypeBadge({ type }: { type: FeedItem["contentType"] }) {
   const label = type.charAt(0).toUpperCase() + type.slice(1);
   return (
-    <span className="shrink-0 font-mono text-[10px] font-medium uppercase tracking-wider text-ink/40 bg-ink/5 px-2 py-0.5 rounded">
+    <span className="shrink-0 font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground bg-surface px-2 py-0.5 rounded">
       {label}
     </span>
   );
@@ -41,9 +41,16 @@ function ContentTypeBadge({ type }: { type: FeedItem["contentType"] }) {
 export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
   const [filter, setFilter] = useState<ContentFilter>("all");
 
+  const filterToContentType: Record<Exclude<ContentFilter, "all">, FeedItem["contentType"]> = {
+    articles: "article",
+    videos: "video",
+    podcasts: "podcast",
+  };
+
   const forYouItems = useMemo(() => {
     if (filter === "all") return MOCK_FEED_ITEMS;
-    return MOCK_FEED_ITEMS.filter((item) => item.contentType === filter);
+    const contentType = filterToContentType[filter];
+    return MOCK_FEED_ITEMS.filter((item) => item.contentType === contentType);
   }, [filter]);
 
   const isEmpty = MOCK_FEED_ITEMS.length === 0;
@@ -63,7 +70,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
     <div className="space-y-10">
       {/* Section 1 — Trending */}
       <section>
-        <h2 className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink/35 mb-4">
+        <h2 className="font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
           Trending in your network
         </h2>
         <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-thin">
@@ -77,9 +84,9 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
               variants={cardVariants}
               custom={index}
               onClick={() => onItemClick(item)}
-              className="shrink-0 min-w-[220px] rounded-xl border border-border bg-card overflow-hidden text-left hover:border-teal/50 transition-colors"
+              className="shrink-0 min-w-[220px] rounded-card border border-border bg-card overflow-hidden text-left hover:border-primary/30 transition-colors"
             >
-              <div className="aspect-[16/10] bg-teal/10 flex items-center justify-center">
+              <div className="aspect-[16/10] bg-brand-50 flex items-center justify-center">
                 {item.imageUrl ? (
                   <img
                     src={item.imageUrl}
@@ -87,14 +94,14 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <BrandSunburst s={32} className="text-teal/20" />
+                  <BrandSunburst s={32} className="text-primary/20" />
                 )}
               </div>
               <div className="p-3">
-                <p className="font-sans text-[14px] font-semibold text-foreground line-clamp-2">
+                <p className="font-sans text-sm font-semibold text-foreground line-clamp-2">
                   {item.title}
                 </p>
-                <p className="font-mono text-[11px] text-ink/40 mt-1">
+                <p className="font-mono text-xs text-muted-foreground mt-1">
                   {item.hostname}
                   {item.readTime != null && ` · ${item.readTime} min`}
                 </p>
@@ -107,7 +114,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
       {/* Section 2 — For You */}
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink/35">
+          <h2 className="font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground">
             For you
           </h2>
           <div className="flex gap-1.5">
@@ -116,10 +123,10 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                 key={value}
                 type="button"
                 onClick={() => setFilter(value)}
-                className={`px-3 py-1.5 rounded-full font-sans text-[12px] font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-badge font-sans text-xs font-medium transition-colors ${
                   filter === value
-                    ? "bg-ink text-white"
-                    : "bg-ink/5 text-ink/60 hover:bg-ink/10"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-surface text-muted-foreground hover:bg-brand-50"
                 }`}
               >
                 {label}
@@ -129,7 +136,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
         </div>
 
         {forYouItems.length === 0 ? (
-          <p className="font-sans text-sm text-ink/40 py-8 text-center">
+          <p className="font-sans text-sm text-muted-foreground py-8 text-center">
             No {filter === "all" ? "items" : filter} in your feed yet.
           </p>
         ) : (
@@ -142,14 +149,14 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                 viewport={{ once: true }}
                 variants={cardVariants}
                 custom={index}
-                className="rounded-xl border border-border bg-card p-4 md:p-5"
+                className="rounded-card border border-border bg-card p-4 md:p-5"
               >
                 <div className="flex gap-3">
-                  <div className="shrink-0 w-9 h-9 rounded-full bg-teal/10 flex items-center justify-center font-sans text-sm font-semibold text-teal">
+                  <div className="shrink-0 w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center font-sans text-sm font-semibold text-primary">
                     {item.sharer?.name?.charAt(0) ?? "?"}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-sans text-[12px] text-ink/50">
+                    <p className="font-sans text-xs text-muted-foreground">
                       <span className="font-semibold text-foreground">
                         {item.sharer?.name ?? "Someone"}
                       </span>{" "}
@@ -160,17 +167,17 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                       onClick={() => onItemClick(item)}
                       className="text-left mt-1.5 block w-full group"
                     >
-                      <p className="font-sans text-[15px] font-semibold text-foreground group-hover:text-teal transition-colors line-clamp-1">
+                      <p className="font-sans text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                         {item.title}
                       </p>
                       {item.description && (
-                        <p className="font-sans text-[13px] text-ink/50 mt-0.5 line-clamp-2">
+                        <p className="font-sans text-sm text-muted-foreground mt-0.5 line-clamp-2">
                           {item.description}
                         </p>
                       )}
                     </button>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="font-mono text-[11px] text-ink/40">
+                      <span className="font-mono text-xs text-muted-foreground">
                         {item.hostname}
                         {item.readTime != null && ` · ${item.readTime} min`}
                       </span>
@@ -182,7 +189,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                         e.stopPropagation();
                         onSave(item);
                       }}
-                      className="mt-3 font-sans text-[13px] font-medium text-teal hover:underline"
+                      className="mt-3 font-sans text-sm font-medium text-primary hover:underline"
                     >
                       Save
                     </button>

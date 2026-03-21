@@ -1,0 +1,31 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+
+import { ROUTES } from "@/app/_libs/constants/routes";
+
+export const metadata: Metadata = {
+  title: "About | Kurate",
+  description: "Learn about Kurate — the consumption network that turns your best finds into proof of knowledge.",
+  openGraph: {
+    title: "About | Kurate",
+    description: "Learn about Kurate — the consumption network that turns your best finds into proof of knowledge.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Kurate — Read smarter, curate better" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
+};
+
+export default async function AboutPage() {
+  const t = await getTranslations("about");
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <main id="main-content" className="w-full">
+        <div className="text-center">
+          <h1 className="text-2xl font-serif text-foreground mb-4">{t("title")}</h1>
+          <p className="text-muted-foreground mb-6">{t("coming_soon")}</p>
+          <Link href={ROUTES.HOME} className="text-primary hover:underline">{t("back_home")}</Link>
+        </div>
+      </main>
+    </div>
+  );
+}
