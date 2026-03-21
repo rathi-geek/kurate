@@ -1,6 +1,6 @@
 "use client";
 
-import type { SharedContentItem } from "@/app/_libs/mockPersonContent";
+import type { SharedContentItem } from "@/app/_mocks/mock-person-content";
 
 interface SharedContentStripProps {
   items: SharedContentItem[];
@@ -26,7 +26,7 @@ export function SharedContentStrip({
             className="text-left p-4 rounded-xl border border-ink/[0.08] bg-white hover:bg-ink/[0.02] transition-colors"
           >
             <span
-              className="font-mono text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 inline-block mb-2 rounded-full"
+              className="font-mono text-xs font-bold uppercase tracking-wide px-2 py-0.5 inline-block mb-2 rounded-full"
               style={{
                 backgroundColor:
                   item.contentType === "video"
@@ -44,10 +44,10 @@ export function SharedContentStrip({
             >
               {item.contentType}
             </span>
-            <h3 className="font-sans text-[14px] font-bold text-ink leading-snug">
+            <h3 className="font-sans text-sm font-bold text-ink leading-snug">
               {item.contentTitle}
             </h3>
-            <p className="font-mono text-[11px] text-ink/35 mt-0.5">{item.contentSource}</p>
+            <p className="font-mono text-xs text-ink/35 mt-0.5">{item.contentSource}</p>
           </button>
         ))}
       </div>

@@ -1,0 +1,130 @@
+/* Single source of truth: all raw color values in :root, semantic tokens mapped below */
+:root {
+  /* ─── Raw Surface Tokens ──────────────────────────────────────────── */
+  --surface-page: #f5f0e8; /* warm cream — page background */
+  --surface-raised: #faf7f2; /* slightly lighter — sections, sidebars */
+  --surface-card: #ffffff; /* white — cards, inputs, popovers */
+
+  /* ─── Raw Text Tokens — deep blue scale ──────────────────────────── */
+  --text-heading: #143d60; /* max darkness — headings */
+  --text-body: #2b5b7e; /* primary body text */
+  --text-muted: #5b7d99; /* labels, captions, secondary */
+  --text-subtle: rgba(43, 91, 126, 0.5); /* metadata, timestamps */
+
+  /* ─── Raw Brand Tokens — green scale ─────────────────────────────── */
+  --brand: #1a5c4b;
+  --brand-50: #eaf3ef; /* tab default bg, soft tints */
+  --brand-100: #c5ddd4; /* tab hover, pill badges */
+  --brand-200: #8bbdae; /* decorative accents */
+
+  /* ─── Border Tokens ──────────────────────────────────────────────── */
+  --border-subtle: rgba(20, 61, 96, 0.07);
+  --border-default: rgba(20, 61, 96, 0.12);
+
+  /* ─── State Tokens ───────────────────────────────────────────────── */
+  --success: #166534;
+  --success-bg: #dcfce7;
+  --success-foreground: #14532d;
+  --warning: #92400e;
+  --warning-bg: #fef3c7;
+  --warning-foreground: #78350f;
+  --info: #1e40af;
+  --info-bg: #dbeafe;
+  --info-foreground: #1e3a8a;
+  --danger: #b91c1c;
+
+  /* ─── Legacy Brand Aliases — marketing / landing page ────────────── */
+  /* Kept so page.tsx (bg-cream, text-ink, bg-teal) continue to work  */
+  --cream: #f5f0e8;
+  --ink: #143d60; /* max text darkness — matches --text-heading */
+  --white: #ffffff;
+  --teal: #1a5c4b; /* alias → --brand */
+  --teal-light: #eaf3ef; /* alias → --brand-50 */
+  --slate: #3b4953; /* dark blue-gray accent */
+  --slate-subtle: #eef2f5; /* very light blue-gray surface */
+  --amber: #f0c27a;
+  --amber-dark: #8b6914;
+
+  /* ─── Semantic Tokens — reference raw tokens above ───────────────── */
+  --background: var(--surface-page);
+  --surface: var(--surface-raised);
+  --foreground: var(--text-body);
+
+  --card: var(--surface-card);
+  --card-foreground: var(--text-body);
+
+  --popover: var(--surface-card);
+  --popover-foreground: var(--text-body);
+
+  --primary: var(--brand);
+  --primary-foreground: var(--white);
+
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--text-body);
+
+  --muted: var(--surface-raised);
+  --muted-foreground: var(--text-muted);
+
+  --accent: var(--brand-50);
+  --accent-foreground: var(--brand);
+
+  --destructive: var(--danger);
+  --destructive-foreground: var(--white);
+
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--brand);
+}
+
+@theme inline {
+  /* ─── Brand & Marketing Colors ───────────────────────────────────── */
+  --color-cream: var(--cream);
+  --color-ink: var(--ink);
+  --color-white: var(--white);
+  --color-teal: var(--teal);
+  --color-teal-light: var(--teal-light);
+  --color-slate: var(--slate);
+  --color-slate-subtle: var(--slate-subtle);
+  --color-amber: var(--amber);
+  --color-amber-dark: var(--amber-dark);
+  --color-danger: var(--danger);
+
+  /* ─── Brand Shades ───────────────────────────────────────────────── */
+  --color-brand: var(--brand);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+
+  /* ─── State Colors ───────────────────────────────────────────────── */
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-foreground: var(--info-foreground);
+
+  /* ─── Semantic Colors — drive all app UI ─────────────────────────── */
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}

@@ -11,27 +11,26 @@ export const env = createEnv({
     POSTHOG_API_KEY: z.string().min(51, "PostHog personal API key is required").optional(),
     POSTHOG_ENV_ID: z.string().min(5, "PostHog environment ID is required").optional(),
     SENTRY_AUTH_TOKEN: z.string().min(1, "Sentry auth token is required").optional(),
-    // Database configuration
-    DB_DIALECT: z.enum(["postgresql", "mysql", "sqlite"]).default("sqlite"),
-    DATABASE_URL: z
-      .string()
-      .min(1, "Database URL is required")
-      .default("file:./create-next-coe.db"),
+    // Supabase server-only key
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "Supabase service role key is required").optional(),
+    // AI provider
+    AI_PROVIDER: z.enum(["anthropic", "openai"]).default("anthropic"),
+    ANTHROPIC_API_KEY: z.string().min(1, "Anthropic API key is required").optional(),
   },
   client: {
     NEXT_PUBLIC_APP_ENV: z.enum(["development", "staging", "production"]).default("development"),
-    NEXT_PUBLIC_APP_TITLE: z.string().min(1, "App title is required").default("Create Next CoE"),
-    NEXT_PUBLIC_APP_NAME: z.string().min(1, "App name is required").default("Create Next CoE"),
+    NEXT_PUBLIC_APP_TITLE: z.string().min(1, "App title is required").default("Kurate"),
+    NEXT_PUBLIC_APP_NAME: z.string().min(1, "App name is required").default("Kurate"),
     NEXT_PUBLIC_APP_URL: z.url("App URL is required").default("http://localhost:3000"),
     NEXT_PUBLIC_APP_DESCRIPTION: z
       .string()
       .min(1, "App description is required")
-      .default("Production-ready Next.js starter"),
+      .default("Chat-based content discovery and curation"),
     NEXT_PUBLIC_APP_CATEGORY: z.string().min(1, "App category is required").default("app"),
     NEXT_PUBLIC_APP_KEYWORDS: z
       .string()
       .min(1, "App keywords are required")
-      .default("nextjs,starter,boilerplate"),
+      .default("kurate,content,curation,discovery"),
     // Analytics - optional for development
     NEXT_PUBLIC_GTM_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_KEY: z.string().min(47, "PostHog key is required").optional(),
@@ -54,8 +53,9 @@ export const env = createEnv({
     POSTHOG_ENV_ID: process.env.POSTHOG_ENV_ID,
     SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
     BYPASS_AUTH: process.env.BYPASS_AUTH,
-    DB_DIALECT: process.env.DB_DIALECT,
-    DATABASE_URL: process.env.DATABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    AI_PROVIDER: process.env.AI_PROVIDER,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     // Public
     NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
     NEXT_PUBLIC_APP_TITLE: process.env.NEXT_PUBLIC_APP_TITLE,

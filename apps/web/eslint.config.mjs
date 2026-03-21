@@ -1,15 +1,8 @@
-import { FlatCompat } from "@eslint/eslintrc";
-import importPlugin from "eslint-plugin-import";
 import unusedImports from "eslint-plugin-unused-imports";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
 const eslintConfig = [
   // Global ignores (replaces .eslintignore)
@@ -25,11 +18,13 @@ const eslintConfig = [
       "test-results/**/*",
     ],
   },
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextCoreWebVitals,
+  ...nextTypescript,
+  // Accessibility: aria rules, semantic HTML, keyboard navigation
+  jsxA11y.flatConfigs.recommended,
   {
     plugins: {
       "unused-imports": unusedImports,
-      import: importPlugin,
     },
     settings: {
       "import/resolver": {
@@ -67,11 +62,30 @@ const eslintConfig = [
 
       // Duplicate imports: error
       "import/no-duplicates": ["error", { "prefer-inline": true }],
-      // (optional) avoid self-imports, which often show up in cycle refactors
+      // Avoid self-imports, which often show up in cycle refactors
       "import/no-self-import": "error",
 
       // Prevent import cycles
       "import/no-cycle": ["error", { ignoreExternal: true, maxDepth: Infinity }],
+
+      // Design system: no hardcoded route strings in href — use ROUTES constants
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "JSXAttribute[name.name='href'] > Literal[value=/^\\/(auth|chat|profile|groups|shared|about|blog|demo)/]",
+          message: "Use ROUTES constants from @/app/_libs/constants/routes instead of hardcoded paths.",
+        },
+        {
+          selector: "JSXAttribute[name.name='href'] > TemplateLiteral",
+          message: "Use ROUTES constants from @/app/_libs/constants/routes — avoid template literals for paths.",
+        },
+      ],
+
+      // Accessibility: downgrade some jsx-a11y rules from error to warn
+      // (strict rules that may need gradual adoption)
+      "jsx-a11y/no-static-element-interactions": "warn",
+      "jsx-a11y/click-events-have-key-events": "warn",
+      "jsx-a11y/no-noninteractive-element-interactions": "warn",
     },
   },
 ];

@@ -1,0 +1,35 @@
+---
+description: Outstanding TODOs for the groups feature. Reference this before working on groups code.
+globs: apps/web/src/app/**/groups/**,apps/web/src/components/groups/**,apps/web/src/app/_libs/hooks/useGroup*,apps/web/src/app/_libs/hooks/useComment*,apps/web/src/app/_libs/hooks/useDropEngagement*,apps/web/src/app/_libs/hooks/useVaultToggle*
+alwaysApply: false
+---
+
+# Groups — Pending Work
+
+## 🔴 Blocked on backend / DB migrations
+
+1. **`groups.slug TEXT UNIQUE`** — `page.tsx` uses `slugify(name)` as workaround. Renaming a group breaks its URL.
+2. **Fix RLS on `group_members`** — profile join is commented out in `useGroupMembers.ts`; all display names are `null`. Restore the join once RLS recursion bug is fixed.
+3. **Read real role from DB** — `page.tsx` + `info/page.tsx` infer role from `created_by`. Replace with actual `group_members.role` query after RLS fix.
+4. **`comments.parent_id UUID → comments.id`** — reply threading UI is built; FK column must exist.
+5. **`comments.updated_at TIMESTAMPTZ`** — edit-comment mutation writes this field; column must exist.
+6. **`UNIQUE(group_share_id, user_id, type)` on reactions** — rapid taps create duplicate rows. Add constraint + use `ON CONFLICT DO NOTHING` in `useDropEngagement.ts`.
+7. **Index `group_shares(group_id, shared_at DESC)`** — feed cursor pagination degrades without it.
+
+## 🟡 Frontend — wiring / cleanup needed
+
+8. **Group rename → URL redirect** — `InfoPageClient` edit modal saves the new name but doesn't push to `/groups/${slugify(newName)}/info`.
+9. **Delete `group-info-panel.tsx`** — `src/components/groups/group-info-panel.tsx` is orphaned (superseded by inline modals in `InfoPageClient`).
+10. **Delete `group-header.tsx`** — `src/components/groups/group-header.tsx` is orphaned (removed from feed page, not imported anywhere).
+11. **Join invite page** — `src/app/(app)/groups/join/[invite_code]/page.tsx` — verify full-group and already-member guard logic.
+12. **Admin promote/demote** — members modal shows role badges but has no action to change roles.
+
+## 🟠 Features not yet built
+
+13. **Built-in reader** — article title `<a>` opens external tab; should open `/reader?url=...` like vault does.
+14. **Library grid live engagement** — `LibraryCard` in info page `EngagementBar` doesn't invalidate the grid's feed cache on reaction.
+15. **Sharer `@handle`** — `GroupDrop.sharer.handle` is in the type but renders nothing; needs `profiles.username` in the join query.
+16. **Delete group → redirect members** — owner deletes group; other members on `/groups/[slug]` get a 404.
+17. **Max members enforcement** — `group.max_members = 20` exists; join page doesn't block when the group is full.
+18. **Feed scroll-to-drop from library** — works only if the target drop is already in the loaded pages; fails for unloaded pages.
+19. **Optimistic drop post** — new drop appears after `refetch()` roundtrip; could insert optimistically for instant feedback.

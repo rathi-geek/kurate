@@ -1,9 +1,16 @@
 "use client";
 
+import type { ComponentProps } from "react";
+
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { BrandStar, BrandSunburst, BrandArch, BrandConcentricArch } from "@/components/brand";
+
+import { motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
+
+import { ROUTES } from "@/app/_libs/constants/routes";
+import { BrandArch, BrandConcentricArch, BrandStar, BrandSunburst } from "@/components/brand";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -16,334 +23,439 @@ const staggerContainer = {
 };
 
 const LOGOS = [
-  "Product Hunt", "Hacker News", "Indie Hackers", "Substack", "Every",
-  "Stratechery", "The Verge", "Wired", "Arc", "Readwise",
+  "Product Hunt",
+  "Hacker News",
+  "Indie Hackers",
+  "Substack",
+  "Every",
+  "Stratechery",
+  "The Verge",
+  "Wired",
+  "Arc",
+  "Readwise",
 ];
 
 const TESTIMONIALS = [
-  { quote: "Kurate completely changed how I discover content. It's like having a brilliant friend who reads everything.", name: "Nikhil Kamath", role: "Co-founder, Zerodha" },
-  { quote: "I organized 3 years of scattered bookmarks in a single afternoon. The AI tagging is unreal.", name: "Naman Lahoti", role: "Founder & Builder" },
-  { quote: "Kurate is that extra part of your brain that remembers everything you read and connects the dots.", name: "Arshia Mal", role: "Product Designer" },
-  { quote: "The social curation feed is addictive in the best way. I trust people's recommendations over any algorithm.", name: "Suchet Kumar", role: "Engineer & Curator" },
-  { quote: "Finally, a reading tool that respects my time. The proof of knowledge concept is brilliant.", name: "Vivek Kamath", role: "Founder, Kurate" },
-  { quote: "Replaced Pocket, Instapaper, and my 47 open tabs. Kurate just gets it.", name: "Peter Thiel", role: "Founder, Founders Fund" },
+  {
+    quote:
+      "Kurate completely changed how I discover content. It's like having a brilliant friend who reads everything.",
+    name: "Nikhil Kamath",
+    role: "Co-founder, Zerodha",
+  },
+  {
+    quote:
+      "I organized 3 years of scattered bookmarks in a single afternoon. The AI tagging is unreal.",
+    name: "Naman Lahoti",
+    role: "Founder & Builder",
+  },
+  {
+    quote:
+      "Kurate is that extra part of your brain that remembers everything you read and connects the dots.",
+    name: "Arshia Mal",
+    role: "Product Designer",
+  },
+  {
+    quote:
+      "The social curation feed is addictive in the best way. I trust people's recommendations over any algorithm.",
+    name: "Suchet Kumar",
+    role: "Engineer & Curator",
+  },
+  {
+    quote:
+      "Finally, a reading tool that respects my time. The proof of knowledge concept is brilliant.",
+    name: "Vivek Kamath",
+    role: "Founder, Kurate",
+  },
+  {
+    quote: "Replaced Pocket, Instapaper, and my 47 open tabs. Kurate just gets it.",
+    name: "Peter Thiel",
+    role: "Founder, Founders Fund",
+  },
 ];
 
-const FEATURES = [
-  {
-    icon: "arch",
-    bg: "bg-amber/20",
-    title: "Save Anything",
-    description: "One-click browser extension. Share sheet on mobile. Paste a URL. AI does the rest.",
-  },
-  {
-    icon: "star",
-    bg: "bg-lavender/30",
-    title: "Rate & Review",
-    description: "Star ratings, short takes, topic tags. Build your proof of knowledge.",
-  },
-  {
-    icon: "sunburst",
-    bg: "bg-teal/20",
-    title: "Discover via Trust",
-    description: "Follow curators you trust. The best content finds you through people.",
-  },
-];
+const FEATURE_KEYS = [
+  { icon: "arch", bg: "bg-teal/20", titleKey: "feature_1_title", descKey: "feature_1_desc" },
+  { icon: "star", bg: "bg-slate-subtle", titleKey: "feature_2_title", descKey: "feature_2_desc" },
+  { icon: "sunburst", bg: "bg-accent", titleKey: "feature_3_title", descKey: "feature_3_desc" },
+] as const;
 
-const STATS = [
-  { stat: "10x better discovery", desc: "Curated content from trusted people beats any algorithm.", person: "Naman Lahoti", role: "Founder & Builder" },
-  { stat: "50+ hours saved", desc: "Stop drowning in tabs. Your library organizes itself.", person: "Arshia Mal", role: "Product Designer" },
+const STATS_PEOPLE = [
+  { person: "Naman Lahoti", role: "Founder & Builder" },
+  { person: "Arshia Mal", role: "Product Designer" },
 ];
 
 export default function LandingPage() {
+  const prefersReducedMotion = useReducedMotion();
+  const t = useTranslations("landing");
+  const tNav = useTranslations("nav");
+  const tApp = useTranslations("app");
+
   return (
-    <div className="min-h-screen bg-cream text-ink">
+    <div className="bg-cream text-ink min-h-screen">
       {/* Announcement Banner */}
-      <div className="bg-teal text-white text-center py-3 px-4 text-sm font-medium">
-        Join the <strong>early access waitlist</strong> — spots are limited.{" "}
-        <Link href="/auth/signup" className="underline font-semibold hover:opacity-80">
-          Join now ›
+      <div className="bg-teal px-4 py-3 text-center text-sm font-medium text-white">
+        {t("announcement")}{" "}
+        <Link href={ROUTES.AUTH.LOGIN} className="font-semibold underline hover:opacity-80">
+          {t("join_now")}
         </Link>
       </div>
 
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-ink/[0.03] bg-cream sticky top-0 z-50">
-        <div className="flex items-center gap-2">
+      <nav
+        aria-label="Main navigation"
+        className="border-ink/[0.03] bg-cream sticky top-0 z-50 flex items-center justify-between border-b px-6 py-4 md:px-8">
+        <Link href={ROUTES.HOME} aria-label="Kurate home" className="flex items-center gap-2">
           <BrandConcentricArch s={26} className="text-ink" />
-          <span className="font-sans font-black text-xl text-ink tracking-tight">
-            Kurate
+          <span className="text-ink font-sans text-xl font-black tracking-tight">
+            {tApp("name")}
           </span>
-        </div>
+        </Link>
         <div className="flex items-center gap-7">
-          <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
-            Product
+          <Link
+            href="#features"
+            className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
+            {tNav("product")}
           </Link>
-          <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
-            About
+          <Link
+            href={ROUTES.ABOUT as ComponentProps<typeof Link>["href"]}
+            className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
+            {tNav("about")}
           </Link>
-          <Link href="#" className="hidden md:inline font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
-            Blog
+          <Link
+            href={ROUTES.BLOG as ComponentProps<typeof Link>["href"]}
+            className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
+            {tNav("blog")}
           </Link>
-          <Link href="/auth/login" className="font-sans text-sm font-medium text-ink/55 hover:text-ink transition-opacity">
-            Log In
-          </Link>
-          <Link href="/auth/signup">
-            <Button size="sm">Get Early Access</Button>
-          </Link>
+
+          <Button asChild size="sm">
+            <Link href={ROUTES.APP.HOME}>{t("get_started")}</Link>
+          </Button>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="px-6 py-20 md:py-32 text-center relative">
-        <motion.div
-          initial={false}
-          animate="visible"
-          variants={staggerContainer}
-          className="max-w-[800px] mx-auto relative z-10"
-        >
-          <motion.h1
-            variants={fadeUp}
-            transition={{ type: "spring", stiffness: 260, damping: 25 }}
-            className="font-serif text-5xl md:text-7xl font-normal text-ink mb-6"
-            style={{ letterSpacing: "-0.02em" }}
-          >
-            <span className="italic">Consume what matters.</span>
-          </motion.h1>
-          <motion.p
-            variants={fadeUp}
-            transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.15 }}
-            className="font-sans text-lg leading-relaxed text-ink/60 max-w-[500px] mx-auto mb-9"
-          >
-            The consumption network that turns your best finds into proof of knowledge, powered by people you trust.
-          </motion.p>
+      <main id="main-content">
+        {/* Hero */}
+        <section
+          aria-labelledby="hero-heading"
+          className="relative px-6 py-20 text-center md:py-32">
           <motion.div
-            variants={fadeUp}
-            transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.3 }}
-            className="flex gap-3 justify-center flex-wrap"
-          >
-            <Link href="/auth/signup">
-              <Button size="lg">Get Started</Button>
-            </Link>
-            <Link href="/auth/login">
-              <Button variant="outline" size="lg">Log in</Button>
-            </Link>
+            initial={false}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={staggerContainer}
+            className="container-content relative z-10">
+            <motion.h1
+              id="hero-heading"
+              initial={prefersReducedMotion ? false : undefined}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={fadeUp}
+              transition={{ type: "spring", stiffness: 260, damping: 25 }}
+              className="text-ink mb-6 font-serif text-5xl font-normal tracking-[-0.02em] md:text-7xl">
+              <span className="italic">{t("hero_title")}</span>
+            </motion.h1>
+            <motion.p
+              initial={prefersReducedMotion ? false : undefined}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={fadeUp}
+              transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.15 }}
+              className="text-ink/75 mx-auto mb-9 max-w-[500px] font-sans text-lg leading-relaxed">
+              {t("hero_subtitle")}
+            </motion.p>
+            <motion.div
+              initial={prefersReducedMotion ? false : undefined}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={fadeUp}
+              transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.3 }}
+              className="flex flex-wrap justify-center gap-3">
+              <Button asChild size="lg">
+                <Link href={ROUTES.AUTH.LOGIN}>{t("get_started")}</Link>
+              </Button>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      </section>
+        </section>
 
-      {/* Dark Showcase */}
-      <section className="bg-[#F7F7F7] px-6 py-16 md:py-20">
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center gap-10 md:gap-[60px]">
-          <div className="flex-1">
-            <div className="flex gap-2 mb-7">
-              {["Web", "iOS", "Android"].map((p) => (
-                <span
-                  key={p}
-                  className="py-1.5 px-3.5 rounded-full border border-ink/[0.08] font-sans text-[13px] font-medium text-ink flex items-center gap-1.5"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-ink" /> {p}
-                </span>
-              ))}
-            </div>
-            <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink mb-5">
-              Save the best content from all your apps
-            </h2>
-            <p className="font-sans text-base text-ink/55 leading-[1.7] mb-8 max-w-[400px]">
-              One-click save from any browser or app. AI automatically tags, categorizes, and surfaces your best finds.
-            </p>
-            <Button variant="outline">Watch in action</Button>
-          </div>
-
-          {/* Phone mockup */}
-          <div className="flex-1 flex justify-center">
-            <div
-              className="w-[220px] h-[400px] bg-ink overflow-hidden"
-              style={{ borderRadius: 28, border: "2px solid rgba(26,26,26,0.08)", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}
-            >
-              <div className="p-4 pt-10">
-                <div className="font-sans font-bold text-white/40 uppercase mb-3" style={{ fontSize: 11, letterSpacing: "0.08em" }}>
-                  Your Library
-                </div>
-                {[
-                  { t: "Tech Trends Report 2026", src: "research.contrary.com", tag: "AI" },
-                  { t: "How to Do Great Work", src: "paulgraham.com", tag: "Startups" },
-                  { t: "What I Read This Week #172", src: "chamath.substack.com", tag: "AI" },
-                ].map((item, i) => (
-                  <div key={i} className="py-2.5" style={{ borderTop: i ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                    <div className="font-sans text-xs font-semibold text-white mb-0.5">{item.t}</div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-white/35" style={{ fontSize: 9 }}>{item.src}</span>
-                      <span className="py-0.5 px-1.5 bg-white/[0.07] text-white/50" style={{ fontSize: 9, borderRadius: 3 }}>{item.tag}</span>
-                    </div>
-                  </div>
-                ))}
+        {/* Dark Showcase */}
+        <section className="bg-muted px-6 py-16 md:py-20">
+          <div className="container-page flex flex-col items-center gap-10 md:flex-row md:gap-[60px]">
+            <div className="flex-1">
+              <div className="mb-7 flex gap-2">
+                {([t("platform_web"), t("platform_ios"), t("platform_android")] as const).map(
+                  (p) => (
+                    <span
+                      key={p}
+                      className="border-ink/[0.08] text-ink flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-sans text-sm font-medium">
+                      <div className="bg-ink h-1.5 w-1.5 rounded-full" /> {p}
+                    </span>
+                  ),
+                )}
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Logo Ticker */}
-      <div className="bg-teal py-5 overflow-hidden">
-        <div className="flex" style={{ animation: "marquee 20s linear infinite" }}>
-          {[...LOGOS, ...LOGOS].map((l, i) => (
-            <span key={i} className="font-sans text-base font-bold text-white/50 whitespace-nowrap px-6">
-              {l}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Features */}
-      <section className="px-6 py-20 bg-cream">
-        <div className="max-w-[1200px] mx-auto text-center mb-[60px]">
-          <h2 className="font-serif text-3xl md:text-4xl font-normal text-ink mb-4">
-            Proof of Knowledge
-          </h2>
-          <p className="font-sans text-base text-ink/55 leading-[1.7] max-w-[520px] mx-auto">
-            Rate what you read. Build a public signal of your expertise. Your curation history becomes your intellectual reputation.
-          </p>
-        </div>
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-6">
-          {FEATURES.map((feature, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.1 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -6 }}
-              className="flex-1 bg-[#F7F7F7] rounded-2xl p-7 border border-ink/[0.06]"
-            >
-              <div className={`w-11 h-11 ${feature.bg} rounded-2xl flex items-center justify-center mb-4`}>
-                {feature.icon === "arch" && <BrandArch s={22} c="#1A1A1A" />}
-                {feature.icon === "star" && <BrandStar s={20} c="#1A1A1A" />}
-                {feature.icon === "sunburst" && <BrandSunburst s={22} c="#1A1A1A" />}
-              </div>
-              <h3 className="font-sans font-bold text-lg text-ink mb-2">{feature.title}</h3>
-              <p className="font-sans text-sm text-ink/50 leading-relaxed">{feature.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="bg-[#F7F7F7] py-20 overflow-hidden">
-        <div className="text-center mb-12 px-6">
-          <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink italic">
-            People love switching<br />to Kurate
-          </h2>
-        </div>
-        <div className="flex w-max" style={{ animation: "marquee 60s linear infinite" }}>
-          {[...TESTIMONIALS, ...TESTIMONIALS].map((t, idx) => (
-            <div key={idx} className="min-w-[280px] max-w-[300px] bg-white rounded-2xl p-6 shrink-0 flex flex-col gap-4 mr-5">
-              <div className="w-11 h-11 rounded-full bg-teal/20 flex items-center justify-center font-sans text-sm font-bold text-teal mx-auto">
-                {t.name.split(" ").map(n => n[0]).join("")}
-              </div>
-              <p className="font-sans text-sm leading-relaxed text-ink text-center flex-1">&ldquo;{t.quote}&rdquo;</p>
-              <div className="text-center">
-                <div className="font-sans text-[13px] font-bold text-ink">{t.name}</div>
-                <div className="font-sans text-xs text-ink/45">{t.role}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="bg-[#F7F7F7] px-6 pb-20">
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-5 justify-center">
-          {STATS.map((card, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.15 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
-              className="bg-teal rounded-2xl p-8 flex flex-col flex-1 max-w-md"
-            >
-              <h3 className="font-serif text-2xl md:text-3xl font-normal italic text-white mb-2 min-h-[80px]">
-                {card.stat}
-              </h3>
-              <p className="font-sans text-sm text-white/70 leading-relaxed mb-6 flex-1">
-                {card.desc}
+              <h2 className="text-ink mb-5 font-serif text-3xl font-normal md:text-5xl">
+                {t("save_title")}
+              </h2>
+              <p className="text-ink/75 mb-8 max-w-[400px] font-sans text-base leading-[1.7]">
+                {t("save_description")}
               </p>
-              <div className="flex items-center gap-2.5 mt-auto">
-                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-sans text-xs font-bold text-white">
-                  {card.person.charAt(0)}
-                </div>
-                <div>
-                  <div className="font-sans text-[13px] font-semibold text-white">{card.person}</div>
-                  <div className="font-sans text-xs text-white/50">{card.role}</div>
+              <Button asChild variant="outline">
+                <Link href={ROUTES.DEMO as ComponentProps<typeof Link>["href"]}>
+                  {t("watch_in_action")}
+                </Link>
+              </Button>
+            </div>
+
+            {/* Phone mockup */}
+            <div aria-hidden="true" className="flex flex-1 justify-center">
+              <div className="bg-ink rounded-card border-border h-[400px] w-[220px] overflow-hidden border-2 shadow-xl">
+                <div className="p-4 pt-10">
+                  <div className="mb-3 font-sans text-xs font-bold tracking-[0.08em] text-white/40 uppercase">
+                    {t("library_label")}
+                  </div>
+                  {[
+                    { t: "Tech Trends Report 2026", src: "research.contrary.com", tag: "AI" },
+                    { t: "How to Do Great Work", src: "paulgraham.com", tag: "Startups" },
+                    { t: "What I Read This Week #172", src: "chamath.substack.com", tag: "AI" },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className="py-2.5"
+                      style={{ borderTop: i ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+                      <div className="mb-0.5 font-sans text-xs font-semibold text-white">
+                        {item.t}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs text-white/35">{item.src}</span>
+                        <span className="rounded-sm bg-white/[0.07] px-1.5 py-0.5 text-xs text-white/50">
+                          {item.tag}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="px-6 py-20 bg-cream">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 260, damping: 25 }}
-          viewport={{ once: true }}
-          className="max-w-[800px] mx-auto border-2 border-ink/[0.08] p-8 md:p-12 text-center relative overflow-hidden rounded-2xl"
-          style={{ animation: "ctaBreathe 3s ease-in-out infinite" }}
-        >
-          <div className="relative z-10">
-            <p className="font-sans text-[15px] text-ink/50 mb-2">Ready to curate smarter?</p>
-            <h2 className="font-serif text-2xl md:text-4xl font-normal text-ink mb-8">
-              <span className="italic">Your reading</span> deserves better
-            </h2>
-            <div className="flex gap-3 justify-center flex-wrap">
-              <Link href="/auth/signup">
-                <Button size="lg">Get Started</Button>
-              </Link>
-              <Link href="/auth/login">
-                <Button variant="outline" size="lg">Log in</Button>
-              </Link>
             </div>
           </div>
-        </motion.div>
-      </section>
+        </section>
+
+        {/* Logo Ticker */}
+        <div aria-hidden="true" className="bg-teal overflow-hidden py-5">
+          <div className="flex" style={{ animation: "marquee 20s linear infinite" }}>
+            {[...LOGOS, ...LOGOS].map((l, i) => (
+              <span
+                key={i}
+                className="px-6 font-sans text-base font-bold whitespace-nowrap text-white/50">
+                {l}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Features */}
+        <section id="features" aria-labelledby="features-heading" className="bg-cream px-6 py-20">
+          <div className="container-page mb-[60px] text-center">
+            <h2
+              id="features-heading"
+              className="text-ink mb-4 font-serif text-3xl font-normal md:text-4xl">
+              {t("proof_title")}
+            </h2>
+            <p className="text-ink/75 mx-auto max-w-[520px] font-sans text-base leading-[1.7]">
+              {t("proof_subtitle")}
+            </p>
+          </div>
+          <div className="container-page flex flex-col gap-6 md:flex-row">
+            {FEATURE_KEYS.map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
+                whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={prefersReducedMotion ? undefined : { y: -6 }}
+                className="bg-muted rounded-card border-ink/[0.06] flex-1 border p-7">
+                <div
+                  aria-hidden="true"
+                  className={`h-11 w-11 ${feature.bg} rounded-card mb-4 flex items-center justify-center`}>
+                  {feature.icon === "arch" && <BrandArch s={22} c="#1A1A1A" />}
+                  {feature.icon === "star" && <BrandStar s={20} c="#1A1A1A" />}
+                  {feature.icon === "sunburst" && <BrandSunburst s={22} c="#1A1A1A" />}
+                </div>
+                <h3 className="text-ink mb-2 font-sans text-lg font-bold">{t(feature.titleKey)}</h3>
+                <p className="text-ink/70 font-sans text-sm leading-relaxed">
+                  {t(feature.descKey)}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section aria-labelledby="testimonials-heading" className="bg-muted overflow-hidden py-20">
+          <div className="mb-12 px-6 text-center">
+            <h2
+              id="testimonials-heading"
+              className="text-ink font-serif text-3xl font-normal italic md:text-5xl">
+              {t("testimonials_line1")}
+              <br />
+              {t("testimonials_line2")}
+            </h2>
+          </div>
+          <div
+            aria-hidden="true"
+            className="flex w-max"
+            style={{ animation: "marquee 60s linear infinite" }}>
+            {[...TESTIMONIALS, ...TESTIMONIALS].map((t, idx) => (
+              <div
+                key={idx}
+                className="rounded-card mr-5 flex max-w-[300px] min-w-[280px] shrink-0 flex-col gap-4 bg-white p-6">
+                <div className="bg-teal/20 text-teal mx-auto flex h-11 w-11 items-center justify-center rounded-full font-sans text-sm font-bold">
+                  {t.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </div>
+                <p className="text-ink flex-1 text-center font-sans text-sm leading-relaxed">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+                <div className="text-center">
+                  <div className="text-ink font-sans text-sm font-bold">{t.name}</div>
+                  <div className="text-ink/65 font-sans text-xs">{t.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Stats */}
+        <section className="bg-muted px-6 pb-20">
+          <div className="container-page flex flex-col justify-center gap-5 md:flex-row">
+            {(
+              [
+                { statKey: "stat_1", descKey: "stat_1_desc" },
+                { statKey: "stat_2", descKey: "stat_2_desc" },
+              ] as const
+            ).map((card, i) => (
+              <motion.div
+                key={i}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
+                whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.15 }}
+                viewport={{ once: true }}
+                whileHover={prefersReducedMotion ? undefined : { y: -4 }}
+                className="bg-teal rounded-card flex max-w-md flex-1 flex-col p-8">
+                <h3 className="mb-2 min-h-[80px] font-serif text-2xl font-normal text-white italic md:text-3xl">
+                  {t(card.statKey)}
+                </h3>
+                <p className="mb-6 flex-1 font-sans text-sm leading-relaxed text-white/70">
+                  {t(card.descKey)}
+                </p>
+                <div className="mt-auto flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 font-sans text-xs font-bold text-white">
+                    {STATS_PEOPLE[i].person.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-sans text-sm font-semibold text-white">
+                      {STATS_PEOPLE[i].person}
+                    </div>
+                    <div className="font-sans text-xs text-white/50">{STATS_PEOPLE[i].role}</div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section aria-labelledby="cta-heading" className="bg-cream px-6 py-20">
+          <motion.div
+            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.97 }}
+            whileInView={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 25 }}
+            viewport={{ once: true }}
+            className="container-content border-ink/[0.08] rounded-card relative overflow-hidden border-2 p-8 text-center md:p-12"
+            style={{ animation: "ctaBreathe 3s ease-in-out infinite" }}>
+            <div className="relative z-10">
+              <p className="text-ink/70 mb-2 font-sans text-sm">{t("cta_ready")}</p>
+              <h2
+                id="cta-heading"
+                className="text-ink mb-8 font-serif text-2xl font-normal md:text-4xl">
+                <span className="italic">{t("cta_title_italic")}</span> {t("cta_title_rest")}
+              </h2>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button asChild size="lg">
+                  <Link href={ROUTES.AUTH.LOGIN}>{t("get_started")}</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link href={ROUTES.AUTH.LOGIN}>{t("log_in")}</Link>
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="px-6 py-12 border-t border-ink/[0.06] bg-cream">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="flex flex-row items-start justify-evenly mb-[60px]">
+      <footer className="border-ink/[0.06] bg-cream border-t px-6 py-12">
+        <div className="container-page">
+          <div className="mb-[60px] flex flex-row items-start justify-evenly">
             {[
-              { title: "Company", links: ["About", "Careers", "Blog", "Press"] },
-              { title: "Product", links: ["Features", "Pricing", "Extension", "Mobile App"] },
-              { title: "Resources", links: ["Help Center", "Community", "Privacy", "Terms"] },
+              {
+                titleKey: "footer_company" as const,
+                linkKeys: [
+                  "footer_about",
+                  "footer_careers",
+                  "footer_blog",
+                  "footer_press",
+                ] as const,
+              },
+              {
+                titleKey: "footer_product" as const,
+                linkKeys: [
+                  "footer_features",
+                  "footer_pricing",
+                  "footer_extension",
+                  "footer_mobile_app",
+                ] as const,
+              },
+              {
+                titleKey: "footer_resources" as const,
+                linkKeys: [
+                  "footer_help",
+                  "footer_community",
+                  "footer_privacy",
+                  "footer_terms",
+                ] as const,
+              },
             ].map((col, i) => (
               <div key={i} className="text-center">
-                <h4 className="font-serif text-sm md:text-lg font-normal italic text-ink/40 mb-2.5 md:mb-4">{col.title}</h4>
-                {col.links.map((l) => (
-                  <div key={l} className="font-sans text-[11px] md:text-sm text-ink/60 py-0.5 md:py-1 cursor-pointer hover:text-ink transition-colors">
-                    {l}
-                  </div>
+                <h4 className="text-ink/60 mb-2.5 font-serif text-sm font-normal italic md:mb-4 md:text-lg">
+                  {t(col.titleKey)}
+                </h4>
+                {col.linkKeys.map((key) => (
+                  <Link
+                    key={key}
+                    href={ROUTES.HOME}
+                    className="text-ink/75 hover:text-ink block py-0.5 font-sans text-xs transition-colors md:py-1 md:text-sm">
+                    {t(key)}
+                  </Link>
                 ))}
               </div>
             ))}
           </div>
 
-          <div className="flex items-center justify-center mb-10 gap-5">
+          <div className="mb-10 flex items-center justify-center gap-5">
             <BrandConcentricArch s={80} className="text-ink" />
-            <span className="font-sans text-5xl md:text-7xl font-black text-ink leading-none" style={{ letterSpacing: "-0.04em" }}>
-              Kurate
+            <span className="text-ink font-sans text-5xl leading-none font-black tracking-[-0.04em] md:text-7xl">
+              {tApp("name")}
             </span>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-between border-t border-ink/[0.06] pt-5 gap-4">
-            <span className="font-sans text-[13px] text-ink/35">&copy; Kurate 2026</span>
-            <div className="flex gap-3 items-center">
-              {["Terms", "Privacy", "Data Controls"].map((l) => (
-                <span key={l} className="font-sans text-[13px] text-ink/35 cursor-pointer hover:text-ink/60 transition-colors">
-                  {l}
-                </span>
+          <div className="border-ink/[0.06] flex flex-col items-center justify-between gap-4 border-t pt-5 md:flex-row">
+            <span className="text-ink/55 font-sans text-sm">{t("copyright")}</span>
+            <div className="flex items-center gap-3">
+              {[t("terms"), t("privacy"), t("data_controls")].map((label) => (
+                <Link
+                  key={label}
+                  href={ROUTES.HOME}
+                  className="text-ink/55 hover:text-ink/75 font-sans text-sm transition-colors">
+                  {label}
+                </Link>
               ))}
             </div>
           </div>

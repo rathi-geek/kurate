@@ -7,3 +7,12 @@ ignoredBuiltDependencies:
   - core-js
   - core-js-pure
   - oxc-resolver
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@posthog/cli'
+  - '@sentry/cli'
+  - esbuild
+  - protobufjs
+  - sharp
+  - unrs-resolver

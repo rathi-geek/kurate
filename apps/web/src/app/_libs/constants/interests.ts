@@ -1,0 +1,17 @@
+export const INTEREST_OPTIONS = [
+  "Technology",
+  "Design",
+  "Science",
+  "Finance",
+  "Startups",
+  "Psychology",
+  "Philosophy",
+  "Writing",
+  "Health",
+  "Politics",
+  "Climate",
+  "Arts",
+  "Education",
+  "Business",
+  "History",
+];
