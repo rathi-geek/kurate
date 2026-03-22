@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view";
+import { SkyTabView } from "@/app/_components/home/sky-tab-view";
 import { VaultTabView } from "@/app/_components/home/vault-tab-view";
 import { HomeTab } from "@/app/_libs/chat-types";
 import { MediaPlayerProvider } from "@/app/_libs/context/MediaPlayerContext";
@@ -36,9 +37,14 @@ function HomePageInner() {
 
   const { activeThreadId, isFullScreen, closeThread, openPerson } = useThread();
 
-  // Initialise tab from URL — fallback to DISCOVERING for unknown values
+  // Initialise tab from URL — fallback to VAULT for unknown values
   const tabFromUrl = searchParams.get("tab");
-  const initialTab = tabFromUrl === HomeTab.DISCOVERING ? HomeTab.DISCOVERING : HomeTab.VAULT;
+  const initialTab =
+    tabFromUrl === HomeTab.DISCOVERING
+      ? HomeTab.DISCOVERING
+      : tabFromUrl === HomeTab.SKY
+        ? HomeTab.SKY
+        : HomeTab.VAULT;
   const [activeTab, setActiveTab] = useState<HomeTab>(initialTab);
 
   const [isScrolledDown, setIsScrolledDown] = useState(false);
@@ -82,6 +88,7 @@ function HomePageInner() {
               tabs={[
                 { value: HomeTab.VAULT, label: t("tab_vault") },
                 { value: HomeTab.DISCOVERING, label: t("tab_discovering") },
+                { value: HomeTab.SKY, label: "Sky" },
               ]}
             />
           </div>
@@ -100,6 +107,11 @@ function HomePageInner() {
           className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeTab !== HomeTab.DISCOVERING ? "hidden" : ""}`}
           aria-hidden={activeTab !== HomeTab.DISCOVERING}>
           <DiscoveringTabView onScrollDirectionChange={handleScrollDirectionChange} />
+        </div>
+        <div
+          className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeTab !== HomeTab.SKY ? "hidden" : ""}`}
+          aria-hidden={activeTab !== HomeTab.SKY}>
+          <SkyTabView />
         </div>
       </div>
     </MediaPlayerProvider>

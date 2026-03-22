@@ -51,4 +51,5 @@ export interface ThreadComment {
 export enum HomeTab {
   DISCOVERING = "discovering",
   VAULT = "vault",
+  SKY = "sky",
 }
