@@ -8,8 +8,8 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
-import type { GroupDrop } from "@/app/_libs/types/groups";
+import { queryKeys } from "@kurate/query";
+import type { GroupDrop } from "@kurate/types";
 
 const supabase = createClient();
 

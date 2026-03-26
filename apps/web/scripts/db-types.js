@@ -36,7 +36,7 @@ if (!projectId) {
   process.exit(1);
 }
 
-const outFile = "src/app/_libs/types/database.types.ts";
+const outFile = "../../libs/types/src/database.types.ts";
 
 console.log(`Generating types for project: ${projectId}`);
 console.log(`Output: ${outFile}\n`);

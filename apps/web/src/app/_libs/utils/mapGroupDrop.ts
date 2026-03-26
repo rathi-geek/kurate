@@ -1,7 +1,7 @@
 "use client";
 
-import type { Json } from "@/app/_libs/types/database.types";
-import type { GroupDrop } from "@/app/_libs/types/groups";
+import type { Json } from "@kurate/types";
+import type { GroupDrop } from "@kurate/types";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 export type ProfileRow = {

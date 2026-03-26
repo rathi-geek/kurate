@@ -1,7 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 
 /**

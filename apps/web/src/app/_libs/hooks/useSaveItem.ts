@@ -3,8 +3,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
-import type { ContentType, SaveSource } from "@/app/_libs/types/vault";
+import { queryKeys } from "@kurate/query";
+import type { ContentType, SaveSource } from "@kurate/types";
 
 const supabase = createClient();
 
@@ -29,6 +29,7 @@ export interface SaveItemInput {
   source?: string | null;
   author?: string | null;
   read_time?: string | null;
+  tags?: string[] | null;
 }
 
 export interface SaveItemResult {
@@ -62,6 +63,7 @@ export function useSaveItem() {
             content_type: input.content_type ?? "article",
             preview_image_url: input.preview_image ?? null,
             description: input.description ?? null,
+            tags: input.tags ?? null,
             raw_metadata: {
               source: input.source ?? null,
               author: input.author ?? null,

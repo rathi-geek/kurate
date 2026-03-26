@@ -5,8 +5,8 @@ import { useEffect } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
-import type { DMMessage } from "@/app/_libs/types/people";
+import { queryKeys } from "@kurate/query";
+import type { DMMessage } from "@kurate/types";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 const supabase = createClient();

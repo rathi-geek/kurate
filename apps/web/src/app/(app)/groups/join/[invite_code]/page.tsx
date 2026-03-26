@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/_libs/supabase/server";
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
 
 interface Props {
   params: Promise<{ invite_code: string }>;

@@ -2,20 +2,23 @@
 
 import { useState } from "react";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
+import { LuChevronDown } from "react-icons/lu";
 
-import { ROUTES } from "@/app/_libs/constants/routes";
-import { useDMConversations } from "@/app/_libs/hooks/useDMConversations";
-import { DotsHorizontalIcon, PlusIcon } from "@/components/icons";
-import { FindUserSheet } from "@/components/people/find-user-sheet";
-import { Link } from "@/i18n";
+import { ROUTES } from "@kurate/utils";
+import type { DMConversation } from "@kurate/types";
+import { PlusIcon } from "@/components/icons";
+import { FindUserSheet } from "@/app/_components/people/find-user-sheet";
+import Link from "next/link";
 import { UnreadBadge } from "@/app/_components/sidebar/unread-badge";
+import { cn } from "@/app/_libs/utils/cn";
 
 export interface SidebarPeopleSectionProps {
   collapsed?: boolean;
   /** Called when an item is clicked (e.g. to close mobile drawer) */
   onItemClick?: () => void;
   currentUserId?: string | null;
+  conversations?: DMConversation[];
   unreadCounts?: Map<string, number>;
   markRead?: (convoId: string) => Promise<void>;
 }
@@ -24,23 +27,34 @@ export function SidebarPeopleSection({
   collapsed = false,
   onItemClick,
   currentUserId = null,
+  conversations = [],
   unreadCounts,
   markRead,
 }: SidebarPeopleSectionProps) {
   const t = useTranslations("sidebar");
   const [newMessageOpen, setNewMessageOpen] = useState(false);
-
-  const { conversations } = useDMConversations(currentUserId);
-  const displayed = conversations.slice(0, 5);
+  const [sectionOpen, setSectionOpen] = useState(true);
 
   return (
     <>
       <div className={collapsed ? "mt-4 px-2" : "mt-5 px-3"}>
         {!collapsed && (
           <div className="mb-2 flex items-center justify-between px-3">
-            <p className="text-ink/25 font-mono text-xs font-bold tracking-widest uppercase">
-              {t("people")}
-            </p>
+            <button
+              type="button"
+              onClick={() => setSectionOpen((v) => !v)}
+              className="flex items-center gap-1 text-left"
+              title={sectionOpen ? "Collapse" : "Expand"}>
+              <LuChevronDown
+                className={cn(
+                  "text-ink/25 h-3 w-3 transition-transform duration-150",
+                  !sectionOpen && "-rotate-90",
+                )}
+              />
+              <p className="text-ink/25 font-mono text-xs font-bold tracking-widest uppercase">
+                {t("people")}
+              </p>
+            </button>
             <button
               type="button"
               onClick={() => setNewMessageOpen(true)}
@@ -50,8 +64,8 @@ export function SidebarPeopleSection({
             </button>
           </div>
         )}
-        <div className="space-y-0.5">
-          {displayed.map((convo) => {
+        {sectionOpen && <div className="space-y-0.5">
+          {conversations.map((convo) => {
             const displayName =
               convo.otherUser.display_name ??
               (convo.otherUser.handle ? `@${convo.otherUser.handle}` : "Unknown");
@@ -103,19 +117,7 @@ export function SidebarPeopleSection({
             );
           })}
 
-          {/* See all link */}
-          {!collapsed && conversations.length > 4 && (
-            <Link
-              href={ROUTES.APP.PEOPLE}
-              onClick={onItemClick}
-              className="rounded-badge hover:bg-ink/4 flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors">
-              <div className="text-ink/30 flex h-[26px] w-[26px] shrink-0 items-center justify-center">
-                <DotsHorizontalIcon className="h-3 w-3" />
-              </div>
-              <span className="text-ink/40 font-mono text-xs">See all</span>
-            </Link>
-          )}
-        </div>
+        </div>}
       </div>
 
       {currentUserId && (

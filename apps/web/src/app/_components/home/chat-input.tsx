@@ -1,9 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ForwardedRef,
+  type MutableRefObject,
+} from "react";
+
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { Input } from "@/components/ui/input";
 
@@ -12,37 +21,68 @@ import { LinkIcon, PlusIcon } from "@/components/icons";
 
 const URL_REGEX = /https?:\/\/[^\s]+/;
 
-interface ChatInputProps {
+export interface ChatInputProps {
   onSend: (message: string) => void;
   onUrlChange?: (url: string | null) => void;
   placeholder?: string;
+  /** Placeholder shown when a URL is locked in and the user is typing a note */
+  notePlaceholder?: string;
   disabled?: boolean;
   autoFocus?: boolean;
   /** Set to false to hide the + send button (e.g. when the parent provides its own Post action) */
   showPlusIcon?: boolean;
+  /** When true: hides the link icon and shrinks the input when empty and unfocused */
+  collapsible?: boolean;
+  /** When provided, shows a camera icon button that opens a file picker (currently hidden) */
+  onMediaSelect?: (file: File) => void;
 }
 
-export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocus, showPlusIcon = true }: ChatInputProps) {
+function assignInputRef(
+  instance: HTMLInputElement | null,
+  localRef: MutableRefObject<HTMLInputElement | null>,
+  forwarded: ForwardedRef<HTMLInputElement>,
+) {
+  localRef.current = instance;
+  if (typeof forwarded === "function") forwarded(instance);
+  else if (forwarded) (forwarded as MutableRefObject<HTMLInputElement | null>).current = instance;
+}
+
+export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function ChatInput(
+  { onSend, onUrlChange, placeholder, notePlaceholder = "Add a note…", disabled, autoFocus, showPlusIcon = true, collapsible = false, onMediaSelect: _onMediaSelect },
+  ref,
+) {
   const t = useTranslations("chat");
-  const resolvedPlaceholder = placeholder ?? t("placeholder");
   const prefersReducedMotion = useReducedMotion();
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [lockedUrl, setLockedUrl] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const isUrl = URL_REGEX.test(value);
+  const resolvedPlaceholder = lockedUrl ? notePlaceholder : (placeholder ?? t("placeholder"));
+  const isUrl = lockedUrl !== null;
   const hasText = value.trim().length > 0;
+  const isCollapsed = collapsible && !focused && !hasText && !lockedUrl;
 
-  // Notify parent of URL presence (debounced 150ms)
+  // Detect URL in value — only when no URL is already locked
   useEffect(() => {
+    if (!onUrlChange || lockedUrl) return;
     const timer = setTimeout(() => {
       const match = value.match(URL_REGEX);
-      onUrlChange?.(match ? match[0] : null);
+      if (match) {
+        const url = match[0];
+        // Strip the URL from value, keep remaining text as note pre-fill
+        const remaining = value.replace(url, "").trim();
+        setValue(remaining);
+        setLockedUrl(url);
+        onUrlChange(url);
+      } else {
+        onUrlChange(null);
+      }
     }, 150);
     return () => clearTimeout(timer);
-  }, [value, onUrlChange]);
+  }, [value, onUrlChange, lockedUrl]);
 
-  const showSendButton = hasText || focused;
+  const showSendButton = hasText || focused || !!lockedUrl;
 
   // Global Ctrl+V / Cmd+V — focus input and paste
   useEffect(() => {
@@ -60,11 +100,14 @@ export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocu
   }, [disabled]);
 
   const handleSubmit = useCallback(() => {
+    if (disabled) return;
     const trimmed = value.trim();
-    if (!trimmed || disabled) return;
+    if (!trimmed && !lockedUrl) return;
+    // When in URL mode, send the note text (may be empty); parent handles lockedUrl via previewUrl
     onSend(trimmed);
     setValue("");
-  }, [value, disabled, onSend]);
+    setLockedUrl(null);
+  }, [value, lockedUrl, disabled, onSend]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -95,25 +138,14 @@ export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocu
       }
       transition={{ type: "spring", stiffness: 380, damping: 32 }}
       style={{ boxShadow, transition: "box-shadow 0.3s ease-out" }}>
-      {/* Left: link icon — visible when empty (stays visible when focused) */}
-      <AnimatePresence>
-        <motion.button
-          key="link-icon"
-          type="button"
-          disabled={disabled}
-          aria-label="Link"
-          initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.75 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.75 }}
-          transition={{ duration: 0.15 }}
-          className="rounded-button text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center transition-colors">
-          <LinkIcon className="size-[15px]" />
-        </motion.button>
-      </AnimatePresence>
+      {/* Media upload hidden — feature not enabled */}
+
+      {/* Left: link icon — always visible */}
+      <LinkIcon className="text-muted-foreground ml-1 size-[15px] shrink-0" />
 
       {/* Center: text input (shadcn Input, borderless to match wrapper) */}
       <Input
-        ref={inputRef}
+        ref={(el) => assignInputRef(el, inputRef, ref)}
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -124,7 +156,8 @@ export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocu
         disabled={disabled}
         autoFocus={autoFocus}
         className={cn(
-          "h-10 min-h-0 flex-1 border-0 bg-transparent px-2 py-1.5 shadow-none",
+          "min-h-0 flex-1 border-0 bg-transparent px-2 py-1.5 shadow-none",
+          isCollapsed ? "h-8" : "h-10",
           "focus-visible:ring-0 focus-visible:ring-offset-0",
         )}
       />
@@ -137,7 +170,7 @@ export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocu
             type="button"
             onClick={handleSubmit}
             whileTap={{ scale: 0.88 }}
-            disabled={!hasText || disabled}
+            disabled={(!hasText && !lockedUrl) || disabled}
             aria-label={t("send_label")}
             initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.75 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -150,4 +183,4 @@ export function ChatInput({ onSend, onUrlChange, placeholder, disabled, autoFocu
       </AnimatePresence>
     </motion.div>
   );
-}
+});

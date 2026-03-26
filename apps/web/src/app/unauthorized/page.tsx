@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getT } from "@/i18n/server";
 
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function UnauthorizedPage() {
-  const t = await getTranslations("errors");
+  const t = getT("errors");
   return (
     <main id="main-content" className="bg-primary/25 flex h-dvh flex-col items-center justify-center">
       <h2 className="text-4xl font-bold">{t("unauthorized_title")}</h2>

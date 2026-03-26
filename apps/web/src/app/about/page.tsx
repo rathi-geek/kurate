@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getT } from "@/i18n/server";
 
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
 
 export const metadata: Metadata = {
   title: "About | Kurate",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage() {
-  const t = await getTranslations("about");
+  const t = getT("about");
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <main id="main-content" className="w-full">

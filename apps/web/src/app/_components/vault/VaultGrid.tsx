@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { AnimatePresence, type Variants, motion, useReducedMotion } from "framer-motion";
 
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
-import type { VaultItem } from "@/app/_libs/types/vault";
+import type { VaultItem } from "@kurate/types";
 import { VaultCard } from "@/app/_components/vault/VaultCard";
 import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
 
@@ -15,10 +15,9 @@ export interface VaultGridProps {
   /** Changes when filters change — forces stagger animation to replay */
   animationKey: string;
   onLoadMore: () => void;
-  onDelete: (id: string) => void;
-  onShare?: (item: VaultItem) => void;
+  deleteItem: (id: string) => void;
+  updateRemarks: (id: string, value: string) => void;
   onToggleRead: (item: VaultItem) => void;
-  onOpenRemarkModal?: (item: VaultItem) => void;
 }
 
 export function VaultGrid({
@@ -27,10 +26,9 @@ export function VaultGrid({
   isLoadingMore,
   animationKey,
   onLoadMore,
-  onDelete,
-  onShare,
+  deleteItem,
+  updateRemarks,
   onToggleRead,
-  onOpenRemarkModal,
 }: VaultGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -73,10 +71,9 @@ export function VaultGrid({
             >
               <VaultCard
                 item={item}
-                onDelete={onDelete}
-                onShare={onShare}
+                deleteItem={deleteItem}
+                updateRemarks={updateRemarks}
                 onToggleRead={onToggleRead}
-                onOpenRemarkModal={onOpenRemarkModal}
               />
             </motion.div>
           ))}

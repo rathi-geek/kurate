@@ -5,13 +5,13 @@ import { useSearchParams } from "next/navigation";
 
 import { env } from "env";
 import { type Variants, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 
 import { ErrorAlert } from "@/app/_components/error-alert";
 import { Spinner } from "@/app/_components/spinner";
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 import { fadeUp } from "@/app/_libs/utils/motion";
 import { BrandLogo, BrandSunburst, FloatDeco } from "@/components/brand";

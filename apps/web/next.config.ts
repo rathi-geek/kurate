@@ -3,18 +3,15 @@ import type { NextConfig } from "next";
 import path from "node:path";
 
 import withBundleAnalyzer from "@next/bundle-analyzer";
-import createNextIntlPlugin from "next-intl/plugin";
-import { withPostHogConfig } from "@posthog/nextjs-config";
 import { withSentryConfig } from "@sentry/nextjs";
 import { env } from "env";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  typedRoutes: true,
-  productionBrowserSourceMaps: true, // sentry and posthog config
+  typedRoutes: false,
+  productionBrowserSourceMaps: true,
   skipTrailingSlashRedirect: true,
-  serverExternalPackages: ["import-in-the-middle", "require-in-the-middle"], // posthog config
   turbopack: {
     root: path.resolve(__dirname, "../.."),
   },
@@ -52,19 +49,6 @@ const nextConfig: NextConfig = {
         source: "/gtm/:path*",
         destination: "https://www.googletagmanager.com/gtm/:path*",
       },
-      // PostHog Proxy
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://eu-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://eu.i.posthog.com/:path*",
-      },
-      {
-        source: "/ingest/flags",
-        destination: "https://eu.i.posthog.com/flags",
-      },
     ];
   },
   experimental: {
@@ -79,24 +63,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Conditionally apply PostHog configuration only if API keys are provided
-const withPostHog =
-  env.POSTHOG_API_KEY && env.POSTHOG_ENV_ID
-    ? withPostHogConfig(nextConfig, {
-        personalApiKey: env.POSTHOG_API_KEY, // Personal API Key
-        envId: env.POSTHOG_ENV_ID, // Environment ID
-        host: env.NEXT_PUBLIC_POSTHOG_HOST, // (optional), defaults to https://us.posthog.com
-      })
-    : nextConfig;
-
 // Conditionally apply Sentry configuration only if auth token is provided
 const withSentry = env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(withPostHog, {
-      org: "kurate", // TODO: replace with your Sentry org slug
+  ? withSentryConfig(nextConfig, {
+      org: "kurate",
       project: "kurate",
       silent: !process.env.CI,
       widenClientFileUpload: true,
-      tunnelRoute: "/monitoring", // ?!monitoring in next.config.ts when using proxy.ts file
+      tunnelRoute: "/monitoring",
       disableLogger: true,
       automaticVercelMonitors: true,
       authToken: env.SENTRY_AUTH_TOKEN,
@@ -107,17 +81,13 @@ const withSentry = env.SENTRY_AUTH_TOKEN
         enabled: true,
       },
     })
-  : withPostHog;
+  : nextConfig;
 
-const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
-
-export default withNextIntl(
-  withBundleAnalyzer({
-    enabled: env.ANALYZE === "true",
-  })(
-    env.NEXT_PUBLIC_APP_ENV === "production" ||
-      env.NEXT_PUBLIC_APP_ENV === "staging"
-      ? withSentry
-      : nextConfig,
-  ),
+export default withBundleAnalyzer({
+  enabled: env.ANALYZE === "true",
+})(
+  env.NEXT_PUBLIC_APP_ENV === "production" ||
+    env.NEXT_PUBLIC_APP_ENV === "staging"
+    ? withSentry
+    : nextConfig,
 );

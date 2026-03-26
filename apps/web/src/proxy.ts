@@ -1,18 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
-import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "env";
-import { ROUTES } from "@/app/_libs/constants/routes";
-import { routing } from "@/i18n/config";
+import { ROUTES } from "@kurate/utils";
 
-const intlMiddleware = createMiddleware(routing);
-
-/** Single request handler: locale (next-intl) first, then Supabase auth. Next.js 16+ uses proxy.ts (not middleware.ts). */
+/** Single request handler: Supabase auth. Next.js 16+ uses proxy.ts (not middleware.ts). */
 export async function proxy(request: NextRequest) {
-  // Run next-intl first for locale detection / redirect
-  const intlResponse = intlMiddleware(request);
-  if (intlResponse.status !== 200) return intlResponse;
-
   let supabaseResponse = NextResponse.next({
     request,
   });

@@ -2,11 +2,11 @@
 
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
-import type { GroupDrop } from "@/app/_libs/types/groups";
+import type { GroupDrop } from "@kurate/types";
 import { cardStagger } from "@/app/_libs/utils/motion";
-import { FeedShareCard } from "@/components/groups/feed-share-card";
+import { FeedShareCard } from "@/app/_components/groups/feed-share-card";
 
 interface DiscoveryTodaySectionProps {
   drops: GroupDrop[];

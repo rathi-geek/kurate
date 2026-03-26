@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/app/_libs/supabase/server";
-import { DmChatView } from "@/components/people/dm-chat-view";
+import { DmChatView } from "@/app/_components/people/dm-chat-view";
 
 interface DmPageProps {
   params: Promise<{ convoId: string }>;

@@ -39,6 +39,21 @@
       ],
       "@/i18n/*": [
         "./src/i18n/*"
+      ],
+      "@kurate/types": [
+        "../../libs/types/src/index.ts"
+      ],
+      "@kurate/query": [
+        "../../libs/query/src/index.ts"
+      ],
+      "@kurate/locales": [
+        "../../libs/locales/src/index.ts"
+      ],
+      "@kurate/utils": [
+        "../../libs/utils/src/index.ts"
+      ],
+      "@kurate/hooks": [
+        "../../libs/hooks/src/index.ts"
       ]
     }
   },

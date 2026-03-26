@@ -4,23 +4,24 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { type Variants, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { FormField } from "@/app/_components/form-field";
 import { Spinner } from "@/app/_components/spinner";
-import { ROUTES } from "@/app/_libs/constants/routes";
-import { INTEREST_OPTIONS } from "@/app/_libs/constants/interests";
+import { ROUTES } from "@kurate/utils";
+import { INTEREST_OPTIONS } from "@kurate/utils";
 import { saveUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { createClient } from "@/app/_libs/supabase/client";
 import { cn } from "@/app/_libs/utils/cn";
 import { fadeUp } from "@/app/_libs/utils/motion";
 import { Arrow, BrandLogo } from "@/components/brand";
-import { useRouter } from "@/i18n";
+import { useRouter } from "next/navigation";
 
 import { AuthPageShell } from "@/app/(public)/auth/_components/auth-page-shell";
+import { track } from "@/app/_libs/utils/analytics";
 
 const VISIBLE_COUNT = 5;
 
@@ -103,6 +104,7 @@ export function OnboardingForm() {
     });
 
     await saveUserInterests(user.id, interests);
+    track("onboarding_completed", { interests_selected: interests.length });
 
     router.replace(nextUrl ?? ROUTES.APP.HOME);
   }

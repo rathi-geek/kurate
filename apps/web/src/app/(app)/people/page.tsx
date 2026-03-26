@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import { useTranslations } from "next-intl";
+import Link from "next/link";
 
-import { createClient } from "@/app/_libs/supabase/client";
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
+
+import { FindUserSheet } from "@/app/_components/people/find-user-sheet";
 import { useDMConversations } from "@/app/_libs/hooks/useDMConversations";
-import { FindUserSheet } from "@/components/people/find-user-sheet";
+import { createClient } from "@/app/_libs/supabase/client";
 import { PlusIcon } from "@/components/icons";
-import { Link } from "@/i18n";
+import { useTranslations } from "@/i18n/use-translations";
 
 const supabase = createClient();
 
@@ -38,15 +39,14 @@ export default function PeoplePage() {
   const { conversations, isLoading } = useDMConversations(currentUserId);
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-6">
+    <div className="mx-auto max-w-md px-4 py-6">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-foreground font-sans text-xl font-bold">{t("page_title")}</h1>
         <button
           type="button"
           onClick={() => setNewMessageOpen(true)}
-          className="bg-primary text-primary-foreground flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-90"
-        >
+          className="bg-primary text-primary-foreground flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-90">
           <PlusIcon className="h-3 w-3" />
           {t("new_message_btn")}
         </button>
@@ -66,8 +66,7 @@ export default function PeoplePage() {
           <button
             type="button"
             onClick={() => setNewMessageOpen(true)}
-            className="bg-primary text-primary-foreground mt-4 rounded-full px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
-          >
+            className="bg-primary text-primary-foreground mt-4 rounded-full px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90">
             {t("empty_cta")}
           </button>
         </div>
@@ -77,8 +76,7 @@ export default function PeoplePage() {
             <Link
               key={convo.id}
               href={ROUTES.APP.PERSON(convo.id)}
-              className="hover:bg-surface flex items-center gap-3 rounded-xl px-3 py-3 transition-colors"
-            >
+              className="flex items-center gap-3 rounded-xl border border-ink/6 bg-white px-3 py-3 transition-colors hover:bg-surface">
               <div className="bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-full">
                 <span className="text-primary text-sm font-bold">
                   {(
@@ -92,9 +90,7 @@ export default function PeoplePage() {
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="text-foreground truncate text-sm font-semibold">
                     {convo.otherUser.display_name ??
-                      (convo.otherUser.handle
-                        ? `@${convo.otherUser.handle}`
-                        : t("unknown"))}
+                      (convo.otherUser.handle ? `@${convo.otherUser.handle}` : t("unknown"))}
                   </p>
                   {convo.lastMessage && (
                     <span className="text-muted-foreground shrink-0 text-[10px]">

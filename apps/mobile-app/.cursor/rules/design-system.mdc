@@ -1,0 +1,85 @@
+---
+description: Mobile design system token enforcement for NativeWind + Gluestack UI
+globs: apps/mobile-app/**/*.{tsx,ts}
+---
+
+# Mobile Design System Rules
+
+## Color tokens — always use semantic tokens, never hardcoded values
+
+```tsx
+// ✅ correct
+<Text className="text-foreground" />
+<View className="bg-primary" />
+<View className="bg-background" />
+
+// ❌ wrong — never hardcode
+<Text style={{ color: '#2b5b7e' }} />
+<View style={{ backgroundColor: '#1a5c4b' }} />
+<View className="bg-[#f5f0e8]" />
+```
+
+### Token reference
+| Token | Color | Use for |
+|---|---|---|
+| `bg-background` | cream #f5f0e8 | Screen backgrounds |
+| `bg-card` | white #ffffff | Card surfaces |
+| `bg-primary` | teal #1a5c4b | Primary actions, CTAs |
+| `text-foreground` | deep blue #2b5b7e | Body text |
+| `text-muted-foreground` | slate #5b7d99 | Secondary/helper text |
+| `text-primary-foreground` | white | Text on teal bg |
+| `bg-secondary` | warm off-white #faf7f2 | Section backgrounds |
+| `bg-accent` | light teal #eaf3ef | Icon backgrounds, highlights |
+| `border-border` | light navy #dce3ea | Borders, dividers |
+| `bg-destructive` | red #b91c1c | Errors, destructive actions |
+
+## Component primitives — always use Gluestack, not raw React Native
+
+```tsx
+// ✅ correct
+import { View } from '@/components/ui/view';
+import { Text } from '@/components/ui/text';
+import { HStack } from '@/components/ui/hstack';
+import { VStack } from '@/components/ui/vstack';
+import { Card } from '@/components/ui/card';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ScrollView } from '@/components/ui/scroll-view';
+
+// ❌ wrong
+import { View, Text, ScrollView } from 'react-native';
+```
+
+## Border radius — match web exactly
+
+| Component | Class |
+|---|---|
+| Button | `rounded-[10px]` (already set in component) |
+| Input | `rounded-[10px]` (already set in component) |
+| Card | `rounded-xl` |
+| Badge | `rounded-[6px]` (already set in component) |
+| Avatar | `rounded-full` |
+| Feature icon bg | `rounded-xl` |
+
+## Typography — always DM Sans
+
+```tsx
+// ✅ correct — font-sans resolves to DM Sans
+<Text className="font-sans text-base font-medium text-foreground" />
+<Text className="font-mono text-sm text-muted-foreground" />  // DM Mono for code
+
+// ❌ wrong — never rely on platform default font
+<Text style={{ fontFamily: 'System' }} />
+<Text />  // no font class = platform default
+```
+
+Font weights available: `font-normal` (400), `font-medium` (500), `font-semibold` (600), `font-bold` / `font-black` (700).
+
+## Shadows — use named tokens
+
+```tsx
+<Card className="shadow-sm" />   // subtle card lift
+<Card className="shadow-md" />   // elevated card
+<Card className="shadow-lg" />   // modal/sheet
+```
+
+Never use `style={{ shadowColor: ... }}` directly — the tokens use navy-tinted rgba values matching the web.

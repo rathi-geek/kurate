@@ -4,16 +4,20 @@ import React, { useCallback, useRef, useState } from "react";
 
 import Image from "next/image";
 
-import { useTranslations } from "next-intl";
+import type { VaultItem } from "@kurate/types";
 
 import { Button } from "@/components/ui/button";
+import { ContentTypePill } from "@/components/ui/content-type-pill";
 
-import type { VaultItem } from "@/app/_libs/types/vault";
+import { VaultDeleteModal, shouldSkipConfirm } from "@/app/_components/vault/VaultDeleteModal";
+import { VaultRemarkModal } from "@/app/_components/vault/VaultRemarkModal";
+import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 // TODO: restore when in-app reader is re-enabled
 // import { useMediaPlayer } from "@/app/_libs/context/MediaPlayerContext";
 import { cn } from "@/app/_libs/utils/cn";
+import { track } from "@/app/_libs/utils/analytics";
 import { CheckIcon, DoubleCheckIcon, PencilIcon, ShareIcon, TrashIcon } from "@/components/icons";
-import { ContentTypePill } from "@/components/ui/content-type-pill";
+import { useTranslations } from "@/i18n/use-translations";
 
 function getDescription(item: VaultItem): string | undefined {
   const raw = item.raw_metadata;
@@ -24,24 +28,19 @@ function getDescription(item: VaultItem): string | undefined {
   return undefined;
 }
 
-
 export interface VaultCardProps {
   item: VaultItem;
-  onDelete: (id: string) => void;
-  onShare?: (item: VaultItem) => void;
+  deleteItem: (id: string) => void;
+  updateRemarks: (id: string, value: string) => void;
   onToggleRead: (item: VaultItem) => void;
-  onOpenRemarkModal?: (item: VaultItem) => void;
 }
 
-function VaultCardInner({
-  item,
-  onDelete,
-  onShare,
-  onToggleRead,
-  onOpenRemarkModal,
-}: VaultCardProps) {
+function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: VaultCardProps) {
   const t = useTranslations("vault");
   const cardRef = useRef<HTMLDivElement>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [remarkModalOpen, setRemarkModalOpen] = useState(false);
 
   const handleCardKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -68,7 +67,10 @@ function VaultCardInner({
         <div
           role="button"
           tabIndex={0}
-          onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
+          onClick={() => {
+            track("link_opened", { content_type: item.content_type, source: item.raw_metadata?.source ?? null });
+            window.open(item.url, "_blank", "noopener,noreferrer");
+          }}
           onKeyDown={handleCardKeyDown}
           className="focus-visible:ring-primary rounded-card flex min-h-0 flex-1 flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
           {/* Image / type badge area */}
@@ -107,6 +109,7 @@ function VaultCardInner({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  if (!item.is_read) track("link_marked_read");
                   onToggleRead(item);
                 }}
                 aria-label={item.is_read ? t("mark_unread_aria") : t("mark_read_aria")}>
@@ -124,28 +127,26 @@ function VaultCardInner({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onOpenRemarkModal?.(item);
+                  setRemarkModalOpen(true);
                 }}
                 aria-label={t("edit_remark_aria")}
                 title={t("edit_remark_aria")}>
                 <PencilIcon className="size-4" />
               </Button>
 
-              {onShare && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-button bg-card/20 hover:bg-card/40 h-9 w-9 text-white backdrop-blur-sm"
-                  title={t("share_aria")}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onShare(item);
-                  }}
-                  aria-label={t("share_aria")}>
-                  <ShareIcon className="size-4" />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-button bg-card/20 hover:bg-card/40 h-9 w-9 text-white backdrop-blur-sm"
+                title={t("share_aria")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShareModalOpen(true);
+                }}
+                aria-label={t("share_aria")}>
+                <ShareIcon className="size-4" />
+              </Button>
 
               <Button
                 variant="ghost"
@@ -155,7 +156,12 @@ function VaultCardInner({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onDelete(item.id);
+                  track("link_deleted", { content_type: item.content_type });
+                  if (shouldSkipConfirm()) {
+                    deleteItem(item.id);
+                    return;
+                  }
+                  setDeleteModalOpen(true);
                 }}
                 aria-label={t("delete_aria")}>
                 <TrashIcon className="size-4" />
@@ -167,6 +173,18 @@ function VaultCardInner({
             <h3 className="text-foreground line-clamp-2 shrink-0 font-sans text-sm leading-snug font-bold">
               {item.title || item.url}
             </h3>
+
+            {(item.tags ?? []).length > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {item.tags!.map((tag) => (
+                  <span
+                    key={tag}
+                    className="bg-accent text-accent-foreground rounded-[6px] px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Remark (read-only on card; edit via hover pencil → modal) */}
             {(item.remarks ?? "").trim() ? (
@@ -187,15 +205,28 @@ function VaultCardInner({
               {item.raw_metadata?.source ?? "—"}
               {timeLabel && <> · {timeLabel}</>}
             </p>
-
-            {/* {item.saved_from_group_name && (
-              <p className="text-primary mt-1 shrink-0 truncate font-sans text-[10px] font-medium">
-                Saved from {item.saved_from_group_name}
-              </p>
-            )} */}
           </div>
         </div>
       </div>
+
+      <VaultDeleteModal
+        open={deleteModalOpen}
+        onConfirm={() => {
+          deleteItem(item.id);
+          setDeleteModalOpen(false);
+        }}
+        onCancel={() => setDeleteModalOpen(false)}
+      />
+      <VaultShareModal open={shareModalOpen} item={item} onClose={() => setShareModalOpen(false)} />
+      <VaultRemarkModal
+        open={remarkModalOpen}
+        item={item}
+        onSave={(id, value) => {
+          updateRemarks(id, value);
+          setRemarkModalOpen(false);
+        }}
+        onClose={() => setRemarkModalOpen(false)}
+      />
     </div>
   );
 }

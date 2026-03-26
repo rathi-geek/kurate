@@ -17,14 +17,14 @@ export async function fetchUserGroups(): Promise<GroupRow[]> {
 
   const { data, error } = await supabase
     .from("conversation_members")
-    .select("conversations!conversation_members_convo_id_fkey(id, group_name, avatar:group_avatar_id(file_path, bucket_name))")
+    .select("conversations!conversation_members_convo_id_fkey(id, group_name, is_group, avatar:group_avatar_id(file_path, bucket_name))")
     .eq("user_id", user.id);
 
   if (error) return [];
   return (data ?? [])
     .map((row) => {
       const convo = Array.isArray(row.conversations) ? row.conversations[0] : row.conversations;
-      if (!convo || convo.group_name === null) return null;
+      if (!convo || !convo.is_group || convo.group_name === null) return null;
       const avatar = Array.isArray(convo.avatar) ? convo.avatar[0] : convo.avatar;
       return {
         id: convo.id,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/app/_libs/utils/cn";
-import type { VaultItem } from "@/app/_libs/types/vault";
+import type { VaultItem } from "@kurate/types";
 
 export interface VaultRemarkModalProps {
   open: boolean;

@@ -10,7 +10,20 @@
     "docs:serve": "pnpm --filter documentation serve",
     "web:dev": "pnpm --filter web dev",
     "web:start": "pnpm --filter web start",
-    "web:build": "pnpm --filter web build"
+    "web:build": "pnpm --filter web build",
+    "mobile:start": "pnpm --filter mobile-app start",
+    "mobile:start:clear": "pnpm --filter mobile-app start:clear",
+    "mobile:android": "pnpm --filter mobile-app android",
+    "mobile:ios": "pnpm --filter mobile-app ios",
+    "mobile:build:dev": "pnpm --filter mobile-app eas:build:dev",
+    "mobile:build:preview": "pnpm --filter mobile-app eas:build:preview",
+    "mobile:build:prod": "pnpm --filter mobile-app eas:build:prod",
+    "mobile:lint": "pnpm --filter mobile-app lint",
+    "mobile:typecheck": "pnpm --filter mobile-app typecheck",
+    "db:push": "pnpm dlx supabase db push",
+    "db:pull": "pnpm dlx supabase db pull",
+    "db:link": "pnpm dlx supabase link",
+    "db:types": "pnpm --filter web db:types"
   },
   "private": true,
   "dependencies": {
@@ -34,5 +47,11 @@
   },
   "engines": {
     "node": ">=20.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0"
+    }
   }
 }

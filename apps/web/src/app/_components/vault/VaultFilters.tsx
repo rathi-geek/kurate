@@ -1,10 +1,11 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { useVaultFilterOptions } from "@/app/_libs/hooks/useVaultFilterOptions";
-import type { VaultFilters } from "@/app/_libs/types/vault";
+import type { VaultFilters } from "@kurate/types";
 import { cn } from "@/app/_libs/utils/cn";
+import { track } from "@/app/_libs/utils/analytics";
 
 export interface VaultFiltersProps {
   filters: VaultFilters;
@@ -53,7 +54,10 @@ export function VaultFilters({ filters, onChange }: VaultFiltersProps) {
                 <button
                   key={value}
                   type="button"
-                  onClick={() => onChange({ ...filters, [key]: isActive ? "all" : value })}
+                  onClick={() => {
+                    if (!isActive) track("vault_filtered", { filter_type: key });
+                    onChange({ ...filters, [key]: isActive ? "all" : value });
+                  }}
                   className={cn(
                     "rounded-badge px-3 py-1.5 font-sans text-xs font-medium",
                     isActive
@@ -67,6 +71,7 @@ export function VaultFilters({ filters, onChange }: VaultFiltersProps) {
           </div>
         </div>
       ))}
+
     </div>
   );
 }

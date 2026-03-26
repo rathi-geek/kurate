@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 import type { AdminStats } from "@/app/api/admin/stats/route";
 
 export function AdminDashboardStats() {

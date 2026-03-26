@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 
-import type { Tables } from "@/app/_libs/types/database.types";
-import type { GroupRole } from "@/app/_libs/types/groups";
+import type { Tables } from "@kurate/types";
+import type { GroupRole } from "@kurate/types";
 import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
-import { FeedHeader } from "@/components/groups/feed-header";
-import { FeedTabView } from "@/components/groups/feed-tab-view";
-import { LibraryView } from "@/components/groups/library-view";
+import { FeedHeader } from "@/app/_components/groups/feed-header";
+import { FeedTabView } from "@/app/_components/groups/feed-tab-view";
+import { LibraryView } from "@/app/_components/groups/library-view";
 
 interface GroupPageClientProps {
   group: Tables<"conversations">;

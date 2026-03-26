@@ -48,11 +48,16 @@ This is a **Monorepo** containing multiple applications and shared libraries man
   - **Updates**: Keep documentation current with code changes
   - **Requirement**: **ALWAYS** create comprehensive documentation in `apps/documentation/docs/` before implementing any significant feature or architectural change
 - **Database Development Standards:**
-  - **SQL-First Approach**: Always write SQL migration files first, then generate Prisma schema from database
+  - **SQL-First Approach**: Always write SQL migration files first before implementing code
   - **Migration Files**: Create detailed SQL migrations with proper indexes, constraints, and relationships
-  - **One Migration File Per Module**: Maintain one consolidated migration file per functional module (e.g., `auth_module.sql`, `user_management.sql`). Update the same file with all migrations required for that module rather than creating multiple separate files
-  - **Schema Generation**: Use `pnpm prisma:dbpull` to generate Prisma schema after applying SQL migrations
-  - **Workflow**: SQL Migration → Apply to DB → Generate Prisma Schema → Implement Code
+  - **Migration Location**: `supabase/migrations/` (committed to git). One file per migration, named `YYYYMMDDHHMMSS_<description>.sql`
+  - **Documentation**: Mirror significant migrations in `apps/documentation/docs/backend/` as `<module>.sql` for reference
+  - **Apply Migrations**: Use `pnpm db:push` (`supabase db push`) to apply pending migrations to the hosted Supabase project
+  - **Pull Remote Schema**: Use `pnpm db:pull` (`supabase db pull`) to sync remote changes back to local
+  - **Types Generation**: Use `pnpm db:types` to regenerate TypeScript types after schema changes
+  - **Workflow**: Write `supabase/migrations/<timestamp>_<name>.sql` → `pnpm db:push` → `pnpm db:types` → Implement Code
+  - **One-time Setup**: Run `pnpm db:link --project-ref <ref>` to link the CLI to the hosted project (ref found in Supabase Dashboard → Settings → General)
+  - **CLI Usage**: All supabase commands run via `pnpm dlx supabase <cmd>` — no global install needed
 - **Getting Started:** Refer to individual app README files for setup instructions, Located at `apps/{APP_NAME}/README.md`. These contain:
   - How to start/stop the application
   - Access URLs and credentials

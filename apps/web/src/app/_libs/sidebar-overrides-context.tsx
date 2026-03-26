@@ -7,8 +7,6 @@ import { createContext, useCallback, useContext, useEffect } from "react";
  * Base props (userEmail, onLogout) come from AppShell.
  */
 export interface SidebarOverrides {
-  mobileOpen?: boolean;
-  onMobileClose?: () => void;
   onPersonClick?: (handle: string) => void;
   onGroupChatClick?: (groupName: string) => void;
 }
