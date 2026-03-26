@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { startOfDay } from "date-fns";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import type { GroupDrop } from "@/app/_libs/types/groups";
+import type { GroupDrop } from "@kurate/types";
 import { GROUP_POST_SELECT, mapRowToGroupDrop } from "@/app/_libs/utils/mapGroupDrop";
 
 enum DiscoveryQueryKey {

@@ -5,8 +5,8 @@ import { useEffect } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
-import type { GroupDrop } from "@/app/_libs/types/groups";
+import { queryKeys } from "@kurate/query";
+import type { GroupDrop } from "@kurate/types";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 const supabase = createClient();

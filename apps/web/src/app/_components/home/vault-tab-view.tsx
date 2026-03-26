@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -11,16 +10,27 @@ import { ChatInput } from "@/app/_components/home/chat-input";
 import { LinkPreviewCard, type ExtractedMeta } from "@/app/_components/home/LinkPreviewCard";
 import { PreviewPhase } from "@/app/_components/home/preview-phase";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
-import { useSaveItem } from "@/app/_libs/hooks/useSaveItem";
+import { ThoughtsTabView } from "@/app/_components/home/thoughts-tab-view";
+import { VaultTabSubHeader } from "@/app/_components/home/vault-tab-sub-header";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
 import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
 import { springGentle } from "@/app/_libs/utils/motion";
-import { queryKeys } from "@/app/_libs/query/keys";
+import { VaultTab } from "@/app/_libs/chat-types";
+import { type ThoughtBucket } from "@kurate/utils";
+import { queryKeys } from "@kurate/query";
+import { useSubmitContent } from "@kurate/hooks";
 import { createClient } from "@/app/_libs/supabase/client";
 import { fetchShareableConversations, type ShareableConversation } from "@/app/_libs/utils/fetchShareableConversations";
+import { track } from "@/app/_libs/utils/analytics";
+import type { VaultFilters as VaultFiltersType } from "@kurate/types";
+import type { SaveItemResult } from "@kurate/hooks";
 
-const URL_REGEX = /https?:\/\/[^\s]+/;
 const supabase = createClient();
+
+interface MediaPreview {
+  file: File;
+  objectUrl: string;
+}
 
 interface VaultTabViewProps {
   onNavigateToDiscover?: () => void;
@@ -28,29 +38,83 @@ interface VaultTabViewProps {
 }
 
 export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: VaultTabViewProps) {
-  const t = useTranslations("vault");
   const prefersReducedMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollDir = useScrollDirection(scrollRef);
   const isScrolledDown = scrollDir === "down";
-  const saveItem = useSaveItem();
   const queryClient = useQueryClient();
+
+  const [vaultTab, setVaultTab] = useState<VaultTab>(VaultTab.LINKS);
+  const [vaultFilters, setVaultFilters] = useState<Omit<VaultFiltersType, "search">>({
+    time: "all",
+    contentType: "all",
+    readStatus: "all",
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeBucket, setActiveBucket] = useState<ThoughtBucket | null>(null);
+  const [thoughtsViewAll, setThoughtsViewAll] = useState(true);
 
   const [previewPhase, setPreviewPhase] = useState<PreviewPhase>(PreviewPhase.Idle);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMeta, setPreviewMeta] = useState<ExtractedMeta | null>(null);
-  // logged_items.id — used for sharing to group_posts
   const [savedLoggedItemId, setSavedLoggedItemId] = useState<string | null>(null);
-  // track which groups this item was shared to in the current session
   const [savedItemGroups, setSavedItemGroups] = useState<string[]>([]);
 
+  const [mediaPreview, setMediaPreview] = useState<MediaPreview | null>(null);
+  const [inputKey, setInputKey] = useState(0);
+
+  const resetInput = useCallback(() => setInputKey((k) => k + 1), []);
+
   const { isExtracting, metadata: extractedMeta, extractionFailed, extract, reset: resetExtraction } = useExtractMetadata();
+
+  const handleLinkSaved = useCallback(
+    async (result: SaveItemResult) => {
+      track("link_saved", {
+        content_type: previewMeta?.contentType ?? "article",
+        source: previewMeta?.source ?? null,
+        has_tags: false,
+        is_duplicate: result.status === "duplicate",
+      });
+      if (result.status === "duplicate") {
+        toast("Already in your Vault", { description: "This link has been saved before." });
+        setPreviewPhase(PreviewPhase.Idle);
+        resetInput();
+      } else if (result.status === "saved" && result.item) {
+        const cached = queryClient.getQueryData<ShareableConversation[]>(queryKeys.vault.shareConversations());
+        const convos = cached ?? (await fetchShareableConversations());
+        if (convos.length === 0) {
+          setPreviewPhase(PreviewPhase.Idle);
+          toast("Saved to Vault");
+          resetInput();
+        } else {
+          setSavedLoggedItemId(result.item.logged_item_id);
+          setSavedItemGroups([]);
+          setPreviewPhase(PreviewPhase.Share);
+        }
+      }
+    },
+    [queryClient, previewMeta, resetInput],
+  );
+
+  const { onSend, isPending } = useSubmitContent({
+    supabase,
+    queryClient,
+    onRouted: (dest) => {
+      setVaultTab(dest === "links" ? VaultTab.LINKS : VaultTab.THOUGHTS);
+      if (dest === "thoughts" && mediaPreview) {
+        URL.revokeObjectURL(mediaPreview.objectUrl);
+        setMediaPreview(null);
+      }
+    },
+    onLinkSaved: handleLinkSaved,
+    activeBucket,
+  });
 
   useEffect(() => {
     if (scrollDir) onScrollDirectionChange?.(scrollDir);
   }, [scrollDir, onScrollDirectionChange]);
 
-  // Sync extraction result to PreviewPhase and camelCase previewMeta
   useEffect(() => {
     if (!isExtracting && extractedMeta) {
       setPreviewMeta({
@@ -63,10 +127,26 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
       });
       setPreviewPhase(PreviewPhase.Loaded);
     } else if (!isExtracting && extractionFailed) {
-      // extraction completed but failed — show card with no metadata
       setPreviewPhase(PreviewPhase.Loaded);
     }
   }, [isExtracting, extractedMeta, extractionFailed]);
+
+  // Revoke object URL on unmount or when mediaPreview changes
+  useEffect(() => {
+    return () => {
+      if (mediaPreview) URL.revokeObjectURL(mediaPreview.objectUrl);
+    };
+  }, [mediaPreview]);
+
+  const handleTabChange = (tab: VaultTab) => {
+    setVaultTab(tab);
+    setSearchQuery("");
+    setSearchOpen(false);
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview.objectUrl);
+      setMediaPreview(null);
+    }
+  };
 
   const handleUrlChange = useCallback(
     (url: string | null) => {
@@ -77,7 +157,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         resetExtraction();
         return;
       }
-      if (url === previewUrl) return; // already fetching / fetched this URL
+      if (url === previewUrl) return;
       setPreviewUrl(url);
       setPreviewPhase(PreviewPhase.Loading);
       void extract(url);
@@ -85,61 +165,12 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
     [previewUrl, extract, resetExtraction],
   );
 
-  const handleSend = useCallback(
-    async (text: string) => {
-      const urlMatch = text.match(URL_REGEX);
-      if (!urlMatch) return;
-      const url = urlMatch[0];
-
-      try {
-        // Reuse cached metadata if available, otherwise fetch
-        const meta =
-          previewMeta ??
-          (await fetch("/api/extract", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url }),
-          })
-            .then((r) => (r.ok ? r.json() : null))
-            .catch(() => null));
-
-        const result = await saveItem.mutateAsync({
-          url,
-          title: meta?.title ?? url,
-          source: meta?.source ?? null,
-          author: meta?.author ?? null,
-          preview_image: meta?.previewImage ?? null,
-          content_type: (meta?.contentType as "article" | "video" | "podcast") ?? "article",
-          read_time: meta?.readTime != null ? String(meta.readTime) : null,
-          save_source: "external",
-        });
-
-        if (result.status === "duplicate") {
-          toast("Already in your Vault", { description: "This link has been saved before." });
-          setPreviewPhase(PreviewPhase.Idle);
-        } else if (result.status === "saved" && result.item) {
-          const cached = queryClient.getQueryData<ShareableConversation[]>(queryKeys.vault.shareConversations());
-          const convos = cached ?? await fetchShareableConversations();
-          if (convos.length === 0) {
-            setPreviewPhase(PreviewPhase.Idle);
-            toast("Saved to Vault");
-          } else {
-            setSavedLoggedItemId(result.item.logged_item_id);
-            setSavedItemGroups([]);
-            setPreviewPhase(PreviewPhase.Share);
-          }
-        }
-      } catch {
-        // network error — silently fail
-      }
-    },
-    [previewMeta, saveItem],
-  );
-
   const handleShare = useCallback(
     async (groupIds: string[]) => {
       if (!savedLoggedItemId || groupIds.length === 0) return;
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       await Promise.all(
         groupIds.map((convo_id) =>
@@ -151,30 +182,75 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         ),
       );
       setSavedItemGroups((prev) => [...new Set([...prev, ...groupIds])]);
-      queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
       setPreviewPhase(PreviewPhase.Idle);
       toast("Shared!");
+      resetInput();
     },
-    [savedLoggedItemId, queryClient],
+    [savedLoggedItemId, queryClient, resetInput],
   );
 
   const handleSkip = useCallback(() => {
     setPreviewPhase(PreviewPhase.Idle);
     toast("Saved to Vault");
-  }, []);
+    resetInput();
+  }, [resetInput]);
+
+  // Media upload hidden — feature not enabled (handler removed; re-add when re-enabling)
+
+  const dismissMediaPreview = useCallback(() => {
+    if (mediaPreview) URL.revokeObjectURL(mediaPreview.objectUrl);
+    setMediaPreview(null);
+  }, [mediaPreview]);
+
+  const fullVaultFilters: VaultFiltersType = { ...vaultFilters, search: searchQuery };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Scrollable vault content */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-        <VaultLibrary onNavigateToDiscover={onNavigateToDiscover} />
+      <VaultTabSubHeader
+        vaultTab={vaultTab}
+        onTabChange={handleTabChange}
+        searchOpen={searchOpen}
+        onSearchOpenChange={setSearchOpen}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        fullVaultFilters={fullVaultFilters}
+        onFiltersChange={(f) => setVaultFilters(f)}
+      />
+
+      {/* Scrollable content area — both tabs always mounted and stacked.
+          Use opacity/pointer-events (NOT display:none) so scroll positions are preserved. */}
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={scrollRef}
+          className={`absolute inset-0 overflow-y-auto transition-opacity duration-150${vaultTab !== VaultTab.LINKS ? " pointer-events-none opacity-0" : " opacity-100"}`}>
+          <VaultLibrary
+            filters={fullVaultFilters}
+            onFiltersChange={(f) => {
+              setVaultFilters({ time: f.time, contentType: f.contentType, readStatus: f.readStatus });
+              setSearchQuery(f.search);
+            }}
+            onNavigateToDiscover={onNavigateToDiscover}
+          />
+        </div>
+        <div
+          className={`absolute inset-0 flex flex-col overflow-hidden transition-opacity duration-150${vaultTab !== VaultTab.THOUGHTS ? " pointer-events-none opacity-0" : " opacity-100"}`}>
+          <ThoughtsTabView
+            searchQuery={searchQuery}
+            activeBucket={activeBucket}
+            onActiveBucketChange={setActiveBucket}
+            viewAll={thoughtsViewAll}
+            onViewAllChange={setThoughtsViewAll}
+          />
+        </div>
       </div>
-      {/* Input — hides on scroll down */}
+
+      {/* Single ChatInput — always visible, routes by content (URL → links, text/media → thoughts) */}
       <motion.div
         className="bg-background relative shrink-0"
         animate={prefersReducedMotion ? undefined : { height: isScrolledDown ? 0 : "auto" }}
         transition={springGentle}>
-        {/* Preview card — floats above input, takes no layout space */}
+        {/* Link preview card — shown whenever a URL is detected, regardless of active tab */}
         <AnimatePresence>
           {previewPhase !== PreviewPhase.Idle && (
             <motion.div
@@ -193,7 +269,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
                   metadata={previewMeta ?? undefined}
                   savedItemId={savedLoggedItemId ?? undefined}
                   savedItemGroups={savedItemGroups}
-                  onClose={() => setPreviewPhase(PreviewPhase.Idle)}
+                  onClose={() => { setPreviewPhase(PreviewPhase.Idle); resetInput(); }}
                   onShare={handleShare}
                   onSkip={handleSkip}
                 />
@@ -201,13 +277,59 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Media preview bar */}
+        <AnimatePresence>
+          {mediaPreview && (
+            <motion.div
+              className="absolute bottom-full left-0 right-0 z-50 px-5 pb-1"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
+              transition={springGentle}>
+              <div className="mx-auto max-w-2xl">
+                <div className="bg-card flex items-center gap-3 rounded-2xl border px-3 py-2 shadow-sm">
+                  <img
+                    src={mediaPreview.objectUrl}
+                    alt="Preview"
+                    className="h-10 w-10 rounded-lg object-cover"
+                  />
+                  <p className="text-foreground/70 min-w-0 flex-1 truncate text-xs">
+                    {mediaPreview.file.name}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={dismissMediaPreview}
+                    className="text-muted-foreground hover:text-foreground shrink-0 text-sm leading-none transition-colors"
+                    aria-label="Remove image">
+                    ×
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="px-5 py-3">
           <div className="mx-auto max-w-2xl">
             <ChatInput
-              onSend={handleSend}
+              key={inputKey}
+              placeholder="Drop a thought, task, link or something you overheard."
+              onSend={(noteText) => {
+                const meta = previewMeta
+                  ? { ...previewMeta, tags: extractedMeta?.tags ?? null }
+                  : null;
+                if (previewUrl) {
+                  // URL mode — noteText is the user's note
+                  void onSend(previewUrl, undefined, meta, noteText.trim() || null);
+                } else {
+                  // Pure text → thoughts
+                  void onSend(noteText, undefined, null);
+                }
+              }}
               onUrlChange={handleUrlChange}
-              placeholder={t("log_link_placeholder")}
-              disabled={saveItem.isPending}
+              disabled={isPending}
+              collapsible={vaultTab === VaultTab.THOUGHTS}
             />
           </div>
         </div>

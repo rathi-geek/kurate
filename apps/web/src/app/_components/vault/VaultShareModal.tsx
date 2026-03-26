@@ -3,16 +3,16 @@
 import { useEffect, useState } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 
 import { ShareTargetGrid } from "@/app/_components/shared/share-target-grid";
 import { Spinner } from "@/app/_components/spinner";
 import { VaultModal } from "@/app/_components/vault/VaultModal";
-import { queryKeys } from "@/app/_libs/query/keys";
+import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";
-import type { VaultItem } from "@/app/_libs/types/vault";
+import type { VaultItem } from "@kurate/types";
 import { cn } from "@/app/_libs/utils/cn";
 import { fetchShareableConversations } from "@/app/_libs/utils/fetchShareableConversations";
 

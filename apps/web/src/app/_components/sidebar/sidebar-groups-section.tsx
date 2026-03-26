@@ -2,17 +2,20 @@
 
 import { useState } from "react";
 
+import { LuChevronDown } from "react-icons/lu";
+import { cn } from "@/app/_libs/utils/cn";
+
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
-import { ROUTES } from "@/app/_libs/constants/routes";
-import { queryKeys } from "@/app/_libs/query/keys";
+import { ROUTES } from "@kurate/utils";
+import { queryKeys } from "@kurate/query";
 import { type GroupRow, fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import { BrandStar } from "@/components/brand";
-import { CreateGroupDialog } from "@/components/groups/create-group-dialog";
+import { CreateGroupDialog } from "@/app/_components/groups/create-group-dialog";
 import { PlusIcon } from "@/components/icons";
-import { Link } from "@/i18n";
+import Link from "next/link";
 import { UnreadBadge } from "@/app/_components/sidebar/unread-badge";
 
 export interface SidebarGroupsSectionProps {
@@ -115,6 +118,7 @@ export function SidebarGroupsSection({
 }: SidebarGroupsSectionProps) {
   const t = useTranslations("sidebar");
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [sectionOpen, setSectionOpen] = useState(true);
 
   const { data: userGroups = [] } = useQuery({
     queryKey: queryKeys.groups.list(),
@@ -127,9 +131,21 @@ export function SidebarGroupsSection({
       <div className={collapsed ? "mt-4 px-2" : "mt-5 px-3"}>
         {!collapsed && (
           <div className="mb-2 flex items-center justify-between px-3">
-            <p className="text-ink/25 font-mono text-xs font-bold tracking-widest uppercase">
-              {t("groups")}
-            </p>
+            <button
+              type="button"
+              onClick={() => setSectionOpen((v) => !v)}
+              className="flex items-center gap-1 text-left"
+              title={sectionOpen ? "Collapse" : "Expand"}>
+              <LuChevronDown
+                className={cn(
+                  "text-ink/25 h-3 w-3 transition-transform duration-150",
+                  !sectionOpen && "-rotate-90",
+                )}
+              />
+              <p className="text-ink/25 font-mono text-xs font-bold tracking-widest uppercase">
+                {t("groups")}
+              </p>
+            </button>
             <button
               type="button"
               onClick={() => setCreateGroupOpen(true)}
@@ -140,7 +156,7 @@ export function SidebarGroupsSection({
             </button>
           </div>
         )}
-        <div className="space-y-0.5">
+        {sectionOpen && <div className="space-y-0.5">
           <GroupListContent
             groups={userGroups}
             collapsed={collapsed}
@@ -148,7 +164,7 @@ export function SidebarGroupsSection({
             unreadCounts={unreadCounts}
             markRead={markRead}
           />
-        </div>
+        </div>}
       </div>
       <CreateGroupDialog open={createGroupOpen} onOpenChange={setCreateGroupOpen} />
     </>

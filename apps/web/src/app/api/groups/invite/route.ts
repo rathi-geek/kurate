@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/app/_libs/supabase/server";
 import { createAdminClient } from "@/app/_libs/supabase/admin";
 import { env } from "env";
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 export async function GET(request: NextRequest) {

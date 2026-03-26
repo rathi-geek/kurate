@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
+import { queryKeys } from "@kurate/query";
 
 const supabase = createClient();
 

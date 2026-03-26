@@ -9,14 +9,14 @@ import {
 import { startOfDay, subDays } from "date-fns";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
+import { queryKeys } from "@kurate/query";
 import type {
   ContentType,
   SaveSource,
   RawMetadata,
   VaultFilters,
   VaultItem,
-} from "@/app/_libs/types/vault";
+} from "@kurate/types";
 
 const PAGE_SIZE = 20;
 const supabase = createClient();
@@ -98,11 +98,12 @@ async function fetchVaultPage(
   if (search.trim()) {
     const q = search.trim().toLowerCase();
     items = items.filter((item) => {
+      const inTags = (item.tags ?? []).some((t) => t.toLowerCase().includes(q));
       const inRemarks = item.remarks?.toLowerCase().includes(q) ?? false;
       const inTitle = item.title.toLowerCase().includes(q);
       const inUrl = item.url.toLowerCase().includes(q);
       const inDescription = (item.description ?? "").toLowerCase().includes(q);
-      return inRemarks || inTitle || inUrl || inDescription;
+      return inTags || inRemarks || inTitle || inUrl || inDescription;
     });
   }
 

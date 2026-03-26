@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { env } from "env";
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);

@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
+import { queryKeys } from "@kurate/query";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 const supabase = createClient();

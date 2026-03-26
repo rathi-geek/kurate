@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 import { useQueryClient } from "@tanstack/react-query";
 
 import Image from "next/image";
@@ -20,13 +20,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useAuth } from "@/app/_libs/auth-context";
-import { INTEREST_OPTIONS } from "@/app/_libs/constants/interests";
+import { INTEREST_OPTIONS } from "@kurate/utils";
 import { useUserInterests, saveUserInterests } from "@/app/_libs/hooks/useUserInterests";
-import { queryKeys } from "@/app/_libs/query/keys";
+import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";
 import { cn } from "@/app/_libs/utils/cn";
 import { AVATARS_BUCKET } from "@/app/_libs/utils/getMediaUrl";
 import { fadeUpHero, springGentle } from "@/app/_libs/utils/motion";
+import { track } from "@/app/_libs/utils/analytics";
 import { CameraIcon } from "@/components/icons";
 
 const VISIBLE_COUNT = 8;
@@ -154,6 +155,14 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     }).eq("id", user.id);
 
     await saveUserInterests(user.id, interests);
+
+    const changedFields: string[] = [];
+    if (first_name !== profile?.first_name || last_name !== (profile?.last_name ?? null)) changedFields.push("name");
+    if (trimmedUsername !== profile?.handle) changedFields.push("handle");
+    if (bio !== (profile?.about ?? "")) changedFields.push("bio");
+
+    track("profile_edited", { fields_changed: changedFields });
+    track("interests_updated", { count: interests.length });
 
     await queryClient.invalidateQueries({ queryKey: queryKeys.user.interests(user.id) });
     await refreshUser();

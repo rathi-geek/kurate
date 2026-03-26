@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { useDiscoveryVault } from "@/app/_libs/hooks/useDiscoveryVault";
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";

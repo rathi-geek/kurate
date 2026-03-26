@@ -12,11 +12,6 @@ export async function register(): Promise<void> {
   }
 }
 
-interface PostHogCookieData {
-  distinct_id: string;
-  [key: string]: unknown;
-}
-
 export const onRequestError = async (
   error: unknown,
   request: NextRequest | Request,
@@ -28,28 +23,6 @@ export const onRequestError = async (
     [key: string]: unknown;
   },
 ): Promise<void> => {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { captureServerException } = await import("@/app/_libs/utils/posthog-server");
-
-    let distinctId: string | null = null;
-    const cookieString = request?.headers instanceof Headers ? request.headers.get("cookie") : null;
-    if (cookieString) {
-      const postHogCookieMatch = cookieString.match(/ph_phc_.*?_posthog=([^;]+)/);
-
-      if (postHogCookieMatch && postHogCookieMatch[1]) {
-        try {
-          const decodedCookie = decodeURIComponent(postHogCookieMatch[1]);
-          const postHogData = JSON.parse(decodedCookie) as PostHogCookieData;
-          distinctId = postHogData.distinct_id;
-        } catch (e) {
-          console.error("Error parsing PostHog cookie:", e);
-        }
-      }
-    }
-
-    await captureServerException(error, distinctId || undefined);
-  }
-
   // Convert request to RequestInfo format expected by Sentry
   const requestInfo = {
     path: request instanceof NextRequest ? request.nextUrl.pathname : new URL(request.url).pathname,

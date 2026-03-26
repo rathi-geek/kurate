@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/app/_libs/utils/cn";
 import { springGentle } from "@/app/_libs/utils/motion";
-import type { SourceRect } from "@/app/_libs/types/vault";
+import type { SourceRect } from "@kurate/types";
 
 type EmbedResult = { embedUrl: string } | null;
 

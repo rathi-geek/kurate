@@ -4,30 +4,26 @@ import Script from "next/script";
 
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
 
 import { AnimationPreview } from "@/app/_components/dev/animation-preview";
+import { I18nProvider } from "@/app/_components/i18n-provider";
 import GoogleAnalyticsScripts from "@/app/_components/google-analytics";
 import SonnarToaster from "@/app/_components/sonner-toaster";
 import { dmMono, dmSans } from "@/app/_config/fonts";
 import { getJsonLd } from "@/app/_config/jsonId";
 import { metadata } from "@/app/_config/metadata";
 import { viewport } from "@/app/_config/viewport";
-import { QueryProvider } from "@/app/_libs/query/QueryProvider";
+import { QueryProvider } from "@kurate/query";
 
 export { metadata, viewport };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = await getLocale();
-  const messages = await getMessages();
-
   return (
-    <html lang={locale}>
+    <html lang="en">
       <body
         className={`${dmSans.variable} ${dmMono.variable} bg-cream text-foreground font-sans antialiased`}>
         <a
@@ -35,13 +31,13 @@ export default async function RootLayout({
           className="focus:bg-primary focus:text-primary-foreground focus:rounded-button sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:font-sans focus:text-sm focus:font-medium">
           Skip to main content
         </a>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <I18nProvider>
           <QueryProvider>
             {children}
             <SonnarToaster />
             <AnimationPreview />
           </QueryProvider>
-        </NextIntlClientProvider>
+        </I18nProvider>
         <GoogleAnalyticsScripts />
         <SpeedInsights />
         <Analytics />

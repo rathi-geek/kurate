@@ -4,9 +4,10 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@/app/_libs/query/keys";
-import type { Tables } from "@/app/_libs/types/database.types";
+import { queryKeys } from "@kurate/query";
+import type { Tables } from "@kurate/types";
 import { getMediaPublicUrl } from "@/app/_libs/utils/getMediaUrl";
+import { track } from "@/app/_libs/utils/analytics";
 
 export type UserProfile = Pick<
   Tables<"profiles">,
@@ -69,11 +70,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       const authUser = session?.user ?? null;
       setUser(authUser);
       if (authUser) {
         loadProfile(authUser.id);
+        if (event === "SIGNED_IN") {
+          track("user_logged_in", { method: "google" });
+        }
       } else {
         setProfile(null);
       }

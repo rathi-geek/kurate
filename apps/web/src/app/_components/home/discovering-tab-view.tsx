@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
+import { track } from "@/app/_libs/utils/analytics";
 import { useAuth } from "@/app/_libs/auth-context";
 import { useDiscoveryNew } from "@/app/_libs/hooks/useDiscoveryNew";
 import { useDiscoveryToday } from "@/app/_libs/hooks/useDiscoveryToday";
@@ -27,6 +28,10 @@ export function DiscoveringTabView({ onScrollDirectionChange }: DiscoveringTabVi
     () => newDrops.filter((d) => !todayIds.has(d.id)),
     [newDrops, todayIds],
   );
+
+  useEffect(() => {
+    track("discovery_tab_viewed");
+  }, []);
 
   useEffect(() => {
     if (scrollDir) onScrollDirectionChange?.(scrollDir);

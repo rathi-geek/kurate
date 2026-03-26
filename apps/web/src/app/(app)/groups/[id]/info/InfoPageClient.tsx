@@ -5,14 +5,14 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
-import type { Tables } from "@/app/_libs/types/database.types";
-import type { GroupRole } from "@/app/_libs/types/groups";
+import type { Tables } from "@kurate/types";
+import type { GroupRole } from "@kurate/types";
 import {
   GroupInfoHeader,
   type InfoModal,
-} from "@/components/groups/group-info-header";
-import { GroupInviteModal } from "@/components/groups/group-invite-modal";
-import { GroupDangerZone } from "@/components/groups/group-danger-zone";
+} from "@/app/_components/groups/group-info-header";
+import { GroupInviteModal } from "@/app/_components/groups/group-invite-modal";
+import { GroupDangerZone } from "@/app/_components/groups/group-danger-zone";
 
 interface InfoPageClientProps {
   group: Tables<"conversations">;

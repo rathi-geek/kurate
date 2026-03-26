@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/app/_libs/supabase/server";
-import type { GroupRole } from "@/app/_libs/types/groups";
+import type { GroupRole } from "@kurate/types";
 
 import { GroupPageClient } from "./GroupPageClient";
 

@@ -5,11 +5,11 @@ import type { ComponentProps } from "react";
 import Link from "next/link";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 
-import { ROUTES } from "@/app/_libs/constants/routes";
+import { ROUTES } from "@kurate/utils";
 import { BrandArch, BrandConcentricArch, BrandStar, BrandSunburst } from "@/components/brand";
 
 const fadeUp = {

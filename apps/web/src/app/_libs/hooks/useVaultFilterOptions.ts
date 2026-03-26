@@ -12,7 +12,7 @@ import {
   type VaultContentTypeFilterLabelKey,
   type VaultReadStatusFilterLabelKey,
   type VaultTimeFilterLabelKey,
-} from "@/app/_libs/types/vault";
+} from "@kurate/types";
 
 export interface TimeOption {
   value: TimeFilter;

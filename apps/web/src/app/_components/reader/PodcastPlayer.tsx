@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { springGentle } from "@/app/_libs/utils/motion";
 

@@ -1,12 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 import { springGentle } from "@/app/_libs/utils/motion";
 import { VaultFilters } from "@/app/_components/vault/VaultFilters";
-import type { VaultFilters as VaultFiltersType } from "@/app/_libs/types/vault";
+import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 
 const DEFAULT_FILTERS: VaultFiltersType = {
   time: "all",

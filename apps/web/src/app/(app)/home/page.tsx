@@ -5,7 +5,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
@@ -16,6 +16,7 @@ import { MediaPlayerProvider } from "@/app/_libs/context/MediaPlayerContext";
 import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
 import { springGentle } from "@/app/_libs/utils/motion";
+import { track } from "@/app/_libs/utils/analytics";
 
 export default function HomePage() {
   return (
@@ -42,20 +43,18 @@ function HomePageInner() {
   const [activeTab, setActiveTab] = useState<HomeTab>(initialTab);
 
   const [isScrolledDown, setIsScrolledDown] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const sidebarOverrides = useMemo(
     () => ({
-      mobileOpen: mobileMenuOpen,
-      onMobileClose: () => setMobileMenuOpen(false),
       onPersonClick: (handle: string) => openPerson(handle),
       onGroupChatClick: () => {},
     }),
-    [mobileMenuOpen, openPerson],
+    [openPerson],
   );
   useSidebarOverrides(sidebarOverrides);
 
   function handleTabChange(tab: HomeTab) {
+    track("tab_switched", { from: activeTab, to: tab });
     setActiveTab(tab);
     setIsScrolledDown(false);
     router.replace(`?tab=${tab}`);

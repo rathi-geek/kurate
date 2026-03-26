@@ -1,7 +1,7 @@
 "use client";
 
 import { type Variants, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 import { ExclamationCircleIcon } from "@/components/icons";

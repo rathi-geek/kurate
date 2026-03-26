@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { CyclingText } from "@/components/ui/cycling-text";
 import { Typewriter } from "@/components/ui/typewriter";
@@ -40,7 +40,11 @@ export function UrlExtractPreview({
       <div className="flex items-center gap-3 px-4 py-3">
         <DomainIcon url={url} />
         <div className="min-w-0 flex-1">
-          <Typewriter text={copy.heading} className="text-foreground text-sm font-medium" />
+          <Typewriter
+            text={copy.heading}
+            cursor={false}
+            className="text-foreground text-sm font-medium"
+          />
           <p className="text-muted-foreground mt-0.5 text-xs">
             <CyclingText phrases={copy.subtitles} />
           </p>

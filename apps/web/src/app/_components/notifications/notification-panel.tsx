@@ -2,8 +2,11 @@
 
 import { useEffect, useRef } from "react";
 
+import { LuX } from "react-icons/lu";
+
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -47,19 +50,25 @@ export function NotificationPanel({
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="flex w-full max-w-sm flex-col p-0">
+      <SheetContent
+        side="right"
+        showClose={false}
+        className="flex w-full max-w-sm flex-col p-0">
         <SheetHeader className="border-b px-4 py-3">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="text-base">Notifications</SheetTitle>
+          <div className="flex min-w-0 items-center gap-2">
+            <SheetTitle className="text-base min-w-0 flex-1 truncate">Notifications</SheetTitle>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={() => void markAllRead()}
-                className="text-muted-foreground hover:text-foreground text-xs transition-colors"
-              >
+                className="text-muted-foreground hover:text-foreground shrink-0 text-xs transition-colors">
                 Mark all read
               </button>
             )}
+            <SheetClose className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary shrink-0 rounded-xs p-1 opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden">
+              <LuX className="size-4" />
+              <span className="sr-only">Close</span>
+            </SheetClose>
           </div>
         </SheetHeader>
 

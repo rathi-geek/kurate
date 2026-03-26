@@ -1,9 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Link } from "@/i18n";
-import { ROUTES } from "@/app/_libs/constants/routes";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { ROUTES } from "@kurate/utils";
+import { useTranslations } from "@/i18n/use-translations";
 import { cn } from "@/app/_libs/utils/cn";
 
 const NAV_ITEMS = [

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/app/_libs/supabase/server";
+import { extractTagsFromHtml } from "@kurate/utils";
 
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -50,6 +51,7 @@ function fallbackMeta(url: string) {
     title: titleFromUrl(url),
     source: hostname,
     contentType: "article" as const,
+    tags: [] as string[],
   };
 }
 
@@ -135,7 +137,8 @@ function parseMetadata(html: string, url: string) {
       }
     }
   }
-  return { url, title, source: cleanSource(url), author, previewImage, contentType, readTime, duration, description };
+  const tags = extractTagsFromHtml(html);
+  return { url, title, source: cleanSource(url), author, previewImage, contentType, readTime, duration, description, tags };
 }
 
 export async function POST(req: NextRequest) {
@@ -173,21 +176,35 @@ export async function POST(req: NextRequest) {
         }
       } catch {}
       let ytDuration: string | undefined;
+      let ytTags: string[] = [];
       try {
         const pageRes = await fetch(`https://www.youtube.com/watch?v=${ytVideoId}`, {
           headers: { "User-Agent": BROWSER_UA },
         });
         if (pageRes.ok) {
           const pageHtml = await pageRes.text();
+          // Duration lives in the ytInitialPlayerResponse JSON
           const dMatch = pageHtml.match(/"duration"\s*:\s*"(PT[^"]+)"/);
           if (dMatch?.[1]) ytDuration = formatIsoDuration(dMatch[1]);
+          // Tags live in ytInitialData as "keywords":[...]
+          const kwMatch = pageHtml.match(/"keywords"\s*:\s*(\[[^\]]*?\])/s);
+          if (kwMatch?.[1]) {
+            try {
+              const parsed: unknown = JSON.parse(kwMatch[1]);
+              if (Array.isArray(parsed)) {
+                ytTags = (parsed as unknown[])
+                  .filter((k): k is string => typeof k === "string" && k.length > 0 && k.length < 50)
+                  .slice(0, 6);
+              }
+            } catch {}
+          }
         }
       } catch {}
-      return NextResponse.json({ url, title: ytTitle, source: "youtube.com", author: ytAuthor, contentType: "video" as const, previewImage: ytThumbnail, duration: ytDuration });
+      return NextResponse.json({ url, title: ytTitle, source: "youtube.com", author: ytAuthor, contentType: "video" as const, previewImage: ytThumbnail, duration: ytDuration, tags: ytTags });
     }
 
     if (isXUrl(url) || url.includes("t.co/")) {
-      return NextResponse.json({ url, title: "Tweet", source: "x.com", contentType: "article" as const });
+      return NextResponse.json({ url, title: "Tweet", source: "x.com", contentType: "article" as const, tags: [] as string[] });
     }
 
     const controller = new AbortController();

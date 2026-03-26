@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import type { GroupRole } from "@kurate/types";
+
 import { createClient } from "@/app/_libs/supabase/server";
-import type { GroupRole } from "@/app/_libs/types/groups";
 
 export default async function GroupsPage() {
   const supabase = await createClient();
@@ -51,7 +52,7 @@ export default async function GroupsPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-serif text-2xl font-bold text-foreground">My Groups</h1>
+        <h1 className="text-foreground font-serif text-2xl font-bold">My Groups</h1>
       </div>
 
       {groups.length === 0 ? (
@@ -64,18 +65,17 @@ export default async function GroupsPage() {
             <Link
               key={g.id}
               href={`/groups/${g.id}`}
-              className="block rounded-card border border-border bg-card p-4 hover:bg-surface transition-colors"
-            >
+              className="rounded-card border-border bg-card hover:bg-surface block border p-4 transition-colors">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-foreground truncate">{g.name}</span>
-                    <span className="text-[10px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-surface border border-border/50 shrink-0">
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="text-foreground truncate font-medium">{g.name}</span>
+                    <span className="text-muted-foreground bg-surface border-border/50 shrink-0 rounded border px-1.5 py-0.5 font-mono text-[10px]">
                       {ROLE_BADGE[g.role]}
                     </span>
                   </div>
                   {g.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{g.description}</p>
+                    <p className="text-muted-foreground line-clamp-2 text-xs">{g.description}</p>
                   )}
                 </div>
                 <svg
@@ -83,8 +83,7 @@ export default async function GroupsPage() {
                   height={14}
                   viewBox="0 0 14 14"
                   fill="none"
-                  className="shrink-0 mt-1 text-muted-foreground"
-                >
+                  className="text-muted-foreground mt-1 shrink-0">
                   <path
                     d="M5 3l4 4-4 4"
                     stroke="currentColor"

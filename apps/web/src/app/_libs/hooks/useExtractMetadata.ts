@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 
 export interface ExtractedMetadata {
   url: string;
@@ -10,6 +10,7 @@ export interface ExtractedMetadata {
   preview_image?: string | null;
   content_type?: "article" | "video" | "podcast";
   read_time?: string | null;
+  tags?: string[] | null;
 }
 
 interface UseExtractMetadataResult {
@@ -24,8 +25,11 @@ export function useExtractMetadata(): UseExtractMetadataResult {
   const [isExtracting, setIsExtracting] = useState(false);
   const [metadata, setMetadata] = useState<ExtractedMetadata | null>(null);
   const [extractionFailed, setExtractionFailed] = useState(false);
+  /** Bumps when a new extract starts or reset runs — stale responses ignore state updates */
+  const extractSeqRef = useRef(0);
 
   const extract = useCallback(async (url: string) => {
+    const seq = ++extractSeqRef.current;
     setIsExtracting(true);
     setExtractionFailed(false);
     try {
@@ -34,6 +38,7 @@ export function useExtractMetadata(): UseExtractMetadataResult {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
+      if (seq !== extractSeqRef.current) return;
       if (res.ok) {
         const data = await res.json();
         setMetadata({
@@ -42,20 +47,27 @@ export function useExtractMetadata(): UseExtractMetadataResult {
           preview_image: (data as { previewImage?: string }).previewImage ?? null,
           content_type: (data as { contentType?: "article" | "video" | "podcast" }).contentType ?? undefined,
           read_time: (data as { readTime?: string }).readTime ?? null,
+          tags: (data as { tags?: string[] }).tags ?? null,
         });
       } else {
         setExtractionFailed(true);
       }
     } catch {
-      setExtractionFailed(true);
+      if (seq === extractSeqRef.current) {
+        setExtractionFailed(true);
+      }
     } finally {
-      setIsExtracting(false);
+      if (seq === extractSeqRef.current) {
+        setIsExtracting(false);
+      }
     }
   }, []);
 
   const reset = useCallback(() => {
+    extractSeqRef.current += 1;
     setMetadata(null);
     setExtractionFailed(false);
+    setIsExtracting(false);
   }, []);
 
   return { isExtracting, metadata, extractionFailed, extract, reset };

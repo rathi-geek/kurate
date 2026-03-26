@@ -1,4 +1,3 @@
-export { routing } from "./config";
-export { Link, redirect, usePathname, useRouter } from "./navigation";
+export { useTranslations } from "./use-translations";
 export { useFormatters } from "./formatters";
 export { getServerFormatters } from "./formatters-server";

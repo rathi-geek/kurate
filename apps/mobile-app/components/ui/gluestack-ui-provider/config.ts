@@ -1,0 +1,43 @@
+'use client';
+import { vars } from 'nativewind';
+
+export const config = {
+  light: vars({
+    '--primary': '26 92 75',
+    '--primary-foreground': '255 255 255',
+    '--card': '255 255 255',
+    '--secondary': '250 247 242',
+    '--secondary-foreground': '43 91 126',
+    '--background': '245 240 232',
+    '--popover': '255 255 255',
+    '--popover-foreground': '20 61 96',
+    '--muted': '250 247 242',
+    '--muted-foreground': '91 125 153',
+    '--destructive': '185 28 28',
+    '--foreground': '43 91 126',
+    '--border': '220 227 234',
+    '--input': '220 227 234',
+    '--ring': '26 92 75',
+    '--accent': '234 243 239',
+    '--accent-foreground': '26 92 75',
+  }),
+  dark: vars({
+    '--primary-foreground': '23 23 23',
+    '--primary': '255 245 245',
+    '--card': '23 23 23',
+    '--secondary': '38 38 38',
+    '--secondary-foreground': '250 250 250',
+    '--background': '10 10 10',
+    '--popover': '23 23 23',
+    '--popover-foreground': '250 250 250',
+    '--muted': '38 38 38',
+    '--muted-foreground': '161 161 161',
+    '--destructive': '255 100 103',
+    '--foreground': '250 250 250',
+    '--border': '46 46 46',
+    '--input': '46 46 46',
+    '--accent': '38 38 38',
+    '--accent-foreground': '250 250 250',
+    '--ring': '115 115 115',
+  }),
+};

@@ -1,6 +1,4 @@
 import * as Sentry from "@sentry/nextjs";
-import { env } from "env";
-import posthog from "posthog-js";
 
 /**
  * @description Initialize Sentry (only if auth token is available)
@@ -33,21 +31,3 @@ if (process.env.SENTRY_AUTH_TOKEN) {
 }
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
-
-/**
- * @description Initialize PostHog (only if API key is available)
- */
-if (env.NEXT_PUBLIC_POSTHOG_KEY) {
-  posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: env.NEXT_PUBLIC_POSTHOG_INGEST,
-    ui_host: env.NEXT_PUBLIC_POSTHOG_HOST,
-    defaults: "2025-05-24",
-    capture_dead_clicks: true,
-    capture_pageview: "history_change",
-    capture_pageleave: "if_capture_pageview",
-    capture_exceptions: true,
-    capture_heatmaps: true,
-    capture_performance: true,
-    // debug: env.NEXT_PUBLIC_POSTHOG_ENVIRONMENT === "development",
-  });
-}

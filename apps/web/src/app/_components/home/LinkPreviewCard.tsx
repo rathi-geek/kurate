@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -18,6 +17,7 @@ import {
   successGlowTransition,
 } from "@/app/_libs/utils/motion";
 import { CloseIcon } from "@/components/icons";
+import { useTranslations } from "@/i18n/use-translations";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,7 +90,9 @@ export function LinkPreviewCard({
 
       {phase === PreviewPhase.Loaded && (
         <div className="relative">
-          <UrlExtractPreview url={url} isLoading={false} metadata={metadata} />
+          <div className="pr-12">
+            <UrlExtractPreview url={url} isLoading={false} metadata={metadata} />
+          </div>
           <button
             type="button"
             onClick={onClose}

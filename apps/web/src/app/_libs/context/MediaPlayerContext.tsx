@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useState } from "react";
 import { ArticleReader } from "@/app/_components/reader/article-reader";
 import { PodcastPlayer } from "@/app/_components/reader/PodcastPlayer";
 import { VideoPlayer } from "@/app/_components/reader/VideoPlayer";
-import type { SourceRect, VaultItem } from "@/app/_libs/types/vault";
+import type { SourceRect, VaultItem } from "@kurate/types";
 
 interface MediaPlayerState {
   item: VaultItem | null;

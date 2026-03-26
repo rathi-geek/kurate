@@ -33,6 +33,13 @@
   --info-foreground: #1e3a8a;
   --danger: #b91c1c;
 
+  /* ─── Thought Bucket Colors ──────────────────────────────────────── */
+  --bucket-media:    #FDF2F8;
+  --bucket-tasks:    #ECFDF5;
+  --bucket-learning: #EFF6FF;
+  --bucket-notes:    #FFFBEB;
+  --bucket-misc:     #F5F3FF;
+
   /* ─── Legacy Brand Aliases — marketing / landing page ────────────── */
   /* Kept so page.tsx (bg-cream, text-ink, bg-teal) continue to work  */
   --cream: #f5f0e8;
@@ -127,4 +134,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* ─── Thought Bucket Colors ──────────────────────────────────────── */
+  --color-bucket-media:    var(--bucket-media);
+  --color-bucket-tasks:    var(--bucket-tasks);
+  --color-bucket-learning: var(--bucket-learning);
+  --color-bucket-notes:    var(--bucket-notes);
+  --color-bucket-misc:     var(--bucket-misc);
 }

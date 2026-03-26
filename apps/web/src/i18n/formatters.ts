@@ -1,10 +1,11 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useTranslation } from "react-i18next";
 
 /** Client-side hook for locale-aware date, currency, and relative time formatting. Import from "@/i18n/formatters". */
 export function useFormatters() {
-  const locale = useLocale();
+  const { i18n } = useTranslation();
+  const locale = i18n.language;
 
   function formatDate(date: Date | string, style: "short" | "long" = "short") {
     const d = typeof date === "string" ? new Date(date) : date;
