@@ -6,6 +6,7 @@ import {
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { startOfDay, subDays } from "date-fns";
 
 import { createClient } from "@/app/_libs/supabase/client";
@@ -95,18 +96,6 @@ async function fetchVaultPage(
 
   let items = (data ?? []).map((row) => toVaultItem(row as Record<string, unknown>));
 
-  if (search.trim()) {
-    const q = search.trim().toLowerCase();
-    items = items.filter((item) => {
-      const inTags = (item.tags ?? []).some((t) => t.toLowerCase().includes(q));
-      const inRemarks = item.remarks?.toLowerCase().includes(q) ?? false;
-      const inTitle = item.title.toLowerCase().includes(q);
-      const inUrl = item.url.toLowerCase().includes(q);
-      const inDescription = (item.description ?? "").toLowerCase().includes(q);
-      return inTags || inRemarks || inTitle || inUrl || inDescription;
-    });
-  }
-
   if (readStatus === "read") {
     items = items.filter((item) => item.is_read);
   } else if (readStatus === "unread") {
@@ -124,10 +113,17 @@ async function fetchVaultPage(
 export function useVault(filters: VaultFilters) {
   const queryClient = useQueryClient();
 
+  // search is excluded from the query key — it's applied client-side in useMemo below.
+  // This prevents a Supabase re-fetch on every keystroke.
+  const baseFilters = useMemo(
+    () => ({ time: filters.time, contentType: filters.contentType, readStatus: filters.readStatus, search: "" }),
+    [filters.time, filters.contentType, filters.readStatus],
+  );
+
   const query = useInfiniteQuery({
-    queryKey: queryKeys.vault.list(filters),
+    queryKey: queryKeys.vault.list(baseFilters),
     queryFn: ({ pageParam }) =>
-      fetchVaultPage(filters, pageParam as string | null),
+      fetchVaultPage(baseFilters, pageParam as string | null),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
       lastPage.length === PAGE_SIZE
@@ -137,11 +133,27 @@ export function useVault(filters: VaultFilters) {
   });
 
   const rawItems = query.data?.pages.flat() ?? [];
-  // Unread first, read at end (like WhatsApp); within each group, newest first
-  const items = [...rawItems].sort((a, b) => {
-    if (a.is_read !== b.is_read) return a.is_read ? 1 : -1;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+
+  // Unread first, read at end (like WhatsApp); within each group, newest first.
+  // Search is applied client-side on the already-fetched items — instant, no re-fetch.
+  const items = useMemo(() => {
+    let result = [...rawItems].sort((a, b) => {
+      if (a.is_read !== b.is_read) return a.is_read ? 1 : -1;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+    const q = filters.search.trim().toLowerCase();
+    if (q) {
+      result = result.filter((item) => {
+        const inTags = (item.tags ?? []).some((t) => t.toLowerCase().includes(q));
+        const inRemarks = item.remarks?.toLowerCase().includes(q) ?? false;
+        return inTags || inRemarks
+          || item.title.toLowerCase().includes(q)
+          || item.url.toLowerCase().includes(q)
+          || (item.description ?? "").toLowerCase().includes(q);
+      });
+    }
+    return result;
+  }, [rawItems, filters.search]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -154,9 +166,9 @@ export function useVault(filters: VaultFilters) {
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.vault.all });
-      const previous = queryClient.getQueryData(queryKeys.vault.list(filters));
+      const previous = queryClient.getQueryData(queryKeys.vault.list(baseFilters));
       queryClient.setQueryData(
-        queryKeys.vault.list(filters),
+        queryKeys.vault.list(baseFilters),
         (old: InfiniteData<VaultItem[]> | undefined) => {
           if (!old) return old;
           return {
@@ -171,7 +183,7 @@ export function useVault(filters: VaultFilters) {
     },
     onError: (_err, _id, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(queryKeys.vault.list(filters), context.previous);
+        queryClient.setQueryData(queryKeys.vault.list(baseFilters), context.previous);
       }
     },
     onSettled: () => {
@@ -190,9 +202,9 @@ export function useVault(filters: VaultFilters) {
     },
     onMutate: async ({ id, remarks }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.vault.all });
-      const previous = queryClient.getQueryData(queryKeys.vault.list(filters));
+      const previous = queryClient.getQueryData(queryKeys.vault.list(baseFilters));
       queryClient.setQueryData(
-        queryKeys.vault.list(filters),
+        queryKeys.vault.list(baseFilters),
         (old: InfiniteData<VaultItem[]> | undefined) => {
           if (!old) return old;
           return {
@@ -209,7 +221,7 @@ export function useVault(filters: VaultFilters) {
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(queryKeys.vault.list(filters), context.previous);
+        queryClient.setQueryData(queryKeys.vault.list(baseFilters), context.previous);
       }
     },
   });
@@ -224,9 +236,9 @@ export function useVault(filters: VaultFilters) {
     },
     onMutate: async ({ id, is_read }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.vault.all });
-      const previous = queryClient.getQueryData(queryKeys.vault.list(filters));
+      const previous = queryClient.getQueryData(queryKeys.vault.list(baseFilters));
       queryClient.setQueryData(
-        queryKeys.vault.list(filters),
+        queryKeys.vault.list(baseFilters),
         (old: InfiniteData<VaultItem[]> | undefined) => {
           if (!old) return old;
           return {
@@ -243,7 +255,7 @@ export function useVault(filters: VaultFilters) {
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(queryKeys.vault.list(filters), context.previous);
+        queryClient.setQueryData(queryKeys.vault.list(baseFilters), context.previous);
       }
     },
     onSettled: () => {

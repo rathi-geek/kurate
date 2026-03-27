@@ -8,7 +8,6 @@ import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
 import { VaultEmptyState } from "@/app/_components/vault/VaultEmptyState";
 import { VaultErrorState } from "@/app/_components/vault/VaultErrorState";
 import { VaultGrid } from "@/app/_components/vault/VaultGrid";
-import { PendingLinkCard } from "@/app/_components/vault/PendingLinkCard";
 import { useVault } from "@/app/_libs/hooks/useVault";
 import { db } from "@/app/_libs/db";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
@@ -80,25 +79,17 @@ export const VaultLibrary = memo(function VaultLibrary({ onNavigateToDiscover, f
         {isEmpty && <VaultEmptyState onExplore={onNavigateToDiscover ?? (() => {})} />}
 
         {!isLoading && !isError && !isEmpty && (
-          <>
-            {pendingLinks && pendingLinks.length > 0 && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {pendingLinks.map((link) => (
-                  <PendingLinkCard key={link.tempId} link={link} />
-                ))}
-              </div>
-            )}
-            <VaultGrid
-              items={items}
-              hasMore={hasMore}
-              isLoadingMore={isLoadingMore}
-              animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
-              onLoadMore={loadMore}
-              deleteItem={deleteItem}
-              updateRemarks={updateRemarks}
-              onToggleRead={toggleRead}
-            />
-          </>
+          <VaultGrid
+            items={items}
+            pendingItems={pendingLinks ?? []}
+            hasMore={hasMore}
+            isLoadingMore={isLoadingMore}
+            animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
+            onLoadMore={loadMore}
+            deleteItem={deleteItem}
+            updateRemarks={updateRemarks}
+            onToggleRead={toggleRead}
+          />
         )}
       </div>
     </div>

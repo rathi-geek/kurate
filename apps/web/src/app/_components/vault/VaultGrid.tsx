@@ -5,11 +5,15 @@ import { AnimatePresence, type Variants, motion, useReducedMotion } from "framer
 
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
 import type { VaultItem } from "@kurate/types";
+import type { PendingLink } from "@/app/_libs/db";
 import { VaultCard } from "@/app/_components/vault/VaultCard";
 import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
+import { PendingLinkCard } from "@/app/_components/vault/PendingLinkCard";
 
 export interface VaultGridProps {
   items: VaultItem[];
+  /** Optimistic pending links — rendered at the top of the same grid to avoid layout shift */
+  pendingItems?: PendingLink[];
   hasMore: boolean;
   isLoadingMore: boolean;
   /** Changes when filters change — forces stagger animation to replay */
@@ -22,6 +26,7 @@ export interface VaultGridProps {
 
 export const VaultGrid = memo(function VaultGrid({
   items,
+  pendingItems = [],
   hasMore,
   isLoadingMore,
   animationKey,
@@ -59,6 +64,11 @@ export const VaultGrid = memo(function VaultGrid({
         initial={prefersReducedMotion ? false : "hidden"}
         animate={prefersReducedMotion ? undefined : "visible"}
       >
+        {/* Pending items share the same grid — no layout shift when confirmed */}
+        {pendingItems.map((link) => (
+          <PendingLinkCard key={link.tempId} link={link} />
+        ))}
+
         <AnimatePresence>
           {items.map((item) => (
             <motion.div
