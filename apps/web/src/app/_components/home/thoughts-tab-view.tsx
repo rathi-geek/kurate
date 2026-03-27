@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import { AnimatePresence } from "framer-motion";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useLiveQuery } from "dexie-react-hooks";
 import { Virtuoso } from "react-virtuoso";
 
 import { ThoughtsBucketChat } from "@/app/_components/home/thoughts-bucket-chat";
@@ -11,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BUCKET_META, type ThoughtBucket } from "@kurate/utils";
 import type { ThoughtMessage } from "@kurate/types";
 import { queryKeys } from "@kurate/query";
+import { db, type PendingThought } from "@/app/_libs/db";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -69,13 +71,28 @@ function ThoughtsAllSkeleton() {
   );
 }
 
+type DisplayMessage = ThoughtMessage & { _pending?: boolean; _failed?: boolean };
+
+function pendingToMessage(p: PendingThought): DisplayMessage {
+  return {
+    id: p.tempId,
+    bucket: p.bucket,
+    text: p.text,
+    createdAt: p.createdAt,
+    media_id: p.media_id,
+    content_type: p.content_type,
+    _pending: p.status === "sending",
+    _failed: p.status === "failed",
+  };
+}
+
 function ThoughtsAllView({
   messages,
   hasNextPage,
   isFetchingNextPage,
   onFetchMore,
 }: {
-  messages: ThoughtMessage[];
+  messages: DisplayMessage[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onFetchMore: () => void;
@@ -97,11 +114,15 @@ function ThoughtsAllView({
             <div className="max-w-[75%]">
               <div
                 className="text-ink rounded-2xl rounded-br-sm px-3 py-2 text-sm"
-                style={{ backgroundColor: `var(${meta.colorVar})` }}>
+                style={{ backgroundColor: `var(${meta.colorVar})`, opacity: m._pending || m._failed ? 0.7 : 1 }}>
                 <p className="leading-snug whitespace-pre-wrap">{m.text || "📷 Image"}</p>
                 <div className="mt-0.5 flex items-center justify-between gap-3">
                   <span className="text-ink/40 text-[9px]">{meta.label}</span>
-                  <span className="text-ink/40 text-[9px]">{formatTime(m.createdAt)}</span>
+                  <span className="text-ink/40 flex items-center gap-1 text-[9px]">
+                    {formatTime(m.createdAt)}
+                    {m._pending && <span aria-label="Sending">⏱</span>}
+                    {m._failed && <span aria-label="Failed to send" className="text-red-400">!</span>}
+                  </span>
                 </div>
               </div>
             </div>
@@ -121,6 +142,9 @@ interface ThoughtsTabViewProps {
 }
 
 export function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange }: ThoughtsTabViewProps) {
+  // eslint-disable-next-line no-console
+  console.log('[ThoughtsTabView] render', { searchQuery, activeBucket, viewAll });
+
   const isSearching = searchQuery.trim().length > 0;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
@@ -152,6 +176,8 @@ export function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChang
     enabled: isSearching,
   });
 
+  const pendingThoughts = useLiveQuery(() => db.pending_thoughts.toArray(), []);
+
   const allMessages = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
 
   // Search results come back DESC; reverse for chronological (oldest-first) display
@@ -160,14 +186,26 @@ export function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChang
     [isSearching, searchData],
   );
 
-  const displayMessages = isSearching ? searchMessages : allMessages;
+  // Dedup: when server data includes a text matching a pending thought, clean up Dexie
+  useEffect(() => {
+    if (!pendingThoughts?.length) return;
+    const serverTexts = new Set(allMessages.map((m) => m.text));
+    const confirmed = pendingThoughts.filter((p) => serverTexts.has(p.text));
+    if (confirmed.length) void db.pending_thoughts.bulkDelete(confirmed.map((t) => t.tempId));
+  }, [allMessages, pendingThoughts]);
+
+  // Merge pending thoughts at the end (newest = bottom) — only when not searching
+  const pendingMessages: DisplayMessage[] = !isSearching ? (pendingThoughts ?? []).map(pendingToMessage) : [];
+  const displayMessages: DisplayMessage[] = isSearching
+    ? (searchMessages as DisplayMessage[])
+    : ([...(allMessages as DisplayMessage[]), ...pendingMessages]);
 
   const displayBuckets = isSearching
     ? ALL_BUCKETS.filter((b) => searchMessages.some((m) => m.bucket === b))
     : ALL_BUCKETS;
 
-  const byBucket = (bucket: ThoughtBucket) =>
-    (isSearching ? searchMessages : allMessages).filter((m) => m.bucket === bucket);
+  const byBucket = (bucket: ThoughtBucket): DisplayMessage[] =>
+    (isSearching ? searchMessages : [...allMessages, ...pendingMessages]).filter((m) => m.bucket === bucket) as DisplayMessage[];
 
   const showSkeleton = isSearching ? isSearchLoading : isLoading;
 
@@ -242,7 +280,7 @@ export function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChang
             bucket={activeBucket}
             onBack={() => onActiveBucketChange(null)}
             searchQuery={searchQuery}
-            extraMessages={isSearching ? searchMessages : allMessages}
+            extraMessages={isSearching ? (searchMessages as DisplayMessage[]) : displayMessages}
           />
         )}
       </AnimatePresence>

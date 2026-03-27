@@ -125,6 +125,7 @@ export function useMessages(convoId: string | null) {
   useEffect(() => {
     if (!convoId) return;
 
+    console.log("[useMessages] subscribing", `messages:${convoId}`);
     const channel = supabase
       .channel(`messages:${convoId}`)
       .on(
@@ -141,6 +142,7 @@ export function useMessages(convoId: string | null) {
       });
 
     return () => {
+      console.log("[useMessages] cleanup", `messages:${convoId}`);
       void supabase.removeChannel(channel);
     };
   }, [convoId, queryClient]);

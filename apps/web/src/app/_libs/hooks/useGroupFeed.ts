@@ -164,6 +164,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
   useEffect(() => {
     if (!groupId) return;
 
+    console.log("[useGroupFeed] subscribing", `group-feed:${groupId}`);
     const channel = supabase
       .channel(`group-feed:${groupId}`)
       .on(
@@ -180,6 +181,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
       });
 
     return () => {
+      console.log("[useGroupFeed] cleanup", `group-feed:${groupId}`);
       void supabase.removeChannel(channel);
     };
   }, [groupId, queryClient]);

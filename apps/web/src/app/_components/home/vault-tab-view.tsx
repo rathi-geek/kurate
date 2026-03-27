@@ -16,7 +16,7 @@ import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
 import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
 import { springGentle } from "@/app/_libs/utils/motion";
 import { VaultTab } from "@/app/_libs/chat-types";
-import { type ThoughtBucket } from "@kurate/utils";
+import { classifyThought, type ThoughtBucket } from "@kurate/utils";
 import { queryKeys } from "@kurate/query";
 import { useSubmitContent } from "@kurate/hooks";
 import { createClient } from "@/app/_libs/supabase/client";
@@ -24,6 +24,7 @@ import { fetchShareableConversations, type ShareableConversation } from "@/app/_
 import { track } from "@/app/_libs/utils/analytics";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 import type { SaveItemResult } from "@kurate/hooks";
+import { db } from "@/app/_libs/db";
 
 const supabase = createClient();
 
@@ -97,7 +98,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
     [queryClient, previewMeta, resetInput],
   );
 
-  const { onSend, isPending } = useSubmitContent({
+  const { onSend } = useSubmitContent({
     supabase,
     queryClient,
     onRouted: (dest) => {
@@ -108,8 +109,14 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
       }
     },
     onLinkSaved: handleLinkSaved,
+    onThoughtSent: async (_, tempId) => {
+      await db.pending_thoughts.delete(tempId);
+    },
     activeBucket,
   });
+
+  // eslint-disable-next-line no-console
+  console.log('[VaultTabView] render', { vaultTab, previewPhase, searchQuery });
 
   useEffect(() => {
     if (scrollDir) onScrollDirectionChange?.(scrollDir);
@@ -320,15 +327,47 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
                   ? { ...previewMeta, tags: extractedMeta?.tags ?? null }
                   : null;
                 if (previewUrl) {
-                  // URL mode — noteText is the user's note
-                  void onSend(previewUrl, undefined, meta, noteText.trim() || null);
+                  // URL mode — write pending link to Dexie, then fire POST
+                  const tempId = crypto.randomUUID();
+                  void db.pending_links.add({
+                    tempId,
+                    url: previewUrl,
+                    title: previewMeta?.title ?? previewUrl,
+                    source: previewMeta?.source ?? null,
+                    author: previewMeta?.author ?? null,
+                    previewImage: previewMeta?.previewImage ?? null,
+                    contentType: previewMeta?.contentType ?? "article",
+                    readTime: previewMeta?.readTime != null ? String(previewMeta.readTime) : null,
+                    tags: extractedMeta?.tags ?? null,
+                    remarks: noteText.trim() || null,
+                    createdAt: new Date().toISOString(),
+                    status: "sending",
+                  });
+                  void onSend(previewUrl, undefined, meta, noteText.trim() || null).then(async () => {
+                    await db.pending_links.delete(tempId);
+                  }).catch(async () => {
+                    await db.pending_links.update(tempId, { status: "failed" });
+                  });
                 } else {
-                  // Pure text → thoughts
-                  void onSend(noteText, undefined, null);
+                  // Pure text → thoughts: classify instantly, write to Dexie, switch tab, fire POST
+                  const tempId = crypto.randomUUID();
+                  const bucket = activeBucket ?? classifyThought(noteText);
+                  void db.pending_thoughts.add({
+                    tempId,
+                    text: noteText,
+                    bucket,
+                    content_type: "text",
+                    media_id: null,
+                    createdAt: new Date().toISOString(),
+                    status: "sending",
+                  });
+                  setVaultTab(VaultTab.THOUGHTS);
+                  void onSend(noteText, undefined, null, null, tempId).catch(async () => {
+                    await db.pending_thoughts.update(tempId, { status: "failed" });
+                  });
                 }
               }}
               onUrlChange={handleUrlChange}
-              disabled={isPending}
               collapsible={vaultTab === VaultTab.THOUGHTS}
             />
           </div>

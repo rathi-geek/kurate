@@ -11,18 +11,22 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function ThoughtBubble({ message, color }: { message: ThoughtMessage; color: string }) {
+type DisplayMessage = ThoughtMessage & { _pending?: boolean; _failed?: boolean };
+
+function ThoughtBubble({ message, color }: { message: DisplayMessage; color: string }) {
   return (
     <div className="flex justify-end py-0.5">
       <div className="max-w-[75%]">
         <div
           className="text-ink rounded-2xl rounded-br-sm px-3 py-2 text-sm"
-          style={{ backgroundColor: color }}>
+          style={{ backgroundColor: color, opacity: message._pending || message._failed ? 0.7 : 1 }}>
           <p className="leading-snug whitespace-pre-wrap">{message.text}</p>
-          <div className="mt-0.5 flex justify-end">
+          <div className="mt-0.5 flex items-center justify-end gap-1">
             <span className="text-ink/40 text-[9px] leading-none">
               {formatTime(message.createdAt)}
             </span>
+            {message._pending && <span className="text-[9px] leading-none" aria-label="Sending">⏱</span>}
+            {message._failed && <span className="text-[9px] leading-none text-red-400" aria-label="Failed to send">!</span>}
           </div>
         </div>
       </div>
@@ -34,7 +38,7 @@ interface ThoughtsBucketChatProps {
   bucket: ThoughtBucket;
   onBack: () => void;
   searchQuery: string;
-  extraMessages?: ThoughtMessage[];
+  extraMessages?: DisplayMessage[];
 }
 
 export function ThoughtsBucketChat({
@@ -43,6 +47,9 @@ export function ThoughtsBucketChat({
   searchQuery,
   extraMessages = [],
 }: ThoughtsBucketChatProps) {
+  // eslint-disable-next-line no-console
+  console.log('[ThoughtsBucketChat] render', { bucket, searchQuery });
+
   const meta = BUCKET_META[bucket];
 
   const allMessages = extraMessages.filter((m) => m.bucket === bucket);
@@ -76,7 +83,7 @@ export function ThoughtsBucketChat({
       ) : (
         <Virtuoso
           className="flex-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          data={filtered}
+          data={filtered as DisplayMessage[]}
           followOutput="smooth"
           itemContent={(_, m) => <ThoughtBubble message={m} color={`var(${meta.colorVar})`} />}
         />

@@ -108,6 +108,7 @@ export function useDMConversations(userId: string | null) {
   useEffect(() => {
     if (!userId) return;
 
+    console.log("[useDMConversations] subscribing", "dm-conversations");
     const channel = supabase
       .channel("dm-conversations")
       .on(
@@ -122,6 +123,7 @@ export function useDMConversations(userId: string | null) {
       });
 
     return () => {
+      console.log("[useDMConversations] cleanup", "dm-conversations");
       void supabase.removeChannel(channel);
     };
   }, [userId, queryClient]);

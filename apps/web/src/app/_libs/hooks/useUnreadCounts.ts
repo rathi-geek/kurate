@@ -46,6 +46,7 @@ export function useUnreadCounts(userId: string | null) {
     if (!userId) return;
     void fetchCounts();
 
+    console.log("[useUnreadCounts] subscribing", "unread-messages");
     const channel = supabase
       .channel("unread-messages")
       .on(
@@ -66,6 +67,7 @@ export function useUnreadCounts(userId: string | null) {
       });
 
     return () => {
+      console.log("[useUnreadCounts] cleanup", "unread-messages");
       void supabase.removeChannel(channel);
     };
   }, [userId, fetchCounts]);

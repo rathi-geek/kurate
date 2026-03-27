@@ -40,6 +40,9 @@ export function VaultTabSubHeader({
   fullVaultFilters,
   onFiltersChange,
 }: VaultTabSubHeaderProps) {
+  // eslint-disable-next-line no-console
+  console.log('[VaultTabSubHeader] render', { vaultTab, searchQuery });
+
   const t = useTranslations("vault");
   const prefersReducedMotion = useReducedMotion();
   const isMobile = useIsMobile();

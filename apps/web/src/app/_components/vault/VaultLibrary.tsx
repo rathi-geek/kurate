@@ -1,10 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
+
+import { useLiveQuery } from "dexie-react-hooks";
+
 import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
 import { VaultEmptyState } from "@/app/_components/vault/VaultEmptyState";
 import { VaultErrorState } from "@/app/_components/vault/VaultErrorState";
 import { VaultGrid } from "@/app/_components/vault/VaultGrid";
+import { PendingLinkCard } from "@/app/_components/vault/PendingLinkCard";
 import { useVault } from "@/app/_libs/hooks/useVault";
+import { db } from "@/app/_libs/db";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 
 export const DEFAULT_FILTERS: VaultFiltersType = {
@@ -21,6 +27,9 @@ export interface VaultLibraryProps {
 }
 
 export function VaultLibrary({ onNavigateToDiscover, filters }: VaultLibraryProps) {
+  // eslint-disable-next-line no-console
+  console.log('[VaultLibrary] render', filters);
+
   const {
     items,
     isLoading,
@@ -35,7 +44,17 @@ export function VaultLibrary({ onNavigateToDiscover, filters }: VaultLibraryProp
     toggleRead,
   } = useVault(filters);
 
-  const isEmpty = !isLoading && !isError && items.length === 0;
+  const pendingLinks = useLiveQuery(() => db.pending_links.toArray(), []);
+
+  // Dedup: when server data includes a URL matching a pending link, remove from Dexie
+  useEffect(() => {
+    if (!pendingLinks?.length || !items.length) return;
+    const serverUrls = new Set(items.map((i) => i.url));
+    const confirmed = pendingLinks.filter((p) => serverUrls.has(p.url));
+    if (confirmed.length) void db.pending_links.bulkDelete(confirmed.map((l) => l.tempId));
+  }, [items, pendingLinks]);
+
+  const isEmpty = !isLoading && !isError && items.length === 0 && !pendingLinks?.length;
 
   return (
     <div className="flex min-h-0 flex-col">
@@ -61,16 +80,25 @@ export function VaultLibrary({ onNavigateToDiscover, filters }: VaultLibraryProp
         {isEmpty && <VaultEmptyState onExplore={onNavigateToDiscover ?? (() => {})} />}
 
         {!isLoading && !isError && !isEmpty && (
-          <VaultGrid
-            items={items}
-            hasMore={hasMore}
-            isLoadingMore={isLoadingMore}
-            animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
-            onLoadMore={loadMore}
-            deleteItem={deleteItem}
-            updateRemarks={updateRemarks}
-            onToggleRead={toggleRead}
-          />
+          <>
+            {pendingLinks && pendingLinks.length > 0 && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {pendingLinks.map((link) => (
+                  <PendingLinkCard key={link.tempId} link={link} />
+                ))}
+              </div>
+            )}
+            <VaultGrid
+              items={items}
+              hasMore={hasMore}
+              isLoadingMore={isLoadingMore}
+              animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
+              onLoadMore={loadMore}
+              deleteItem={deleteItem}
+              updateRemarks={updateRemarks}
+              onToggleRead={toggleRead}
+            />
+          </>
         )}
       </div>
     </div>

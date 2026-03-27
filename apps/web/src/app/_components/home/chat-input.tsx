@@ -51,6 +51,9 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
   { onSend, onUrlChange, placeholder, notePlaceholder = "Add a note…", disabled, autoFocus, showPlusIcon = true, collapsible = false, onMediaSelect: _onMediaSelect },
   ref,
 ) {
+  // eslint-disable-next-line no-console
+  console.log('[ChatInput] render', { disabled, collapsible });
+
   const t = useTranslations("chat");
   const prefersReducedMotion = useReducedMotion();
   const [value, setValue] = useState("");

@@ -2,18 +2,18 @@ import "./globals.css";
 
 import Script from "next/script";
 
+import { QueryProvider } from "@kurate/query";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { AnimationPreview } from "@/app/_components/dev/animation-preview";
-import { I18nProvider } from "@/app/_components/i18n-provider";
 import GoogleAnalyticsScripts from "@/app/_components/google-analytics";
+import { I18nProvider } from "@/app/_components/i18n-provider";
 import SonnarToaster from "@/app/_components/sonner-toaster";
 import { dmMono, dmSans } from "@/app/_config/fonts";
 import { getJsonLd } from "@/app/_config/jsonId";
 import { metadata } from "@/app/_config/metadata";
 import { viewport } from "@/app/_config/viewport";
-import { QueryProvider } from "@kurate/query";
 
 export { metadata, viewport };
 
@@ -35,7 +35,7 @@ export default function RootLayout({
           <QueryProvider>
             {children}
             <SonnarToaster />
-            <AnimationPreview />
+            {/* <AnimationPreview /> */}
           </QueryProvider>
         </I18nProvider>
         <GoogleAnalyticsScripts />

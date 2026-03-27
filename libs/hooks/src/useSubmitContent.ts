@@ -21,6 +21,20 @@ interface ExtractedMeta {
   tags?: string[] | null;
 }
 
+interface ThoughtMessage {
+  id: string;
+  bucket: ThoughtBucket;
+  text: string;
+  createdAt: string;
+  media_id?: string | null;
+  content_type?: string;
+}
+
+interface InfiniteThoughtsData {
+  pages: { items: ThoughtMessage[]; nextCursor: string | null }[];
+  pageParams: unknown[];
+}
+
 interface SubmitContentConfig {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any>;
@@ -29,6 +43,11 @@ interface SubmitContentConfig {
   onRouted: (destination: "links" | "thoughts") => void;
   /** Called with the save result so the UI can show toasts / share flow */
   onLinkSaved?: (result: SaveItemResult) => void | Promise<void>;
+  /**
+   * Called after a thought is persisted. Receives the confirmed thought and
+   * the tempId so the caller can delete the Dexie pending row.
+   */
+  onThoughtSent?: (thought: ThoughtMessage, tempId: string) => Promise<void> | void;
   activeBucket?: ThoughtBucket | null;
   /** Base URL for API calls. Leave empty for web (relative). Full URL for mobile. */
   apiBaseUrl?: string;
@@ -39,7 +58,7 @@ export function useSubmitContent(config: SubmitContentConfig) {
   const saveItem = useSaveItem(config.supabase);
 
   const onSend = useCallback(
-    async (text: string, mediaFile?: File, preExtractedMeta?: ExtractedMeta | null, note?: string | null) => {
+    async (text: string, mediaFile?: File, preExtractedMeta?: ExtractedMeta | null, note?: string | null, tempId?: string) => {
       const urlMatch = !mediaFile && text.match(URL_REGEX);
       setIsPending(true);
       try {
@@ -127,7 +146,7 @@ export function useSubmitContent(config: SubmitContentConfig) {
           }
 
           const base = config.apiBaseUrl ?? "";
-          await fetch(`${base}/api/thoughts`, {
+          const thoughtRes = await fetch(`${base}/api/thoughts`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -138,7 +157,27 @@ export function useSubmitContent(config: SubmitContentConfig) {
             }),
           });
 
-          await config.queryClient.invalidateQueries({ queryKey: queryKeys.thoughts.all });
+          if (thoughtRes.ok) {
+            const thought = (await thoughtRes.json()) as ThoughtMessage;
+            // Inject into React Query cache (avoids a second GET)
+            config.queryClient.setQueryData<InfiniteThoughtsData>(
+              queryKeys.thoughts.list(null),
+              (old) => {
+                if (!old) return old;
+                const pages = old.pages.map((p, i) =>
+                  i === 0 ? { ...p, items: [thought, ...p.items] } : p,
+                );
+                return { ...old, pages };
+              },
+            );
+            if (tempId) {
+              await config.onThoughtSent?.(thought, tempId);
+            }
+          } else {
+            // Fallback: invalidate so next focus re-fetches
+            await config.queryClient.invalidateQueries({ queryKey: queryKeys.thoughts.all });
+          }
+
           config.onRouted("thoughts");
         }
       } finally {
@@ -153,6 +192,7 @@ export function useSubmitContent(config: SubmitContentConfig) {
       config.activeBucket,
       config.onRouted,
       config.onLinkSaved,
+      config.onThoughtSent,
       saveItem,
     ],
   );
