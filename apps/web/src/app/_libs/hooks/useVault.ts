@@ -78,7 +78,7 @@ async function fetchVaultPage(
     query = query.lt("created_at", cursor);
   }
 
-  const { time, contentType, search, readStatus } = filters;
+  const { time, contentType, readStatus } = filters;
 
   if (time !== "all") {
     const now = new Date();
