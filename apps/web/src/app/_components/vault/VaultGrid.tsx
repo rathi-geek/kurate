@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { AnimatePresence, type Variants, motion, useReducedMotion } from "framer-motion";
 
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
@@ -20,7 +20,7 @@ export interface VaultGridProps {
   onToggleRead: (item: VaultItem) => void;
 }
 
-export function VaultGrid({
+export const VaultGrid = memo(function VaultGrid({
   items,
   hasMore,
   isLoadingMore,
@@ -91,4 +91,4 @@ export function VaultGrid({
       )}
     </>
   );
-}
+});

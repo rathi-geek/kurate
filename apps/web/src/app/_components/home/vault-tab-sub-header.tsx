@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -30,7 +30,7 @@ export interface VaultTabSubHeaderProps {
   onFiltersChange: (f: Pick<VaultFiltersType, "time" | "contentType" | "readStatus">) => void;
 }
 
-export function VaultTabSubHeader({
+export const VaultTabSubHeader = memo(function VaultTabSubHeader({
   vaultTab,
   onTabChange,
   searchOpen,
@@ -153,4 +153,4 @@ export function VaultTabSubHeader({
       />
     </>
   );
-}
+});

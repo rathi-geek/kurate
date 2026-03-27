@@ -60,6 +60,7 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
   const [focused, setFocused] = useState(false);
   const [lockedUrl, setLockedUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const lastReportedUrl = useRef<string | null>(null);
 
   const resolvedPlaceholder = lockedUrl ? notePlaceholder : (placeholder ?? t("placeholder"));
   const isUrl = lockedUrl !== null;
@@ -77,10 +78,13 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
         const remaining = value.replace(url, "").trim();
         setValue(remaining);
         setLockedUrl(url);
+        lastReportedUrl.current = url;
         onUrlChange(url);
-      } else {
+      } else if (lastReportedUrl.current !== null) {
+        lastReportedUrl.current = null;
         onUrlChange(null);
       }
+      // else: never had a URL — skip the call entirely
     }, 150);
     return () => clearTimeout(timer);
   }, [value, onUrlChange, lockedUrl]);

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Virtuoso } from "react-virtuoso";
 
@@ -41,7 +42,7 @@ interface ThoughtsBucketChatProps {
   extraMessages?: DisplayMessage[];
 }
 
-export function ThoughtsBucketChat({
+export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
   bucket,
   onBack,
   searchQuery,
@@ -90,4 +91,4 @@ export function ThoughtsBucketChat({
       )}
     </motion.div>
   );
-}
+});

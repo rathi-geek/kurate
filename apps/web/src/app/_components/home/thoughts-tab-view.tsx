@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 
 import { AnimatePresence } from "framer-motion";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -113,6 +113,8 @@ function ThoughtsAllView({
       ref={virtuosoRef}
       className="h-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       data={messages}
+      // Start at the bottom on first mount (initial load / hard refresh / page navigation)
+      initialTopMostItemIndex={messages.length - 1}
       // Stick to bottom when new messages arrive; skip if user scrolled up
       followOutput="smooth"
       // Load older messages when scrolled to top
@@ -153,7 +155,7 @@ interface ThoughtsTabViewProps {
   onViewAllChange: (v: boolean) => void;
 }
 
-export function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange }: ThoughtsTabViewProps) {
+export const ThoughtsTabView = memo(function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange }: ThoughtsTabViewProps) {
   // eslint-disable-next-line no-console
   console.log('[ThoughtsTabView] render', { searchQuery, activeBucket, viewAll });
 
@@ -310,4 +312,4 @@ export function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChang
       </AnimatePresence>
     </div>
   );
-}
+});

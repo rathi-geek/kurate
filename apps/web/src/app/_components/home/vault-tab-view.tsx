@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
@@ -210,7 +210,20 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
     setMediaPreview(null);
   }, [mediaPreview]);
 
-  const fullVaultFilters: VaultFiltersType = { ...vaultFilters, search: searchQuery };
+  const fullVaultFilters: VaultFiltersType = useMemo(
+    () => ({ ...vaultFilters, search: searchQuery }),
+    [vaultFilters, searchQuery],
+  );
+
+  const handleLibraryFiltersChange = useCallback((f: VaultFiltersType) => {
+    setVaultFilters({ time: f.time, contentType: f.contentType, readStatus: f.readStatus });
+    setSearchQuery(f.search);
+  }, []);
+
+  const handlePreviewClose = useCallback(() => {
+    setPreviewPhase(PreviewPhase.Idle);
+    resetInput();
+  }, [resetInput]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -233,10 +246,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
           className={`absolute inset-0 overflow-y-auto transition-opacity duration-150${vaultTab !== VaultTab.LINKS ? " pointer-events-none opacity-0" : " opacity-100"}`}>
           <VaultLibrary
             filters={fullVaultFilters}
-            onFiltersChange={(f) => {
-              setVaultFilters({ time: f.time, contentType: f.contentType, readStatus: f.readStatus });
-              setSearchQuery(f.search);
-            }}
+            onFiltersChange={handleLibraryFiltersChange}
             onNavigateToDiscover={onNavigateToDiscover}
           />
         </div>
@@ -276,7 +286,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
                   metadata={previewMeta ?? undefined}
                   savedItemId={savedLoggedItemId ?? undefined}
                   savedItemGroups={savedItemGroups}
-                  onClose={() => { setPreviewPhase(PreviewPhase.Idle); resetInput(); }}
+                  onClose={handlePreviewClose}
                   onShare={handleShare}
                   onSkip={handleSkip}
                 />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 
 import { useLiveQuery } from "dexie-react-hooks";
 
@@ -26,7 +26,7 @@ export interface VaultLibraryProps {
   onFiltersChange: (f: VaultFiltersType) => void;
 }
 
-export function VaultLibrary({ onNavigateToDiscover, filters }: VaultLibraryProps) {
+export const VaultLibrary = memo(function VaultLibrary({ onNavigateToDiscover, filters }: VaultLibraryProps) {
   // eslint-disable-next-line no-console
   console.log('[VaultLibrary] render', filters);
 
@@ -103,4 +103,4 @@ export function VaultLibrary({ onNavigateToDiscover, filters }: VaultLibraryProp
       </div>
     </div>
   );
-}
+});
