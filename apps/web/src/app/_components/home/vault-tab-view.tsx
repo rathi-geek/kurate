@@ -20,6 +20,7 @@ import { classifyThought, type ThoughtBucket } from "@kurate/utils";
 import { queryKeys } from "@kurate/query";
 import { useSubmitContent } from "@kurate/hooks";
 import { createClient } from "@/app/_libs/supabase/client";
+import { useAuth } from "@/app/_libs/auth-context";
 import { fetchShareableConversations, type ShareableConversation } from "@/app/_libs/utils/fetchShareableConversations";
 import { track } from "@/app/_libs/utils/analytics";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
@@ -44,6 +45,8 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   const scrollDir = useScrollDirection(scrollRef);
   const isScrolledDown = scrollDir === "down";
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
 
   const [vaultTab, setVaultTab] = useState<VaultTab>(VaultTab.LINKS);
   const [vaultFilters, setVaultFilters] = useState<Omit<VaultFiltersType, "search">>({
@@ -83,7 +86,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         resetInput();
       } else if (result.status === "saved" && result.item) {
         const cached = queryClient.getQueryData<ShareableConversation[]>(queryKeys.vault.shareConversations());
-        const convos = cached ?? (await fetchShareableConversations());
+        const convos = cached ?? (await fetchShareableConversations(userId ?? ""));
         if (convos.length === 0) {
           setPreviewPhase(PreviewPhase.Idle);
           toast("Saved to Vault");
@@ -175,16 +178,13 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   const handleShare = useCallback(
     async (groupIds: string[]) => {
       if (!savedLoggedItemId || groupIds.length === 0) return;
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
       await Promise.all(
         groupIds.map((convo_id) =>
           supabase.from("group_posts").insert({
             convo_id,
             logged_item_id: savedLoggedItemId,
-            shared_by: user.id,
+            shared_by: userId,
           }),
         ),
       );
