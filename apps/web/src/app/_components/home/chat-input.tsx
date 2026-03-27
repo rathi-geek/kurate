@@ -110,6 +110,9 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
     if (disabled) return;
     const trimmed = value.trim();
     if (!trimmed && !lockedUrl) return;
+    // Reset ref so the URL-detection effect doesn't fire onUrlChange(null) after submit,
+    // which would prematurely clear the preview card before handleLinkSaved can show the share modal.
+    lastReportedUrl.current = null;
     // When in URL mode, send the note text (may be empty); parent handles lockedUrl via previewUrl
     onSend(trimmed);
     setValue("");

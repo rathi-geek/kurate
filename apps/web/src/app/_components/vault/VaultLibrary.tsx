@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect } from "react";
+import { memo, useEffect, useMemo } from "react";
 
 import { useLiveQuery } from "dexie-react-hooks";
 
@@ -45,13 +45,22 @@ export const VaultLibrary = memo(function VaultLibrary({ onNavigateToDiscover, f
 
   const pendingLinks = useLiveQuery(() => db.pending_links.toArray(), []);
 
+  const serverUrls = useMemo(() => new Set(items.map((i) => i.url)), [items]);
+
+  // Only show pending cards for links not yet confirmed by the server.
+  // When `items` gains the URL, this filters it out in the SAME render that VaultCard appears
+  // → no duplication flash, no blank-gap flash.
+  const visiblePendingLinks = useMemo(
+    () => (pendingLinks ?? []).filter((p) => !serverUrls.has(p.url)),
+    [pendingLinks, serverUrls],
+  );
+
   // Dedup: when server data includes a URL matching a pending link, remove from Dexie
   useEffect(() => {
     if (!pendingLinks?.length || !items.length) return;
-    const serverUrls = new Set(items.map((i) => i.url));
     const confirmed = pendingLinks.filter((p) => serverUrls.has(p.url));
     if (confirmed.length) void db.pending_links.bulkDelete(confirmed.map((l) => l.tempId));
-  }, [items, pendingLinks]);
+  }, [items, pendingLinks, serverUrls]);
 
   const isEmpty = !isLoading && !isError && items.length === 0 && !pendingLinks?.length;
 
@@ -81,7 +90,7 @@ export const VaultLibrary = memo(function VaultLibrary({ onNavigateToDiscover, f
         {!isLoading && !isError && !isEmpty && (
           <VaultGrid
             items={items}
-            pendingItems={pendingLinks ?? []}
+            pendingItems={visiblePendingLinks}
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
             animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
