@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { AnimatePresence } from "framer-motion";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Virtuoso } from "react-virtuoso";
+import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
 import { ThoughtsBucketChat } from "@/app/_components/home/thoughts-bucket-chat";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -91,14 +91,26 @@ function ThoughtsAllView({
   hasNextPage,
   isFetchingNextPage,
   onFetchMore,
+  scrollToBottomTrigger,
 }: {
   messages: DisplayMessage[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onFetchMore: () => void;
+  scrollToBottomTrigger?: number;
 }) {
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
+
+  useEffect(() => {
+    if (scrollToBottomTrigger && messages.length > 0) {
+      virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: "smooth" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollToBottomTrigger]);
+
   return (
     <Virtuoso
+      ref={virtuosoRef}
       className="h-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       data={messages}
       // Stick to bottom when new messages arrive; skip if user scrolled up
@@ -178,6 +190,17 @@ export function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChang
 
   const pendingThoughts = useLiveQuery(() => db.pending_thoughts.toArray(), []);
 
+  const scrollTrigger = useRef(0);
+  const prevPendingLengthRef = useRef(0);
+
+  useEffect(() => {
+    const newLen = pendingThoughts?.length ?? 0;
+    if (newLen > prevPendingLengthRef.current) {
+      scrollTrigger.current += 1;
+    }
+    prevPendingLengthRef.current = newLen;
+  }, [pendingThoughts?.length]);
+
   const allMessages = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
 
   // Search results come back DESC; reverse for chronological (oldest-first) display
@@ -242,6 +265,7 @@ export function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChang
             hasNextPage={isSearching ? false : !!hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
             onFetchMore={() => void fetchNextPage()}
+            scrollToBottomTrigger={scrollTrigger.current}
           />
         )
       ) : (

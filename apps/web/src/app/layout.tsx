@@ -6,7 +6,6 @@ import { QueryProvider } from "@kurate/query";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-import { AnimationPreview } from "@/app/_components/dev/animation-preview";
 import GoogleAnalyticsScripts from "@/app/_components/google-analytics";
 import { I18nProvider } from "@/app/_components/i18n-provider";
 import SonnarToaster from "@/app/_components/sonner-toaster";
