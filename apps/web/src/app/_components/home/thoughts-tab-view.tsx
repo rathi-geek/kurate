@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AnimatePresence } from "framer-motion";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -18,16 +18,35 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+// Dark accent for each bucket — used for unread badge backgrounds
+const BUCKET_BADGE_COLOR: Record<ThoughtBucket, string> = {
+  media:    "#BE185D", // pink-700
+  tasks:    "#065F46", // emerald-900
+  learning: "#1D4ED8", // blue-700
+  notes:    "#92400E", // amber-900
+};
+
+function getBucketLastSeen(b: ThoughtBucket): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(`bucket_last_seen:${b}`);
+}
+function markBucketSeen(b: ThoughtBucket): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`bucket_last_seen:${b}`, new Date().toISOString());
+}
+
 const ALL_BUCKETS: ThoughtBucket[] = ["media", "tasks", "learning", "notes"];
 
 function BucketCard({
   bucket,
   messages,
   onClick,
+  unreadCount,
 }: {
   bucket: ThoughtBucket;
   messages: ThoughtMessage[];
   onClick: () => void;
+  unreadCount: number;
 }) {
   const meta = BUCKET_META[bucket];
   const latest = messages.at(-1);
@@ -44,15 +63,24 @@ function BucketCard({
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
         {latest && <span className="text-ink/30 text-[10px]">{formatTime(latest.createdAt)}</span>}
-        <svg className="text-ink/30 size-4" viewBox="0 0 16 16" fill="none">
-          <path
-            d="M6 3l5 5-5 5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <div className="flex items-center gap-1.5">
+          {unreadCount > 0 && (
+            <span
+              className="rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none text-white"
+              style={{ backgroundColor: BUCKET_BADGE_COLOR[bucket] }}>
+              {unreadCount}
+            </span>
+          )}
+          <svg className="text-ink/30 size-4" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 3l5 5-5 5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
       </div>
     </button>
   );
@@ -225,14 +253,46 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ searchQuery, acti
     ? (searchMessages as DisplayMessage[])
     : ([...(allMessages as DisplayMessage[]), ...pendingMessages]);
 
+  // Single pass: group all messages by bucket once — reused for ordering, unread counts, and card rendering
+  const bucketMessages = useMemo<Map<ThoughtBucket, DisplayMessage[]>>(() => {
+    const source: DisplayMessage[] = isSearching
+      ? (searchMessages as DisplayMessage[])
+      : ([...(allMessages as DisplayMessage[]), ...pendingMessages]);
+    const map = new Map<ThoughtBucket, DisplayMessage[]>(ALL_BUCKETS.map((b) => [b, []]));
+    for (const m of source) map.get(m.bucket as ThoughtBucket)?.push(m);
+    return map;
+  }, [isSearching, searchMessages, allMessages, pendingMessages]);
+
   const displayBuckets = isSearching
-    ? ALL_BUCKETS.filter((b) => searchMessages.some((m) => m.bucket === b))
+    ? ALL_BUCKETS.filter((b) => (bucketMessages.get(b)?.length ?? 0) > 0)
     : ALL_BUCKETS;
 
-  const byBucket = (bucket: ThoughtBucket): DisplayMessage[] =>
-    (isSearching ? searchMessages : [...allMessages, ...pendingMessages]).filter((m) => m.bucket === bucket) as DisplayMessage[];
+  const byBucket = (bucket: ThoughtBucket): DisplayMessage[] => bucketMessages.get(bucket) ?? [];
 
   const showSkeleton = isSearching ? isSearchLoading : isLoading;
+
+  const sortedBuckets = useMemo(() => {
+    return [...displayBuckets].sort((a, b) => {
+      const la = bucketMessages.get(a)?.at(-1)?.createdAt ?? null;
+      const lb = bucketMessages.get(b)?.at(-1)?.createdAt ?? null;
+      if (!la && !lb) return 0;
+      if (!la) return 1;
+      if (!lb) return -1;
+      return new Date(lb).getTime() - new Date(la).getTime();
+    });
+  }, [displayBuckets, bucketMessages]);
+
+  // Increments each time a bucket is closed → forces getBucketUnread to re-read localStorage
+  const [seenEpoch, setSeenEpoch] = useState(0);
+
+  const getBucketUnread = useCallback((b: ThoughtBucket): number => {
+    const lastSeen = getBucketLastSeen(b);
+    const msgs = bucketMessages.get(b) ?? [];
+    // Never opened this bucket → all non-pending thoughts count as new
+    if (!lastSeen) return msgs.filter((m) => !m._pending).length;
+    const cutoff = new Date(lastSeen).getTime();
+    return msgs.filter((m) => !m._pending && new Date(m.createdAt).getTime() > cutoff).length;
+  }, [bucketMessages, seenEpoch]);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -285,11 +345,12 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ searchQuery, acti
                 </p>
               </div>
             ) : (
-              displayBuckets.map((b) => (
+              sortedBuckets.map((b) => (
                 <BucketCard
                   key={b}
                   bucket={b}
                   messages={byBucket(b)}
+                  unreadCount={getBucketUnread(b)}
                   onClick={() => onActiveBucketChange(b)}
                 />
               ))
@@ -304,7 +365,11 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ searchQuery, acti
           <ThoughtsBucketChat
             key={activeBucket}
             bucket={activeBucket}
-            onBack={() => onActiveBucketChange(null)}
+            onBack={() => {
+              if (activeBucket) markBucketSeen(activeBucket);
+              setSeenEpoch((e) => e + 1);
+              onActiveBucketChange(null);
+            }}
             searchQuery={searchQuery}
             extraMessages={isSearching ? (searchMessages as DisplayMessage[]) : displayMessages}
           />

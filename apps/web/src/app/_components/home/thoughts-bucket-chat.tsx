@@ -1,11 +1,12 @@
 "use client";
 
 import { memo } from "react";
+
+import type { ThoughtMessage } from "@kurate/types";
+import { BUCKET_META, type ThoughtBucket } from "@kurate/utils";
 import { motion } from "framer-motion";
 import { Virtuoso } from "react-virtuoso";
 
-import { BUCKET_META, type ThoughtBucket } from "@kurate/utils";
-import type { ThoughtMessage } from "@kurate/types";
 import { ChevronLeftIcon } from "@/components/icons";
 
 function formatTime(iso: string) {
@@ -20,14 +21,25 @@ function ThoughtBubble({ message, color }: { message: DisplayMessage; color: str
       <div className="max-w-[75%]">
         <div
           className="text-ink rounded-2xl rounded-br-sm px-3 py-2 text-sm"
-          style={{ backgroundColor: color, opacity: message._pending || message._failed ? 0.7 : 1 }}>
+          style={{
+            backgroundColor: color,
+            opacity: message._pending || message._failed ? 0.7 : 1,
+          }}>
           <p className="leading-snug whitespace-pre-wrap">{message.text}</p>
           <div className="mt-0.5 flex items-center justify-end gap-1">
             <span className="text-ink/40 text-[9px] leading-none">
               {formatTime(message.createdAt)}
             </span>
-            {message._pending && <span className="text-[9px] leading-none" aria-label="Sending">⏱</span>}
-            {message._failed && <span className="text-[9px] leading-none text-red-400" aria-label="Failed to send">!</span>}
+            {message._pending && (
+              <span className="text-[9px] leading-none" aria-label="Sending">
+                ⏱
+              </span>
+            )}
+            {message._failed && (
+              <span className="text-[9px] leading-none text-red-400" aria-label="Failed to send">
+                !
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -49,7 +61,7 @@ export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
   extraMessages = [],
 }: ThoughtsBucketChatProps) {
   // eslint-disable-next-line no-console
-  console.log('[ThoughtsBucketChat] render', { bucket, searchQuery });
+  console.log("[ThoughtsBucketChat] render", { bucket, searchQuery });
 
   const meta = BUCKET_META[bucket];
 
@@ -60,7 +72,7 @@ export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
 
   return (
     <motion.div
-      className="bg-background absolute inset-0 z-10 flex flex-col"
+      className="bg-background absolute inset-0 z-10 flex flex-col pt-4"
       initial={{ x: "100%" }}
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
@@ -85,6 +97,7 @@ export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
         <Virtuoso
           className="flex-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           data={filtered as DisplayMessage[]}
+          initialTopMostItemIndex={filtered.length - 1}
           followOutput="smooth"
           itemContent={(_, m) => <ThoughtBubble message={m} color={`var(${meta.colorVar})`} />}
         />
