@@ -1,19 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "@/i18n/use-translations";
 
 import { queryKeys } from "@kurate/query";
-import { createClient } from "@/app/_libs/supabase/client";
 import type { Tables } from "@kurate/types";
 import type { GroupMember, GroupRole } from "@kurate/types";
-import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
+import { useQueryClient } from "@tanstack/react-query";
+
 import { EditGroupInfoModal } from "@/app/_components/groups/edit-group-info-modal";
 import { GroupInfoMembersList } from "@/app/_components/groups/group-info-members-list";
+import { createClient } from "@/app/_libs/supabase/client";
+import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 import { ChevronLeftIcon, PencilIcon, PlusIcon } from "@/components/icons";
+import { useTranslations } from "@/i18n/use-translations";
 
 const supabase = createClient();
 
@@ -27,6 +29,7 @@ export interface GroupInfoHeaderProps {
   membersLoading: boolean;
   openModal: InfoModal;
   setOpenModal: (m: InfoModal) => void;
+  onBack?: () => void;
 }
 
 export function GroupInfoHeader({
@@ -37,6 +40,7 @@ export function GroupInfoHeader({
   membersLoading,
   openModal,
   setOpenModal,
+  onBack,
 }: GroupInfoHeaderProps) {
   const t = useTranslations("groups");
   const router = useRouter();
@@ -44,13 +48,18 @@ export function GroupInfoHeader({
   const [groupAvatarUrl, setGroupAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!group.group_avatar_id) { setGroupAvatarUrl(null); return; }
+    if (!group.group_avatar_id) {
+      setGroupAvatarUrl(null);
+      return;
+    }
     supabase
       .from("media_metadata")
       .select("file_path, bucket_name")
       .eq("id", group.group_avatar_id)
       .single()
-      .then(({ data }) => { setGroupAvatarUrl(data ? mediaToUrl(data) : null); });
+      .then(({ data }) => {
+        setGroupAvatarUrl(data ? mediaToUrl(data) : null);
+      });
   }, [group.group_avatar_id]);
 
   const isOwner = userRole === "owner";
@@ -59,12 +68,12 @@ export function GroupInfoHeader({
 
   return (
     <>
-      <div className="flex flex-col items-start gap-5 px-5 py-5">
+      <div className="flex w-full flex-col items-start gap-5 px-5 py-5">
         <div className="flex w-full flex-row items-start gap-3">
           <div className="flex shrink-0 flex-row items-center gap-3">
             <button
               type="button"
-              onClick={() => router.push(`/groups/${groupId}`)}
+              onClick={() => (onBack ? onBack() : router.push(`/groups/${groupId}`))}
               aria-label={t("back_to_feed")}
               className="text-muted-foreground hover:text-foreground hover:bg-surface shrink-0 rounded-md p-1.5 transition-colors">
               <ChevronLeftIcon className="size-[18px]" />
@@ -73,7 +82,13 @@ export function GroupInfoHeader({
             <div className="relative">
               <div className="bg-primary/10 relative flex size-20 items-center justify-center overflow-hidden rounded-full">
                 {groupAvatarUrl ? (
-                  <Image src={groupAvatarUrl} alt={group.group_name ?? "Group"} fill className="object-cover" sizes="80px" />
+                  <Image
+                    src={groupAvatarUrl}
+                    alt={group.group_name ?? "Group"}
+                    fill
+                    className="object-cover"
+                    sizes="80px"
+                  />
                 ) : (
                   <span className="text-primary text-3xl font-bold">{avatarInitial}</span>
                 )}
@@ -108,7 +123,7 @@ export function GroupInfoHeader({
               type="button"
               onClick={() => setOpenModal("invite")}
               aria-label={t("add_member")}
-              className="group flex w-full items-center gap-3 rounded-card border border-dashed border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary hover:bg-surface">
+              className="group rounded-card border-border bg-card hover:border-primary hover:bg-surface flex w-full items-center gap-3 border border-dashed px-3 py-2.5 text-left transition-colors">
               <div className="border-border text-muted-foreground group-hover:border-primary group-hover:text-primary flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed transition-colors">
                 <PlusIcon className="size-4" />
               </div>

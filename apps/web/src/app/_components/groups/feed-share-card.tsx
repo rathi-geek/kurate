@@ -4,14 +4,17 @@ import { memo, useEffect, useRef, useState } from "react";
 
 import Image from "next/image";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { useTranslations } from "@/i18n/use-translations";
-
 import type { GroupDrop, GroupProfile, GroupRole } from "@kurate/types";
+import { AnimatePresence, motion } from "framer-motion";
+
+import { ContentTypePill } from "@/components/ui/content-type-pill";
+
 import { CommentThread } from "@/app/_components/groups/comment-thread";
 import { EngagementBar } from "@/app/_components/groups/engagement-bar";
-import { ChevronDownIcon, TrashIcon } from "@/components/icons";
-import { ContentTypePill } from "@/components/ui/content-type-pill";
+import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
+import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
+import { ChevronDownIcon, DomainIcon, ShareIcon, TrashIcon } from "@/components/icons";
+import { useTranslations } from "@/i18n/use-translations";
 
 interface FeedShareCardProps {
   drop: GroupDrop;
@@ -63,7 +66,19 @@ export const FeedShareCard = memo(function FeedShareCard({
   const [showComments, setShowComments] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useRefreshLoggedItem(
+    drop.item
+      ? {
+          id: drop.logged_item_id ?? "",
+          url: drop.item.url,
+          title: drop.item.title ?? null,
+          preview_image_url: drop.item.preview_image_url ?? null,
+        }
+      : null,
+  );
 
   useEffect(() => {
     if (!showComments) return;
@@ -100,7 +115,9 @@ export const FeedShareCard = memo(function FeedShareCard({
             )}
             <div className="min-w-0">
               <span className="text-foreground text-sm font-semibold">
-                {isSharer ? "YOU" : (drop.sharer.display_name ?? drop.sharer.handle ?? t("anonymous"))}
+                {isSharer
+                  ? "YOU"
+                  : (drop.sharer.display_name ?? drop.sharer.handle ?? t("anonymous"))}
               </span>
               <span className="text-muted-foreground ml-1.5 text-xs">
                 dropped · {formatRelativeTime(drop.shared_at)}
@@ -108,25 +125,37 @@ export const FeedShareCard = memo(function FeedShareCard({
             </div>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          {/* Share — visible when drop has a linked item */}
+          {drop.item && (
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              className="rounded-badge text-muted-foreground hover:text-foreground hover:bg-ink/6 shrink-0 p-1 transition-colors"
+              aria-label="Share">
+              <ShareIcon className="size-3.5" />
+            </button>
+          )}
 
-        {/* Delete — sharer or owner only */}
-        {(isSharer || userRole === "owner") && onDelete && (
-          <button
-            type="button"
-            disabled={isDeleting}
-            onClick={() => {
-              setIsDeleting(true);
-              onDelete(drop.id);
-            }}
-            className={`rounded-badge shrink-0 p-1 transition-colors ${
-              isDeleting
-                ? "text-muted-foreground/40 pointer-events-none"
-                : "text-muted-foreground hover:text-error-foreground hover:bg-error-bg"
-            }`}
-            aria-label={t("delete_drop_aria")}>
-            <TrashIcon className="size-3.5" />
-          </button>
-        )}
+          {/* Delete — sharer or owner only */}
+          {(isSharer || userRole === "owner") && onDelete && (
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => {
+                setIsDeleting(true);
+                onDelete(drop.id);
+              }}
+              className={`rounded-badge shrink-0 p-1 transition-colors ${
+                isDeleting
+                  ? "text-muted-foreground/40 pointer-events-none"
+                  : "text-muted-foreground hover:text-error-foreground hover:bg-error-bg"
+              }`}
+              aria-label={t("delete_drop_aria")}>
+              <TrashIcon className="size-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       <motion.article
@@ -139,7 +168,7 @@ export const FeedShareCard = memo(function FeedShareCard({
           {/* Sharer note — green tinted card */}
           {drop.note && (
             <div className="py-2">
-              <p className="text-ink text-md leading-relaxed italic">Note: {drop.note}</p>
+              <p className="text-ink text-md leading-relaxed italic">{drop.note}</p>
             </div>
           )}
           {/* Link drop: full-width preview image + title */}
@@ -159,6 +188,10 @@ export const FeedShareCard = memo(function FeedShareCard({
                     className="object-cover"
                     onError={() => setImgError(true)}
                   />
+                  <ContentTypePill
+                    contentType={drop.item.content_type}
+                    className="absolute top-2 left-2"
+                  />
                 </a>
               ) : (
                 <a
@@ -166,7 +199,11 @@ export const FeedShareCard = memo(function FeedShareCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-muted/40 border-border/40 relative -mx-4 mb-3 flex h-[220px] items-center justify-center overflow-hidden border-b">
-                  <ContentTypePill contentType={drop.item.content_type} />
+                  <DomainIcon url={drop.item.url} className="size-14" />
+                  <ContentTypePill
+                    contentType={drop.item.content_type}
+                    className="absolute top-2 left-2"
+                  />
                 </a>
               )}
               <div className="mb-2">
@@ -190,14 +227,9 @@ export const FeedShareCard = memo(function FeedShareCard({
                       <span>{(drop.item.raw_metadata as Record<string, string>).read_time}</span>
                     </>
                   )}
-                  {drop.item.content_type && (
-                    <span className="border-border bg-surface rounded-full border px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase">
-                      {drop.item.content_type}
-                    </span>
-                  )}
                   {drop.engagement.mustRead.count > 0 && (
-                    <span className="bg-warning-bg text-warning-foreground border-warning-foreground/20 rounded-full border px-1.5 py-0.5 text-[9px] font-bold tracking-widest">
-                      MUST READ · {drop.engagement.mustRead.count}
+                    <span className="bg-warning-bg text-warning-foreground border-warning-foreground/20 rounded-full border px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase">
+                      {t("must_read")} · {drop.engagement.mustRead.count}
                     </span>
                   )}
                 </div>
@@ -219,7 +251,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                 <ReactionPill reactors={drop.engagement.like.reactors} label="liked" />
               )}
               {drop.engagement.mustRead.count > 0 && (
-                <ReactionPill reactors={drop.engagement.mustRead.reactors} label="must read" />
+                <ReactionPill reactors={drop.engagement.mustRead.reactors} label="recommended" />
               )}
             </div>
           )}
@@ -303,6 +335,16 @@ export const FeedShareCard = memo(function FeedShareCard({
           )}
         </AnimatePresence>
       </motion.article>
+
+      {drop.item && (
+        <VaultShareModal
+          open={shareOpen}
+          item={null}
+          loggedItemId={drop.logged_item_id ?? undefined}
+          excludeGroupId={groupId}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </div>
   );
 });

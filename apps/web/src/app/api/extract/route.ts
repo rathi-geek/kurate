@@ -80,15 +80,6 @@ function estimateReadTime(wordCount: number): string {
   return `${minutes} min read`;
 }
 
-function formatIsoDuration(iso: string): string | undefined {
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!m) return undefined;
-  const h = parseInt(m[1] ?? "0");
-  const min = parseInt(m[2] ?? "0");
-  const totalMin = h * 60 + min;
-  if (totalMin === 0) return undefined;
-  return h > 0 ? `${h}h ${min}m watch` : `${totalMin} min watch`;
-}
 
 function getMeta(html: string, property: string): string | undefined {
   const esc = property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -175,32 +166,7 @@ export async function POST(req: NextRequest) {
           if (oembed.thumbnail_url) ytThumbnail = oembed.thumbnail_url;
         }
       } catch {}
-      let ytDuration: string | undefined;
-      let ytTags: string[] = [];
-      try {
-        const pageRes = await fetch(`https://www.youtube.com/watch?v=${ytVideoId}`, {
-          headers: { "User-Agent": BROWSER_UA },
-        });
-        if (pageRes.ok) {
-          const pageHtml = await pageRes.text();
-          // Duration lives in the ytInitialPlayerResponse JSON
-          const dMatch = pageHtml.match(/"duration"\s*:\s*"(PT[^"]+)"/);
-          if (dMatch?.[1]) ytDuration = formatIsoDuration(dMatch[1]);
-          // Tags live in ytInitialData as "keywords":[...]
-          const kwMatch = pageHtml.match(/"keywords"\s*:\s*(\[[^\]]*?\])/s);
-          if (kwMatch?.[1]) {
-            try {
-              const parsed: unknown = JSON.parse(kwMatch[1]);
-              if (Array.isArray(parsed)) {
-                ytTags = (parsed as unknown[])
-                  .filter((k): k is string => typeof k === "string" && k.length > 0 && k.length < 50)
-                  .slice(0, 6);
-              }
-            } catch {}
-          }
-        }
-      } catch {}
-      return NextResponse.json({ url, title: ytTitle, source: "youtube.com", author: ytAuthor, contentType: "video" as const, previewImage: ytThumbnail, duration: ytDuration, tags: ytTags });
+      return NextResponse.json({ url, title: ytTitle, source: "youtube.com", author: ytAuthor, contentType: "video" as const, previewImage: ytThumbnail, tags: [] as string[] });
     }
 
     if (isXUrl(url) || url.includes("t.co/")) {

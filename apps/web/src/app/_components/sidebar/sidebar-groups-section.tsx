@@ -6,6 +6,7 @@ import { LuChevronDown } from "react-icons/lu";
 import { cn } from "@/app/_libs/utils/cn";
 
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/use-translations";
 
@@ -39,6 +40,7 @@ function GroupListContent({
   unreadCounts?: Map<string, number>;
   markRead?: (convoId: string) => Promise<void>;
 }) {
+  const pathname = usePathname();
   if (collapsed) {
     return (
       <>
@@ -83,10 +85,14 @@ function GroupListContent({
           onItemClick?.();
           if (unread > 0) void markRead?.(g.id);
         };
+        const isActive = pathname.startsWith(ROUTES.APP.GROUP(g.id));
         return (
           <div
             key={g.id}
-            className="hover:bg-ink/4 group/grp rounded-badge flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors">
+            className={cn(
+              "group/grp rounded-badge flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors",
+              isActive ? "bg-ink/8" : "hover:bg-ink/4",
+            )}>
             <Link
               href={ROUTES.APP.GROUP(g.id)}
               onClick={handleClick}

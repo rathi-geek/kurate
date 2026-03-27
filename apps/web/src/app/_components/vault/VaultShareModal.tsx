@@ -22,9 +22,13 @@ export interface VaultShareModalProps {
   open: boolean;
   item: VaultItem | null;
   onClose: () => void;
+  /** Use when item is null (e.g. sharing from group feed) */
+  loggedItemId?: string;
+  /** Hide this group from the share target list */
+  excludeGroupId?: string;
 }
 
-export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
+export function VaultShareModal({ open, item, onClose, loggedItemId, excludeGroupId }: VaultShareModalProps) {
   const t = useTranslations("vault");
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -43,7 +47,8 @@ export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
   }
 
   async function handleShareSelected() {
-    if (!item || selectedIds.size === 0) return;
+    const resolvedId = item?.logged_item_id ?? loggedItemId;
+    if (!resolvedId || selectedIds.size === 0) return;
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -62,12 +67,12 @@ export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
               sender_id: user.id,
               message_text: "",
               message_type: "logged_item" as const,
-              logged_item_id: item.logged_item_id,
+              logged_item_id: resolvedId,
             });
           }
           return supabase.from("group_posts").insert({
             convo_id,
-            logged_item_id: item.logged_item_id,
+            logged_item_id: resolvedId,
             shared_by: user.id,
           });
         }),
@@ -93,7 +98,7 @@ export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
   useEffect(() => {
     setSelectedIds(new Set());
     setSharedIds(new Set());
-  }, [item?.logged_item_id]);
+  }, [item?.logged_item_id, loggedItemId]);
 
   function handleClose() {
     setSelectedIds(new Set());
@@ -125,6 +130,7 @@ export function VaultShareModal({ open, item, onClose }: VaultShareModalProps) {
         enabled={open}
         maxHeight="max-h-[60vh]"
         avatarSize="md"
+        excludeIds={excludeGroupId ? [excludeGroupId] : undefined}
       />
     </VaultModal>
   );

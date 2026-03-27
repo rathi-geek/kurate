@@ -35,6 +35,8 @@ export interface ShareTargetGridProps {
   /** Avatar size: "sm" (12) or "md" (14) */
   avatarSize?: "sm" | "md";
   className?: string;
+  /** Ids to hide from the target list (e.g. current group) */
+  excludeIds?: string[];
 }
 
 export function ShareTargetGrid({
@@ -48,6 +50,7 @@ export function ShareTargetGrid({
   maxHeight = "max-h-48",
   avatarSize = "md",
   className,
+  excludeIds,
 }: ShareTargetGridProps) {
   const t = useTranslations("vault");
   const [search, setSearch] = useState("");
@@ -60,12 +63,18 @@ export function ShareTargetGrid({
     staleTime: 1000 * 60 * 5,
   });
 
+  const visible = useMemo(
+    () =>
+      excludeIds?.length ? conversations.filter((c) => !excludeIds.includes(c.id)) : conversations,
+    [conversations, excludeIds],
+  );
+
   const filtered = useMemo(
     () =>
-      conversations.filter(
+      visible.filter(
         (c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()),
       ),
-    [conversations, search],
+    [visible, search],
   );
 
   function toggle(id: string) {
@@ -160,7 +169,7 @@ export function ShareTargetGrid({
               </div>
             ))}
           </div>
-        ) : conversations.length === 0 ? (
+        ) : visible.length === 0 ? (
           <p className="text-muted-foreground font-sans text-sm">{emptyLabel}</p>
         ) : filtered.length === 0 ? (
           <p className="text-muted-foreground font-sans text-sm">{noMatchLabel}</p>

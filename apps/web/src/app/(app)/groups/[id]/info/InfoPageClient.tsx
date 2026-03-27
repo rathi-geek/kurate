@@ -1,24 +1,23 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { useSearchParams } from "next/navigation";
 
-import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
 import type { Tables } from "@kurate/types";
 import type { GroupRole } from "@kurate/types";
-import {
-  GroupInfoHeader,
-  type InfoModal,
-} from "@/app/_components/groups/group-info-header";
-import { GroupInviteModal } from "@/app/_components/groups/group-invite-modal";
+
 import { GroupDangerZone } from "@/app/_components/groups/group-danger-zone";
+import { GroupInfoHeader, type InfoModal } from "@/app/_components/groups/group-info-header";
+import { GroupInviteModal } from "@/app/_components/groups/group-invite-modal";
+import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
 
 interface InfoPageClientProps {
   group: Tables<"conversations">;
   currentUserId: string;
   userRole: GroupRole;
   groupId: string;
+  onBack?: () => void;
 }
 
 export function InfoPageClient(props: InfoPageClientProps) {
@@ -29,11 +28,8 @@ export function InfoPageClient(props: InfoPageClientProps) {
   );
 }
 
-function InfoPageInner({ group, currentUserId, userRole, groupId }: InfoPageClientProps) {
-  const { members, isLoading: membersLoading } = useGroupMembers(
-    group.id,
-    currentUserId,
-  );
+function InfoPageInner({ group, currentUserId, userRole, groupId, onBack }: InfoPageClientProps) {
+  const { members, isLoading: membersLoading } = useGroupMembers(group.id, currentUserId);
 
   const searchParams = useSearchParams();
   const [openModal, setOpenModal] = useState<InfoModal>(() =>
@@ -52,8 +48,8 @@ function InfoPageInner({ group, currentUserId, userRole, groupId }: InfoPageClie
   const memberIds = new Set(members.map((m) => m.user_id));
 
   return (
-    <div className="mx-auto flex h-full max-w-md flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
+    <div className="flex h-full w-full flex-col overflow-hidden">
+      <div className="w-full flex-1 overflow-y-auto">
         <GroupInfoHeader
           group={group}
           groupId={groupId}
@@ -62,6 +58,7 @@ function InfoPageInner({ group, currentUserId, userRole, groupId }: InfoPageClie
           membersLoading={membersLoading}
           openModal={openModal}
           setOpenModal={setOpenModal}
+          onBack={onBack}
         />
       </div>
 

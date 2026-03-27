@@ -110,6 +110,7 @@ export function GroupInviteModal({
     await queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(groupId) });
     setAddingAll(false);
     reset();
+    onOpenChange(false);
   };
 
   const handleSearch = (query: string) => {

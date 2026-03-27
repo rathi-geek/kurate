@@ -16,7 +16,8 @@ import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 // import { useMediaPlayer } from "@/app/_libs/context/MediaPlayerContext";
 import { cn } from "@/app/_libs/utils/cn";
 import { track } from "@/app/_libs/utils/analytics";
-import { CheckIcon, DoubleCheckIcon, PencilIcon, ShareIcon, TrashIcon } from "@/components/icons";
+import { CheckIcon, DomainIcon, DoubleCheckIcon, PencilIcon, ShareIcon, TrashIcon } from "@/components/icons";
+import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
 import { useTranslations } from "@/i18n/use-translations";
 
 function getDescription(item: VaultItem): string | undefined {
@@ -54,6 +55,7 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
 
   const [imgError, setImgError] = useState(false);
   const description = getDescription(item);
+  useRefreshLoggedItem(item);
   const timeLabel = item.raw_metadata?.read_time ?? item.raw_metadata?.duration;
 
   return (
@@ -86,8 +88,12 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
                 onError={() => setImgError(true)}
               />
             ) : (
-              <div className="bg-muted flex h-full w-full items-center justify-center transition-[filter] duration-200 group-hover:blur-sm">
-                <ContentTypePill contentType={item.content_type} />
+              <div className="bg-muted relative flex h-full w-full items-center justify-center transition-[filter] duration-200 group-hover:blur-sm">
+                <DomainIcon url={item.url} className="size-12" />
+                <ContentTypePill
+                  contentType={item.content_type}
+                  className="absolute top-2 left-2"
+                />
               </div>
             )}
 
@@ -177,11 +183,7 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
             {(item.tags ?? []).length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1">
                 {item.tags!.map((tag) => (
-                  <span
-                    key={tag}
-                    className="bg-accent text-accent-foreground rounded-[6px] px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase">
-                    {tag}
-                  </span>
+                  <ContentTypePill key={tag} contentType={tag} />
                 ))}
               </div>
             )}

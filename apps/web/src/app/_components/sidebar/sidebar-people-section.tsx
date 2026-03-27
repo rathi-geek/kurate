@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { useTranslations } from "@/i18n/use-translations";
 import { LuChevronDown } from "react-icons/lu";
+import { usePathname } from "next/navigation";
 
 import { ROUTES } from "@kurate/utils";
 import type { DMConversation } from "@kurate/types";
@@ -32,6 +33,7 @@ export function SidebarPeopleSection({
   markRead,
 }: SidebarPeopleSectionProps) {
   const t = useTranslations("sidebar");
+  const pathname = usePathname();
   const [newMessageOpen, setNewMessageOpen] = useState(false);
   const [sectionOpen, setSectionOpen] = useState(true);
 
@@ -77,6 +79,7 @@ export function SidebarPeopleSection({
               if (unread > 0) void markRead?.(convo.id);
             };
 
+            const isActive = pathname === ROUTES.APP.PERSON(convo.id);
             return collapsed ? (
               <Link
                 key={convo.id}
@@ -100,7 +103,10 @@ export function SidebarPeopleSection({
                 key={convo.id}
                 href={ROUTES.APP.PERSON(convo.id)}
                 onClick={handleClick}
-                className="rounded-badge hover:bg-ink/4 flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left transition-colors">
+                className={cn(
+                  "rounded-badge flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left transition-colors",
+                  isActive ? "bg-ink/8" : "hover:bg-ink/4",
+                )}>
                 <div className="bg-ink text-cream flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full font-sans text-xs font-bold">
                   {initial}
                 </div>
