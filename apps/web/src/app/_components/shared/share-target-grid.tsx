@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { queryKeys } from "@kurate/query";
 import { cn } from "@/app/_libs/utils/cn";
+import { useAuth } from "@/app/_libs/auth-context";
 import {
   type ShareableConversation,
   fetchShareableConversations,
@@ -53,12 +54,14 @@ export function ShareTargetGrid({
   excludeIds,
 }: ShareTargetGridProps) {
   const t = useTranslations("vault");
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
   const [search, setSearch] = useState("");
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: queryKeys.vault.shareConversations(),
-    queryFn: fetchShareableConversations,
-    enabled,
+    queryFn: () => fetchShareableConversations(userId),
+    enabled: enabled && !!userId,
     /** Treat data as fresh for 5 min so reopening the share modal uses cache instead of refetching */
     staleTime: 1000 * 60 * 5,
   });
@@ -164,8 +167,10 @@ export function ShareTargetGrid({
           <div className="flex flex-wrap gap-3">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex flex-col items-center gap-1.5">
-                <Skeleton className={cn("rounded-pill", avatarClass)} />
-                <Skeleton className={cn("h-3 rounded", nameMaxW)} />
+                <div className="mt-2">
+                  <Skeleton className={cn("rounded-pill", avatarClass)} />
+                </div>
+                <Skeleton className={cn("h-3 rounded pb-2", nameMaxW)} />
               </div>
             ))}
           </div>

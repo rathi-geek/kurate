@@ -11,11 +11,8 @@ export interface ShareableConversation {
   updated_at: string;
 }
 
-export async function fetchShareableConversations(): Promise<ShareableConversation[]> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+export async function fetchShareableConversations(userId: string): Promise<ShareableConversation[]> {
+  if (!userId) return [];
 
   // Get all conversations for current user with type and recency info
   const { data: memberships, error } = await supabase
@@ -23,7 +20,7 @@ export async function fetchShareableConversations(): Promise<ShareableConversati
     .select(
       "conversations!conversation_members_convo_id_fkey(id, group_name, is_group, updated_at, group_avatar:group_avatar_id(file_path, bucket_name))",
     )
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (error || !memberships) return [];
 
@@ -60,7 +57,7 @@ export async function fetchShareableConversations(): Promise<ShareableConversati
         "convo_id, profile:profiles!conversation_members_user_id_fkey(first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)",
       )
       .in("convo_id", dmConvoIds)
-      .neq("user_id", user.id);
+      .neq("user_id", userId);
 
     dmItems = (otherMembers ?? []).map((m) => {
       const rawProfile = Array.isArray(m.profile) ? m.profile[0] : m.profile;

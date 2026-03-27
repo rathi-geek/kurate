@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AppSidebar } from "@/app/_components/sidebar";
 import { MobileBottomTab } from "@/app/_components/sidebar/mobile-bottom-tab";
 import { ROUTES } from "@kurate/utils";
+import { queryKeys } from "@kurate/query";
 import { useAuth } from "@/app/_libs/auth-context";
 import { useUnreadCounts } from "@/app/_libs/hooks/useUnreadCounts";
 import { useNotifications } from "@/app/_libs/hooks/useNotifications";
 import { useDMConversations } from "@/app/_libs/hooks/useDMConversations";
+import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import {
   SidebarOverridesProvider,
   type SidebarOverrides,
@@ -31,10 +34,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     "?"
   ).toUpperCase();
 
+  const queryClient = useQueryClient();
+
   // Single instances — passed as props to avoid duplicate Supabase subscriptions
-  const { counts: unreadCounts, markRead } = useUnreadCounts(userId);
   const { conversations } = useDMConversations(userId);
   const notif = useNotifications(userId);
+
+  // Groups list — SidebarGroupsSection already fetches this; no extra network call
+  const { data: userGroups = [] } = useQuery({
+    queryKey: queryKeys.groups.list(),
+    queryFn: fetchUserGroups,
+    staleTime: 1000 * 60,
+  });
+  const groupIds = useMemo(() => new Set(userGroups.map((g) => g.id)), [userGroups]);
+
+  // useUnreadCounts must come after groupIds so group badge tracking works
+  const { counts: unreadCounts, markRead } = useUnreadCounts(userId, groupIds);
+
+  // Realtime: refresh group list when added to a new group
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel("group-memberships")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "conversation_members", filter: `user_id=eq.${userId}` },
+        () => { void queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() }); },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [userId, queryClient]);
 
   const handleLogout = useCallback(async () => {
     const supabase = createClient();
@@ -74,6 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         userInitials={userInitials}
         unreadCounts={unreadCounts}
         notifUnreadCount={notif.unreadCount}
+        groupIds={groupIds}
       />
     </SidebarOverridesProvider>
   );

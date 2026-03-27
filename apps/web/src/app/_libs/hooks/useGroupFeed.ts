@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -146,6 +146,18 @@ async function fetchGroupFeedPage(
 
 export function useGroupFeed(groupId: string, currentUserId: string) {
   const queryClient = useQueryClient();
+  const [resubscribeKey, setResubscribeKey] = useState(0);
+
+  // Re-subscribe when tab becomes visible again (Supabase channels can go stale)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setResubscribeKey((k) => k + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
   const query = useInfiniteQuery({
     queryKey: queryKeys.groups.feed(groupId),
@@ -184,7 +196,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
       console.log("[useGroupFeed] cleanup", `group-feed:${groupId}`);
       void supabase.removeChannel(channel);
     };
-  }, [groupId, queryClient]);
+  }, [groupId, queryClient, resubscribeKey]);
 
   return {
     drops: query.data?.pages.flat() ?? [],

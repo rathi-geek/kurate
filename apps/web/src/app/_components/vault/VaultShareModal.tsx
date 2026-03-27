@@ -12,6 +12,7 @@ import { Spinner } from "@/app/_components/spinner";
 import { VaultModal } from "@/app/_components/vault/VaultModal";
 import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";
+import { useAuth } from "@/app/_libs/auth-context";
 import type { VaultItem } from "@kurate/types";
 import { cn } from "@/app/_libs/utils/cn";
 import { fetchShareableConversations } from "@/app/_libs/utils/fetchShareableConversations";
@@ -31,14 +32,16 @@ export interface VaultShareModalProps {
 export function VaultShareModal({ open, item, onClose, loggedItemId, excludeGroupId }: VaultShareModalProps) {
   const t = useTranslations("vault");
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSharing, setIsSharing] = useState(false);
   const [sharedIds, setSharedIds] = useState<Set<string>>(new Set());
 
   const { data: conversations = [] } = useQuery({
     queryKey: queryKeys.vault.shareConversations(),
-    queryFn: fetchShareableConversations,
-    enabled: open,
+    queryFn: () => fetchShareableConversations(userId),
+    enabled: open && !!userId,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -48,11 +51,7 @@ export function VaultShareModal({ open, item, onClose, loggedItemId, excludeGrou
 
   async function handleShareSelected() {
     const resolvedId = item?.logged_item_id ?? loggedItemId;
-    if (!resolvedId || selectedIds.size === 0) return;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!resolvedId || selectedIds.size === 0 || !user) return;
     setIsSharing(true);
     try {
       const toShare = Array.from(selectedIds);
@@ -79,7 +78,6 @@ export function VaultShareModal({ open, item, onClose, loggedItemId, excludeGrou
       );
 
       const dmIds = toShare.filter((id) => convoMap.get(id)?.type === "dm");
-      queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
       if (dmIds.length > 0) {
         queryClient.invalidateQueries({ queryKey: queryKeys.people.conversations() });
         for (const dmId of dmIds) {

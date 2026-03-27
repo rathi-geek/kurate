@@ -6,8 +6,9 @@ import { createClient } from "@/app/_libs/supabase/client";
 
 const supabase = createClient();
 
-export function useUnreadCounts(userId: string | null) {
+export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
   const [counts, setCounts] = useState<Map<string, number>>(new Map());
+  const [resubscribeKey, setResubscribeKey] = useState(0);
 
   const fetchCounts = useCallback(async () => {
     if (!userId) return;
@@ -18,29 +19,53 @@ export function useUnreadCounts(userId: string | null) {
       .eq("user_id", userId);
 
     const convoIds = (memberships ?? []).map((m) => m.convo_id);
-    if (!convoIds.length) return;
-
-    const { data: readReceiptIds } = await supabase
-      .from("message_read_receipts")
-      .select("message_id")
-      .eq("user_id", userId);
-
-    const readSet = new Set((readReceiptIds ?? []).map((r) => r.message_id));
-
-    const { data: messages } = await supabase
-      .from("messages")
-      .select("id, convo_id")
-      .in("convo_id", convoIds)
-      .neq("sender_id", userId);
 
     const map = new Map<string, number>();
-    for (const msg of messages ?? []) {
-      if (!readSet.has(msg.id)) {
-        map.set(msg.convo_id, (map.get(msg.convo_id) ?? 0) + 1);
+
+    if (convoIds.length) {
+      const { data: readReceiptIds } = await supabase
+        .from("message_read_receipts")
+        .select("message_id")
+        .eq("user_id", userId);
+
+      const readSet = new Set((readReceiptIds ?? []).map((r) => r.message_id));
+
+      const { data: messages } = await supabase
+        .from("messages")
+        .select("id, convo_id")
+        .in("convo_id", convoIds)
+        .neq("sender_id", userId);
+
+      for (const msg of messages ?? []) {
+        if (!readSet.has(msg.id)) {
+          map.set(msg.convo_id, (map.get(msg.convo_id) ?? 0) + 1);
+        }
       }
     }
+
+    // Group post unread counts — tracked via localStorage last-seen timestamps
+    if (groupIds && groupIds.size > 0) {
+      const groupIdArr = Array.from(groupIds);
+      for (const gid of groupIdArr) {
+        const lastSeen = localStorage.getItem(`group_last_seen:${gid}`);
+        if (!lastSeen) {
+          // No prior visit — treat as all-read until realtime fires
+          map.set(gid, 0);
+          continue;
+        }
+        let query = supabase
+          .from("group_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("convo_id", gid)
+          .neq("shared_by", userId)
+          .gt("shared_at", lastSeen);
+        const { count } = await query;
+        if (count) map.set(gid, count);
+      }
+    }
+
     setCounts(map);
-  }, [userId]);
+  }, [userId, groupIds]);
 
   useEffect(() => {
     if (!userId) return;
@@ -66,11 +91,46 @@ export function useUnreadCounts(userId: string | null) {
         if (err) console.error("[useUnreadCounts] subscription error:", err);
       });
 
+    console.log("[useUnreadCounts] subscribing", "unread-group-posts");
+    const groupChannel = supabase
+      .channel("unread-group-posts")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "group_posts" },
+        (payload) => {
+          const post = payload.new as { id: string; convo_id: string; shared_by: string };
+          if (post.shared_by === userId) return;
+          if (!groupIds?.has(post.convo_id)) return;
+          setCounts((prev) => {
+            const next = new Map(prev);
+            next.set(post.convo_id, (next.get(post.convo_id) ?? 0) + 1);
+            return next;
+          });
+        },
+      )
+      .subscribe((_status, err) => {
+        if (err) console.error("[useUnreadCounts] group subscription error:", err);
+      });
+
     return () => {
       console.log("[useUnreadCounts] cleanup", "unread-messages");
       void supabase.removeChannel(channel);
+      console.log("[useUnreadCounts] cleanup", "unread-group-posts");
+      void supabase.removeChannel(groupChannel);
     };
-  }, [userId, fetchCounts]);
+  }, [userId, fetchCounts, groupIds, resubscribeKey]);
+
+  // Re-fetch + re-subscribe when tab becomes visible again
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void fetchCounts();
+        setResubscribeKey((k) => k + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [fetchCounts]);
 
   const markRead = useCallback(
     async (convoId: string) => {
@@ -81,6 +141,12 @@ export function useUnreadCounts(userId: string | null) {
         next.delete(convoId);
         return next;
       });
+
+      // Group posts — track via localStorage, no DB write needed
+      if (groupIds?.has(convoId)) {
+        localStorage.setItem(`group_last_seen:${convoId}`, new Date().toISOString());
+        return;
+      }
 
       const { data: readReceiptIds } = await supabase
         .from("message_read_receipts")
@@ -106,7 +172,7 @@ export function useUnreadCounts(userId: string | null) {
         })),
       );
     },
-    [userId],
+    [userId, groupIds],
   );
 
   const totalUnread = Array.from(counts.values()).reduce((s, n) => s + n, 0);

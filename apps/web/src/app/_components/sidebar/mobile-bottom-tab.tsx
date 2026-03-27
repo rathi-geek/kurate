@@ -15,6 +15,7 @@ interface MobileBottomTabProps {
   userInitials: string;
   unreadCounts: Map<string, number>;
   notifUnreadCount: number;
+  groupIds?: Set<string>;
 }
 
 export function MobileBottomTab({
@@ -22,6 +23,7 @@ export function MobileBottomTab({
   userInitials,
   unreadCounts,
   notifUnreadCount,
+  groupIds,
 }: MobileBottomTabProps) {
   const pathname = usePathname();
 
@@ -37,6 +39,9 @@ export function MobileBottomTab({
     "flex flex-1 flex-col items-center justify-center py-2 transition-colors active:bg-ink/4";
 
   const hasDMUnread = Array.from(unreadCounts.values()).some((c) => c > 0);
+  const hasGroupUnread = groupIds
+    ? Array.from(groupIds).some((id) => (unreadCounts.get(id) ?? 0) > 0)
+    : false;
   const profileActive = isActive("/profile");
 
   return (
@@ -72,7 +77,12 @@ export function MobileBottomTab({
 
       {/* 4. Groups */}
       <Link href="/groups" className={tabClass}>
-        <LuUsers size={18} color={isActive("/groups") ? iconActive : iconInactive} />
+        <div className="relative">
+          <LuUsers size={18} color={isActive("/groups") ? iconActive : iconInactive} />
+          {hasGroupUnread && (
+            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
+          )}
+        </div>
       </Link>
 
       {/* 5. Profile — avatar or initials */}
