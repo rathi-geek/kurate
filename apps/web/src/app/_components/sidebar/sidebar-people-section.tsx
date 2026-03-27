@@ -5,9 +5,12 @@ import { useState } from "react";
 import { useTranslations } from "@/i18n/use-translations";
 import { LuChevronDown } from "react-icons/lu";
 import { usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { ROUTES } from "@kurate/utils";
+import { queryKeys } from "@kurate/query";
 import type { DMConversation } from "@kurate/types";
+import { fetchMessages } from "@/app/_libs/hooks/useMessages";
 import { PlusIcon } from "@/components/icons";
 import { FindUserSheet } from "@/app/_components/people/find-user-sheet";
 import Link from "next/link";
@@ -34,6 +37,7 @@ export function SidebarPeopleSection({
 }: SidebarPeopleSectionProps) {
   const t = useTranslations("sidebar");
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const [newMessageOpen, setNewMessageOpen] = useState(false);
   const [sectionOpen, setSectionOpen] = useState(true);
 
@@ -86,6 +90,15 @@ export function SidebarPeopleSection({
                 href={ROUTES.APP.PERSON(convo.id)}
                 title={displayName}
                 onClick={handleClick}
+                onMouseEnter={() => {
+                  void queryClient.prefetchInfiniteQuery({
+                    queryKey: queryKeys.people.messages(convo.id),
+                    queryFn: ({ pageParam }) =>
+                      fetchMessages(convo.id, pageParam as string | undefined),
+                    initialPageParam: undefined,
+                    staleTime: 1000 * 60,
+                  });
+                }}
                 className="hover:bg-ink/4 flex w-full cursor-pointer items-center justify-center rounded-md py-1.5 transition-colors">
                 <div className="relative">
                   <div className="bg-ink text-cream flex h-[26px] w-[26px] items-center justify-center rounded-full font-sans text-xs font-bold">
@@ -103,6 +116,15 @@ export function SidebarPeopleSection({
                 key={convo.id}
                 href={ROUTES.APP.PERSON(convo.id)}
                 onClick={handleClick}
+                onMouseEnter={() => {
+                  void queryClient.prefetchInfiniteQuery({
+                    queryKey: queryKeys.people.messages(convo.id),
+                    queryFn: ({ pageParam }) =>
+                      fetchMessages(convo.id, pageParam as string | undefined),
+                    initialPageParam: undefined,
+                    staleTime: 1000 * 60,
+                  });
+                }}
                 className={cn(
                   "rounded-badge flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left transition-colors",
                   isActive ? "bg-ink/8" : "hover:bg-ink/4",

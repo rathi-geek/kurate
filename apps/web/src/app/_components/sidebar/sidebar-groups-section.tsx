@@ -7,12 +7,13 @@ import { cn } from "@/app/_libs/utils/cn";
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { ROUTES } from "@kurate/utils";
 import { queryKeys } from "@kurate/query";
 import { type GroupRow, fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
+import { fetchGroupFeedPage } from "@/app/_libs/hooks/useGroupFeed";
 import { BrandStar } from "@/components/brand";
 import { CreateGroupDialog } from "@/app/_components/groups/create-group-dialog";
 import { PlusIcon } from "@/components/icons";
@@ -25,6 +26,7 @@ export interface SidebarGroupsSectionProps {
   onItemClick?: () => void;
   unreadCounts?: Map<string, number>;
   markRead?: (convoId: string) => Promise<void>;
+  currentUserId?: string | null;
 }
 
 function GroupListContent({
@@ -33,14 +35,17 @@ function GroupListContent({
   onItemClick,
   unreadCounts,
   markRead,
+  currentUserId,
 }: {
   groups: GroupRow[];
   collapsed: boolean;
   onItemClick?: () => void;
   unreadCounts?: Map<string, number>;
   markRead?: (convoId: string) => Promise<void>;
+  currentUserId?: string | null;
 }) {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   if (collapsed) {
     return (
       <>
@@ -56,6 +61,15 @@ function GroupListContent({
               href={ROUTES.APP.GROUP(g.id)}
               title={g.name}
               onClick={handleClick}
+              onMouseEnter={() => {
+                void queryClient.prefetchInfiniteQuery({
+                  queryKey: queryKeys.groups.feed(g.id),
+                  queryFn: ({ pageParam }) =>
+                    fetchGroupFeedPage(g.id, currentUserId ?? "", pageParam as string | null),
+                  initialPageParam: null,
+                  staleTime: 1000 * 30,
+                });
+              }}
               className="hover:bg-ink/4 flex w-full cursor-pointer items-center justify-center rounded-md py-1.5 transition-colors">
               <div className="relative">
                 <div className="bg-primary/10 relative flex h-7 w-7 items-center justify-center overflow-hidden rounded-md">
@@ -96,6 +110,15 @@ function GroupListContent({
             <Link
               href={ROUTES.APP.GROUP(g.id)}
               onClick={handleClick}
+              onMouseEnter={() => {
+                void queryClient.prefetchInfiniteQuery({
+                  queryKey: queryKeys.groups.feed(g.id),
+                  queryFn: ({ pageParam }) =>
+                    fetchGroupFeedPage(g.id, currentUserId ?? "", pageParam as string | null),
+                  initialPageParam: null,
+                  staleTime: 1000 * 30,
+                });
+              }}
               className="flex min-w-0 flex-1 items-center gap-2.5">
               <div className="bg-primary/10 relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md">
                 {g.avatarUrl ? (
@@ -121,6 +144,7 @@ export function SidebarGroupsSection({
   onItemClick,
   unreadCounts,
   markRead,
+  currentUserId,
 }: SidebarGroupsSectionProps) {
   const t = useTranslations("sidebar");
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
@@ -169,6 +193,7 @@ export function SidebarGroupsSection({
             onItemClick={onItemClick}
             unreadCounts={unreadCounts}
             markRead={markRead}
+            currentUserId={currentUserId}
           />
         </div>}
       </div>

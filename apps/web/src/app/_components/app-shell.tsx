@@ -13,6 +13,8 @@ import { useUnreadCounts } from "@/app/_libs/hooks/useUnreadCounts";
 import { useNotifications } from "@/app/_libs/hooks/useNotifications";
 import { useDMConversations } from "@/app/_libs/hooks/useDMConversations";
 import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
+import { fetchGroupFeedPage } from "@/app/_libs/hooks/useGroupFeed";
+import { fetchMessages } from "@/app/_libs/hooks/useMessages";
 import {
   SidebarOverridesProvider,
   type SidebarOverrides,
@@ -50,6 +52,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // useUnreadCounts must come after groupIds so group badge tracking works
   const { counts: unreadCounts, markRead } = useUnreadCounts(userId, groupIds);
+
+  // Eager prefetch top 3 group feeds on sidebar mount
+  useEffect(() => {
+    if (!userId || userGroups.length === 0) return;
+    for (const g of userGroups.slice(0, 3)) {
+      void queryClient.prefetchInfiniteQuery({
+        queryKey: queryKeys.groups.feed(g.id),
+        queryFn: ({ pageParam }) =>
+          fetchGroupFeedPage(g.id, userId, pageParam as string | null),
+        initialPageParam: null,
+        staleTime: 1000 * 30,
+      });
+    }
+  }, [userId, userGroups, queryClient]);
+
+  // Eager prefetch top 3 DM threads on sidebar mount
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    for (const c of conversations.slice(0, 3)) {
+      void queryClient.prefetchInfiniteQuery({
+        queryKey: queryKeys.people.messages(c.id),
+        queryFn: ({ pageParam }) =>
+          fetchMessages(c.id, pageParam as string | undefined),
+        initialPageParam: undefined,
+        staleTime: 1000 * 60,
+      });
+    }
+  }, [conversations, queryClient]);
 
   // Realtime: refresh group list when added to a new group
   useEffect(() => {

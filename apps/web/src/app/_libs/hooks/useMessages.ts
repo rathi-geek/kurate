@@ -73,7 +73,7 @@ function mapRow(row: {
   };
 }
 
-async function fetchMessages(convoId: string, before?: string): Promise<DMMessage[]> {
+export async function fetchMessages(convoId: string, before?: string): Promise<DMMessage[]> {
   let query = supabase
     .from("messages")
     .select(

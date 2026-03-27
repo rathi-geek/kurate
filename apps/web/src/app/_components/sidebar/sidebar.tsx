@@ -209,6 +209,7 @@ export function AppSidebar({
           />
           <SidebarGroupsSection
             collapsed={collapsed}
+            currentUserId={userId}
             unreadCounts={unreadCounts}
             markRead={markRead}
           />

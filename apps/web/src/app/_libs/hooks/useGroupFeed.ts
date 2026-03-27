@@ -31,7 +31,7 @@ function toProfile(p: ProfileRow | null) {
   };
 }
 
-async function fetchGroupFeedPage(
+export async function fetchGroupFeedPage(
   groupId: string,
   currentUserId: string,
   cursor: string | null,
