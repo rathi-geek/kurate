@@ -25,7 +25,7 @@ export function DiscoveryVaultSection({ userId }: DiscoveryVaultSectionProps) {
         <span className="bg-border h-px flex-1" />
       </div>
       <motion.div
-        className="scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4"
+        className="-mx-4 flex gap-3 overflow-x-auto px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}

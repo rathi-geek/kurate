@@ -43,7 +43,7 @@
     "chat_loading": "Loading messages…",
     "chat_loading_older": "Loading older messages…",
     "chat_beginning": "Beginning of conversation",
-    "chat_empty": "Say hello to {name}!",
+    "chat_empty": "Say hello to {{name}}!",
     "composer_cancel_reply_aria": "Cancel reply",
     "composer_editing": "Editing",
     "composer_fetching_preview": "Fetching link preview…",
@@ -86,7 +86,7 @@
     "remove": "Remove",
     "loading": "Loading...",
     "load_more": "Load more",
-    "items_count": "{count} items",
+    "items_count": "{{count}} items",
     "time_today": "Today",
     "time_week": "This Week",
     "time_month": "Month",
@@ -193,7 +193,7 @@
   },
   "reader": {
     "open_original": "Open original article",
-    "reading_time": "{minutes} min read",
+    "reading_time": "{{minutes}} min read",
     "loading": "Loading article...",
     "close_video_aria": "Close video",
     "close_podcast_aria": "Close podcast",
@@ -226,7 +226,7 @@
       "magic_link_email_placeholder": "you@example.com",
       "magic_link_submit": "Send sign-in link",
       "magic_link_sent_title": "Check your inbox",
-      "magic_link_sent_message": "We sent a sign-in link to {email}.",
+      "magic_link_sent_message": "We sent a sign-in link to {{email}}.",
       "magic_link_use_different_email": "Use a different email",
       "magic_link_expired": "Your sign-in link has expired. Enter your email below to get a new one.",
       "magic_link_invalid": "This sign-in link is no longer valid. Enter your email below to request a new one."
@@ -255,7 +255,7 @@
       "log_in": "Log in",
       "error_general": "Something went wrong. Please try again.",
       "email_sent_title": "Check your inbox",
-      "email_sent_message": "We sent a confirmation link to {email}.",
+      "email_sent_message": "We sent a confirmation link to {{email}}.",
       "or_divider": "or",
       "google": "Continue with Google"
     }
@@ -438,7 +438,7 @@
     "my_groups_title": "My Groups",
     "my_groups_empty": "You're not in any groups yet.",
     "invite_as_role": "Add as",
-    "invite_by_email": "Invite {email} by email",
+    "invite_by_email": "Invite {{email}} by email",
     "invite_sent": "Invite sent!",
     "create_title": "Create a group",
     "create_name_label": "Name",
@@ -450,7 +450,7 @@
     "error_generic": "Something went wrong",
     "danger_zone_label": "Danger zone",
     "leave_group": "Leave group",
-    "leave_group_subtitle_transfer": "Ownership will be transferred to {successor}.",
+    "leave_group_subtitle_transfer": "Ownership will be transferred to {{successor}}.",
     "leave_group_subtitle_last": "You're the last member — the group will be permanently deleted.",
     "leave_group_subtitle_member": "You won't be able to rejoin unless invited.",
     "leave_group_hint_owner": "Ownership will be transferred before you leave.",
@@ -469,7 +469,7 @@
     "from_vault": "From Your Vault",
     "today": "Today",
     "new_since_visit": "New Since Last Visit",
-    "days_ago": "{count} days ago"
+    "days_ago": "{{count}} days ago"
   },
   "formats": {
     "date_short": "{date, date, short}",

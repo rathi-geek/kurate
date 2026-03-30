@@ -118,9 +118,6 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
     activeBucket,
   });
 
-  // eslint-disable-next-line no-console
-  console.log('[VaultTabView] render', { vaultTab, previewPhase, searchQuery });
-
   useEffect(() => {
     if (scrollDir) onScrollDirectionChange?.(scrollDir);
   }, [scrollDir, onScrollDirectionChange]);

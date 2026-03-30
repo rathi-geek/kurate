@@ -60,9 +60,6 @@ export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
   searchQuery,
   extraMessages = [],
 }: ThoughtsBucketChatProps) {
-  // eslint-disable-next-line no-console
-  console.log("[ThoughtsBucketChat] render", { bucket, searchQuery });
-
   const meta = BUCKET_META[bucket];
 
   const allMessages = extraMessages.filter((m) => m.bucket === bucket);

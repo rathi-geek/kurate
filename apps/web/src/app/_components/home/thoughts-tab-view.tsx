@@ -169,9 +169,6 @@ interface ThoughtsTabViewProps {
 }
 
 export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange }: ThoughtsTabViewProps) {
-  // eslint-disable-next-line no-console
-  console.log('[ThoughtsTabView] render', { searchQuery, activeBucket, viewAll });
-
   const isSearching = searchQuery.trim().length > 0;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
