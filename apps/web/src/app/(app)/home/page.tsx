@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -37,6 +37,7 @@ function HomePageInner() {
   const tabFromUrl = searchParams.get("tab");
   const initialTab = tabFromUrl === HomeTab.DISCOVERING ? HomeTab.DISCOVERING : HomeTab.VAULT;
   const [activeTab, setActiveTab] = useState<HomeTab>(initialTab);
+  const lastTrackedTabRef = useRef<HomeTab | null>(null);
 
   const [isScrolledDown, setIsScrolledDown] = useState(false);
 
@@ -50,11 +51,16 @@ function HomePageInner() {
   useSidebarOverrides(sidebarOverrides);
 
   function handleTabChange(tab: HomeTab) {
-    track("tab_switched", { from: activeTab, to: tab });
     setActiveTab(tab);
     setIsScrolledDown(false);
     router.replace(`?tab=${tab}`);
   }
+
+  useEffect(() => {
+    if (lastTrackedTabRef.current === activeTab) return;
+    lastTrackedTabRef.current = activeTab;
+    track(activeTab === HomeTab.VAULT ? "vault_view" : "discover_view");
+  }, [activeTab]);
 
   function handleScrollDirectionChange(dir: "up" | "down") {
     setIsScrolledDown(dir === "down");

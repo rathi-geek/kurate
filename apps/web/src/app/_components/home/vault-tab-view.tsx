@@ -149,6 +149,10 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   }, [mediaPreview]);
 
   const handleTabChange = (tab: VaultTab) => {
+    const from = vaultTab;
+    if (from !== tab) {
+      track("links_thoughts_switched", { from, to: tab, source: "manual" });
+    }
     setVaultTab(tab);
     setSearchQuery("");
     setSearchOpen(false);
@@ -157,6 +161,19 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
       setMediaPreview(null);
     }
   };
+
+  const handleActiveBucketChange = (b: ThoughtBucket | null) => {
+    if (b && b !== activeBucket) {
+      track("thoughts_bucket_view", { bucket: b });
+    }
+    setActiveBucket(b);
+  };
+
+  useEffect(() => {
+    if (vaultTab === VaultTab.THOUGHTS && thoughtsViewAll) {
+      track("thoughts_all_chats_view", { bucket: "all" });
+    }
+  }, [vaultTab, thoughtsViewAll]);
 
   const handleUrlChange = useCallback(
     (url: string | null) => {
@@ -256,7 +273,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
             userId={userId}
             searchQuery={searchQuery}
             activeBucket={activeBucket}
-            onActiveBucketChange={setActiveBucket}
+              onActiveBucketChange={handleActiveBucketChange}
             viewAll={thoughtsViewAll}
             onViewAllChange={setThoughtsViewAll}
           />
@@ -372,6 +389,13 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
                     createdAt: new Date().toISOString(),
                     status: "sending",
                   });
+                  if (vaultTab !== VaultTab.THOUGHTS) {
+                    track("links_thoughts_switched", {
+                      from: vaultTab,
+                      to: VaultTab.THOUGHTS,
+                      source: "auto_thought_added",
+                    });
+                  }
                   setVaultTab(VaultTab.THOUGHTS);
                   void onSend(noteText, undefined, null, null, tempId).catch(async () => {
                     await db.pending_thoughts.update(tempId, { status: "failed" });

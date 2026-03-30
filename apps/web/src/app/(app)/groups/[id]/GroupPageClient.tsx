@@ -8,6 +8,7 @@ import type { GroupRole } from "@kurate/types";
 import { FeedHeader } from "@/app/_components/groups/feed-header";
 import { FeedTabView } from "@/app/_components/groups/feed-tab-view";
 import { LibraryView } from "@/app/_components/groups/library-view";
+import { track } from "@/app/_libs/utils/analytics";
 import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
 
 import { InfoPageClient } from "./info/InfoPageClient";
@@ -33,6 +34,11 @@ export function GroupPageClient({ group, currentUserId, userRole, groupId }: Gro
     void sidebarCtx?.markRead?.(group.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group.id]);
+
+  useEffect(() => {
+    if (view === GroupView.Info) return;
+    track(view === GroupView.Feed ? "group_feed_view" : "group_library_view", { group_id: group.id, view });
+  }, [view, group.id]);
 
   return (
     <div className="mx-auto flex h-full max-w-md flex-col overflow-hidden">
