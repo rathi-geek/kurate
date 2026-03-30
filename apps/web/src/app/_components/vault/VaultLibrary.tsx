@@ -2,15 +2,15 @@
 
 import { memo, useEffect, useMemo } from "react";
 
+import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
 import { VaultEmptyState } from "@/app/_components/vault/VaultEmptyState";
 import { VaultErrorState } from "@/app/_components/vault/VaultErrorState";
 import { VaultGrid } from "@/app/_components/vault/VaultGrid";
-import { useVault } from "@/app/_libs/hooks/useVault";
 import { db } from "@/app/_libs/db";
-import type { VaultFilters as VaultFiltersType } from "@kurate/types";
+import { useVault } from "@/app/_libs/hooks/useVault";
 
 export const DEFAULT_FILTERS: VaultFiltersType = {
   time: "all",
@@ -25,10 +25,10 @@ export interface VaultLibraryProps {
   onFiltersChange: (f: VaultFiltersType) => void;
 }
 
-export const VaultLibrary = memo(function VaultLibrary({ onNavigateToDiscover, filters }: VaultLibraryProps) {
-  // eslint-disable-next-line no-console
-  console.log('[VaultLibrary] render', filters);
-
+export const VaultLibrary = memo(function VaultLibrary({
+  onNavigateToDiscover,
+  filters,
+}: VaultLibraryProps) {
   const {
     items,
     isLoading,

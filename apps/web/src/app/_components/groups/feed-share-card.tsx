@@ -99,6 +99,14 @@ export const FeedShareCard = memo(function FeedShareCard({
     return () => observer.disconnect();
   }, [showComments]);
 
+  // Keep seen-count up-to-date whenever the thread is open and feed count changes
+  // (covers current user sends + others' realtime messages)
+  useEffect(() => {
+    if (!showComments) return;
+    markPostSeen(drop.id, drop.commentCount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showComments, drop.commentCount]);
+
   return (
     <div ref={cardRef}>
       {/* Header */}
@@ -359,8 +367,12 @@ export const FeedShareCard = memo(function FeedShareCard({
                       : undefined)
                   }
                   onCommentAdded={() => {
+                    // Optimistic update: drop.commentCount is still N at this point
+                    // (feed hasn't refetched yet). Mark seen as N+1 so the DB is
+                    // correct even if the user closes the panel before the feed
+                    // refetch completes. The useEffect will confirm with the
+                    // server count once drop.commentCount updates.
                     markPostSeen(drop.id, drop.commentCount + 1);
-                    openedLastSeenAtRef.current = new Date().toISOString();
                   }}
                 />
               </div>
