@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "@/i18n/use-translations";
 import Image from "next/image";
+import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
 import { useComments } from "@/app/_libs/hooks/useComments";
 import { ReplyInput } from "@/app/_components/groups/reply-input";
@@ -14,6 +15,9 @@ interface CommentThreadProps {
   groupId?: string;
   currentUserId: string;
   userRole: GroupRole;
+  lastSeenAt?: string | null;
+  onCommentAdded?: () => void;
+  currentUserProfile?: { id: string; display_name: string | null; avatar_url: string | null; handle: string };
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -55,7 +59,7 @@ function CommentItem({
   /* Actions shown on hover, outside the bubble */
   const actions = (
     <div className="flex items-center gap-1 opacity-0 group-hover/comment:opacity-100 transition-opacity self-center shrink-0">
-      {!isReply && onReply && (
+      {onReply && (
         <button
           type="button"
           onClick={() => onReply(
@@ -164,10 +168,14 @@ export function CommentThread({
   groupId,
   currentUserId,
   userRole: _userRole,
+  lastSeenAt,
+  onCommentAdded,
+  currentUserProfile,
 }: CommentThreadProps) {
   const t = useTranslations("groups");
   const {
     comments,
+    isLoading,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -175,62 +183,120 @@ export function CommentThread({
     editComment,
     deleteComment,
     isAdding,
-  } = useComments(groupShareId, groupId);
+  } = useComments(groupShareId, groupId, currentUserProfile);
   const [replyingTo, setReplyingTo] = useState<{ id: string; authorName: string; text: string } | null>(null);
   const [editingComment, setEditingComment] = useState<{ id: string; text: string } | null>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const threadBottomRef = useRef<HTMLDivElement>(null);
 
+  const firstUnreadIndex = lastSeenAt
+    ? comments.findIndex((c) => c.created_at > lastSeenAt && c.user_id !== currentUserId)
+    : -1;
+  const unreadCount = firstUnreadIndex >= 0
+    ? comments.slice(firstUnreadIndex).filter(c => c.user_id !== currentUserId).length
+    : 0;
+
+  // Scroll to unread divider (or last item) once after data loads
   useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || !hasNextPage || isFetchingNextPage) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry?.isIntersecting) fetchNextPage(); },
-      { rootMargin: "60px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    if (isLoading || comments.length === 0) return;
+    if (firstUnreadIndex >= 0) {
+      virtuosoRef.current?.scrollToIndex({ index: firstUnreadIndex, align: "start", behavior: "smooth" });
+    } else {
+      virtuosoRef.current?.scrollToIndex({ index: comments.length - 1, align: "end", behavior: "smooth" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
+  // Scroll the main feed so the input is visible when the thread first opens.
+  // Delay by 220ms to fire after the AnimatePresence height animation (200ms) finishes.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const el = threadBottomRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // Only scroll if the bottom of the element is below the 80vh mark
+      // (scrollMarginBottom: 20vh means the target position is 80vh)
+      if (rect.bottom > window.innerHeight * 0.8) {
+        el.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    }, 220);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Re-scroll outer page after sending a message so the input stays visible.
+  const wasAddingRef = useRef(false);
+  useEffect(() => {
+    if (wasAddingRef.current && !isAdding) {
+      virtuosoRef.current?.scrollToIndex({ index: comments.length - 1, align: "end", behavior: "smooth" });
+    }
+    wasAddingRef.current = isAdding;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdding]);
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="no-scrollbar max-h-[300px] overflow-y-auto flex flex-col">
-        {comments.map((comment, index) => {
-          const prev = comments[index - 1];
-          const isContinuation = !!prev && prev.user_id === comment.user_id;
-          return (
-          <div key={comment.id} className={isContinuation ? "mt-1" : index === 0 ? "" : "mt-3"}>
-            <CommentItem
-              comment={comment}
-              currentUserId={currentUserId}
-              isContinuation={isContinuation}
-              onEditStart={(id, text) => setEditingComment({ id, text })}
-              onDelete={(id) => deleteComment(id, currentUserId)}
-              onReply={(id, authorName, text) => setReplyingTo({ id, authorName, text })}
-            />
-
-            {/* Replies */}
-            {"replies" in comment &&
-              comment.replies.map((reply) => (
+      {isLoading ? (
+        <div className="flex justify-center py-6">
+          <div className="size-5 animate-spin rounded-full border-2 border-border border-t-primary" />
+        </div>
+      ) : (
+        <Virtuoso
+          ref={virtuosoRef}
+          className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ height: Math.min(comments.length * 56 + 16, 300) }}
+          data={comments}
+          initialTopMostItemIndex={comments.length > 0 ? comments.length - 1 : 0}
+          alignToBottom
+          startReached={() => {
+            if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+          }}
+          itemContent={(index, comment) => {
+            const prev = comments[index - 1];
+            const isContinuation = !!prev && prev.user_id === comment.user_id;
+            const showDivider = index === firstUnreadIndex && unreadCount > 0;
+            return (
+              <div className={isContinuation && !showDivider ? "mt-1 px-3" : index === 0 && !showDivider ? "px-3" : "mt-3 px-3"}>
+                {showDivider && (
+                  <div className="flex items-center gap-2 py-2 my-1">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+                      {unreadCount} unread comment{unreadCount !== 1 ? "s" : ""}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
                 <CommentItem
-                  key={reply.id}
-                  comment={reply}
+                  comment={comment}
                   currentUserId={currentUserId}
+                  isContinuation={isContinuation}
                   onEditStart={(id, text) => setEditingComment({ id, text })}
                   onDelete={(id) => deleteComment(id, currentUserId)}
-                  isReply
-                  quotedAuthor={comment.author.display_name ?? comment.author.handle ?? t("anonymous")}
-                  quotedText={comment.comment_text}
+                  onReply={(id, authorName, text) => setReplyingTo({ id, authorName, text })}
                 />
-              ))}
+                {/* Replies */}
+                {"replies" in comment &&
+                  comment.replies.map((reply) => (
+                    <CommentItem
+                      key={reply.id}
+                      comment={reply}
+                      currentUserId={currentUserId}
+                      onEditStart={(id, text) => setEditingComment({ id, text })}
+                      onDelete={(id) => deleteComment(id, currentUserId)}
+                      onReply={(_id, authorName, text) =>
+                        setReplyingTo({ id: comment.id, authorName, text })
+                      }
+                      isReply
+                      quotedAuthor={comment.author.display_name ?? comment.author.handle ?? t("anonymous")}
+                      quotedText={comment.comment_text}
+                    />
+                  ))}
+              </div>
+            );
+          }}
+        />
+      )}
 
-          </div>
-          );
-        })}
-        {/* Infinite scroll sentinel */}
-        <div ref={sentinelRef} className="h-1 w-full" aria-hidden />
-      </div>
-
-      <div className="flex flex-col gap-0">
+      <div ref={threadBottomRef} className="flex flex-col gap-0" style={{ scrollMarginBottom: "20vh" }}>
         {/* WhatsApp-style reply/edit context banner */}
         {(replyingTo || editingComment) && (
           <div className="relative flex items-stretch gap-2 rounded-t-2xl border border-b-0 border-border bg-muted/60 px-4 py-3">
@@ -266,6 +332,7 @@ export function CommentThread({
               setEditingComment(null);
             } else {
               addComment(text, currentUserId, replyingTo?.id ?? null);
+              onCommentAdded?.();
               setReplyingTo(null);
             }
           }}

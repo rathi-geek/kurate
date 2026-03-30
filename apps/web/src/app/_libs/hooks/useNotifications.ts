@@ -45,7 +45,9 @@ async function fetchNotifications(userId: string): Promise<Notification[]> {
       actors:notification_actors(
         profile:actor_id(id, first_name, last_name, handle,
           avatar:avatar_id(file_path, bucket_name))
-      )
+      ),
+      actor_profile:profiles!notifications_actor_id_fkey(id, first_name, last_name, handle,
+        avatar:avatar_id(file_path, bucket_name))
     `)
     .eq("recipient_id", userId)
     .order("created_at", { ascending: false })
@@ -72,6 +74,13 @@ async function fetchNotifications(userId: string): Promise<Notification[]> {
           avatar: { file_path: string; bucket_name: string } | null;
         } | null;
       }> | null;
+      actor_profile: {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        handle: string | null;
+        avatar: { file_path: string; bucket_name: string } | null;
+      } | null;
     };
 
     const actors: NotificationActor[] = (r.actors ?? [])
@@ -87,6 +96,18 @@ async function fetchNotifications(userId: string): Promise<Notification[]> {
         };
       })
       .filter(Boolean) as NotificationActor[];
+
+    // Fallback: use actor_profile direct join if junction table returned nothing
+    if (actors.length === 0 && r.actor_profile) {
+      const p = r.actor_profile;
+      actors.push({
+        id: p.id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        handle: p.handle,
+        avatar_url: p.avatar ? mediaToUrl(p.avatar) : null,
+      });
+    }
 
     return {
       id: r.id,

@@ -14,6 +14,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      bucket_last_read: {
+        Row: {
+          bucket: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          bucket: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bucket_last_read_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companions: {
         Row: {
           avatar_id: string
@@ -186,6 +212,42 @@ export type Database = {
           },
           {
             foreignKeyName: "group_post_comments_read_receipts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_post_last_seen: {
+        Row: {
+          comment_count: number
+          group_post_id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_count?: number
+          group_post_id: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_count?: number
+          group_post_id?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_post_last_seen_group_post_id_fkey"
+            columns: ["group_post_id"]
+            isOneToOne: false
+            referencedRelation: "group_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_post_last_seen_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"

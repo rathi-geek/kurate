@@ -1,13 +1,14 @@
 interface MessageCircleIconProps {
   className?: string;
+  filled?: boolean;
 }
 
-export function MessageCircleIcon({ className }: MessageCircleIconProps) {
+export function MessageCircleIcon({ className, filled }: MessageCircleIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
-      fill="none"
+      fill={filled ? "currentColor" : "none"}
       stroke="currentColor"
       strokeWidth={1.5}
       strokeLinecap="round"

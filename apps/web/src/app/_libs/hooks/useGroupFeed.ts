@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@kurate/query";
@@ -50,7 +50,7 @@ export async function fetchGroupFeedPage(
       item:logged_items!group_posts_logged_item_id_fkey(url, title, preview_image_url, content_type, raw_metadata, description),
       likes:group_posts_likes(id, user_id, liker:profiles!group_posts_likes_user_id_fkey(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)),
       must_reads:group_posts_must_reads(id, user_id, reader:profiles!group_posts_must_reads_user_id_fkey(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)),
-      comments:group_posts_comments(id, comment_text, created_at, user_id, author:profiles!group_posts_comments_user_id_fkey(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle))
+      comment_count:group_posts_comments(count)
       `,
     )
     .eq("convo_id", groupId)
@@ -122,26 +122,43 @@ export async function fetchGroupFeedPage(
           }
         : null,
       engagement,
-      commentCount: Array.isArray(row.comments) ? row.comments.length : 0,
-      latestComment: (() => {
-        const allComments = Array.isArray(row.comments) ? row.comments as Array<{
-          id: string; comment_text: string; created_at: string; user_id: string;
-          author: ProfileRow | ProfileRow[] | null;
-        }> : [];
-        if (!allComments.length) return null;
-        const latest = [...allComments].sort((a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )[0]!;
-        const rawAuthor = Array.isArray(latest.author) ? latest.author[0] : latest.author;
-        return {
-          text: latest.comment_text,
-          authorName: rawAuthor
-            ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") || rawAuthor.handle || null
-            : null,
-        };
-      })(),
+      commentCount: (row.comment_count as { count: number }[])[0]?.count ?? 0,
+      latestComment: null,
     } satisfies GroupDrop;
   });
+}
+
+export async function fetchFeedCommentPreviews(
+  postIds: string[],
+): Promise<Map<string, GroupDrop["latestComment"]>> {
+  if (!postIds.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("group_posts_comments")
+    .select(
+      "group_post_id, comment_text, created_at, author:profiles!group_posts_comments_user_id_fkey(first_name, last_name, handle)",
+    )
+    .in("group_post_id", postIds)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error || !data) return new Map();
+
+  const map = new Map<string, GroupDrop["latestComment"]>();
+  for (const row of data) {
+    if (!map.has(row.group_post_id)) {
+      const rawAuthor = Array.isArray(row.author) ? row.author[0] : row.author;
+      map.set(row.group_post_id, {
+        text: row.comment_text,
+        authorName: rawAuthor
+          ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") ||
+            rawAuthor.handle ||
+            null
+          : null,
+      });
+    }
+  }
+  return map;
 }
 
 export function useGroupFeed(groupId: string, currentUserId: string) {
@@ -172,11 +189,30 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
     enabled: !!groupId && !!currentUserId,
   });
 
+  const rawDrops = useMemo(() => query.data?.pages.flat() ?? [], [query.data]);
+  const postIds = useMemo(() => rawDrops.map((d) => d.id), [rawDrops]);
+  const postIdsRef = useRef(postIds);
+  postIdsRef.current = postIds;
+
+  const previewQuery = useQuery({
+    queryKey: ["feed-comment-previews", groupId, postIds],
+    queryFn: () => fetchFeedCommentPreviews(postIds),
+    enabled: postIds.length > 0,
+    staleTime: 1000 * 30,
+  });
+
+  const drops = useMemo(() => {
+    if (!previewQuery.data) return rawDrops;
+    return rawDrops.map((drop) => ({
+      ...drop,
+      latestComment: previewQuery.data.get(drop.id) ?? null,
+    }));
+  }, [rawDrops, previewQuery.data]);
+
   // Realtime subscription: invalidate on new group post
   useEffect(() => {
     if (!groupId) return;
 
-    console.log("[useGroupFeed] subscribing", `group-feed:${groupId}`);
     const channel = supabase
       .channel(`group-feed:${groupId}`)
       .on(
@@ -188,18 +224,51 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
           void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
         },
       )
+      // Likes
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_posts_likes" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { group_post_id?: string };
+          if (!row?.group_post_id) return;
+          if (new Set(postIdsRef.current).has(row.group_post_id))
+            void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+        },
+      )
+      // Must-reads
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_posts_must_reads" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { group_post_id?: string };
+          if (!row?.group_post_id) return;
+          if (new Set(postIdsRef.current).has(row.group_post_id))
+            void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+        },
+      )
+      // Comments (covers thread-closed case — nobody else is watching)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_posts_comments" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { group_post_id?: string };
+          if (!row?.group_post_id) return;
+          if (!new Set(postIdsRef.current).has(row.group_post_id)) return;
+          void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+          void queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
+        },
+      )
       .subscribe((_status, err) => {
         if (err) console.error("[useGroupFeed] subscription error:", err);
       });
 
     return () => {
-      console.log("[useGroupFeed] cleanup", `group-feed:${groupId}`);
       void supabase.removeChannel(channel);
     };
   }, [groupId, queryClient, resubscribeKey]);
 
   return {
-    drops: query.data?.pages.flat() ?? [],
+    drops,
     fetchNextPage: query.fetchNextPage,
     hasNextPage: query.hasNextPage ?? false,
     isLoading: query.isLoading,

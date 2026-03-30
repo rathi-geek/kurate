@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { useGroupFeed } from "@/app/_libs/hooks/useGroupFeed";
+import { fetchComments } from "@/app/_libs/hooks/useComments";
+import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
 import { createClient } from "@/app/_libs/supabase/client";
 import { DropComposer } from "@/app/_components/groups/drop-composer";
 import { FeedShareCard } from "@/app/_components/groups/feed-share-card";
+import { queryKeys } from "@kurate/query";
 import type { GroupRole } from "@kurate/types";
 
 const supabase = createClient();
@@ -23,8 +27,14 @@ export function FeedTabView({
   userRole,
 }: FeedTabViewProps) {
   const t = useTranslations("groups");
+  const queryClient = useQueryClient();
   const { drops, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage, refetch } =
     useGroupFeed(groupId, currentUserId);
+  const { members } = useGroupMembers(groupId, currentUserId);
+  const rawCurrentUserProfile = members.find((m) => m.user_id === currentUserId)?.profile;
+  const currentUserProfile = rawCurrentUserProfile
+    ? { ...rawCurrentUserProfile, handle: rawCurrentUserProfile.handle ?? "" }
+    : undefined;
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // IntersectionObserver for infinite scroll
@@ -41,6 +51,19 @@ export function FeedTabView({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Prefetch comments for top 10 drops so threads open instantly
+  useEffect(() => {
+    if (!drops.length) return;
+    for (const drop of drops.slice(0, 10)) {
+      void queryClient.prefetchInfiniteQuery({
+        queryKey: queryKeys.groups.comments(drop.id),
+        queryFn: ({ pageParam }) => fetchComments(drop.id, pageParam as string | null),
+        initialPageParam: null as string | null,
+        staleTime: 1000 * 30,
+      });
+    }
+  }, [drops, queryClient]);
 
   // Scroll to + highlight drop from URL hash (Library card click)
   useEffect(() => {
@@ -80,6 +103,7 @@ export function FeedTabView({
           currentUserId={currentUserId}
           groupId={groupId}
           userRole={userRole}
+          currentUserProfile={currentUserProfile}
           onDelete={handleDeleteDrop}
         />
 
@@ -103,6 +127,7 @@ interface FeedBodyProps {
   currentUserId: string;
   groupId: string;
   userRole: GroupRole;
+  currentUserProfile?: { id: string; display_name: string | null; avatar_url: string | null; handle: string };
   onDelete: (id: string) => void;
 }
 
@@ -112,6 +137,7 @@ function FeedBody({
   currentUserId,
   groupId,
   userRole,
+  currentUserProfile,
   onDelete,
 }: FeedBodyProps) {
   const t = useTranslations("groups");
@@ -143,6 +169,7 @@ function FeedBody({
           currentUserId={currentUserId}
           groupId={groupId}
           userRole={userRole}
+          currentUserProfile={currentUserProfile}
           onDelete={onDelete}
         />
       ))}

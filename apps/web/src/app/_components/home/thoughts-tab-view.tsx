@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { AnimatePresence } from "framer-motion";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -9,30 +9,14 @@ import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
 import { ThoughtsBucketChat } from "@/app/_components/home/thoughts-bucket-chat";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BUCKET_META, type ThoughtBucket } from "@kurate/utils";
+import { BUCKET_BADGE_COLOR, BUCKET_META, type ThoughtBucket } from "@kurate/utils";
+import { useBucketLastRead } from "@/app/_libs/hooks/useBucketLastRead";
 import type { ThoughtMessage } from "@kurate/types";
 import { queryKeys } from "@kurate/query";
 import { db, type PendingThought } from "@/app/_libs/db";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
-// Dark accent for each bucket — used for unread badge backgrounds
-const BUCKET_BADGE_COLOR: Record<ThoughtBucket, string> = {
-  media:    "#BE185D", // pink-700
-  tasks:    "#065F46", // emerald-900
-  learning: "#1D4ED8", // blue-700
-  notes:    "#92400E", // amber-900
-};
-
-function getBucketLastSeen(b: ThoughtBucket): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(`bucket_last_seen:${b}`);
-}
-function markBucketSeen(b: ThoughtBucket): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(`bucket_last_seen:${b}`, new Date().toISOString());
 }
 
 const ALL_BUCKETS: ThoughtBucket[] = ["media", "tasks", "learning", "notes"];
@@ -176,6 +160,7 @@ function ThoughtsAllView({
 }
 
 interface ThoughtsTabViewProps {
+  userId: string | null;
   searchQuery: string;
   activeBucket: ThoughtBucket | null;
   onActiveBucketChange: (b: ThoughtBucket | null) => void;
@@ -183,7 +168,7 @@ interface ThoughtsTabViewProps {
   onViewAllChange: (v: boolean) => void;
 }
 
-export const ThoughtsTabView = memo(function ThoughtsTabView({ searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange }: ThoughtsTabViewProps) {
+export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange }: ThoughtsTabViewProps) {
   // eslint-disable-next-line no-console
   console.log('[ThoughtsTabView] render', { searchQuery, activeBucket, viewAll });
 
@@ -282,17 +267,16 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ searchQuery, acti
     });
   }, [displayBuckets, bucketMessages]);
 
-  // Increments each time a bucket is closed → forces getBucketUnread to re-read localStorage
-  const [seenEpoch, setSeenEpoch] = useState(0);
+  const { lastReadAt, markBucketRead } = useBucketLastRead(userId);
 
   const getBucketUnread = useCallback((b: ThoughtBucket): number => {
-    const lastSeen = getBucketLastSeen(b);
+    const lastSeen = lastReadAt(b);
     const msgs = bucketMessages.get(b) ?? [];
-    // Never opened this bucket → all non-pending thoughts count as new
     if (!lastSeen) return msgs.filter((m) => !m._pending).length;
     const cutoff = new Date(lastSeen).getTime();
     return msgs.filter((m) => !m._pending && new Date(m.createdAt).getTime() > cutoff).length;
-  }, [bucketMessages, seenEpoch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bucketMessages, lastReadAt]);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -366,8 +350,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ searchQuery, acti
             key={activeBucket}
             bucket={activeBucket}
             onBack={() => {
-              if (activeBucket) markBucketSeen(activeBucket);
-              setSeenEpoch((e) => e + 1);
+              if (activeBucket) markBucketRead(activeBucket);
               onActiveBucketChange(null);
             }}
             searchQuery={searchQuery}

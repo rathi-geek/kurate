@@ -13,6 +13,7 @@ import { CommentThread } from "@/app/_components/groups/comment-thread";
 import { EngagementBar } from "@/app/_components/groups/engagement-bar";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
+import { usePostSeenStatus } from "@/app/_libs/hooks/usePostSeenStatus";
 import { ChevronDownIcon, DomainIcon, ShareIcon, TrashIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 
@@ -21,6 +22,7 @@ interface FeedShareCardProps {
   currentUserId: string;
   groupId: string;
   userRole: GroupRole;
+  currentUserProfile?: { id: string; display_name: string | null; avatar_url: string | null; handle: string };
   onDelete?: (dropId: string) => void;
 }
 
@@ -58,12 +60,15 @@ export const FeedShareCard = memo(function FeedShareCard({
   currentUserId,
   groupId,
   userRole,
+  currentUserProfile,
   onDelete,
 }: FeedShareCardProps) {
   const t = useTranslations("groups");
   const isSharer = drop.sharer.id === currentUserId;
   const hasMustRead = drop.engagement.mustRead.count > 0;
   const [showComments, setShowComments] = useState(false);
+  const { hasNewComments, markPostSeen, lastSeenAt } = usePostSeenStatus(currentUserId, [drop.id]);
+  const openedLastSeenAtRef = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -276,7 +281,15 @@ export const FeedShareCard = memo(function FeedShareCard({
                   : undefined
               }
               commentCount={drop.commentCount}
-              onCommentIconClick={() => setShowComments((v) => !v)}
+              hasNewComments={hasNewComments(drop.id, drop.commentCount)}
+              onCommentIconClick={() => {
+                const opening = !showComments;
+                if (opening) {
+                  openedLastSeenAtRef.current = lastSeenAt(drop.id);
+                  markPostSeen(drop.id, drop.commentCount);
+                }
+                setShowComments((v) => !v);
+              }}
             />
           </div>
         </div>
@@ -285,7 +298,11 @@ export const FeedShareCard = memo(function FeedShareCard({
         {!showComments && drop.latestComment && (
           <button
             type="button"
-            onClick={() => setShowComments(true)}
+            onClick={() => {
+              openedLastSeenAtRef.current = lastSeenAt(drop.id);
+              markPostSeen(drop.id, drop.commentCount);
+              setShowComments(true);
+            }}
             className="border-border/50 hover:bg-muted/30 w-full border-t px-4 py-3 text-left transition-colors">
             <div className="flex items-center gap-2">
               {/* Avatar */}
@@ -329,6 +346,22 @@ export const FeedShareCard = memo(function FeedShareCard({
                   groupId={groupId}
                   currentUserId={currentUserId}
                   userRole={userRole}
+                  lastSeenAt={openedLastSeenAtRef.current}
+                  currentUserProfile={
+                    currentUserProfile ??
+                    (drop.sharer.id === currentUserId
+                      ? {
+                          id: currentUserId,
+                          display_name: drop.sharer.display_name ?? null,
+                          avatar_url: drop.sharer.avatar_url ?? null,
+                          handle: drop.sharer.handle ?? "",
+                        }
+                      : undefined)
+                  }
+                  onCommentAdded={() => {
+                    markPostSeen(drop.id, drop.commentCount + 1);
+                    openedLastSeenAtRef.current = new Date().toISOString();
+                  }}
                 />
               </div>
             </motion.div>

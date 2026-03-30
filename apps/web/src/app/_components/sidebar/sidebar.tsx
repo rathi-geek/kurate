@@ -177,11 +177,13 @@ export function AppSidebar({
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-ink/4 rounded-badge">
               <div className="relative shrink-0">
                 <BellIcon className="text-ink/35 size-[18px]" />
-                <UnreadBadge
-                  count={notifUnreadCount}
-                  variant="dot"
-                  className="absolute -top-0.5 -right-0.5"
-                />
+                {collapsed && (
+                  <UnreadBadge
+                    count={notifUnreadCount}
+                    variant="dot"
+                    className="absolute -top-0.5 -right-0.5"
+                  />
+                )}
               </div>
               {!collapsed && (
                 <span className="text-ink/55 font-sans text-xs font-semibold">

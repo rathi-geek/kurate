@@ -1,6 +1,7 @@
 "use client";
 
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@kurate/query";
@@ -8,9 +9,9 @@ import type { DropComment } from "@kurate/types";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 const supabase = createClient();
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 30;
 
-async function fetchComments(groupPostId: string, cursor: string | null): Promise<DropComment[]> {
+export async function fetchComments(groupPostId: string, cursor: string | null): Promise<DropComment[]> {
   let query = supabase
     .from("group_posts_comments")
     .select(
@@ -25,11 +26,11 @@ async function fetchComments(groupPostId: string, cursor: string | null): Promis
       `,
     )
     .eq("group_post_id", groupPostId)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
   if (cursor) {
-    query = query.gt("created_at", cursor);
+    query = query.lt("created_at", cursor);
   }
 
   const { data, error } = await query;
@@ -66,7 +67,11 @@ async function fetchComments(groupPostId: string, cursor: string | null): Promis
   return topLevel;
 }
 
-export function useComments(groupPostId: string, groupId?: string) {
+export function useComments(
+  groupPostId: string,
+  groupId?: string,
+  currentUserProfile?: { id: string; display_name: string | null; avatar_url: string | null; handle: string },
+) {
   const queryClient = useQueryClient();
   const key = queryKeys.groups.comments(groupPostId);
 
@@ -79,6 +84,30 @@ export function useComments(groupPostId: string, groupId?: string) {
     staleTime: 1000 * 30,
     enabled: !!groupPostId,
   });
+
+  // Bug 4 fix: remove `key` from deps (new array ref on every call causes infinite re-subscribe)
+  useEffect(() => {
+    if (!groupPostId) return;
+    const channel = supabase
+      .channel(`comments:${groupPostId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_posts_comments",
+          filter: `group_post_id=eq.${groupPostId}` },
+        () => {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.groups.comments(groupPostId),
+          });
+          if (groupId) {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+            void queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
+          }
+        },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupPostId, queryClient]);
 
   const addMutation = useMutation({
     mutationFn: async ({
@@ -98,9 +127,46 @@ export function useComments(groupPostId: string, groupId?: string) {
       });
       if (error) throw new Error(error.message);
     },
+    onMutate: async ({ content, userId, parentId }) => {
+      if (!currentUserProfile) return;
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData(key);
+
+      const optimistic: DropComment = {
+        id: `optimistic-${Date.now()}`,
+        group_post_id: groupPostId,
+        user_id: userId,
+        comment_text: content,
+        parent_comment_id: parentId ?? null,
+        created_at: new Date().toISOString(),
+        author: {
+          id: userId,
+          display_name: currentUserProfile.display_name,
+          avatar_url: currentUserProfile.avatar_url,
+          handle: currentUserProfile.handle,
+        },
+        replies: [],
+      };
+
+      queryClient.setQueryData<InfiniteData<DropComment[]>>(key, (old) => {
+        if (!old) return old;
+        const pages = [...old.pages];
+        // pages[0] = newest page; prepend so after flat().reverse() optimistic is at the bottom
+        pages[0] = [optimistic, ...(pages[0] ?? [])];
+        return { ...old, pages };
+      });
+
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
-      if (groupId) queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+      if (groupId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+        queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
+      }
     },
   });
 
@@ -146,12 +212,15 @@ export function useComments(groupPostId: string, groupId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
-      if (groupId) queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+      if (groupId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+        queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
+      }
     },
   });
 
   return {
-    comments: query.data?.pages.flat() ?? [],
+    comments: query.data?.pages.flat().reverse() ?? [],
     isLoading: query.isLoading,
     fetchNextPage: query.fetchNextPage,
     hasNextPage: query.hasNextPage ?? false,

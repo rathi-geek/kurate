@@ -16,6 +16,14 @@ export const THOUGHT_KEYWORD_MAP: Record<ThoughtBucket, string[]> = {
   notes:    ["remember", "note", "don't forget", "remind", "dentist", "backup", "trip"],
 };
 
+/** Dark accent color for each bucket — used for unread badge backgrounds */
+export const BUCKET_BADGE_COLOR: Record<ThoughtBucket, string> = {
+  media:    "#BE185D", // pink-700
+  tasks:    "#065F46", // emerald-900
+  learning: "#1D4ED8", // blue-700
+  notes:    "#92400E", // amber-900
+};
+
 /** Keyword-based bucket classifier — works in any JS environment (web, mobile, server) */
 export function classifyThought(text: string): ThoughtBucket {
   const lower = text.toLowerCase();

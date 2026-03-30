@@ -5,11 +5,8 @@ import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "@/i18n/use-translations";
-
-import { SlidingTabs } from "@/components/ui/sliding-tabs";
-
 import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view";
+import { HomeTabHeader } from "@/app/_components/home/home-tab-header";
 import { VaultTabView } from "@/app/_components/home/vault-tab-view";
 import { HomeTab } from "@/app/_libs/chat-types";
 import { MediaPlayerProvider } from "@/app/_libs/context/MediaPlayerContext";
@@ -30,7 +27,6 @@ export default function HomePage() {
 }
 
 function HomePageInner() {
-  const t = useTranslations("chat");
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefersReducedMotion = useReducedMotion();
@@ -74,16 +70,7 @@ function HomePageInner() {
           className="bg-background overflow-hidden"
           animate={prefersReducedMotion ? undefined : { height: isScrolledDown ? 0 : "auto" }}
           transition={springGentle}>
-          <div className="shrink-0 items-center justify-center py-3 pt-0 sm:flex sm:pt-3">
-            <SlidingTabs
-              value={activeTab}
-              onChange={(v) => handleTabChange(v as HomeTab)}
-              tabs={[
-                { value: HomeTab.VAULT, label: t("tab_vault") },
-                { value: HomeTab.DISCOVERING, label: t("tab_discovering") },
-              ]}
-            />
-          </div>
+          <HomeTabHeader activeTab={activeTab} onChange={handleTabChange} />
         </motion.div>
 
         {/* Tab panels — both mounted, CSS-hidden when inactive */}

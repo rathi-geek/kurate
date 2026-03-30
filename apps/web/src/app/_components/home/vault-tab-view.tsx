@@ -253,6 +253,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         <div
           className={`absolute inset-0 flex flex-col overflow-hidden transition-opacity duration-150${vaultTab !== VaultTab.THOUGHTS ? " pointer-events-none opacity-0" : " opacity-100"}`}>
           <ThoughtsTabView
+            userId={userId}
             searchQuery={searchQuery}
             activeBucket={activeBucket}
             onActiveBucketChange={setActiveBucket}

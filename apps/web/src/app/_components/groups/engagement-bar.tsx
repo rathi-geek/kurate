@@ -23,6 +23,7 @@ interface EngagementBarProps {
   engagement: GroupDrop["engagement"];
   itemData?: Omit<SaveItemInput, "url" | "save_source">;
   commentCount?: number;
+  hasNewComments?: boolean;
   onCommentIconClick?: () => void;
 }
 
@@ -34,6 +35,7 @@ export function EngagementBar({
   engagement,
   itemData,
   commentCount,
+  hasNewComments,
   onCommentIconClick,
 }: EngagementBarProps) {
   const t = useTranslations("groups");
@@ -128,7 +130,10 @@ export function EngagementBar({
           className="ml-auto flex items-center gap-1 px-2 py-1 rounded-badge text-xs text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
           aria-label="Toggle comments"
         >
-          <MessageCircleIcon className="size-[14px]" />
+          <MessageCircleIcon
+            className={`size-[14px] ${hasNewComments ? "text-green-600" : ""}`}
+            filled={hasNewComments}
+          />
           {commentCount > 0 && (
             <span className="font-mono">{commentCount}</span>
           )}
