@@ -7,6 +7,7 @@ import { useTranslations } from "@/i18n/use-translations";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { ROUTES } from "@kurate/utils";
+import { track } from "@/app/_libs/utils/analytics";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 import { queryKeys } from "@kurate/query";
 import { useRouter } from "next/navigation";
@@ -69,6 +70,7 @@ export function FindUserSheet({ open, onOpenChange, currentUserId }: FindUserShe
       const json = await res.json() as { convoId?: string; error?: string };
       if (json.convoId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.people.conversations() });
+        track("dm_created");
         handleOpenChange(false);
         router.push(ROUTES.APP.PERSON(json.convoId));
       }

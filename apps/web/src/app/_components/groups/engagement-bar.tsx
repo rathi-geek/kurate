@@ -25,6 +25,7 @@ interface EngagementBarProps {
   commentCount?: number;
   hasNewComments?: boolean;
   onCommentIconClick?: () => void;
+  source: "group_feed" | "group_library";
 }
 
 export function EngagementBar({
@@ -37,6 +38,7 @@ export function EngagementBar({
   commentCount,
   hasNewComments,
   onCommentIconClick,
+  source,
 }: EngagementBarProps) {
   const t = useTranslations("groups");
   const { toggleReaction } = useDropEngagement();
@@ -60,7 +62,7 @@ export function EngagementBar({
       currentUserId,
       didReact,
     });
-    track(didReact ? "reaction_removed" : "reaction_added", { type });
+    track(didReact ? "reaction_removed" : "reaction_added", { type, source });
   };
 
   return (

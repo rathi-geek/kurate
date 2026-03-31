@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@kurate/query";
 import { ROUTES } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
+import { track } from "@/app/_libs/utils/analytics";
 // Postgres unique-violation code
 const PG_UNIQUE_VIOLATION = "23505";
 
@@ -81,6 +82,7 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
       // Refresh sidebar groups list
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() });
 
+      track("group_created");
       onOpenChange(false);
       setName("");
       setDescription("");

@@ -16,6 +16,7 @@ import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
 import { usePostSeenStatus } from "@/app/_libs/hooks/usePostSeenStatus";
 import { ChevronDownIcon, DomainIcon, ShareIcon, TrashIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
+import { track } from "@/app/_libs/utils/analytics";
 
 interface FeedShareCardProps {
   drop: GroupDrop;
@@ -73,6 +74,15 @@ export const FeedShareCard = memo(function FeedShareCard({
   const [imgError, setImgError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleLinkOpen = () => {
+    if (!drop.item) return;
+    track("link_opened", {
+      context: "group_feed",
+      content_type: drop.item.content_type,
+      source: (drop.item.raw_metadata as Record<string, string> | null)?.source ?? null,
+    });
+  };
 
   useRefreshLoggedItem(
     drop.item
@@ -192,6 +202,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                   href={drop.item.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={handleLinkOpen}
                   className="bg-surface relative -mx-4 mb-3 block h-[220px] overflow-hidden">
                   <Image
                     src={drop.item.preview_image_url}
@@ -211,6 +222,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                   href={drop.item.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={handleLinkOpen}
                   className="bg-muted/40 border-border/40 relative -mx-4 mb-3 flex h-[220px] items-center justify-center overflow-hidden border-b">
                   <DomainIcon url={drop.item.url} className="size-14" />
                   <ContentTypePill
@@ -224,6 +236,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                   href={drop.item.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={handleLinkOpen}
                   className="text-foreground hover:text-primary line-clamp-2 text-base font-bold transition-colors">
                   {drop.item.title ?? drop.item.url}
                 </a>
@@ -288,6 +301,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                     }
                   : undefined
               }
+              source="group_feed"
               commentCount={drop.commentCount}
               hasNewComments={hasNewComments(drop.id, drop.commentCount)}
               onCommentIconClick={() => {

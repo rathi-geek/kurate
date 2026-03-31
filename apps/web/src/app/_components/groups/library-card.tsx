@@ -88,6 +88,7 @@ export const LibraryCard = memo(function LibraryCard({
           <EngagementBar
             groupPostId={drop.id}
             groupId={groupId}
+            source="group_library"
             url={drop.item?.url ?? ""}
             currentUserId={currentUserId}
             engagement={drop.engagement}

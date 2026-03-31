@@ -74,7 +74,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
 
   const handleLinkSaved = useCallback(
     async (result: SaveItemResult) => {
-      track("link_saved", {
+      track("vault_link_saved", {
         content_type: previewMeta?.contentType ?? "article",
         source: previewMeta?.source ?? null,
         has_tags: false,

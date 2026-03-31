@@ -73,6 +73,7 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
           tabIndex={0}
           onClick={() => {
             track("link_opened", {
+              context: "vault",
               content_type: item.content_type,
               source: item.raw_metadata?.source ?? null,
             });
