@@ -71,7 +71,6 @@ export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
     if (!userId) return;
     void fetchCounts();
 
-    console.log("[useUnreadCounts] subscribing", "unread-messages");
     const channel = supabase
       .channel("unread-messages")
       .on(
@@ -91,7 +90,6 @@ export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
         if (err) console.error("[useUnreadCounts] subscription error:", err);
       });
 
-    console.log("[useUnreadCounts] subscribing", "unread-group-posts");
     const groupChannel = supabase
       .channel("unread-group-posts")
       .on(
@@ -113,9 +111,7 @@ export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
       });
 
     return () => {
-      console.log("[useUnreadCounts] cleanup", "unread-messages");
       void supabase.removeChannel(channel);
-      console.log("[useUnreadCounts] cleanup", "unread-group-posts");
       void supabase.removeChannel(groupChannel);
     };
   }, [userId, fetchCounts, groupIds, resubscribeKey]);

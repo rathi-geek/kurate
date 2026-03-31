@@ -23,6 +23,8 @@ export const ROUTES = {
     DASHBOARD: "/dashboard",
     ONBOARDING: "/onboarding",
     GROUP: (id: string) => `/groups/${id}`,
+    /** Group feed with `invite=1` — opens invite flow (e.g. after create). */
+    GROUP_INVITE_FLOW: (id: string) => `/groups/${id}?invite=1`,
     GROUP_INFO: (id: string) => `/groups/${id}/info`,
     GROUP_JOIN: (inviteCode: string) => `/groups/join/${inviteCode}`,
   },

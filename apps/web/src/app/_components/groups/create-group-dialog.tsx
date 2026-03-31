@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import { queryKeys } from "@kurate/query";
+import { ROUTES } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 // Postgres unique-violation code
 const PG_UNIQUE_VIOLATION = "23505";
@@ -84,7 +85,7 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
       setName("");
       setDescription("");
 
-      router.push(`/groups/${group.id}/info?invite=1`);
+      router.push(ROUTES.APP.GROUP_INVITE_FLOW(group.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error_generic"));
     } finally {

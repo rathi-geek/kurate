@@ -56,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Eager prefetch top 3 group feeds on sidebar mount
   useEffect(() => {
     if (!userId || userGroups.length === 0) return;
-    for (const g of userGroups.slice(0, 3)) {
+    for (const g of userGroups) {
       void queryClient.prefetchInfiniteQuery({
         queryKey: queryKeys.groups.feed(g.id),
         queryFn: ({ pageParam }) =>
@@ -70,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Eager prefetch top 3 DM threads on sidebar mount
   useEffect(() => {
     if (conversations.length === 0) return;
-    for (const c of conversations.slice(0, 3)) {
+    for (const c of conversations) {
       void queryClient.prefetchInfiniteQuery({
         queryKey: queryKeys.people.messages(c.id),
         queryFn: ({ pageParam }) =>
@@ -89,8 +89,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .channel("group-memberships")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "conversation_members", filter: `user_id=eq.${userId}` },
-        () => { void queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() }); },
+        { event: "*", schema: "public", table: "conversation_members", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() });
+          // On DELETE (member removed / group deleted), also drop the detail cache
+          if (payload.eventType === "DELETE" && payload.old?.convo_id) {
+            queryClient.removeQueries({ queryKey: queryKeys.groups.detail(payload.old.convo_id as string) });
+          }
+        },
       )
       .subscribe();
     return () => { void supabase.removeChannel(channel); };

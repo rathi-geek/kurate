@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { useMessages } from "@/app/_libs/hooks/useMessages";
-import type { DMMessage } from "@kurate/types";
+import type { DMConversation, DMMessage } from "@kurate/types";
 import { ROUTES } from "@kurate/utils";
+import { queryKeys } from "@kurate/query";
 import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
 import { ChevronLeftIcon } from "@/components/icons";
 import Link from "next/link";
@@ -16,10 +18,16 @@ import { DmComposer } from "./dm-composer";
 interface DmChatViewProps {
   convoId: string;
   currentUserId: string;
-  otherUserName: string;
 }
 
-export function DmChatView({ convoId, currentUserId, otherUserName }: DmChatViewProps) {
+export function DmChatView({ convoId, currentUserId }: DmChatViewProps) {
+  const queryClient = useQueryClient();
+  const convsCache = queryClient.getQueryData<DMConversation[]>(queryKeys.people.conversations());
+  const cachedConvo = convsCache?.find((c) => c.id === convoId);
+  const otherUserName =
+    cachedConvo?.otherUser.display_name ??
+    cachedConvo?.otherUser.handle ??
+    "...";
   const t = useTranslations("people");
   const sidebarCtx = useSidebarContextOptional();
   const { messages, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =

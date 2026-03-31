@@ -239,6 +239,86 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
     resetInput();
   }, [resetInput]);
 
+  const handleVaultChatSend = useCallback(
+    async (noteText: string) => {
+      const meta = previewMeta ? { ...previewMeta, tags: extractedMeta?.tags ?? null } : null;
+      if (previewUrl) {
+        // Cancel in-flight preview extraction — grid handles null-metadata via useRefreshLoggedItem
+        resetExtraction();
+        setPreviewMeta(null);
+        setPreviewPhase(PreviewPhase.Idle);
+
+        // Deduplicate: same URL already pending → skip
+        const existingPending = await db.pending_links.where("url").equals(previewUrl).first();
+        if (existingPending) {
+          toast("Already in your Vault", { description: "This link has been saved before." });
+          setPreviewUrl(null);
+          resetInput();
+          return;
+        }
+
+        const tempId = crypto.randomUUID();
+        // URL mode: pending row in Dexie, then POST
+        void db.pending_links.add({
+          tempId,
+          url: previewUrl,
+          title: previewMeta?.title ?? previewUrl,
+          source: previewMeta?.source ?? null,
+          author: previewMeta?.author ?? null,
+          previewImage: previewMeta?.previewImage ?? null,
+          contentType: previewMeta?.contentType ?? "article",
+          readTime: previewMeta?.readTime != null ? String(previewMeta.readTime) : null,
+          tags: extractedMeta?.tags ?? null,
+          description: previewMeta?.description ?? null,
+          remarks: noteText.trim() || null,
+          createdAt: new Date().toISOString(),
+          status: "sending",
+        });
+        void onSend(previewUrl, undefined, meta, noteText.trim() || null)
+          .then(async () => {
+            await db.pending_links.delete(tempId);
+          })
+          .catch(async () => {
+            await db.pending_links.update(tempId, { status: "failed" });
+          });
+      } else {
+        // Text → thoughts: classify, Dexie row, switch tab, POST
+        const tempId = crypto.randomUUID();
+        const bucket = activeBucket ?? classifyThought(noteText);
+        void db.pending_thoughts.add({
+          tempId,
+          text: noteText,
+          bucket,
+          content_type: "text",
+          media_id: null,
+          createdAt: new Date().toISOString(),
+          status: "sending",
+        });
+        if (vaultTab !== VaultTab.THOUGHTS) {
+          track("links_thoughts_switched", {
+            from: vaultTab,
+            to: VaultTab.THOUGHTS,
+            source: "auto_thought_added",
+          });
+        }
+        setVaultTab(VaultTab.THOUGHTS);
+        void onSend(noteText, undefined, null, null, tempId).catch(async () => {
+          await db.pending_thoughts.update(tempId, { status: "failed" });
+        });
+      }
+    },
+    [
+      activeBucket,
+      extractedMeta?.tags,
+      onSend,
+      previewMeta,
+      previewUrl,
+      resetExtraction,
+      resetInput,
+      vaultTab,
+    ],
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <VaultTabSubHeader
@@ -347,58 +427,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
             <ChatInput
               key={inputKey}
               placeholder="Drop a thought, task, link or something you overheard."
-              onSend={(noteText) => {
-                const meta = previewMeta
-                  ? { ...previewMeta, tags: extractedMeta?.tags ?? null }
-                  : null;
-                if (previewUrl) {
-                  // URL mode — write pending link to Dexie, then fire POST
-                  const tempId = crypto.randomUUID();
-                  void db.pending_links.add({
-                    tempId,
-                    url: previewUrl,
-                    title: previewMeta?.title ?? previewUrl,
-                    source: previewMeta?.source ?? null,
-                    author: previewMeta?.author ?? null,
-                    previewImage: previewMeta?.previewImage ?? null,
-                    contentType: previewMeta?.contentType ?? "article",
-                    readTime: previewMeta?.readTime != null ? String(previewMeta.readTime) : null,
-                    tags: extractedMeta?.tags ?? null,
-                    remarks: noteText.trim() || null,
-                    createdAt: new Date().toISOString(),
-                    status: "sending",
-                  });
-                  void onSend(previewUrl, undefined, meta, noteText.trim() || null).then(async () => {
-                    await db.pending_links.delete(tempId);
-                  }).catch(async () => {
-                    await db.pending_links.update(tempId, { status: "failed" });
-                  });
-                } else {
-                  // Pure text → thoughts: classify instantly, write to Dexie, switch tab, fire POST
-                  const tempId = crypto.randomUUID();
-                  const bucket = activeBucket ?? classifyThought(noteText);
-                  void db.pending_thoughts.add({
-                    tempId,
-                    text: noteText,
-                    bucket,
-                    content_type: "text",
-                    media_id: null,
-                    createdAt: new Date().toISOString(),
-                    status: "sending",
-                  });
-                  if (vaultTab !== VaultTab.THOUGHTS) {
-                    track("links_thoughts_switched", {
-                      from: vaultTab,
-                      to: VaultTab.THOUGHTS,
-                      source: "auto_thought_added",
-                    });
-                  }
-                  setVaultTab(VaultTab.THOUGHTS);
-                  void onSend(noteText, undefined, null, null, tempId).catch(async () => {
-                    await db.pending_thoughts.update(tempId, { status: "failed" });
-                  });
-                }
-              }}
+              onSend={handleVaultChatSend}
               onUrlChange={handleUrlChange}
               collapsible={vaultTab === VaultTab.THOUGHTS}
             />

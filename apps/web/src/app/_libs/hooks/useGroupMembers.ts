@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@kurate/query";
@@ -50,12 +51,28 @@ async function fetchGroupMembers(groupId: string): Promise<GroupMember[]> {
 }
 
 export function useGroupMembers(groupId: string, currentUserId: string) {
+  const queryClient = useQueryClient();
+
   const query = useQuery({
     queryKey: queryKeys.groups.members(groupId),
     queryFn: () => fetchGroupMembers(groupId),
     staleTime: 1000 * 60,
     enabled: !!groupId,
   });
+
+  useEffect(() => {
+    if (!groupId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`group-members-${groupId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversation_members", filter: `convo_id=eq.${groupId}` },
+        () => { void queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(groupId) }); },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [groupId, queryClient]);
 
   const members = query.data ?? [];
   const currentMember = members.find((m) => m.user_id === currentUserId);

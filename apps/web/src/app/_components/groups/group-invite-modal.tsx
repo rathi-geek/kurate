@@ -17,6 +17,7 @@ import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { GroupRole } from "@kurate/types";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
+import { useAuth } from "@/app/_libs/auth-context";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -65,6 +66,7 @@ export function GroupInviteModal({
 }: GroupInviteModalProps) {
   const t = useTranslations("groups");
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchProfile[]>([]);
@@ -187,29 +189,39 @@ export function GroupInviteModal({
   const encodeEmail = (email: string): string =>
     btoa(email).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
+  const storeInvite = async (email: string) => {
+    if (!user?.id) return;
+    await supabase.from("group_invites").upsert(
+      { group_id: groupId, invited_email: email, invited_by: user.id },
+      { onConflict: "group_id,invited_email", ignoreDuplicates: true },
+    );
+    void queryClient.invalidateQueries({ queryKey: queryKeys.groups.invites(groupId) });
+  };
+
   const handleCopyEmailInvite = async () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/groups/join/${groupId}?e=${encodeEmail(searchQuery.trim().toLowerCase())}`;
+    const email = searchQuery.trim().toLowerCase();
+    const url = `${origin}/groups/join/${groupId}?e=${encodeEmail(email)}`;
     await navigator.clipboard.writeText(url);
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2000);
+    void storeInvite(email);
   };
 
   const handleEmailInvite = async () => {
     if (!isEmail) return;
     setSendingEmailInvite(true);
+    const email = searchQuery.trim().toLowerCase();
     try {
       const res = await fetch("/api/groups/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: searchQuery.trim().toLowerCase(),
-          groupId,
-        }),
+        body: JSON.stringify({ email, groupId }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to send invite");
       toast.success(`Invite sent to ${searchQuery.trim()}`);
+      void storeInvite(email);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send invite");
     } finally {

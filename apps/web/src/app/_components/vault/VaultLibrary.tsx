@@ -62,10 +62,17 @@ export const VaultLibrary = memo(function VaultLibrary({
     if (confirmed.length) void db.pending_links.bulkDelete(confirmed.map((l) => l.tempId));
   }, [items, pendingLinks, serverUrls]);
 
-  const isEmpty = !isLoading && !isError && items.length === 0 && !pendingLinks?.length;
+  const hasNoItems = items.length === 0 && !pendingLinks?.length;
+  const hasActiveFilter =
+    filters.time !== "all"
+    || filters.contentType !== "all"
+    || filters.readStatus !== "all"
+    || filters.search.trim() !== "";
+  const isEmptyDefault = !isLoading && !isError && hasNoItems && !hasActiveFilter;
+  const isEmptyFiltered = !isLoading && !isError && hasNoItems && hasActiveFilter;
 
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       {/* Fetching indicator */}
       {isFetching && !isLoading && !filters.search.trim() && (
         <div className="flex justify-end px-5 pt-2">
@@ -74,7 +81,7 @@ export const VaultLibrary = memo(function VaultLibrary({
       )}
 
       {/* Scrollable content */}
-      <div className="space-y-4 p-5">
+      <div className="flex min-h-0 flex-1 flex-col space-y-4 p-5">
         {isLoading && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -85,9 +92,19 @@ export const VaultLibrary = memo(function VaultLibrary({
 
         {!isLoading && isError && <VaultErrorState onRetry={() => refetch()} />}
 
-        {isEmpty && <VaultEmptyState onExplore={onNavigateToDiscover ?? (() => {})} />}
+        {isEmptyDefault && (
+          <VaultEmptyState onExplore={onNavigateToDiscover ?? (() => {})} />
+        )}
 
-        {!isLoading && !isError && !isEmpty && (
+        {isEmptyFiltered && (
+          <VaultEmptyState
+            onExplore={onNavigateToDiscover ?? (() => {})}
+            variant="filtered"
+            filters={filters}
+          />
+        )}
+
+        {!isLoading && !isError && !isEmptyDefault && !isEmptyFiltered && (
           <VaultGrid
             items={items}
             pendingItems={visiblePendingLinks}

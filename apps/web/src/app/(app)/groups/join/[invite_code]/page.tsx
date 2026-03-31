@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/app/_libs/supabase/server";
 import { ROUTES } from "@kurate/utils";
 
+import { JoinErrorView } from "./JoinErrorView";
+
 interface Props {
   params: Promise<{ invite_code: string }>;
   searchParams: Promise<{ e?: string }>;
@@ -13,22 +15,6 @@ function decodeEmail(encoded: string): string {
   const padded = encoded.replace(/-/g, "+").replace(/_/g, "/");
   const padding = (4 - (padded.length % 4)) % 4;
   return atob(padded + "=".repeat(padding));
-}
-
-function EmailMismatchError({ invitedEmail, userEmail }: { invitedEmail: string; userEmail: string }) {
-  return (
-    <div className="flex flex-1 items-center justify-center">
-      <div className="text-center max-w-sm px-6">
-        <h2 className="font-serif text-2xl mb-2">Wrong account</h2>
-        <p className="text-muted-foreground text-sm mb-1">
-          This invite was sent to <strong>{invitedEmail}</strong>.
-        </p>
-        <p className="text-muted-foreground text-sm">
-          You&apos;re signed in as <strong>{userEmail}</strong>. Please sign in with the correct account.
-        </p>
-      </div>
-    </div>
-  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -83,15 +69,40 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
     redirect(`${ROUTES.APP.ONBOARDING}?next=${encodeURIComponent(fullPath)}`);
   }
 
-  // Validate invited email if present
+  // Validate email-specific invite
+  let invitedEmail: string | null = null;
   if (encodedEmail) {
-    const invitedEmail = decodeEmail(encodedEmail);
+    invitedEmail = decodeEmail(encodedEmail);
+
+    // Email mismatch — wrong account
     if (user.email !== invitedEmail) {
-      return <EmailMismatchError invitedEmail={invitedEmail} userEmail={user.email ?? ""} />;
+      return (
+        <JoinErrorView
+          title="Wrong account"
+          description={`This invite was sent to ${invitedEmail}. You're signed in as ${user.email ?? "a different account"}. Please sign in with the correct email to join.`}
+        />
+      );
+    }
+
+    // Check if this email invite still exists (not revoked)
+    const { data: inviteRow } = await supabase
+      .from("group_invites")
+      .select("id")
+      .eq("group_id", invite_code)
+      .eq("invited_email", invitedEmail)
+      .maybeSingle();
+
+    if (!inviteRow) {
+      return (
+        <JoinErrorView
+          title="Invite no longer valid"
+          description="This invite link has been revoked. Ask the group owner to send you a new invite."
+        />
+      );
     }
   }
 
-  // Find group by invite code
+  // Find group
   const { data: group } = await supabase
     .from("conversations")
     .select("id, group_name, group_max_members")
@@ -100,18 +111,14 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
 
   if (!group) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center max-w-sm px-6">
-          <h2 className="font-serif text-2xl mb-2">Invalid invite link</h2>
-          <p className="text-muted-foreground text-sm">
-            This invite link is invalid or has expired.
-          </p>
-        </div>
-      </div>
+      <JoinErrorView
+        title="Invalid invite link"
+        description="This invite link is invalid or the group no longer exists."
+      />
     );
   }
 
-  // Check if already a member
+  // Already a member — redirect straight in
   const { data: existing } = await supabase
     .from("conversation_members")
     .select("id")
@@ -123,7 +130,7 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
     redirect(ROUTES.APP.GROUP(group.id) as Route);
   }
 
-  // Check if group is full
+  // Group full
   const { count } = await supabase
     .from("conversation_members")
     .select("id", { count: "exact", head: true })
@@ -131,28 +138,11 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
 
   if ((count ?? 0) >= (group.group_max_members ?? 50)) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center max-w-sm px-6">
-          <h2 className="font-serif text-2xl mb-2">{group.group_name}</h2>
-          <p className="text-muted-foreground text-sm">
-            This group is full ({group.group_max_members ?? 50} members max).
-          </p>
-        </div>
-      </div>
+      <JoinErrorView
+        title={`${group.group_name} is full`}
+        description={`This group has reached its maximum of ${group.group_max_members ?? 50} members.`}
+      />
     );
-  }
-
-  // Mark email invite as accepted if one exists for this user
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    await db
-      .from("group_invites")
-      .update({ status: "accepted" })
-      .eq("invite_code", invite_code)
-      .eq("email", user.email);
-  } catch {
-    // group_invites table not created yet — continue with join
   }
 
   // Join the group
@@ -161,6 +151,15 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
     user_id: user.id,
     role: "member",
   });
+
+  // Remove the email invite row now that it's been used
+  if (invitedEmail) {
+    await supabase
+      .from("group_invites")
+      .delete()
+      .eq("group_id", group.id)
+      .eq("invited_email", invitedEmail);
+  }
 
   redirect(ROUTES.APP.GROUP(group.id) as Route);
 }
