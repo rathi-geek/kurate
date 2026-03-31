@@ -10,6 +10,8 @@ import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { Tables } from "@kurate/types";
 import type { GroupMember, GroupRole } from "@kurate/types";
+import { toast } from "sonner";
+
 import {
   Dialog,
   DialogContent,
@@ -162,32 +164,39 @@ export function GroupDangerZone({
     try {
       if (isOwner) {
         if (others.length === 0) {
-          await supabase.from("conversations").delete().eq("id", group.id);
+          const { error } = await supabase.from("conversations").delete().eq("id", group.id);
+          if (error) throw error;
         } else {
           const suc =
             others.find((m) => m.role === "admin") ??
             others.sort((a, b) => a.joined_at.localeCompare(b.joined_at))[0];
 
-          await supabase
+          const { error: transferError } = await supabase
             .from("conversation_members")
             .update({ role: "owner" })
             .eq("id", suc.id);
+          if (transferError) throw transferError;
 
-          await supabase
+          const { error: leaveError } = await supabase
             .from("conversation_members")
             .delete()
             .eq("convo_id", group.id)
             .eq("user_id", currentUserId);
+          if (leaveError) throw leaveError;
         }
       } else {
-        await supabase
+        const { error } = await supabase
           .from("conversation_members")
           .delete()
           .eq("convo_id", group.id)
           .eq("user_id", currentUserId);
+        if (error) throw error;
       }
+      queryClient.removeQueries({ queryKey: queryKeys.groups.detail(group.id) });
       await queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() });
       router.push("/home");
+    } catch {
+      toast.error("Failed to leave group. Please try again.");
     } finally {
       setLeaving(false);
     }
@@ -196,9 +205,13 @@ export function GroupDangerZone({
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await supabase.from("conversations").delete().eq("id", group.id);
+      const { error } = await supabase.from("conversations").delete().eq("id", group.id);
+      if (error) throw error;
+      queryClient.removeQueries({ queryKey: queryKeys.groups.detail(group.id) });
       await queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() });
       router.push("/home");
+    } catch {
+      toast.error("Failed to delete group. Please try again.");
     } finally {
       setDeleting(false);
     }
@@ -264,7 +277,7 @@ export function GroupDangerZone({
         loading={leaving}
         onConfirm={() => {
           setLeaveOpen(false);
-          handleLeave();
+          void handleLeave();
         }}
       />
       <DangerConfirmModal
@@ -276,7 +289,7 @@ export function GroupDangerZone({
         loading={deleting}
         onConfirm={() => {
           setDeleteOpen(false);
-          handleDelete();
+          void handleDelete();
         }}
       />
     </>

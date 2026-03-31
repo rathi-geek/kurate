@@ -3,6 +3,7 @@
  * Icon components live in this folder and are exported from the index.
  */
 export enum IconName {
+  Copy = "Copy",
   ChevronDown = "ChevronDown",
   DotsHorizontal = "DotsHorizontal",
   ExclamationCircle = "ExclamationCircle",
@@ -16,4 +17,6 @@ export enum IconName {
   Smile = "Smile",
   Share = "Share",
   Trash = "Trash",
+  PenLine = "PenLine",
+  UserX = "UserX",
 }

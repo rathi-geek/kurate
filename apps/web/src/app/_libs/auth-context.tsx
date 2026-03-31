@@ -32,6 +32,33 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+// ─── localStorage cache helpers ──────────────────────────────────────────────
+
+const PROFILE_KEY = (id: string) => `kurate:profile:${id}`;
+
+function readCachedProfile(userId: string): UserProfile | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY(userId));
+    return raw ? (JSON.parse(raw) as UserProfile) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedProfile(userId: string, profile: UserProfile) {
+  try {
+    localStorage.setItem(PROFILE_KEY(userId), JSON.stringify(profile));
+  } catch {}
+}
+
+function clearCachedProfile(userId: string) {
+  try {
+    localStorage.removeItem(PROFILE_KEY(userId));
+  } catch {}
+}
+
+// ─── Provider ────────────────────────────────────────────────────────────────
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -45,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select("first_name, last_name, handle, about, is_onboarded, avatar:avatar_id(file_path, bucket_name)")
       .eq("id", userId)
       .single();
+
     const profileData = data
       ? {
           first_name: data.first_name,
@@ -60,9 +88,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             : null,
         }
       : null;
+
     setProfile(profileData);
-    // Seed React Query cache so components using useQuery(queryKeys.user.profile) get it for free
-    queryClient.setQueryData(queryKeys.user.profile(userId), profileData);
+    setLoading(false);
+
+    if (profileData) {
+      writeCachedProfile(userId, profileData);
+      queryClient.setQueryData(queryKeys.user.profile(userId), profileData);
+    }
   }
 
   useEffect(() => {
@@ -73,15 +106,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       const authUser = session?.user ?? null;
       setUser(authUser);
+
       if (authUser) {
-        loadProfile(authUser.id);
+        // Serve cached profile immediately — eliminates loading flash on return visits
+        const cached = readCachedProfile(authUser.id);
+        if (cached) {
+          setProfile(cached);
+          queryClient.setQueryData(queryKeys.user.profile(authUser.id), cached);
+          setLoading(false);
+        }
+
+        // Always re-validate in background (updates state + cache if anything changed)
+        void loadProfile(authUser.id);
+
         if (event === "SIGNED_IN") {
           track("user_logged_in", { method: "google" });
         }
       } else {
+        // Signed out — clear cached profile for the previous user
+        if (user?.id) {
+          clearCachedProfile(user.id);
+        }
         setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

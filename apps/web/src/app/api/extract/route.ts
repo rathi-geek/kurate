@@ -170,6 +170,24 @@ export async function POST(req: NextRequest) {
     }
 
     if (isXUrl(url) || url.includes("t.co/")) {
+      try {
+        const oembedRes = await fetch(
+          `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true`,
+          { headers: { "User-Agent": BROWSER_UA } },
+        );
+        if (oembedRes.ok) {
+          const oembed = await oembedRes.json() as { author_name?: string; text?: string; author_url?: string };
+          const author = oembed.author_name ?? undefined;
+          const username = new URL(url).pathname.split("/")[1] ?? undefined;
+          const title = author && username
+            ? `${author} (@${username}) on X`
+            : author ? `${author} on X` : "X (Twitter)";
+          const description = oembed.text
+            ? oembed.text.replace(/https?:\/\/\S+/g, "").trim() || undefined
+            : undefined;
+          return NextResponse.json({ url, title, description, source: "x.com", author, contentType: "article" as const, tags: [] as string[] });
+        }
+      } catch {}
       return NextResponse.json({ url, title: "Tweet", source: "x.com", contentType: "article" as const, tags: [] as string[] });
     }
 

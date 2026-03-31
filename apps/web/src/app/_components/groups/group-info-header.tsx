@@ -25,6 +25,7 @@ export interface GroupInfoHeaderProps {
   group: Tables<"conversations">;
   groupId: string;
   userRole: GroupRole;
+  currentUserId: string;
   members: GroupMember[];
   membersLoading: boolean;
   openModal: InfoModal;
@@ -36,6 +37,7 @@ export function GroupInfoHeader({
   group,
   groupId,
   userRole,
+  currentUserId,
   members,
   membersLoading,
   openModal,
@@ -133,7 +135,7 @@ export function GroupInfoHeader({
             </button>
           )}
 
-          <GroupInfoMembersList members={members} membersLoading={membersLoading} />
+          <GroupInfoMembersList members={members} membersLoading={membersLoading} userRole={userRole} currentUserId={currentUserId} />
         </div>
       </div>
 

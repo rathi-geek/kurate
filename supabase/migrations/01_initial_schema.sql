@@ -301,10 +301,30 @@ CREATE POLICY conversation_members_insert
   ON public.conversation_members FOR INSERT 
   TO authenticated WITH CHECK (true);
 
-CREATE POLICY conversation_members_update 
-  ON public.conversation_members FOR UPDATE 
+CREATE POLICY conversation_members_update
+  ON public.conversation_members FOR UPDATE
   TO authenticated
-  USING (true);
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.conversation_members AS cm
+      WHERE cm.convo_id = conversation_members.convo_id
+        AND cm.user_id = auth.uid()
+        AND cm.role = 'owner'
+    )
+  );
+
+CREATE POLICY conversation_members_delete
+  ON public.conversation_members FOR DELETE
+  TO authenticated
+  USING (
+    user_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM public.conversation_members AS cm
+      WHERE cm.convo_id = conversation_members.convo_id
+        AND cm.user_id = auth.uid()
+        AND cm.role = 'owner'
+    )
+  );
 
 -- ── Conversations RLS (deferred until conversation_members exists) ────
 
@@ -341,6 +361,18 @@ CREATE POLICY "Users can UPDATE own convo"
   TO authenticated
   USING (true);
 
+CREATE POLICY "Owners can DELETE own convo"
+  ON public.conversations FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.conversation_members
+      WHERE convo_id = conversations.id
+        AND user_id = auth.uid()
+        AND role = 'owner'
+    )
+  );
+
 
 
 -- ──  messages ─────────────────────────────────────────────
@@ -363,6 +395,8 @@ CREATE INDEX IF NOT EXISTS idx_messages_convo_id ON public.messages (convo_id, c
 CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON public.messages (sender_id);
 
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.conversation_members;
+ALTER TABLE public.conversation_members REPLICA IDENTITY FULL;
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
@@ -1241,3 +1275,39 @@ CREATE POLICY "own rows"
   ON public.bucket_last_read
   FOR ALL
   USING (auth.uid() = user_id);
+
+
+-- ── Group Invites ────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS public.group_invites (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id      UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+  invited_email TEXT NOT NULL,
+  invited_by    UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (group_id, invited_email)
+);
+
+CREATE INDEX IF NOT EXISTS idx_group_invites_group_id ON public.group_invites (group_id);
+
+ALTER TABLE public.group_invites ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY group_invites_select ON public.group_invites FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.conversation_members
+      WHERE convo_id = group_invites.group_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY group_invites_insert ON public.group_invites FOR INSERT TO authenticated
+  WITH CHECK (
+    invited_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM public.conversation_members
+      WHERE convo_id = group_invites.group_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY group_invites_delete ON public.group_invites FOR DELETE TO authenticated
+  USING (invited_by = auth.uid());

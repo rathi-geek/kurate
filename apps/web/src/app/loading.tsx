@@ -8,7 +8,7 @@ export default function LoadingHomePage() {
       aria-label="Loading content"
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="animate-spin text-ink/40">
+        <div className="text-ink/40">
           <BrandConcentricArch s={36} />
         </div>
         <span className="font-sans text-sm font-black tracking-tight text-ink/30">Kurate</span>

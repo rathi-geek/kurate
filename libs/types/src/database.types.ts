@@ -180,6 +180,45 @@ export type Database = {
         }
         Relationships: []
       }
+      group_invites: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          invited_by: string
+          invited_email: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          invited_by: string
+          invited_email: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          invited_by?: string
+          invited_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_post_comments_read_receipts: {
         Row: {
           comment_id: string

@@ -4,15 +4,16 @@ import { Suspense, useEffect, useState } from "react";
 
 import { useSearchParams } from "next/navigation";
 
-import type { Tables } from "@kurate/types";
-import type { GroupRole } from "@kurate/types";
+import type { GroupRole, Tables } from "@kurate/types";
 
 import { GroupDangerZone } from "@/app/_components/groups/group-danger-zone";
 import { GroupInfoHeader, type InfoModal } from "@/app/_components/groups/group-info-header";
 import { GroupInviteModal } from "@/app/_components/groups/group-invite-modal";
+import { PendingGroupInvitesSection } from "@/app/_components/groups/pending-group-invites-section";
 import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
+import { useGroupInvites } from "@/app/_libs/hooks/useGroupInvites";
 
-interface InfoPageClientProps {
+interface GroupInfoPageProps {
   group: Tables<"conversations">;
   currentUserId: string;
   userRole: GroupRole;
@@ -20,16 +21,17 @@ interface InfoPageClientProps {
   onBack?: () => void;
 }
 
-export function InfoPageClient(props: InfoPageClientProps) {
+export function GroupInfoPage(props: GroupInfoPageProps) {
   return (
     <Suspense fallback={null}>
-      <InfoPageInner {...props} />
+      <GroupInfoPageInner {...props} />
     </Suspense>
   );
 }
 
-function InfoPageInner({ group, currentUserId, userRole, groupId, onBack }: InfoPageClientProps) {
+function GroupInfoPageInner({ group, currentUserId, userRole, groupId, onBack }: GroupInfoPageProps) {
   const { members, isLoading: membersLoading } = useGroupMembers(group.id, currentUserId);
+  const { invites, removeInvite } = useGroupInvites(group.id);
 
   const searchParams = useSearchParams();
   const [openModal, setOpenModal] = useState<InfoModal>(() =>
@@ -46,6 +48,7 @@ function InfoPageInner({ group, currentUserId, userRole, groupId, onBack }: Info
   }, [searchParams]);
 
   const memberIds = new Set(members.map((m) => m.user_id));
+  const isOwnerOrAdmin = userRole === "owner" || userRole === "admin";
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -54,12 +57,21 @@ function InfoPageInner({ group, currentUserId, userRole, groupId, onBack }: Info
           group={group}
           groupId={groupId}
           userRole={userRole}
+          currentUserId={currentUserId}
           members={members}
           membersLoading={membersLoading}
           openModal={openModal}
           setOpenModal={setOpenModal}
           onBack={onBack}
         />
+
+        {isOwnerOrAdmin && (
+          <PendingGroupInvitesSection
+            groupId={group.id}
+            invites={invites}
+            onRemoveInvite={removeInvite}
+          />
+        )}
       </div>
 
       <GroupDangerZone

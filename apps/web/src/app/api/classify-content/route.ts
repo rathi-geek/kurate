@@ -29,7 +29,7 @@ If nothing fits, return [].`;
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 100,
+      max_tokens: 50,
       messages: [{ role: "user", content: prompt }],
     });
     const rawText =

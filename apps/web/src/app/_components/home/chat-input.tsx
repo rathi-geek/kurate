@@ -21,8 +21,15 @@ import { LinkIcon, PlusIcon } from "@/components/icons";
 
 const URL_REGEX = /https?:\/\/[^\s]+/;
 
+function isEditableElement(element: Element | null): boolean {
+  if (!(element instanceof HTMLElement)) return false;
+  const tagName = element.tagName.toLowerCase();
+  if (tagName === "input" || tagName === "textarea" || tagName === "select") return true;
+  return element.isContentEditable;
+}
+
 export interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string) => void | Promise<void>;
   onUrlChange?: (url: string | null) => void;
   placeholder?: string;
   /** Placeholder shown when a URL is locked in and the user is typing a note */
@@ -91,7 +98,12 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
   // Global Ctrl+V / Cmd+V — focus input and paste
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
-      if (document.activeElement === inputRef.current || disabled) return;
+      if (disabled) return;
+      const activeElement = document.activeElement;
+      // Skip if the chat input itself or any editable element is already focused
+      if (activeElement === inputRef.current || isEditableElement(activeElement)) return;
+      // Skip if any modal/dialog is open — let the paste go to whatever is inside it
+      if (document.querySelector('[role="dialog"]')) return;
       const text = e.clipboardData?.getData("text");
       if (text) {
         inputRef.current?.focus();

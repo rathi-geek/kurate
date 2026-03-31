@@ -15,6 +15,16 @@ export function PendingLinkCard({ link }: { link: PendingLink }) {
             alt=""
             className="h-full w-full object-cover"
           />
+        ) : link.description ? (
+          <div className="bg-muted relative flex h-full w-full items-center justify-center overflow-hidden px-4 py-3">
+            <p className="text-muted-foreground relative z-10 line-clamp-4 text-center text-xs leading-relaxed">
+              {link.description}
+            </p>
+            <ContentTypePill
+              contentType={link.contentType as "article" | "video" | "podcast"}
+              className="absolute top-2 left-2"
+            />
+          </div>
         ) : (
           <div className="bg-muted flex h-full w-full items-center justify-center">
             <ContentTypePill contentType={link.contentType as "article" | "video" | "podcast"} />

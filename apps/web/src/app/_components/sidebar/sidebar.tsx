@@ -5,30 +5,26 @@
  * Mobile navigation is handled by MobileBottomTab.
  * All realtime hooks are owned by AppShell and passed as props.
  */
-
 import { useState } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import type { DMConversation } from "@kurate/types";
 import { motion } from "framer-motion";
 
-import { useTranslations } from "@/i18n/use-translations";
-
-import type { DMConversation } from "@kurate/types";
+import { NotificationPanel } from "@/app/_components/notifications/notification-panel";
 import type { Notification } from "@/app/_libs/hooks/useNotifications";
-
 import { BrandArch, BrandConcentricArch } from "@/components/brand";
 import { BellIcon } from "@/components/icons";
-
-import { NotificationPanel } from "@/app/_components/notifications/notification-panel";
-import { UnreadBadge } from "./unread-badge";
+import { useTranslations } from "@/i18n/use-translations";
 
 import { SidebarProvider } from "./sidebar-context";
 import { SidebarFooter } from "./sidebar-footer";
 import { SidebarGroupsSection } from "./sidebar-groups-section";
 import { SidebarPeopleSection } from "./sidebar-people-section";
+import { UnreadBadge } from "./unread-badge";
 
 const springSnappy = {
   type: "spring" as const,
@@ -139,10 +135,11 @@ export function AppSidebar({
             <Link
               href="/home"
               title={t("home")}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left rounded-badge transition-colors hover:bg-ink/4 ${homeActive ? "bg-ink/8" : ""}`}>
+              className={`rounded-badge hover:bg-ink/4 flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${homeActive ? "bg-ink/8" : ""}`}>
               <BrandArch s={14} c={homeActive ? "#1A1A1A" : "rgba(26,26,26,0.35)"} />
               {!collapsed && (
-                <span className={`font-sans text-xs ${homeActive ? "text-ink font-bold" : "text-ink/55 font-semibold"}`}>
+                <span
+                  className={`font-sans text-xs ${homeActive ? "text-ink font-bold" : "text-ink/55 font-semibold"}`}>
                   {t("home")}
                 </span>
               )}
@@ -152,18 +149,26 @@ export function AppSidebar({
             <Link
               href="/profile"
               title={t("profile")}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left rounded-badge transition-colors hover:bg-ink/4 ${profileActive ? "bg-ink/8" : ""}`}>
-              <div className={`relative flex h-[18px] w-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full ${profileActive ? "ring-1 ring-ink/40" : ""}`}>
+              className={`rounded-badge hover:bg-ink/4 flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${profileActive ? "bg-ink/8" : ""}`}>
+              <div
+                className={`relative flex h-[18px] w-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full ${profileActive ? "ring-ink/40 ring-1" : ""}`}>
                 {userAvatarUrl ? (
-                  <Image src={userAvatarUrl} alt={userInitials} fill className="object-cover" sizes="18px" />
+                  <Image
+                    src={userAvatarUrl}
+                    alt={userInitials}
+                    fill
+                    className="object-cover"
+                    sizes="18px"
+                  />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center rounded-full bg-ink font-sans text-[8px] font-bold text-cream">
+                  <div className="bg-ink text-cream flex h-full w-full items-center justify-center rounded-full font-sans text-[8px] font-bold">
                     {userInitials}
                   </div>
                 )}
               </div>
               {!collapsed && (
-                <span className={`font-sans text-xs ${profileActive ? "text-ink font-bold" : "text-ink/55 font-semibold"}`}>
+                <span
+                  className={`font-sans text-xs ${profileActive ? "text-ink font-bold" : "text-ink/55 font-semibold"}`}>
                   {t("profile")}
                 </span>
               )}
@@ -174,7 +179,7 @@ export function AppSidebar({
               type="button"
               onClick={() => setNotificationsOpen(true)}
               title="Notifications"
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-ink/4 rounded-badge">
+              className="hover:bg-ink/4 rounded-badge flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors">
               <div className="relative shrink-0">
                 <BellIcon className="text-ink/35 size-[18px]" />
                 {collapsed && (
@@ -186,9 +191,7 @@ export function AppSidebar({
                 )}
               </div>
               {!collapsed && (
-                <span className="text-ink/55 font-sans text-xs font-semibold">
-                  Notifications
-                </span>
+                <span className="text-ink/55 font-sans text-xs font-semibold">Notifications</span>
               )}
               {!collapsed && notifUnreadCount > 0 && (
                 <UnreadBadge count={notifUnreadCount} variant="inline" className="ml-auto" />
@@ -202,16 +205,16 @@ export function AppSidebar({
 
         {/* Scrollable middle section */}
         <div className="min-h-0 flex-1 overflow-y-auto">
+          <SidebarGroupsSection
+            collapsed={collapsed}
+            currentUserId={userId}
+            unreadCounts={unreadCounts}
+            markRead={markRead}
+          />
           <SidebarPeopleSection
             collapsed={collapsed}
             currentUserId={userId}
             conversations={conversations}
-            unreadCounts={unreadCounts}
-            markRead={markRead}
-          />
-          <SidebarGroupsSection
-            collapsed={collapsed}
-            currentUserId={userId}
             unreadCounts={unreadCounts}
             markRead={markRead}
           />

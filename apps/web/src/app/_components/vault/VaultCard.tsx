@@ -12,21 +12,23 @@ import { ContentTypePill } from "@/components/ui/content-type-pill";
 import { VaultDeleteModal, shouldSkipConfirm } from "@/app/_components/vault/VaultDeleteModal";
 import { VaultRemarkModal } from "@/app/_components/vault/VaultRemarkModal";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
+import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
+import { track } from "@/app/_libs/utils/analytics";
 // TODO: restore when in-app reader is re-enabled
 // import { useMediaPlayer } from "@/app/_libs/context/MediaPlayerContext";
 import { cn } from "@/app/_libs/utils/cn";
-import { track } from "@/app/_libs/utils/analytics";
-import { CheckIcon, DomainIcon, DoubleCheckIcon, PencilIcon, ShareIcon, TrashIcon } from "@/components/icons";
-import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
+import {
+  CheckIcon,
+  DomainIcon,
+  DoubleCheckIcon,
+  PencilIcon,
+  ShareIcon,
+  TrashIcon,
+} from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 
 function getDescription(item: VaultItem): string | undefined {
-  const raw = item.raw_metadata;
-  if (raw && typeof raw === "object" && "description" in raw) {
-    const d = (raw as { description?: string }).description;
-    return typeof d === "string" ? d : undefined;
-  }
-  return undefined;
+  return item.description ?? undefined;
 }
 
 export interface VaultCardProps {
@@ -70,7 +72,10 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
           role="button"
           tabIndex={0}
           onClick={() => {
-            track("link_opened", { content_type: item.content_type, source: item.raw_metadata?.source ?? null });
+            track("link_opened", {
+              content_type: item.content_type,
+              source: item.raw_metadata?.source ?? null,
+            });
             window.open(item.url, "_blank", "noopener,noreferrer");
           }}
           onKeyDown={handleCardKeyDown}
@@ -87,6 +92,16 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
                 sizes="(max-width: 640px) 100vw, 300px"
                 onError={() => setImgError(true)}
               />
+            ) : description ? (
+              <div className="bg-muted relative flex h-full w-full items-center justify-center overflow-hidden px-4 py-3 transition-[filter] duration-200 group-hover:blur-sm">
+                <p className="text-muted-foreground relative z-10 line-clamp-4 text-center text-xs leading-relaxed">
+                  {description}
+                </p>
+                <ContentTypePill
+                  contentType={item.content_type}
+                  className="absolute top-2 left-2"
+                />
+              </div>
             ) : (
               <div className="bg-muted relative flex h-full w-full items-center justify-center transition-[filter] duration-200 group-hover:blur-sm">
                 <DomainIcon url={item.url} className="size-12" />

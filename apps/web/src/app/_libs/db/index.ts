@@ -22,6 +22,7 @@ export interface PendingLink {
   contentType: string;
   readTime: string | null;
   tags: string[] | null;
+  description: string | null;
   remarks: string | null;
   createdAt: string;
   status: "sending" | "failed";
@@ -36,6 +37,10 @@ class KurateDB extends Dexie {
     this.version(1).stores({
       pending_thoughts: "tempId, status, createdAt",
       pending_links: "tempId, status, createdAt",
+    });
+    this.version(2).stores({
+      pending_thoughts: "tempId, status, createdAt",
+      pending_links: "tempId, url, status, createdAt",
     });
   }
 }

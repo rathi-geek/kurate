@@ -47,6 +47,7 @@ export const queryKeys = {
       ["groups", "comments", groupShareId] as const,
     vaultItem: (userId: string, url: string) =>
       ["groups", "vaultItem", userId, url] as const,
+    invites: (groupId: string) => ["groups", "invites", groupId] as const,
   },
 
   // ─── People / DMs ─────────────────────────────────────────────────
