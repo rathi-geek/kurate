@@ -101,38 +101,35 @@ function GroupListContent({
         };
         const isActive = pathname.startsWith(ROUTES.APP.GROUP(g.id));
         return (
-          <div
+          <Link
             key={g.id}
+            href={ROUTES.APP.GROUP(g.id)}
+            onClick={handleClick}
+            onMouseEnter={() => {
+              void queryClient.prefetchInfiniteQuery({
+                queryKey: queryKeys.groups.feed(g.id),
+                queryFn: ({ pageParam }) =>
+                  fetchGroupFeedPage(g.id, currentUserId ?? "", pageParam as string | null),
+                initialPageParam: null,
+                staleTime: 1000 * 30,
+              });
+            }}
             className={cn(
-              "group/grp rounded-badge flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors",
+              "rounded-badge flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors",
               isActive ? "bg-ink/8" : "hover:bg-ink/4",
             )}>
-            <Link
-              href={ROUTES.APP.GROUP(g.id)}
-              onClick={handleClick}
-              onMouseEnter={() => {
-                void queryClient.prefetchInfiniteQuery({
-                  queryKey: queryKeys.groups.feed(g.id),
-                  queryFn: ({ pageParam }) =>
-                    fetchGroupFeedPage(g.id, currentUserId ?? "", pageParam as string | null),
-                  initialPageParam: null,
-                  staleTime: 1000 * 30,
-                });
-              }}
-              className="flex min-w-0 flex-1 items-center gap-2.5">
-              <div className="bg-primary/10 relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md">
-                {g.avatarUrl ? (
-                  <Image src={g.avatarUrl} alt={g.name} fill className="object-cover" sizes="28px" />
-                ) : (
-                  <BrandStar s={10} c="currentColor" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-ink truncate font-sans text-xs font-bold">{g.name}</div>
-              </div>
-              <UnreadBadge count={unread} variant="inline" className="ml-auto" />
-            </Link>
-          </div>
+            <div className="bg-primary/10 relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md">
+              {g.avatarUrl ? (
+                <Image src={g.avatarUrl} alt={g.name} fill className="object-cover" sizes="28px" />
+              ) : (
+                <BrandStar s={10} c="currentColor" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-ink truncate font-sans text-xs font-bold">{g.name}</div>
+            </div>
+            <UnreadBadge count={unread} variant="inline" className="ml-auto" />
+          </Link>
         );
       })}
     </>
