@@ -12,6 +12,7 @@ import { LibraryView } from "@/app/_components/groups/library-view";
 import { track } from "@/app/_libs/utils/analytics";
 import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
 import { useGroupDetail, useGroupRole } from "@/app/_libs/hooks/useGroupDetail";
+import { useAuth } from "@/app/_libs/auth-context";
 import { createClient } from "@/app/_libs/supabase/client";
 
 import { GroupInfoPage } from "@/app/_components/groups/group-info-page";
@@ -24,10 +25,29 @@ export enum GroupView {
 
 interface GroupPageClientProps {
   groupId: string;
-  currentUserId: string;
 }
 
-function GroupPageInner({ groupId, currentUserId }: GroupPageClientProps) {
+function GroupPageSkeleton() {
+  return (
+    <div className="mx-auto flex h-full max-w-md flex-col overflow-hidden">
+      <div className="border-border/60 flex shrink-0 items-center gap-3 border-b px-4 py-3">
+        <div className="bg-muted h-8 w-8 animate-pulse rounded-full" />
+        <div className="bg-muted h-4 w-36 animate-pulse rounded" />
+        <div className="bg-muted ml-auto h-4 w-16 animate-pulse rounded" />
+      </div>
+      <div className="flex-1 space-y-3 overflow-hidden p-4">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="bg-muted h-24 animate-pulse rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GroupPageInner({ groupId }: GroupPageClientProps) {
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? "";
+
   const searchParams = useSearchParams();
   const [view, setView] = useState<GroupView>(() => {
     const v = searchParams.get("view");
@@ -64,6 +84,7 @@ function GroupPageInner({ groupId, currentUserId }: GroupPageClientProps) {
   // Real-time: redirect immediately if current user's membership is deleted
   // (group deleted by owner, or user kicked) while they're viewing the page
   useEffect(() => {
+    if (!currentUserId) return;
     const supabase = createClient();
     const channel = supabase
       .channel(`my-membership-${groupId}`)
@@ -91,7 +112,7 @@ function GroupPageInner({ groupId, currentUserId }: GroupPageClientProps) {
     track(view === GroupView.Feed ? "group_feed_view" : "group_library_view", { group_id: group.id, view });
   }, [view, group?.id]);
 
-  if (!group) return null;
+  if (!group) return <GroupPageSkeleton />;
 
   return (
     <div className="mx-auto flex h-full max-w-md flex-col overflow-hidden">
@@ -126,10 +147,10 @@ function GroupPageInner({ groupId, currentUserId }: GroupPageClientProps) {
   );
 }
 
-export function GroupPageClient({ groupId, currentUserId }: GroupPageClientProps) {
+export function GroupPageClient({ groupId }: GroupPageClientProps) {
   return (
     <Suspense fallback={null}>
-      <GroupPageInner groupId={groupId} currentUserId={currentUserId} />
+      <GroupPageInner groupId={groupId} />
     </Suspense>
   );
 }

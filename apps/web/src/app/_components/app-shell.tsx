@@ -14,6 +14,7 @@ import { useNotifications } from "@/app/_libs/hooks/useNotifications";
 import { useDMConversations } from "@/app/_libs/hooks/useDMConversations";
 import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import { fetchGroupFeedPage } from "@/app/_libs/hooks/useGroupFeed";
+import { fetchGroupDetail } from "@/app/_libs/utils/fetchGroupDetail";
 import { fetchMessages } from "@/app/_libs/hooks/useMessages";
 import {
   SidebarOverridesProvider,
@@ -53,7 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // useUnreadCounts must come after groupIds so group badge tracking works
   const { counts: unreadCounts, markRead } = useUnreadCounts(userId, groupIds);
 
-  // Eager prefetch top 3 group feeds on sidebar mount
+  // Eager prefetch all group feeds + details on sidebar mount
   useEffect(() => {
     if (!userId || userGroups.length === 0) return;
     for (const g of userGroups) {
@@ -63,6 +64,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           fetchGroupFeedPage(g.id, userId, pageParam as string | null),
         initialPageParam: null,
         staleTime: 1000 * 30,
+      });
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.groups.detail(g.id),
+        queryFn: () => fetchGroupDetail(g.id),
+        staleTime: 1000 * 60 * 5,
       });
     }
   }, [userId, userGroups, queryClient]);

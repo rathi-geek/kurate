@@ -32,5 +32,6 @@ export function useGroupRole(groupId: string, userId: string) {
     queryKey: ["groups", "role", groupId, userId] as const,
     queryFn: () => fetchGroupRole(groupId, userId),
     staleTime: 1000 * 60 * 5,
+    enabled: !!userId,
   });
 }

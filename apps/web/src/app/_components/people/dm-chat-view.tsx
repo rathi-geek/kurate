@@ -10,6 +10,7 @@ import type { DMConversation, DMMessage } from "@kurate/types";
 import { ROUTES } from "@kurate/utils";
 import { queryKeys } from "@kurate/query";
 import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
+import { useAuth } from "@/app/_libs/auth-context";
 import { ChevronLeftIcon } from "@/components/icons";
 import Link from "next/link";
 import { MessageBubble } from "./message-bubble";
@@ -17,10 +18,11 @@ import { DmComposer } from "./dm-composer";
 
 interface DmChatViewProps {
   convoId: string;
-  currentUserId: string;
 }
 
-export function DmChatView({ convoId, currentUserId }: DmChatViewProps) {
+export function DmChatView({ convoId }: DmChatViewProps) {
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? "";
   const queryClient = useQueryClient();
   const convsCache = queryClient.getQueryData<DMConversation[]>(queryKeys.people.conversations());
   const cachedConvo = convsCache?.find((c) => c.id === convoId);
