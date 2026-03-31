@@ -12,6 +12,7 @@ import { createClient } from "@/app/_libs/supabase/client";
 import type { DMMessage } from "@kurate/types";
 import { PencilIcon, ReplyIcon, SmileIcon, TrashIcon } from "@/components/icons";
 import Link from "next/link";
+import { track } from "@/app/_libs/utils/analytics";
 
 const supabase = createClient();
 
@@ -222,6 +223,7 @@ export function MessageBubble({
                 href={message.item.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => track("link_opened", { context: "personal_chat" })}
                 className={`block overflow-hidden rounded-xl border ${
                   isOwn ? "border-white/20 bg-white/10" : "border-border bg-background"
                 } transition-opacity hover:opacity-80`}>

@@ -180,6 +180,8 @@ Fired whenever a user opens a link in a new tab. The `context` property tells yo
 |---|---|---|
 | `apps/web/src/app/_components/vault/VaultCard.tsx` | `"vault"` | User clicks the card (image or title area) in their vault |
 | `apps/web/src/app/_components/groups/feed-share-card.tsx` | `"group_feed"` | User clicks the preview image or title in a group feed post |
+| `apps/web/src/app/_components/people/message-bubble.tsx` | `"personal_chat"` | User clicks a shared link card in a DM conversation |
+| `apps/web/src/app/_components/home/vault-discovery-card.tsx` | `"discovery"` | User clicks a discovery card on the Discover tab |
 
 ---
 
@@ -335,7 +337,7 @@ Fired when a user starts a new direct message conversation by selecting a person
 
 ## Notes for Product / Data
 
-- **`link_opened` context** — currently only `"vault"` and `"group_feed"` are instrumented. If links are added to DM messages or discovery cards, add `context: "personal_chat"` / `context: "discovery"` at those call sites.
+- **`link_opened` context** — all four surfaces are instrumented: `"vault"`, `"group_feed"`, `"personal_chat"`, `"discovery"`. If a new surface is added, pass the appropriate context string at that call site.
 - **`comment_thread_opened`** — fires on every toggle (open and close). If you need open-only, add a guard checking the direction of the toggle.
 - **`dm_created`** — fires for both new and existing conversations (the API returns the existing convoId if one already exists). Consider adding an `is_new` boolean if you need to distinguish.
 - **`item_saved_from_group`** — does not fire on unsave. Unsave is a silent action with no tracking.

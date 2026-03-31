@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { useTranslations } from "@/i18n/use-translations";
+import { track } from "@/app/_libs/utils/analytics";
 
 enum CardText {
   DaysAgo = "days_ago",
@@ -38,6 +39,7 @@ export function VaultDiscoveryCard({ title, url, createdAt }: VaultDiscoveryCard
       href={url}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => track("link_opened", { context: "discovery" })}
       className="bg-card border-border hover:border-border/80 flex w-44 shrink-0 flex-col gap-1.5 rounded-xl border p-3 min-h-24 transition-shadow hover:shadow-sm">
       <p className="text-foreground line-clamp-2 text-sm leading-snug font-medium min-h-10">
         {title ?? domain}

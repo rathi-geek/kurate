@@ -28,27 +28,32 @@ export async function GET(request: NextRequest) {
     const next = searchParams.get("next");
     const safeNext = next && next.startsWith("/") ? next : null;
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = sessionData.session?.user;
       let redirectPath: string;
 
       if (user?.user_metadata?.role === "admin") {
         redirectPath = ROUTES.ADMIN.DASHBOARD;
+      } else if (user?.user_metadata?.is_onboarded === true) {
+        // Already synced to JWT — skip DB query
+        redirectPath = safeNext ?? ROUTES.APP.HOME;
       } else {
+        // Legacy or new user: check DB once, then sync to JWT
         const { data: profileData } = await supabase
           .from("profiles")
           .select("is_onboarded")
           .eq("id", user!.id)
           .single();
 
-        if (!profileData?.is_onboarded) {
+        if (profileData?.is_onboarded) {
+          await supabase.auth.updateUser({ data: { is_onboarded: true } });
+          redirectPath = safeNext ?? ROUTES.APP.HOME;
+        } else {
           redirectPath = safeNext
             ? `${ROUTES.APP.ONBOARDING}?next=${encodeURIComponent(safeNext)}`
             : ROUTES.APP.ONBOARDING;
-        } else {
-          redirectPath = safeNext ?? ROUTES.APP.HOME;
         }
       }
 

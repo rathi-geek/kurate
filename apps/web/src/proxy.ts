@@ -79,18 +79,23 @@ export async function proxy(request: NextRequest) {
 
   // Logged in but not yet onboarded → onboarding (only from app routes; admins bypass)
   if (user && isAppRoute && !isAdmin) {
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("is_onboarded")
-      .eq("id", user.id)
-      .single();
+    if (user.user_metadata?.is_onboarded === true) {
+      // Fast path: flag already in JWT, no DB query needed
+    } else {
+      // Legacy user: fall back to DB, sync to JWT on success
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("is_onboarded")
+        .eq("id", user.id)
+        .single();
 
-    if (!profileData?.is_onboarded) {
-      const fullPath = request.nextUrl.pathname + request.nextUrl.search;
-      const url = request.nextUrl.clone();
-      url.pathname = ROUTES.APP.ONBOARDING;
-      url.search = `?next=${encodeURIComponent(fullPath)}`;
-      return NextResponse.redirect(url);
+      if (!profileData?.is_onboarded) {
+        const fullPath = request.nextUrl.pathname + request.nextUrl.search;
+        const url = request.nextUrl.clone();
+        url.pathname = ROUTES.APP.ONBOARDING;
+        url.search = `?next=${encodeURIComponent(fullPath)}`;
+        return NextResponse.redirect(url);
+      }
     }
   }
 
@@ -104,6 +109,8 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     if (isAdmin) {
       url.pathname = ROUTES.ADMIN.DASHBOARD;
+    } else if (user.user_metadata?.is_onboarded === true) {
+      url.pathname = ROUTES.APP.HOME;
     } else {
       const { data: profileData } = await supabase
         .from("profiles")
