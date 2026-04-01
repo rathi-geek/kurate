@@ -1,13 +1,16 @@
 "use client";
 
 import { memo, useState } from "react";
+
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/i18n/use-translations";
+
+import type { GroupDrop } from "@kurate/types";
+
+import { ContentTypePill } from "@/components/ui/content-type-pill";
 
 import { EngagementBar } from "@/app/_components/groups/engagement-bar";
-import { ContentTypePill } from "@/components/ui/content-type-pill";
-import type { GroupDrop } from "@kurate/types";
+import { useTranslations } from "@/i18n/use-translations";
 
 interface LibraryCardProps {
   drop: GroupDrop;
@@ -31,21 +34,23 @@ export const LibraryCard = memo(function LibraryCard({
 
   return (
     <div
-      className="flex h-full flex-col rounded-card border bg-card overflow-hidden transition-colors hover:bg-surface cursor-pointer"
+      className="rounded-card bg-card hover:bg-surface flex h-full cursor-pointer flex-col overflow-hidden border transition-colors"
       onClick={handleClick}
       role="article"
-      aria-label={drop.item?.title ?? drop.note ?? t("drop_aria_fallback")}
-    >
+      aria-label={drop.item?.title ?? drop.content ?? drop.note ?? t("drop_aria_fallback")}>
       {/* Preview image (link drops only) */}
       {drop.item?.preview_image_url && !imgError ? (
-        <div className="relative w-full shrink-0 aspect-video bg-surface overflow-hidden">
+        <div className="bg-surface overflow-hiddrop.cden relative aspect-video w-full shrink-0">
           <Image
             src={drop.item.preview_image_url}
             alt={drop.item.title ?? ""}
             fill
             unoptimized
             className="object-cover"
-            onError={() => { console.log("[LibraryCard] image error for:", drop.item?.preview_image_url); setImgError(true); }}
+            onError={() => {
+              console.log("[LibraryCard] image error for:", drop.item?.preview_image_url);
+              setImgError(true);
+            }}
           />
         </div>
       ) : drop.item ? (
@@ -58,17 +63,17 @@ export const LibraryCard = memo(function LibraryCard({
         {/* Link drop content */}
         {drop.item && (
           <>
-            <p className="text-foreground line-clamp-2 mb-1 text-sm font-medium">
+            <p className="text-foreground mb-1 line-clamp-2 text-sm font-medium">
               {drop.item.title ?? drop.item.url}
             </p>
-            <div className="mb-2 flex flex-wrap items-center gap-1 font-mono text-[11px] text-muted-foreground">
+            <div className="text-muted-foreground mb-2 flex flex-wrap items-center gap-1 font-mono text-[11px]">
               {(drop.item.raw_metadata as Record<string, string> | null)?.source && (
                 <span>{(drop.item.raw_metadata as Record<string, string>).source}</span>
               )}
               {(drop.item.raw_metadata as Record<string, string> | null)?.source &&
                 (drop.item.raw_metadata as Record<string, string> | null)?.read_time && (
-                <span>·</span>
-              )}
+                  <span>·</span>
+                )}
               {(drop.item.raw_metadata as Record<string, string> | null)?.read_time && (
                 <span>{(drop.item.raw_metadata as Record<string, string>).read_time}</span>
               )}
@@ -77,14 +82,13 @@ export const LibraryCard = memo(function LibraryCard({
         )}
 
         {/* Text-only drop content */}
-        {!drop.item && drop.note && (
-          <p className="text-foreground line-clamp-3 mb-2 text-sm">{drop.note}</p>
+        {!drop.item && (drop.content || drop.note) && (
+          <p className="text-foreground mb-2 line-clamp-3 text-sm">{drop.content ?? drop.note}</p>
         )}
 
         <div
-          className="mt-auto border-t border-border/50 pt-2"
-          onClick={(e) => e.stopPropagation()}
-        >
+          className="border-border/50 mt-auto border-t pt-2"
+          onClick={(e) => e.stopPropagation()}>
           <EngagementBar
             groupPostId={drop.id}
             groupId={groupId}

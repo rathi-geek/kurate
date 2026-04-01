@@ -238,6 +238,7 @@ export const FeedShareCard = memo(function FeedShareCard({
               source="group_feed"
               commentCount={drop.commentCount}
               hasNewComments={hasNewComments}
+              showSaveToVault={!!drop.item}
               onCommentIconClick={() => {
                 const opening = !showComments;
                 if (opening) {

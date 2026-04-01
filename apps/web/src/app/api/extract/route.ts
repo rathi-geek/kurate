@@ -1,78 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import {
+  type ContentType,
+  extractMetaContent,
+  extractMetadataFull,
+} from "@/app/_libs/metadata/extractor";
 import { createClient } from "@/app/_libs/supabase/server";
-import { extractTagsFromHtml } from "@kurate/utils";
 
-const BROWSER_UA =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-
-function getYouTubeVideoId(url: string): string | null {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes("youtube.com") && parsed.searchParams.has("v")) {
-      return parsed.searchParams.get("v");
-    }
-    if (parsed.hostname === "youtu.be" || parsed.hostname === "www.youtu.be") {
-      return parsed.pathname.slice(1).split("/")[0] || null;
-    }
-  } catch {}
-  return null;
-}
-
-function isXUrl(url: string): boolean {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return host === "x.com" || host === "twitter.com" || host === "www.x.com" || host === "www.twitter.com";
-  } catch {
-    return false;
-  }
-}
-
-function titleFromUrl(url: string): string {
-  const parsed = new URL(url);
-  const hostname = parsed.hostname.replace(/^www\./, "");
-  const segments = parsed.pathname.split("/").filter(Boolean);
-  const skip = new Set(["index", "p", "post", "posts", "blog", "article", "articles", "a", "s"]);
-  const slug = [...segments].reverse().find((s) => !skip.has(s) && s.length > 2);
-
-  if (slug) {
-    return slug
-      .replace(/[-_]/g, " ")
-      .replace(/\.[^.]+$/, "")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-  return hostname;
-}
-
-function fallbackMeta(url: string) {
-  const hostname = new URL(url).hostname.replace(/^www\./, "");
-  return {
-    url,
-    title: titleFromUrl(url),
-    source: hostname,
-    contentType: "article" as const,
-    tags: [] as string[],
-  };
-}
-
-function detectContentType(url: string): "video" | "podcast" | "article" {
-  const host = new URL(url).hostname.toLowerCase();
-  if (host.includes("youtube.com") || host.includes("youtu.be") || host.includes("vimeo.com")) {
-    return "video";
-  }
-  if (host.includes("spotify.com") || host.includes("podcasts.apple.com")) {
-    return "podcast";
-  }
-  return "article";
-}
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function cleanSource(url: string): string {
   try {
-    const host = new URL(url).hostname;
-    return host.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, "");
   } catch {
     return url;
   }
+}
+
+function mapContentType(ct: ContentType): "article" | "video" | "podcast" {
+  if (ct === "video") return "video";
+  if (ct === "spotify") return "podcast";
+  return "article"; // article, substack, tweet, link
 }
 
 function estimateReadTime(wordCount: number): string {
@@ -80,138 +28,108 @@ function estimateReadTime(wordCount: number): string {
   return `${minutes} min read`;
 }
 
-
-function getMeta(html: string, property: string): string | undefined {
-  const esc = property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const patterns = [
-    new RegExp(`<meta[^>]+(?:property|name)=["']${esc}["'][^>]+content=["']([^"'<>]+)["']`, "i"),
-    new RegExp(`<meta[^>]+content=["']([^"'<>]+["'])[^>]+(?:property|name)=["']${esc}["']`, "i"),
-  ];
-  for (const p of patterns) {
-    const match = html.match(p);
-    if (match?.[1]) {
-      return match[1].trim();
-    }
-  }
-  return undefined;
+function formatIsoDuration(iso: string): string | undefined {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return undefined;
+  const h = parseInt(m[1] ?? "0");
+  const min = parseInt(m[2] ?? "0");
+  const totalMin = h * 60 + min;
+  if (totalMin === 0) return undefined;
+  return h > 0 ? `${h}h ${min}m watch` : `${totalMin} min watch`;
 }
 
-function parseMetadata(html: string, url: string) {
-  const title = getMeta(html, "og:title") || getMeta(html, "twitter:title") || cleanSource(url);
-  const author = getMeta(html, "og:author") || getMeta(html, "article:author");
-  const rawImage = getMeta(html, "og:image") || getMeta(html, "twitter:image");
-  let previewImage: string | undefined;
-  if (rawImage) {
-    try {
-      previewImage = new URL(rawImage, url).href;
-    } catch {
-      previewImage = rawImage;
-    }
-  }
-  const description = getMeta(html, "og:description") || getMeta(html, "twitter:description");
-  const contentType = detectContentType(url);
-  let readTime: string | undefined;
-  let duration: string | undefined;
-  if (contentType === "article") {
-    const bodyText = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    const wordCount = bodyText.split(/\s+/).length;
-    if (wordCount > 100) {
-      readTime = estimateReadTime(wordCount);
-    }
-  } else if (contentType === "podcast") {
-    const rawSecs = getMeta(html, "music:duration");
-    if (rawSecs) {
-      const secs = parseInt(rawSecs);
-      if (!isNaN(secs) && secs > 0) {
-        const min = Math.round(secs / 60);
-        duration = min >= 60 ? `${Math.floor(min / 60)}h ${min % 60}m` : `${min} min`;
-      }
-    }
-  }
-  const tags = extractTagsFromHtml(html);
-  return { url, title, source: cleanSource(url), author, previewImage, contentType, readTime, duration, description, tags };
-}
+// ─── Route Handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "UNAUTHORIZED", message: "Authentication required." }, { status: 401 });
+      return NextResponse.json(
+        { error: "UNAUTHORIZED", message: "Authentication required." },
+        { status: 401 },
+      );
     }
 
     const { url } = await req.json();
     if (!url || typeof url !== "string") {
-      return NextResponse.json({ error: "INVALID_URL", message: "Please provide a valid URL." }, { status: 400 });
+      return NextResponse.json(
+        { error: "INVALID_URL", message: "Please provide a valid URL." },
+        { status: 400 },
+      );
     }
     try {
       new URL(url);
     } catch {
-      return NextResponse.json({ error: "INVALID_URL", message: "Please provide a valid URL." }, { status: 400 });
+      return NextResponse.json(
+        { error: "INVALID_URL", message: "Please provide a valid URL." },
+        { status: 400 },
+      );
     }
 
-    const ytVideoId = getYouTubeVideoId(url);
-    if (ytVideoId) {
-      let ytTitle = "YouTube Video";
-      let ytAuthor: string | undefined;
-      let ytThumbnail = `https://img.youtube.com/vi/${ytVideoId}/hqdefault.jpg`;
-      try {
-        const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, {
-          headers: { "User-Agent": BROWSER_UA },
-        });
-        if (oembedRes.ok) {
-          const oembed = await oembedRes.json();
-          if (oembed.title) ytTitle = oembed.title;
-          if (oembed.author_name) ytAuthor = oembed.author_name;
-          if (oembed.thumbnail_url) ytThumbnail = oembed.thumbnail_url;
+    // ── Extract metadata using the full extractor ──
+    const meta = await extractMetadataFull(url);
+    const contentType = mapContentType(meta.contentType);
+    const source = cleanSource(url);
+
+    // ── Compute supplementary fields from HTML when available ──
+    let author: string | undefined;
+    let readTime: string | undefined;
+    let duration: string | undefined;
+
+    if (meta.html) {
+      author =
+        extractMetaContent(meta.html, "og:author") ||
+        extractMetaContent(meta.html, "article:author") ||
+        undefined;
+
+      if (contentType === "article") {
+        const bodyText = meta.html
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        const wordCount = bodyText.split(/\s+/).length;
+        if (wordCount > 100) {
+          readTime = estimateReadTime(wordCount);
         }
-      } catch {}
-      return NextResponse.json({ url, title: ytTitle, source: "youtube.com", author: ytAuthor, contentType: "video" as const, previewImage: ytThumbnail, tags: [] as string[] });
-    }
+      }
 
-    if (isXUrl(url) || url.includes("t.co/")) {
-      try {
-        const oembedRes = await fetch(
-          `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true`,
-          { headers: { "User-Agent": BROWSER_UA } },
-        );
-        if (oembedRes.ok) {
-          const oembed = await oembedRes.json() as { author_name?: string; text?: string; author_url?: string };
-          const author = oembed.author_name ?? undefined;
-          const username = new URL(url).pathname.split("/")[1] ?? undefined;
-          const title = author && username
-            ? `${author} (@${username}) on X`
-            : author ? `${author} on X` : "X (Twitter)";
-          const description = oembed.text
-            ? oembed.text.replace(/https?:\/\/\S+/g, "").trim() || undefined
-            : undefined;
-          return NextResponse.json({ url, title, description, source: "x.com", author, contentType: "article" as const, tags: [] as string[] });
+      if (contentType === "video") {
+        const dMatch = meta.html.match(/"duration"\s*:\s*"(PT[^"]+)"/);
+        if (dMatch?.[1]) duration = formatIsoDuration(dMatch[1]);
+      }
+
+      if (contentType === "podcast") {
+        const rawSecs = extractMetaContent(meta.html, "music:duration");
+        if (rawSecs) {
+          const secs = parseInt(rawSecs);
+          if (!isNaN(secs) && secs > 0) {
+            const min = Math.round(secs / 60);
+            duration = min >= 60 ? `${Math.floor(min / 60)}h ${min % 60}m` : `${min} min`;
+          }
         }
-      } catch {}
-      return NextResponse.json({ url, title: "Tweet", source: "x.com", contentType: "article" as const, tags: [] as string[] });
+      }
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    let html: string;
-    try {
-      const res = await fetch(url, {
-        signal: controller.signal,
-        headers: { "User-Agent": BROWSER_UA, Accept: "text/html,application/xhtml+xml" },
-        redirect: "follow",
-      });
-      clearTimeout(timeout);
-      if (!res.ok) return NextResponse.json(fallbackMeta(url));
-      html = await res.text();
-    } catch {
-      clearTimeout(timeout);
-      return NextResponse.json(fallbackMeta(url));
-    }
-
-    const meta = parseMetadata(html, url);
-    return NextResponse.json(meta);
+    return NextResponse.json({
+      url,
+      title: meta.title,
+      source,
+      author,
+      previewImage: meta.thumbnail,
+      contentType,
+      readTime,
+      duration,
+      description: meta.description,
+    });
   } catch {
-    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Something went wrong." }, { status: 500 });
+    return NextResponse.json(
+      { error: "INTERNAL_ERROR", message: "Something went wrong." },
+      { status: 500 },
+    );
   }
 }

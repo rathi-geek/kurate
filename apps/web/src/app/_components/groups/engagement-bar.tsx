@@ -26,6 +26,7 @@ interface EngagementBarProps {
   hasNewComments?: boolean;
   onCommentIconClick?: () => void;
   source: "group_feed" | "group_library";
+  showSaveToVault?: boolean;
 }
 
 export function EngagementBar({
@@ -39,6 +40,7 @@ export function EngagementBar({
   hasNewComments,
   onCommentIconClick,
   source,
+  showSaveToVault = true,
 }: EngagementBarProps) {
   const t = useTranslations("groups");
   const { toggleReaction } = useDropEngagement();
@@ -110,19 +112,21 @@ export function EngagementBar({
       </button>
 
       {/* Bookmark / Vault toggle */}
-      <button
-        type="button"
-        onClick={() => toggleVault(itemData)}
-        className={`flex items-center gap-1 px-2 py-1 rounded-badge text-xs transition-colors hover:bg-surface ${
-          isSaved
-            ? "text-primary"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-        aria-label={isSaved ? t("bookmark_remove_aria") : t("bookmark_save_aria")}
-        aria-pressed={isSaved}
-      >
-        <BookmarkIcon className="size-[14px]" filled={isSaved} />
-      </button>
+      {showSaveToVault && (
+        <button
+          type="button"
+          onClick={() => toggleVault(itemData)}
+          className={`flex items-center gap-1 px-2 py-1 rounded-badge text-xs transition-colors hover:bg-surface ${
+            isSaved
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label={isSaved ? t("bookmark_remove_aria") : t("bookmark_save_aria")}
+          aria-pressed={isSaved}
+        >
+          <BookmarkIcon className="size-[14px]" filled={isSaved} />
+        </button>
+      )}
 
       {/* Comments toggle */}
       {commentCount !== undefined && (
