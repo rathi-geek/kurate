@@ -10,6 +10,7 @@ export interface ExtractedMetadata {
   preview_image?: string | null;
   content_type?: "article" | "video" | "podcast";
   read_time?: string | null;
+  duration?: string | null;
 }
 
 interface UseExtractMetadataResult {
@@ -42,6 +43,7 @@ export function useExtractMetadata(): UseExtractMetadataResult {
           preview_image: (data as { previewImage?: string }).previewImage ?? null,
           content_type: (data as { contentType?: "article" | "video" | "podcast" }).contentType ?? undefined,
           read_time: (data as { readTime?: string }).readTime ?? null,
+          duration: (data as { duration?: string }).duration ?? null,
         });
       } else {
         setExtractionFailed(true);
