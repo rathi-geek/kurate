@@ -1552,7 +1552,14 @@ export type Database = {
     }
     Enums: {
       bucket_source: "auto" | "ai" | "user"
-      content_type_enum: "article" | "video" | "podcast"
+      content_type_enum:
+        | "article"
+        | "video"
+        | "podcast"
+        | "tweet"
+        | "substack"
+        | "spotify"
+        | "link"
       device_type_enum: "android" | "ios" | "web"
       entity_type_enum:
         | "like"
@@ -1697,7 +1704,15 @@ export const Constants = {
   public: {
     Enums: {
       bucket_source: ["auto", "ai", "user"],
-      content_type_enum: ["article", "video", "podcast"],
+      content_type_enum: [
+        "article",
+        "video",
+        "podcast",
+        "tweet",
+        "substack",
+        "spotify",
+        "link",
+      ],
       device_type_enum: ["android", "ios", "web"],
       entity_type_enum: [
         "like",

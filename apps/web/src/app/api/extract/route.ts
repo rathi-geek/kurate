@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
-  type ContentType,
   extractMetaContent,
   extractMetadataFull,
 } from "@/app/_libs/metadata/extractor";
@@ -15,12 +14,6 @@ function cleanSource(url: string): string {
   } catch {
     return url;
   }
-}
-
-function mapContentType(ct: ContentType): "article" | "video" | "podcast" {
-  if (ct === "video") return "video";
-  if (ct === "spotify") return "podcast";
-  return "article"; // article, substack, tweet, link
 }
 
 function estimateReadTime(wordCount: number): string {
@@ -71,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     // ── Extract metadata using the full extractor ──
     const meta = await extractMetadataFull(url);
-    const contentType = mapContentType(meta.contentType);
+    const contentType = meta.contentType;
     const source = cleanSource(url);
 
     // ── Compute supplementary fields from HTML when available ──
@@ -85,7 +78,7 @@ export async function POST(req: NextRequest) {
         extractMetaContent(meta.html, "article:author") ||
         undefined;
 
-      if (contentType === "article") {
+      if (contentType === "article" || contentType === "substack") {
         const bodyText = meta.html
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
@@ -103,7 +96,7 @@ export async function POST(req: NextRequest) {
         if (dMatch?.[1]) duration = formatIsoDuration(dMatch[1]);
       }
 
-      if (contentType === "podcast") {
+      if (contentType === "spotify") {
         const rawSecs = extractMetaContent(meta.html, "music:duration");
         if (rawSecs) {
           const secs = parseInt(rawSecs);

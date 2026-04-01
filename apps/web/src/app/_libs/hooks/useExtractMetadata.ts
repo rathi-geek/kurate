@@ -8,9 +8,10 @@ export interface ExtractedMetadata {
   source?: string | null;
   author?: string | null;
   preview_image?: string | null;
-  content_type?: "article" | "video" | "podcast";
+  content_type?: import("@kurate/types").ContentType;
   read_time?: string | null;
   duration?: string | null;
+  tags?: string[] | null;
 }
 
 interface UseExtractMetadataResult {

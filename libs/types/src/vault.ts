@@ -7,7 +7,7 @@ export type VaultItemInsert = Database["public"]["Tables"]["user_logged_items"][
 export type VaultItemUpdate = Database["public"]["Tables"]["user_logged_items"]["Update"];
 
 // Narrow string columns to proper unions
-export type ContentType = "article" | "video" | "podcast";
+export type ContentType = Database["public"]["Enums"]["content_type_enum"];
 export type SaveSource = "external" | "shares" | "web_extension";
 
 // raw_metadata JSON blob shape written by frontend
@@ -59,7 +59,11 @@ export type VaultContentTypeFilterLabelKey =
   | "filter_all_types"
   | "filter_articles"
   | "filter_videos"
-  | "filter_podcasts";
+  | "filter_podcasts"
+  | "filter_tweets"
+  | "filter_substack"
+  | "filter_spotify"
+  | "filter_links";
 
 export type VaultReadStatusFilterLabelKey =
   | "filter_all_items"
@@ -86,6 +90,10 @@ export const CONTENT_TYPE_FILTER_OPTIONS: readonly {
   { value: "article", labelKey: "filter_articles" },
   { value: "video", labelKey: "filter_videos" },
   { value: "podcast", labelKey: "filter_podcasts" },
+  { value: "tweet", labelKey: "filter_tweets" },
+  { value: "substack", labelKey: "filter_substack" },
+  { value: "spotify", labelKey: "filter_spotify" },
+  { value: "link", labelKey: "filter_links" },
 ] as const;
 
 export const READ_STATUS_FILTER_OPTIONS: readonly {

@@ -1,12 +1,13 @@
 "use client";
 
-import { type Variants, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "@/i18n/use-translations";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
+import { type Variants, motion, useReducedMotion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
-import { BrandArch } from "@/components/brand";
+
 import { fadeUp } from "@/app/_libs/utils/motion";
+import { BrandArch } from "@/components/brand";
+import { useTranslations } from "@/i18n/use-translations";
 
 export interface VaultEmptyStateProps {
   onExplore: () => void;
@@ -14,11 +15,28 @@ export interface VaultEmptyStateProps {
   filters?: VaultFiltersType;
 }
 
-export function VaultEmptyState({
-  onExplore,
-  variant = "default",
-  filters,
-}: VaultEmptyStateProps) {
+const CONTENT_TYPE_KEY: Record<string, string> = {
+  article:  "empty_state_filtered_items_articles",
+  video:    "empty_state_filtered_items_videos",
+  podcast:  "empty_state_filtered_items_podcasts",
+  tweet:    "empty_state_filtered_items_tweets",
+  substack: "empty_state_filtered_items_substack",
+  spotify:  "empty_state_filtered_items_spotify",
+  link:     "empty_state_filtered_items_links",
+};
+
+const TIME_KEY: Record<string, string> = {
+  today: "empty_state_filtered_time_today",
+  week:  "empty_state_filtered_time_week",
+  month: "empty_state_filtered_time_month",
+};
+
+const READ_STATUS_KEY: Record<string, string> = {
+  read:   "empty_state_filtered_read_read",
+  unread: "empty_state_filtered_read_unread",
+};
+
+export function VaultEmptyState({ onExplore, variant = "default", filters }: VaultEmptyStateProps) {
   const t = useTranslations("vault");
   const prefersReducedMotion = useReducedMotion();
   const isFiltered = variant === "filtered";
@@ -29,64 +47,33 @@ export function VaultEmptyState({
     readStatus: "all",
   };
 
-  const itemLabel = activeFilters.contentType === "article"
-    ? t("empty_state_filtered_items_articles")
-    : activeFilters.contentType === "video"
-      ? t("empty_state_filtered_items_videos")
-      : activeFilters.contentType === "podcast"
-        ? t("empty_state_filtered_items_podcasts")
-        : t("empty_state_filtered_items_all");
-
-  const timeLabel = activeFilters.time === "today"
-    ? t("empty_state_filtered_time_today")
-    : activeFilters.time === "week"
-      ? t("empty_state_filtered_time_week")
-      : activeFilters.time === "month"
-        ? t("empty_state_filtered_time_month")
-        : null;
-
-  const readStatusLabel = activeFilters.readStatus === "read"
-    ? t("empty_state_filtered_read_read")
-    : activeFilters.readStatus === "unread"
-      ? t("empty_state_filtered_read_unread")
-      : null;
+  const itemLabel = t(CONTENT_TYPE_KEY[activeFilters.contentType] ?? "empty_state_filtered_items_all");
+  const timeLabel = TIME_KEY[activeFilters.time] ? t(TIME_KEY[activeFilters.time]!) : null;
+  const readStatusLabel = READ_STATUS_KEY[activeFilters.readStatus] ? t(READ_STATUS_KEY[activeFilters.readStatus]!) : null;
 
   const filteredTitle = readStatusLabel
-    ? (timeLabel
-      ? t("empty_state_filtered_message_read_with_time", {
-        readStatusLabel,
-        itemLabel,
-        timeLabel,
-      })
-      : t("empty_state_filtered_message_read", { readStatusLabel, itemLabel }))
-    : (timeLabel
+    ? timeLabel
+      ? t("empty_state_filtered_message_read_with_time", { readStatusLabel, itemLabel, timeLabel })
+      : t("empty_state_filtered_message_read", { readStatusLabel, itemLabel })
+    : timeLabel
       ? t("empty_state_filtered_message_with_time", { itemLabel, timeLabel })
-      : t("empty_state_filtered_message", { itemLabel }));
+      : t("empty_state_filtered_message", { itemLabel });
 
   return (
     <motion.div
       className="flex min-h-0 flex-1 flex-col items-center justify-center py-10"
       initial={prefersReducedMotion ? false : "hidden"}
       animate={prefersReducedMotion ? undefined : "visible"}
-      variants={fadeUp as Variants}
-    >
-      <BrandArch
-        s={56}
-        className="mb-5 text-muted-foreground/30"
-      />
-      <h2 className="px-4 text-center font-serif text-lg font-bold text-foreground">
+      variants={fadeUp as Variants}>
+      <BrandArch s={56} className="text-muted-foreground/30 mb-5" />
+      <h2 className="text-foreground px-4 text-center font-serif text-lg font-bold">
         {isFiltered ? filteredTitle : t("empty_state_title")}
       </h2>
-      <p className="mt-1 px-4 text-center font-sans text-sm text-muted-foreground">
+      <p className="text-muted-foreground mt-1 px-4 text-center font-sans text-sm">
         {isFiltered ? t("empty_state_filtered_subtitle") : t("empty_state_subtitle")}
       </p>
       {!isFiltered && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onExplore}
-          className="mt-4"
-        >
+        <Button variant="outline" size="sm" onClick={onExplore} className="mt-4">
           {t("empty_state_explore_btn")}
         </Button>
       )}

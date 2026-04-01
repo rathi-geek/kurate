@@ -20,7 +20,7 @@ export async function generateUrlHash(url: string): Promise<string> {
 export interface UpsertLoggedItemInput {
   url: string;
   title?: string | null;
-  content_type?: string | null;
+  content_type?: ContentType | null;
   preview_image_url?: string | null;
   description?: string | null;
   source?: string | null;

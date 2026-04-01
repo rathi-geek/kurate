@@ -205,7 +205,7 @@ RETURNS TEXT LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS $$
   SELECT array_to_string(arr, sep);
 $$;
 
-CREATE TYPE content_type_enum AS ENUM ('article', 'video', 'podcast');
+CREATE TYPE content_type_enum AS ENUM ('article', 'video', 'podcast', 'tweet', 'substack', 'spotify', 'link');
 
 CREATE TABLE IF NOT EXISTS public.logged_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
