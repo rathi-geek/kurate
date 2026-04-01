@@ -16,6 +16,7 @@ export type GroupProfile = {
 // Base table: group_posts (replaces group_shares)
 export type GroupDrop = Tables<"group_posts"> & {
   sharer: GroupProfile;
+  content: string | null;
   // item is null for text-only posts (logged_item_id is nullable)
   item: Pick<
     Tables<"logged_items">,

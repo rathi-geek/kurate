@@ -29,6 +29,7 @@ export type GroupPostRow = {
   logged_item_id: string | null;
   shared_by: string;
   note: string | null;
+  content: string | null;
   shared_at: string;
   sharer: ProfileRow | ProfileRow[] | null;
   item: {
@@ -98,6 +99,7 @@ export function mapRowToGroupDrop(row: GroupPostRow, currentUserId: string): Gro
     logged_item_id: row.logged_item_id,
     shared_by: row.shared_by,
     note: row.note,
+    content: row.content ?? null,
     shared_at: row.shared_at,
     sharer: {
       id: rawSharer?.id ?? row.shared_by,
@@ -135,6 +137,7 @@ export const GROUP_POST_SELECT = `
   logged_item_id,
   shared_by,
   note,
+  content,
   shared_at,
   sharer:profiles!group_posts_shared_by_fkey(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle),
   item:logged_items!group_posts_logged_item_id_fkey(url, title, preview_image_url, content_type, raw_metadata, description),

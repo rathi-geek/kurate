@@ -332,6 +332,7 @@ export type Database = {
       }
       group_posts: {
         Row: {
+          content: string | null
           convo_id: string
           id: string
           logged_item_id: string | null
@@ -340,6 +341,7 @@ export type Database = {
           shared_by: string
         }
         Insert: {
+          content?: string | null
           convo_id: string
           id?: string
           logged_item_id?: string | null
@@ -348,6 +350,7 @@ export type Database = {
           shared_by: string
         }
         Update: {
+          content?: string | null
           convo_id?: string
           id?: string
           logged_item_id?: string | null
@@ -1527,6 +1530,7 @@ export type Database = {
       get_discovery_feed: {
         Args: { p_user_id: string }
         Returns: {
+          content: string | null
           convo_id: string
           id: string
           logged_item_id: string | null

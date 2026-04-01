@@ -3,18 +3,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "@/i18n/use-translations";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 
 import { ChatInput } from "@/app/_components/home/chat-input";
 import { UrlExtractPreview } from "@/app/_components/shared/url-extract-preview";
-import { useSaveItem } from "@/app/_libs/hooks/useSaveItem";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
-import { springGentle, shadowFloating, shadowHoverGlow, successGlowBoxShadow, successGlowTransition } from "@/app/_libs/utils/motion";
-import { track } from "@/app/_libs/utils/analytics";
+import { upsertLoggedItem, useSaveItem } from "@/app/_libs/hooks/useSaveItem";
 import { createClient } from "@/app/_libs/supabase/client";
+import { track } from "@/app/_libs/utils/analytics";
+import {
+  shadowFloating,
+  springGentle,
+  successGlowBoxShadow,
+  successGlowTransition,
+} from "@/app/_libs/utils/motion";
+import { CloseIcon } from "@/components/icons";
+import { useTranslations } from "@/i18n/use-translations";
 
 const supabase = createClient();
 
@@ -32,32 +36,26 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
   const chatInputRef = useRef<HTMLInputElement>(null);
 
   const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
-  const [note, setNote] = useState("");
   const [isPosting, setIsPosting] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [inputKey, setInputKey] = useState(0);
-  // Text-only post state (requires DB migration: group_shares.content + nullable logged_item_id)
-  const [pendingTextPost, setPendingTextPost] = useState<string | null>(null);
 
   const { isExtracting, metadata, extractionFailed, extract, reset } = useExtractMetadata();
 
-  const boxShadow = isHovered
-    ? shadowHoverGlow
-    : metadata && !isExtracting
-      ? successGlowBoxShadow
-      : shadowFloating;
+  const boxShadow = metadata && !isExtracting ? successGlowBoxShadow : shadowFloating;
 
-  const showPopup =
-    !!detectedUrl || !!pendingTextPost || isExtracting || (extractionFailed && !!detectedUrl);
+  const showPreview = !!detectedUrl || isExtracting || (extractionFailed && !!detectedUrl);
 
-  const handleUrlChange = useCallback(async (url: string | null) => {
-    setDetectedUrl(url);
-    if (!url) {
-      reset();
-      return;
-    }
-    await extract(url);
-  }, [extract, reset]);
+  const handleUrlChange = useCallback(
+    async (url: string | null) => {
+      setDetectedUrl(url);
+      if (!url) {
+        reset();
+        return;
+      }
+      await extract(url);
+    },
+    [extract, reset],
+  );
 
   useEffect(() => {
     if (detectedUrl) {
@@ -65,228 +63,159 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     }
   }, [detectedUrl]);
 
-  const handlePost = async () => {
-    if (!detectedUrl || !currentUserId) return;
-    setIsPosting(true);
-    try {
-      async function generateUrlHash(url: string): Promise<string> {
-        const normalized = url.toLowerCase().trim();
-        const data = new TextEncoder().encode(normalized);
-        const buf = await crypto.subtle.digest("SHA-256", data);
-        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  const handleCancel = useCallback(() => {
+    setDetectedUrl(null);
+    reset();
+    setInputKey((k) => k + 1);
+  }, [reset]);
+
+  // Handles both text-only posts and link posts (note comes from ChatInput)
+  const handleSend = useCallback(
+    async (text: string) => {
+      if (!currentUserId) return;
+
+      if (detectedUrl) {
+        // Link post — text from ChatInput is the optional note
+        setIsPosting(true);
+        try {
+          const loggedItemId = await upsertLoggedItem({
+            url: detectedUrl,
+            title: metadata?.title,
+            content_type: metadata?.content_type,
+            preview_image_url: metadata?.preview_image ?? null,
+            source: metadata?.source,
+            read_time: metadata?.read_time ? String(metadata.read_time) : null,
+          });
+
+          const { error } = await supabase.from("group_posts").insert({
+            convo_id: groupId,
+            logged_item_id: loggedItemId,
+            shared_by: currentUserId,
+            note: text.trim() || null,
+          });
+
+          if (error) throw new Error(error.message);
+          track("group_post_created", { content_type: metadata?.content_type ?? "article" });
+
+          pendingVaultSave.current = {
+            url: detectedUrl,
+            title: metadata?.title,
+            source: metadata?.source,
+            preview_image: metadata?.preview_image,
+            content_type: metadata?.content_type ?? "article",
+            read_time: metadata?.read_time,
+            save_source: "shares",
+            saved_from_group: groupId,
+          };
+
+          toast("Shared to group · Save to vault?", {
+            action: {
+              label: "Yes",
+              onClick: () => {
+                if (pendingVaultSave.current) {
+                  saveItem.mutate(pendingVaultSave.current, {
+                    onError: () => toast.error("Failed to save to vault"),
+                  });
+                  pendingVaultSave.current = null;
+                }
+              },
+            },
+            cancel: {
+              label: "No",
+              onClick: () => {
+                pendingVaultSave.current = null;
+              },
+            },
+            duration: 6000,
+            actionButtonStyle: {
+              backgroundColor: "var(--color-primary)",
+              color: "var(--color-primary-foreground)",
+            },
+          });
+
+          setDetectedUrl(null);
+          reset();
+          setInputKey((k) => k + 1);
+          onDropPosted();
+        } finally {
+          setIsPosting(false);
+        }
+        return;
       }
 
-      const url_hash = await generateUrlHash(detectedUrl);
-      const { data: loggedItem, error: liError } = await supabase
-        .from("logged_items")
-        .upsert(
-          {
-            url: detectedUrl,
-            url_hash,
-            title: metadata?.title ?? detectedUrl,
-            content_type: metadata?.content_type ?? "article",
-            preview_image_url: metadata?.preview_image ?? null,
-            raw_metadata: { source: metadata?.source ?? null, read_time: metadata?.read_time ?? null },
-          },
-          { onConflict: "url_hash" },
-        )
-        .select("id")
-        .single();
-      if (liError) throw new Error(liError.message);
-
-      const { error } = await supabase.from("group_posts").insert({
-        convo_id: groupId,
-        logged_item_id: loggedItem.id,
-        shared_by: currentUserId,
-        note: note.trim() || null,
-      });
-
-      if (error) throw new Error(error.message);
-      track("group_post_created", { content_type: metadata?.content_type ?? "article" });
-
-      pendingVaultSave.current = {
-        url: detectedUrl,
-        title: metadata?.title,
-        source: metadata?.source,
-        preview_image: metadata?.preview_image,
-        content_type: metadata?.content_type ?? "article",
-        read_time: metadata?.read_time,
-        save_source: "shares",
-        saved_from_group: groupId,
-      };
-
-      toast("Shared to group · Save to vault?", {
-        action: {
-          label: "Yes",
-          onClick: () => {
-            if (pendingVaultSave.current) {
-              saveItem.mutate(pendingVaultSave.current, {
-                onError: () => toast.error("Failed to save to vault"),
-              });
-              pendingVaultSave.current = null;
-            }
-          },
-        },
-        cancel: { label: "No", onClick: () => { pendingVaultSave.current = null; } },
-        duration: 6000,
-        actionButtonStyle: { backgroundColor: "var(--color-primary)", color: "var(--color-primary-foreground)" },
-      });
-
-      setDetectedUrl(null);
-      reset();
-      setNote("");
-      setInputKey((k) => k + 1);
-      onDropPosted();
-    } finally {
-      setIsPosting(false);
-    }
-  };
-
-  // Text-only post handler — requires DB migration before insert will work
-  // Migration needed: group_shares.content TEXT, logged_item_id nullable
-  const handleTextPost = async () => {
-    if (!pendingTextPost?.trim() || !currentUserId) return;
-    setIsPosting(true);
-    try {
-      // group_posts.content requires DB migration: nullable logged_item_id already exists
-      // After migration adds content column, remove the `as any` cast
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from("group_posts") as any).insert({
-        convo_id: groupId,
-        shared_by: currentUserId,
-        content: pendingTextPost.trim(),
-      });
-      if (error) throw new Error(error.message);
-      setPendingTextPost(null);
-      onDropPosted();
-    } finally {
-      setIsPosting(false);
-    }
-  };
-
-  const handleSend = (text: string) => {
-    // URL path is handled by onUrlChange; this fires for text-only input
-    if (detectedUrl) return;
-    if (text.trim()) setPendingTextPost(text.trim());
-  };
+      // Text-only post
+      if (!text.trim()) return;
+      setIsPosting(true);
+      try {
+        const { error } = await supabase.from("group_posts").insert({
+          convo_id: groupId,
+          shared_by: currentUserId,
+          content: text.trim(),
+        });
+        if (error) throw new Error(error.message);
+        track("group_text_post_created", {});
+        setInputKey((k) => k + 1);
+        onDropPosted();
+      } finally {
+        setIsPosting(false);
+      }
+    },
+    [detectedUrl, metadata, currentUserId, groupId, onDropPosted, reset, saveItem],
+  );
 
   return (
-    <div className="relative px-4 pt-3 pb-1">
-      {/* ── Input bar ─────────────────────────────────────────────────── */}
+    <div className="space-y-2 px-4 pt-3 pb-1">
+      {/* ChatInput — note is typed here when URL is locked, plain text for text-only posts */}
       <ChatInput
         ref={chatInputRef}
         key={inputKey}
         onSend={handleSend}
         onUrlChange={handleUrlChange}
         placeholder={t("composer_placeholder")}
-        showPlusIcon={false}
+        disabled={isPosting}
       />
 
-      {/* ── Floating popup — slides down below input when URL detected ── */}
+      {/* Preview card — appears below ChatInput when URL is detected */}
       <AnimatePresence>
-        {showPopup && (
+        {showPreview && (
           <motion.div
-            className="absolute top-full left-4 right-4 z-50 mt-2"
             initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              boxShadow: (Array.isArray(boxShadow) ? [...boxShadow] : boxShadow) as
+                | string
+                | string[],
+            }}
             exit={prefersReducedMotion ? undefined : { opacity: 0, y: -6 }}
-            transition={springGentle}
-          >
-            <motion.div
-              animate={{
-                boxShadow: (Array.isArray(boxShadow) ? [...boxShadow] : boxShadow) as string | string[],
-              }}
-              transition={{ ...springGentle, boxShadow: successGlowTransition }}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-              className="bg-card rounded-card border p-3 space-y-3"
-            >
-              {/* URL extraction preview (loading / loaded / failed) */}
-              {detectedUrl && (
-                <UrlExtractPreview
-                  url={detectedUrl}
-                  isLoading={isExtracting}
-                  extractionFailed={extractionFailed}
-                  metadata={
-                    metadata
-                      ? {
-                          title: metadata.title,
-                          source: metadata.source,
-                          previewImage: metadata.preview_image ?? null,
-                          contentType: metadata.content_type ?? null,
-                          readTime: metadata.read_time ?? null,
-                        }
-                      : null
-                  }
-                />
-              )}
-
-              {/* Note + Post (URL path) */}
-              {detectedUrl && (
-                <>
-                  <Textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder={t("note_placeholder")}
-                    rows={2}
-                    className="resize-none text-sm"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={isPosting}
-                      onClick={() => {
-                        setDetectedUrl(null);
-                        reset();
-                        setNote("");
-                        setInputKey((k) => k + 1);
-                      }}
-                    >
-                      {t("cancel")}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handlePost}
-                      disabled={isPosting || !detectedUrl}
-                      size="sm"
-                    >
-                      {isPosting ? t("posting") : t("post")}
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {/* Text-only post (requires DB migration: group_shares.content + nullable logged_item_id) */}
-              {pendingTextPost && !detectedUrl && (
-                <>
-                  <p className="text-sm text-foreground leading-relaxed px-0.5">
-                    {pendingTextPost}
-                  </p>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={isPosting}
-                      onClick={() => setPendingTextPost(null)}
-                    >
-                      {t("cancel")}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleTextPost}
-                      disabled={isPosting}
-                      size="sm"
-                      title="Requires DB migration"
-                    >
-                      {isPosting ? t("posting") : t("post")}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </motion.div>
+            transition={{ ...springGentle, boxShadow: successGlowTransition }}
+            className="bg-card rounded-card relative overflow-hidden border">
+            <div className="pr-8">
+              <UrlExtractPreview
+                url={detectedUrl ?? ""}
+                isLoading={isExtracting}
+                extractionFailed={extractionFailed}
+                metadata={
+                  metadata
+                    ? {
+                        title: metadata.title,
+                        source: metadata.source,
+                        previewImage: metadata.preview_image ?? null,
+                        contentType: metadata.content_type ?? null,
+                        readTime: metadata.read_time ?? null,
+                      }
+                    : null
+                }
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isPosting}
+              aria-label={t("cancel")}
+              className="text-muted-foreground hover:text-foreground absolute top-2 right-2 p-1 transition-colors">
+              <CloseIcon className="size-4" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

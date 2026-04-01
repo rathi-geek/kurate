@@ -477,7 +477,11 @@ CREATE TABLE IF NOT EXISTS public.group_posts (
   logged_item_id UUID DEFAULT null REFERENCES public.logged_items(id) ON DELETE SET NULL,
   shared_by      UUID NOT NULL REFERENCES public.profiles(id),
   note           VARCHAR(500),
-  shared_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+  content        TEXT,
+  shared_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT group_posts_has_content CHECK (
+    logged_item_id IS NOT NULL OR (content IS NOT NULL AND trim(content) <> '')
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_group_posts_convo_id ON public.group_posts (convo_id, shared_at DESC);

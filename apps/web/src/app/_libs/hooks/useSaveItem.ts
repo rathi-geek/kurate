@@ -17,6 +17,44 @@ export async function generateUrlHash(url: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+export interface UpsertLoggedItemInput {
+  url: string;
+  title?: string | null;
+  content_type?: string | null;
+  preview_image_url?: string | null;
+  description?: string | null;
+  source?: string | null;
+  read_time?: string | null;
+  tags?: string[] | null;
+}
+
+/** Upserts a URL into the shared logged_items catalog and returns its id. */
+export async function upsertLoggedItem(input: UpsertLoggedItemInput): Promise<string> {
+  const url_hash = await generateUrlHash(input.url);
+  const { data, error } = await supabase
+    .from("logged_items")
+    .upsert(
+      {
+        url: input.url,
+        url_hash,
+        title: input.title ?? input.url,
+        content_type: input.content_type ?? "article",
+        preview_image_url: input.preview_image_url ?? null,
+        description: input.description ?? null,
+        tags: input.tags ?? null,
+        raw_metadata: {
+          source: input.source ?? null,
+          read_time: input.read_time ?? null,
+        },
+      },
+      { onConflict: "url_hash" },
+    )
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return data.id;
+}
+
 export interface SaveItemInput {
   url: string;
   title?: string | null;
@@ -50,32 +88,18 @@ export function useSaveItem() {
       } = await supabase.auth.getUser();
       if (!user) return { status: "error" };
 
-      const url_hash = await generateUrlHash(input.url);
-
       // 1. Upsert to logged_items (shared catalog — one row per unique URL)
-      const { data: loggedItem, error: liError } = await supabase
-        .from("logged_items")
-        .upsert(
-          {
-            url: input.url,
-            url_hash,
-            title: input.title ?? input.url,
-            content_type: input.content_type ?? "article",
-            preview_image_url: input.preview_image ?? null,
-            description: input.description ?? null,
-            tags: input.tags ?? null,
-            raw_metadata: {
-              source: input.source ?? null,
-              author: input.author ?? null,
-              read_time: input.read_time ?? null,
-            },
-          },
-          { onConflict: "url_hash" },
-        )
-        .select("id")
-        .single();
-
-      if (liError) throw new Error(liError.message);
+      const loggedItemId = await upsertLoggedItem({
+        url: input.url,
+        title: input.title,
+        content_type: input.content_type,
+        preview_image_url: input.preview_image ?? null,
+        description: input.description,
+        source: input.source,
+        read_time: input.read_time,
+        tags: input.tags,
+      });
+      const loggedItem = { id: loggedItemId };
 
       // 2. Check if user already has this item in their vault
       const { data: existing } = await supabase

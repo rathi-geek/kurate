@@ -7,36 +7,29 @@ import Image from "next/image";
 import type { GroupDrop, GroupProfile, GroupRole } from "@kurate/types";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { ContentTypePill } from "@/components/ui/content-type-pill";
-
 import { CommentThread } from "@/app/_components/groups/comment-thread";
+import { DropItemPreview } from "@/app/_components/groups/drop-item-preview";
 import { EngagementBar } from "@/app/_components/groups/engagement-bar";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
-import { ChevronDownIcon, DomainIcon, ShareIcon, TrashIcon } from "@/components/icons";
-import { useTranslations } from "@/i18n/use-translations";
 import { track } from "@/app/_libs/utils/analytics";
+import { formatRelativeTime } from "@/app/_libs/utils/formatRelativeTime";
+import { ChevronDownIcon, ShareIcon, TrashIcon } from "@/components/icons";
+import { useTranslations } from "@/i18n/use-translations";
 
 interface FeedShareCardProps {
   drop: GroupDrop;
   currentUserId: string;
   groupId: string;
   userRole: GroupRole;
-  currentUserProfile?: { id: string; display_name: string | null; avatar_url: string | null; handle: string };
+  currentUserProfile?: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    handle: string;
+  };
   onDelete?: (dropId: string) => void;
   markPostSeen?: (postId: string, seenAt: string) => void;
-}
-
-function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
 }
 
 function ReactionPill({ reactors, label }: { reactors: GroupProfile[]; label: string }) {
@@ -70,10 +63,10 @@ export const FeedShareCard = memo(function FeedShareCard({
   const hasMustRead = drop.engagement.mustRead.count > 0;
   const [showComments, setShowComments] = useState(false);
   // Seen status comes from the feed query (embedded via LEFT JOIN) — no separate query needed
-  const hasNewComments = !!drop.latestCommentAt && (drop.seenAt === null || drop.latestCommentAt > drop.seenAt);
+  const hasNewComments =
+    !!drop.latestCommentAt && (drop.seenAt === null || drop.latestCommentAt > drop.seenAt);
   const openedLastSeenAtRef = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [imgError, setImgError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -198,78 +191,17 @@ export const FeedShareCard = memo(function FeedShareCard({
           )}
           {/* Link drop: full-width preview image + title */}
           {drop.item && (
-            <>
-              {drop.item.preview_image_url && !imgError ? (
-                <a
-                  href={drop.item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleLinkOpen}
-                  className="bg-surface relative -mx-4 mb-3 block h-[220px] overflow-hidden">
-                  <Image
-                    src={drop.item.preview_image_url}
-                    alt={drop.item.title ?? ""}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                    onError={() => setImgError(true)}
-                  />
-                  <ContentTypePill
-                    contentType={drop.item.content_type}
-                    className="absolute top-2 left-2"
-                  />
-                </a>
-              ) : (
-                <a
-                  href={drop.item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleLinkOpen}
-                  className="bg-muted/40 border-border/40 relative -mx-4 mb-3 flex h-[220px] items-center justify-center overflow-hidden border-b">
-                  <DomainIcon url={drop.item.url} className="size-14" />
-                  <ContentTypePill
-                    contentType={drop.item.content_type}
-                    className="absolute top-2 left-2"
-                  />
-                </a>
-              )}
-              <div className="mb-2">
-                <a
-                  href={drop.item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleLinkOpen}
-                  className="text-foreground hover:text-primary line-clamp-2 text-base font-bold transition-colors">
-                  {drop.item.title ?? drop.item.url}
-                </a>
-                <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
-                  {(drop.item.raw_metadata as Record<string, string> | null)?.source && (
-                    <>
-                      <span className="text-primary text-[8px]">●</span>
-                      <span>{(drop.item.raw_metadata as Record<string, string>).source}</span>
-                    </>
-                  )}
-                  {(drop.item.raw_metadata as Record<string, string> | null)?.read_time && (
-                    <>
-                      <span>·</span>
-                      <span>{(drop.item.raw_metadata as Record<string, string>).read_time}</span>
-                    </>
-                  )}
-                  {drop.engagement.mustRead.count > 0 && (
-                    <span className="bg-warning-bg text-warning-foreground border-warning-foreground/20 rounded-full border px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase">
-                      {t("must_read")} · {drop.engagement.mustRead.count}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </>
+            <DropItemPreview
+              item={drop.item}
+              mustReadCount={drop.engagement.mustRead.count}
+              mustReadLabel={t("must_read")}
+              onLinkOpen={handleLinkOpen}
+            />
           )}
 
-          {/* Text-only drop — content field added in pending DB migration (Phase 2) */}
-          {!drop.item && (drop as GroupDrop & { content?: string }).content && (
-            <p className="text-foreground mb-2 text-sm leading-relaxed">
-              {(drop as GroupDrop & { content?: string }).content}
-            </p>
+          {/* Text-only drop */}
+          {!drop.item && drop.content && (
+            <p className="text-foreground pt-4 pb-2 text-base leading-relaxed">{drop.content}</p>
           )}
 
           {/* Reaction summary pills */}

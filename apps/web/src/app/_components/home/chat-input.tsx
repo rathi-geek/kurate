@@ -93,7 +93,7 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
     return () => clearTimeout(timer);
   }, [value, onUrlChange, lockedUrl]);
 
-  const showSendButton = hasText || focused || !!lockedUrl;
+  const showSendButton = hasText || !!lockedUrl;
 
   // Global Ctrl+V / Cmd+V — focus input and paste
   useEffect(() => {
