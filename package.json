@@ -23,7 +23,8 @@
     "db:push": "pnpm dlx supabase db push",
     "db:pull": "pnpm dlx supabase db pull",
     "db:link": "pnpm dlx supabase link",
-    "db:types": "pnpm --filter web db:types"
+    "db:types": "pnpm --filter web db:types",
+    "db:reset": "pnpm dlx supabase db reset --linked"
   },
   "private": true,
   "dependencies": {

@@ -1524,6 +1524,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_discovery_feed: {
+        Args: { p_user_id: string }
+        Returns: {
+          convo_id: string
+          id: string
+          logged_item_id: string | null
+          note: string | null
+          shared_at: string
+          shared_by: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "group_posts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       text_array_to_string: {
         Args: { arr: string[]; sep: string }
         Returns: string

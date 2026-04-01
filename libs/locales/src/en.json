@@ -502,7 +502,8 @@
     "from_vault": "From Your Vault",
     "today": "Today",
     "new_since_visit": "New Since Last Visit",
-    "days_ago": "{{count}} days ago"
+    "days_ago": "{{count}} days ago",
+    "signin_to_see_discover": "Sign in to see personalized discoveries."
   },
   "formats": {
     "date_short": "{date, date, short}",

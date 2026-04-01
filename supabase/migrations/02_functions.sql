@@ -616,7 +616,34 @@ CREATE TRIGGER trg_comment_notification
   FOR EACH ROW EXECUTE FUNCTION public.handle_comment_insert();
 
 
--- -- ── New Post: fan-out per group member ─────────────────────
+-- -- ── Discovery Feed: single RPC for both Today and New sections ─
+-- Returns deduplicated unread posts from others in user's groups.
+-- Client splits the result: today's posts → top 10 by engagement (Today),
+-- remaining posts → New section. No overlap possible.
+
+CREATE OR REPLACE FUNCTION public.get_discovery_feed(
+  p_user_id UUID
+)
+RETURNS SETOF public.group_posts
+LANGUAGE SQL STABLE SECURITY DEFINER
+AS $$
+  SELECT DISTINCT ON (COALESCE(gp.logged_item_id::text, gp.id::text)) gp.*
+  FROM public.group_posts gp
+  WHERE gp.convo_id IN (
+    SELECT convo_id FROM public.conversation_members WHERE user_id = p_user_id
+  )
+    AND gp.shared_by != p_user_id
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.group_post_reads r
+      WHERE r.group_post_id = gp.id
+        AND r.user_id = p_user_id
+    )
+  ORDER BY COALESCE(gp.logged_item_id::text, gp.id::text), gp.shared_at DESC
+$$;
+
+
+-- ── New Post: fan-out per group member ─────────────────────
 
 -- CREATE OR REPLACE FUNCTION public.handle_new_post_insert()
 -- RETURNS TRIGGER AS $$
