@@ -11,6 +11,7 @@ import { VaultErrorState } from "@/app/_components/vault/VaultErrorState";
 import { VaultGrid } from "@/app/_components/vault/VaultGrid";
 import { db } from "@/app/_libs/db";
 import { useVault } from "@/app/_libs/hooks/useVault";
+import { useAuth } from "@/app/_libs/auth-context";
 
 export const DEFAULT_FILTERS: VaultFiltersType = {
   time: "all",
@@ -29,6 +30,7 @@ export const VaultLibrary = memo(function VaultLibrary({
   onNavigateToDiscover,
   filters,
 }: VaultLibraryProps) {
+  const { user } = useAuth();
   const {
     items,
     isLoading,
@@ -41,7 +43,7 @@ export const VaultLibrary = memo(function VaultLibrary({
     deleteItem,
     updateRemarks,
     toggleRead,
-  } = useVault(filters);
+  } = useVault(filters, user?.id ?? "");
 
   const pendingLinks = useLiveQuery(() => db.pending_links.toArray(), []);
 

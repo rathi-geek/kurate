@@ -27,6 +27,8 @@ export type GroupDrop = Tables<"group_posts"> & {
     readBy: { count: number; didReact: boolean; reactors: GroupProfile[] };
   };
   commentCount: number;
+  seenAt: string | null;           // from group_post_last_seen (current user only, via RLS)
+  latestCommentAt: string | null;  // created_at of the most recent comment
   latestComment: { text: string; authorName: string | null } | null;
 };
 

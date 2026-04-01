@@ -121,6 +121,10 @@ export function mapRowToGroupDrop(row: GroupPostRow, currentUserId: string): Gro
       : null,
     engagement,
     commentCount: allComments.length,
+    seenAt: null,
+    latestCommentAt: allComments.length > 0
+      ? [...allComments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]!.created_at
+      : null,
     latestComment,
   } satisfies GroupDrop;
 }

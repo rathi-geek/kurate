@@ -57,20 +57,18 @@ function toVaultItem(row: Record<string, unknown>): VaultItem {
 }
 
 async function fetchVaultPage(
+  userId: string,
   filters: VaultFilters,
   cursor: string | null,
 ): Promise<VaultItem[]> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  if (!userId) return [];
 
   let query = supabase
     .from("user_logged_items")
     .select(
       "id, user_id, logged_item_id, save_source, remarks, is_read, created_at, saved_from_group, saved_group:conversations!saved_from_group(group_name), logged_item:logged_items!user_logged_items_logged_item_id_fkey(url, title, url_hash, preview_image_url, content_type, description, tags, raw_metadata, created_at)",
     )
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
@@ -110,7 +108,7 @@ async function fetchVaultPage(
   return items;
 }
 
-export function useVault(filters: VaultFilters) {
+export function useVault(filters: VaultFilters, userId: string) {
   const queryClient = useQueryClient();
 
   // search is excluded from the query key — it's applied client-side in useMemo below.
@@ -123,13 +121,14 @@ export function useVault(filters: VaultFilters) {
   const query = useInfiniteQuery({
     queryKey: queryKeys.vault.list(baseFilters),
     queryFn: ({ pageParam }) =>
-      fetchVaultPage(baseFilters, pageParam as string | null),
+      fetchVaultPage(userId, baseFilters, pageParam as string | null),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
       lastPage.length === PAGE_SIZE
         ? lastPage[lastPage.length - 1].created_at
         : undefined,
     staleTime: 1000 * 60,
+    enabled: !!userId,
   });
 
   const rawItems = query.data?.pages.flat() ?? [];

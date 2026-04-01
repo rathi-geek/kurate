@@ -101,6 +101,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const supabase = createClient();
 
+    // Immediately initialize from stored session (reads from cookie, no network call).
+    // This eliminates the avatar "?" flash while onAuthStateChange resolves async.
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      const authUser = session?.user ?? null;
+      if (authUser) {
+        setUser(authUser);
+        const cached = readCachedProfile(authUser.id);
+        if (cached) {
+          setProfile(cached);
+          queryClient.setQueryData(queryKeys.user.profile(authUser.id), cached);
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    });
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {

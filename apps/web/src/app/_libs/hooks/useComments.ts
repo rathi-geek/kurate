@@ -88,17 +88,27 @@ export function useComments(
   // Bug 4 fix: remove `key` from deps (new array ref on every call causes infinite re-subscribe)
   useEffect(() => {
     if (!groupPostId) return;
+    const currentUserId = currentUserProfile?.id;
     const channel = supabase
       .channel(`comments:${groupPostId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "group_posts_comments",
           filter: `group_post_id=eq.${groupPostId}` },
-        () => {
+        (payload) => {
+          // Own INSERT/DELETE are handled optimistically by useGroupFeed — don't trigger a
+          // feed refetch here, otherwise the DB seenAt may not have landed yet and the
+          // feed refetch would produce a false-positive green dot.
+          const isOwnEvent =
+            (payload.eventType === "INSERT" &&
+              (payload.new as { user_id?: string })?.user_id === currentUserId) ||
+            (payload.eventType === "DELETE" &&
+              (payload.old as { user_id?: string })?.user_id === currentUserId);
+
           void queryClient.invalidateQueries({
             queryKey: queryKeys.groups.comments(groupPostId),
           });
-          if (groupId) {
+          if (groupId && !isOwnEvent) {
             void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
             void queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
           }
@@ -210,12 +220,27 @@ export function useComments(
         .eq("user_id", currentUserId);
       if (error) throw new Error(error.message);
     },
+    onMutate: async ({ commentId }) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData(key);
+      queryClient.setQueryData<InfiniteData<DropComment[]>>(key, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) =>
+            page
+              .filter((c) => c.id !== commentId)
+              .map((c) => ({ ...c, replies: c.replies.filter((r) => r.id !== commentId) })),
+          ),
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
-      if (groupId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
-        queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
-      }
     },
   });
 

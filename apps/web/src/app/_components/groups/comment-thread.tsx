@@ -45,6 +45,7 @@ interface CommentItemProps {
   onReply?: (id: string, authorName: string, text: string) => void;
   isReply?: boolean;
   isContinuation?: boolean;
+  spacing?: "none" | "compact" | "normal";
   quotedAuthor?: string;
   quotedText?: string;
 }
@@ -57,6 +58,7 @@ function CommentItem({
   onReply,
   isReply = false,
   isContinuation = false,
+  spacing = "none",
   quotedAuthor,
   quotedText,
 }: CommentItemProps) {
@@ -103,7 +105,9 @@ function CommentItem({
 
   return (
     <div
-      className={`group/comment flex items-end gap-1 ${isOwn ? "justify-end" : "justify-start"} ${isReply ? "mt-2" : ""}`}>
+      className={`group/comment flex items-end gap-1 ${isOwn ? "justify-end" : "justify-start"} ${
+        spacing === "compact" ? "pt-1" : spacing === "normal" ? "pt-3" : ""
+      } ${isReply ? "mt-2" : ""}`}>
       {/* Avatar — others only */}
       {!isOwn && (
         <div className="shrink-0">
@@ -202,29 +206,38 @@ export function CommentThread({
     text: string;
   } | null>(null);
   const [editingComment, setEditingComment] = useState<{ id: string; text: string } | null>(null);
+
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const threadBottomRef = useRef<HTMLDivElement>(null);
 
-  // Freeze unread state at data-load time. Never recalculate during the session.
-  const frozenUnreadRef = useRef<{ firstUnreadIndex: number; unreadCount: number } | null>(null);
-  if (!isLoading && comments.length > 0 && frozenUnreadRef.current === null) {
-    const idx = lastSeenAt
-      ? comments.findIndex((c) => c.created_at > lastSeenAt && c.user_id !== currentUserId)
-      : -1;
-    frozenUnreadRef.current = {
-      firstUnreadIndex: idx,
-      unreadCount:
-        idx >= 0 ? comments.slice(idx).filter((c) => c.user_id !== currentUserId).length : 0,
-    };
-  }
-  const { firstUnreadIndex, unreadCount } = frozenUnreadRef.current ?? {
-    firstUnreadIndex: -1,
-    unreadCount: 0,
-  };
+  // Freeze lastSeenAt once at mount (captures the "already seen up to" timestamp).
+  // firstUnreadIndex is computed dynamically so it picks up comments that arrive
+  // via a background refetch (staleTime=30s means cached data may load first).
+  const frozenLastSeenAtRef = useRef(lastSeenAt);
 
-  // Scroll to unread divider (or last item) once after data loads
+  const firstUnreadIndex = !isLoading && comments.length > 0
+    ? (() => {
+        const ref = frozenLastSeenAtRef.current;
+        // null  → thread never seen → all others' comments are unread
+        // string → seen at that timestamp → only newer comments are unread
+        // undefined → no tracking (e.g. discovery context) → no divider
+        if (ref === undefined) return -1;
+        if (ref === null) return comments.findIndex((c) => c.user_id !== currentUserId);
+        return comments.findIndex((c) => c.created_at > ref && c.user_id !== currentUserId);
+      })()
+    : -1;
+
+  const unreadCount =
+    firstUnreadIndex >= 0
+      ? comments.slice(firstUnreadIndex).filter((c) => c.user_id !== currentUserId).length
+      : 0;
+
+  // Scroll to unread divider (or last item) once — fire when firstUnreadIndex first becomes
+  // meaningful (covers both instant cache hits and background-refetch arrivals).
+  const hasScrolledRef = useRef(false);
   useEffect(() => {
-    if (isLoading || comments.length === 0) return;
+    if (isLoading || comments.length === 0 || hasScrolledRef.current) return;
+    hasScrolledRef.current = true;
     if (firstUnreadIndex >= 0) {
       virtuosoRef.current?.scrollToIndex({
         index: firstUnreadIndex,
@@ -238,8 +251,8 @@ export function CommentThread({
         behavior: "smooth",
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, firstUnreadIndex]);
 
   // Scroll the main feed so the input is visible when the thread first opens.
   // Delay by 220ms to fire after the AnimatePresence height animation (200ms) finishes.
@@ -267,7 +280,7 @@ export function CommentThread({
         <Virtuoso
           ref={virtuosoRef}
           className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ height: Math.min(comments.length * 56 + 16, 300) }}
+          style={{ height: Math.min(comments.length * 36 + 4, 300) }}
           data={comments}
           initialTopMostItemIndex={comments.length > 0 ? comments.length - 1 : 0}
           followOutput="smooth"
@@ -278,15 +291,14 @@ export function CommentThread({
             const prev = comments[index - 1];
             const isContinuation = !!prev && prev.user_id === comment.user_id;
             const showDivider = index === firstUnreadIndex && unreadCount > 0;
+            const spacing: CommentItemProps["spacing"] =
+              isContinuation && !showDivider
+                ? "compact"
+                : index === 0 && !showDivider
+                  ? "none"
+                  : "normal";
             return (
-              <div
-                className={
-                  isContinuation && !showDivider
-                    ? "mt-1 px-3"
-                    : index === 0 && !showDivider
-                      ? "px-3"
-                      : "mt-3 px-3"
-                }>
+              <div>
                 {showDivider && (
                   <div className="my-1 flex items-center gap-2 py-2">
                     <div className="bg-border h-px flex-1" />
@@ -300,6 +312,7 @@ export function CommentThread({
                   comment={comment}
                   currentUserId={currentUserId}
                   isContinuation={isContinuation}
+                  spacing={spacing}
                   onEditStart={(id, text) => setEditingComment({ id, text })}
                   onDelete={(id) => deleteComment(id, currentUserId)}
                   onReply={(id, authorName, text) => setReplyingTo({ id, authorName, text })}

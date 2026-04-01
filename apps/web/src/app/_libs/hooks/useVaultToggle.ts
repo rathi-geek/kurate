@@ -34,7 +34,7 @@ export function useVaultToggle(userId: string, url: string, groupId?: string | n
         .maybeSingle();
       return uli?.id ?? null;
     },
-    staleTime: 0,
+    staleTime: 1000 * 60 * 5,
     enabled: !!userId && !!url,
   });
 
@@ -62,8 +62,7 @@ export function useVaultToggle(userId: string, url: string, groupId?: string | n
 
   const saveMutation = useMutation({
     mutationFn: async (itemData: Omit<SaveItemInput, "url" | "save_source">) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       const url_hash = await generateUrlHash(url);
       const { data: li, error: liErr } = await supabase
@@ -86,14 +85,14 @@ export function useVaultToggle(userId: string, url: string, groupId?: string | n
       const { data: existing } = await supabase
         .from("user_logged_items")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("logged_item_id", li.id)
         .maybeSingle();
       if (existing) return existing.id as string;
 
       const { data: uli, error: uliErr } = await supabase
         .from("user_logged_items")
-        .insert({ user_id: user.id, logged_item_id: li.id, save_source: "shares", saved_from_group: groupId ?? null })
+        .insert({ user_id: userId, logged_item_id: li.id, save_source: "shares", saved_from_group: groupId ?? null })
         .select("id")
         .single();
       if (uliErr) throw new Error(uliErr.message);

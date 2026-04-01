@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
@@ -8,14 +9,13 @@ import type { GroupRole } from "@kurate/types";
 
 import { FeedHeader } from "@/app/_components/groups/feed-header";
 import { FeedTabView } from "@/app/_components/groups/feed-tab-view";
-import { LibraryView } from "@/app/_components/groups/library-view";
-import { track } from "@/app/_libs/utils/analytics";
-import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
-import { useGroupDetail, useGroupRole } from "@/app/_libs/hooks/useGroupDetail";
-import { useAuth } from "@/app/_libs/auth-context";
-import { createClient } from "@/app/_libs/supabase/client";
-
 import { GroupInfoPage } from "@/app/_components/groups/group-info-page";
+import { LibraryView } from "@/app/_components/groups/library-view";
+import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
+import { useAuth } from "@/app/_libs/auth-context";
+import { useGroupDetail, useGroupRole } from "@/app/_libs/hooks/useGroupDetail";
+import { createClient } from "@/app/_libs/supabase/client";
+import { track } from "@/app/_libs/utils/analytics";
 
 export enum GroupView {
   Feed = "feed",
@@ -67,7 +67,7 @@ function GroupPageInner({ groupId }: GroupPageClientProps) {
       url.searchParams.delete("invite");
       window.history.replaceState(null, "", url.toString());
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const router = useRouter();
@@ -90,7 +90,12 @@ function GroupPageInner({ groupId }: GroupPageClientProps) {
       .channel(`my-membership-${groupId}`)
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "conversation_members", filter: `convo_id=eq.${groupId}` },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "conversation_members",
+          filter: `convo_id=eq.${groupId}`,
+        },
         (payload) => {
           if (payload.old?.user_id === currentUserId) {
             router.replace("/home");
@@ -98,7 +103,9 @@ function GroupPageInner({ groupId }: GroupPageClientProps) {
         },
       )
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [groupId, currentUserId, router]);
 
   useEffect(() => {
@@ -109,40 +116,53 @@ function GroupPageInner({ groupId }: GroupPageClientProps) {
 
   useEffect(() => {
     if (!group?.id || view === GroupView.Info) return;
-    track(view === GroupView.Feed ? "group_feed_view" : "group_library_view", { group_id: group.id, view });
+    track(view === GroupView.Feed ? "group_feed_view" : "group_library_view", {
+      group_id: group.id,
+      view,
+    });
   }, [view, group?.id]);
 
   if (!group) return <GroupPageSkeleton />;
 
   return (
-    <div className="mx-auto flex h-full max-w-md flex-col overflow-hidden">
-      {view === GroupView.Info ? (
-        <GroupInfoPage
-          group={group}
-          groupId={groupId}
-          currentUserId={currentUserId}
-          userRole={userRole as GroupRole}
-          onBack={() => setView(GroupView.Feed)}
-        />
-      ) : (
-        <>
-          <FeedHeader
+    <div className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
+      <div className="mx-auto h-full max-w-md flex-col overflow-hidden">
+        {view === GroupView.Info ? (
+          <GroupInfoPage
             group={group}
             groupId={groupId}
             currentUserId={currentUserId}
-            view={view}
-            onToggleLibrary={() =>
-              setView((v) => (v === GroupView.Feed ? GroupView.Library : GroupView.Feed))
-            }
-            onShowInfo={() => setView(GroupView.Info)}
+            userRole={userRole as GroupRole}
+            onBack={() => setView(GroupView.Feed)}
           />
-          {view === GroupView.Feed ? (
-            <FeedTabView groupId={group.id} currentUserId={currentUserId} userRole={userRole as GroupRole} />
-          ) : (
-            <LibraryView groupId={group.id} currentUserId={currentUserId} userRole={userRole as GroupRole} />
-          )}
-        </>
-      )}
+        ) : (
+          <>
+            <FeedHeader
+              group={group}
+              groupId={groupId}
+              currentUserId={currentUserId}
+              view={view}
+              onToggleLibrary={() =>
+                setView((v) => (v === GroupView.Feed ? GroupView.Library : GroupView.Feed))
+              }
+              onShowInfo={() => setView(GroupView.Info)}
+            />
+            {view === GroupView.Feed ? (
+              <FeedTabView
+                groupId={group.id}
+                currentUserId={currentUserId}
+                userRole={userRole as GroupRole}
+              />
+            ) : (
+              <LibraryView
+                groupId={group.id}
+                currentUserId={currentUserId}
+                userRole={userRole as GroupRole}
+              />
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

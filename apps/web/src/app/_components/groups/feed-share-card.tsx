@@ -13,7 +13,6 @@ import { CommentThread } from "@/app/_components/groups/comment-thread";
 import { EngagementBar } from "@/app/_components/groups/engagement-bar";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
-import { usePostSeenStatus } from "@/app/_libs/hooks/usePostSeenStatus";
 import { ChevronDownIcon, DomainIcon, ShareIcon, TrashIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 import { track } from "@/app/_libs/utils/analytics";
@@ -25,6 +24,7 @@ interface FeedShareCardProps {
   userRole: GroupRole;
   currentUserProfile?: { id: string; display_name: string | null; avatar_url: string | null; handle: string };
   onDelete?: (dropId: string) => void;
+  markPostSeen?: (postId: string, seenAt: string) => void;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -63,12 +63,14 @@ export const FeedShareCard = memo(function FeedShareCard({
   userRole,
   currentUserProfile,
   onDelete,
+  markPostSeen,
 }: FeedShareCardProps) {
   const t = useTranslations("groups");
   const isSharer = drop.sharer.id === currentUserId;
   const hasMustRead = drop.engagement.mustRead.count > 0;
   const [showComments, setShowComments] = useState(false);
-  const { hasNewComments, markPostSeen, lastSeenAt } = usePostSeenStatus(currentUserId, [drop.id]);
+  // Seen status comes from the feed query (embedded via LEFT JOIN) — no separate query needed
+  const hasNewComments = !!drop.latestCommentAt && (drop.seenAt === null || drop.latestCommentAt > drop.seenAt);
   const openedLastSeenAtRef = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -109,13 +111,13 @@ export const FeedShareCard = memo(function FeedShareCard({
     return () => observer.disconnect();
   }, [showComments]);
 
-  // Keep seen-count up-to-date whenever the thread is open and feed count changes
-  // (covers current user sends + others' realtime messages)
+  // Keep seenAt up-to-date whenever the thread is open and new comments arrive
+  // (covers others' realtime messages while the thread is open)
   useEffect(() => {
-    if (!showComments) return;
-    markPostSeen(drop.id, drop.commentCount);
+    if (!showComments || !drop.latestCommentAt || !markPostSeen) return;
+    markPostSeen(drop.id, drop.latestCommentAt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showComments, drop.commentCount]);
+  }, [showComments, drop.latestCommentAt]);
 
   return (
     <div ref={cardRef}>
@@ -303,12 +305,12 @@ export const FeedShareCard = memo(function FeedShareCard({
               }
               source="group_feed"
               commentCount={drop.commentCount}
-              hasNewComments={hasNewComments(drop.id, drop.commentCount)}
+              hasNewComments={hasNewComments}
               onCommentIconClick={() => {
                 const opening = !showComments;
                 if (opening) {
-                  openedLastSeenAtRef.current = lastSeenAt(drop.id);
-                  markPostSeen(drop.id, drop.commentCount);
+                  openedLastSeenAtRef.current = drop.seenAt;
+                  if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
                 }
                 setShowComments((v) => !v);
               }}
@@ -321,8 +323,8 @@ export const FeedShareCard = memo(function FeedShareCard({
           <button
             type="button"
             onClick={() => {
-              openedLastSeenAtRef.current = lastSeenAt(drop.id);
-              markPostSeen(drop.id, drop.commentCount);
+              openedLastSeenAtRef.current = drop.seenAt;
+              if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
               setShowComments(true);
             }}
             className="border-border/50 hover:bg-muted/30 w-full border-t px-4 py-3 text-left transition-colors">
@@ -380,14 +382,6 @@ export const FeedShareCard = memo(function FeedShareCard({
                         }
                       : undefined)
                   }
-                  onCommentAdded={() => {
-                    // Optimistic update: drop.commentCount is still N at this point
-                    // (feed hasn't refetched yet). Mark seen as N+1 so the DB is
-                    // correct even if the user closes the panel before the feed
-                    // refetch completes. The useEffect will confirm with the
-                    // server count once drop.commentCount updates.
-                    markPostSeen(drop.id, drop.commentCount + 1);
-                  }}
                 />
               </div>
             </motion.div>

@@ -2,30 +2,33 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useSubmitContent } from "@kurate/hooks";
+import type { SaveItemResult } from "@kurate/hooks";
+import { queryKeys } from "@kurate/query";
+import type { VaultFilters as VaultFiltersType } from "@kurate/types";
+import { type ThoughtBucket, classifyThought } from "@kurate/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 
+import { type ExtractedMeta, LinkPreviewCard } from "@/app/_components/home/LinkPreviewCard";
 import { ChatInput } from "@/app/_components/home/chat-input";
-import { LinkPreviewCard, type ExtractedMeta } from "@/app/_components/home/LinkPreviewCard";
 import { PreviewPhase } from "@/app/_components/home/preview-phase";
-import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import { ThoughtsTabView } from "@/app/_components/home/thoughts-tab-view";
 import { VaultTabSubHeader } from "@/app/_components/home/vault-tab-sub-header";
+import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
+import { useAuth } from "@/app/_libs/auth-context";
+import { VaultTab } from "@/app/_libs/chat-types";
+import { db } from "@/app/_libs/db";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
 import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
-import { springGentle } from "@/app/_libs/utils/motion";
-import { VaultTab } from "@/app/_libs/chat-types";
-import { classifyThought, type ThoughtBucket } from "@kurate/utils";
-import { queryKeys } from "@kurate/query";
-import { useSubmitContent } from "@kurate/hooks";
 import { createClient } from "@/app/_libs/supabase/client";
-import { useAuth } from "@/app/_libs/auth-context";
-import { fetchShareableConversations, type ShareableConversation } from "@/app/_libs/utils/fetchShareableConversations";
 import { track } from "@/app/_libs/utils/analytics";
-import type { VaultFilters as VaultFiltersType } from "@kurate/types";
-import type { SaveItemResult } from "@kurate/hooks";
-import { db } from "@/app/_libs/db";
+import {
+  type ShareableConversation,
+  fetchShareableConversations,
+} from "@/app/_libs/utils/fetchShareableConversations";
+import { springGentle } from "@/app/_libs/utils/motion";
 
 const supabase = createClient();
 
@@ -70,7 +73,13 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
 
   const resetInput = useCallback(() => setInputKey((k) => k + 1), []);
 
-  const { isExtracting, metadata: extractedMeta, extractionFailed, extract, reset: resetExtraction } = useExtractMetadata();
+  const {
+    isExtracting,
+    metadata: extractedMeta,
+    extractionFailed,
+    extract,
+    reset: resetExtraction,
+  } = useExtractMetadata();
 
   const handleLinkSaved = useCallback(
     async (result: SaveItemResult) => {
@@ -85,7 +94,9 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         setPreviewPhase(PreviewPhase.Idle);
         resetInput();
       } else if (result.status === "saved" && result.item) {
-        const cached = queryClient.getQueryData<ShareableConversation[]>(queryKeys.vault.shareConversations());
+        const cached = queryClient.getQueryData<ShareableConversation[]>(
+          queryKeys.vault.shareConversations(),
+        );
         const convos = cached ?? (await fetchShareableConversations(userId ?? ""));
         if (convos.length === 0) {
           setPreviewPhase(PreviewPhase.Idle);
@@ -337,7 +348,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
       <div className="relative min-h-0 flex-1">
         <div
           ref={scrollRef}
-          className={`absolute inset-0 overflow-y-auto transition-opacity duration-150${vaultTab !== VaultTab.LINKS ? " pointer-events-none opacity-0" : " opacity-100"}`}>
+          className={`absolute inset-0 overflow-y-auto transition-opacity duration-150${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <VaultLibrary
             filters={fullVaultFilters}
             onFiltersChange={handleLibraryFiltersChange}
@@ -345,12 +356,12 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
           />
         </div>
         <div
-          className={`absolute inset-0 flex flex-col overflow-hidden transition-opacity duration-150${vaultTab !== VaultTab.THOUGHTS ? " pointer-events-none opacity-0" : " opacity-100"}`}>
+          className={`absolute inset-0 flex flex-col overflow-hidden transition-opacity duration-150${vaultTab !== VaultTab.THOUGHTS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <ThoughtsTabView
             userId={userId}
             searchQuery={searchQuery}
             activeBucket={activeBucket}
-              onActiveBucketChange={handleActiveBucketChange}
+            onActiveBucketChange={handleActiveBucketChange}
             viewAll={thoughtsViewAll}
             onViewAllChange={setThoughtsViewAll}
           />
@@ -366,7 +377,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         <AnimatePresence>
           {previewPhase !== PreviewPhase.Idle && (
             <motion.div
-              className="absolute bottom-full left-0 right-0 z-50 px-5"
+              className="absolute right-0 bottom-full left-0 z-50 px-5"
               animate={
                 prefersReducedMotion
                   ? undefined
@@ -394,7 +405,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         <AnimatePresence>
           {mediaPreview && (
             <motion.div
-              className="absolute bottom-full left-0 right-0 z-50 px-5 pb-1"
+              className="absolute right-0 bottom-full left-0 z-50 px-5 pb-1"
               initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
@@ -422,8 +433,8 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
           )}
         </AnimatePresence>
 
-        <div className="px-5 py-3">
-          <div className="mx-auto max-w-2xl">
+        <div className="px-5 py-3 md:py-8">
+          <div className="mx-auto max-w-4xl">
             <ChatInput
               key={inputKey}
               placeholder="Drop a thought, task, link or something you overheard."

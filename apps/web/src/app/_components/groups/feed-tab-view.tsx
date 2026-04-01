@@ -28,7 +28,7 @@ export function FeedTabView({
 }: FeedTabViewProps) {
   const t = useTranslations("groups");
   const queryClient = useQueryClient();
-  const { drops, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage, refetch } =
+  const { drops, markPostSeen, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage, refetch } =
     useGroupFeed(groupId, currentUserId);
   const { members } = useGroupMembers(groupId, currentUserId);
   const rawCurrentUserProfile = members.find((m) => m.user_id === currentUserId)?.profile;
@@ -105,6 +105,7 @@ export function FeedTabView({
           userRole={userRole}
           currentUserProfile={currentUserProfile}
           onDelete={handleDeleteDrop}
+          markPostSeen={markPostSeen}
         />
 
         <div ref={sentinelRef} className="h-1" />
@@ -129,6 +130,7 @@ interface FeedBodyProps {
   userRole: GroupRole;
   currentUserProfile?: { id: string; display_name: string | null; avatar_url: string | null; handle: string };
   onDelete: (id: string) => void;
+  markPostSeen?: (postId: string, seenAt: string) => void;
 }
 
 function FeedBody({
@@ -139,6 +141,7 @@ function FeedBody({
   userRole,
   currentUserProfile,
   onDelete,
+  markPostSeen,
 }: FeedBodyProps) {
   const t = useTranslations("groups");
 
@@ -171,6 +174,7 @@ function FeedBody({
           userRole={userRole}
           currentUserProfile={currentUserProfile}
           onDelete={onDelete}
+          markPostSeen={markPostSeen}
         />
       ))}
     </div>

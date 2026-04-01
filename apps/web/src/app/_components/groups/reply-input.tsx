@@ -30,8 +30,8 @@ export function ReplyInput({
   const textareaRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
+    if (!isLoading) textareaRef.current?.focus();
+  }, [isLoading]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -51,6 +51,9 @@ export function ReplyInput({
       track("comment_posted");
       onSubmit(trimmed);
       setValue("");
+      if (!isLoading) {
+        requestAnimationFrame(() => textareaRef.current?.focus());
+      }
     }
   };
 

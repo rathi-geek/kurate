@@ -6,6 +6,8 @@ export const ROUTES = {
   ABOUT: "/about",
   BLOG: "/blog",
   DEMO: "/demo",
+  /** Public brand guidelines for design and video partners */
+  BRAND: "/brand",
 
   AUTH: {
     BASE: "/auth",
