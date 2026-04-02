@@ -65,7 +65,6 @@ export const FeedShareCard = memo(function FeedShareCard({
   // Seen status comes from the feed query (embedded via LEFT JOIN) — no separate query needed
   const hasNewComments =
     !!drop.latestCommentAt && (drop.seenAt === null || drop.latestCommentAt > drop.seenAt);
-  const openedLastSeenAtRef = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -242,7 +241,6 @@ export const FeedShareCard = memo(function FeedShareCard({
               onCommentIconClick={() => {
                 const opening = !showComments;
                 if (opening) {
-                  openedLastSeenAtRef.current = drop.seenAt;
                   if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
                 }
                 setShowComments((v) => !v);
@@ -256,7 +254,6 @@ export const FeedShareCard = memo(function FeedShareCard({
           <button
             type="button"
             onClick={() => {
-              openedLastSeenAtRef.current = drop.seenAt;
               if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
               setShowComments(true);
             }}
@@ -303,7 +300,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                   groupId={groupId}
                   currentUserId={currentUserId}
                   userRole={userRole}
-                  lastSeenAt={openedLastSeenAtRef.current}
+
                   currentUserProfile={
                     currentUserProfile ??
                     (drop.sharer.id === currentUserId

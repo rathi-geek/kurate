@@ -17,7 +17,6 @@ interface CommentThreadProps {
   groupId?: string;
   currentUserId: string;
   userRole: GroupRole;
-  lastSeenAt?: string | null;
   onCommentAdded?: () => void;
   currentUserProfile?: {
     id: string;
@@ -184,7 +183,6 @@ export function CommentThread({
   groupId,
   currentUserId,
   userRole: _userRole,
-  lastSeenAt,
   onCommentAdded,
   currentUserProfile,
 }: CommentThreadProps) {
@@ -210,49 +208,18 @@ export function CommentThread({
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const threadBottomRef = useRef<HTMLDivElement>(null);
 
-  // Freeze lastSeenAt once at mount (captures the "already seen up to" timestamp).
-  // firstUnreadIndex is computed dynamically so it picks up comments that arrive
-  // via a background refetch (staleTime=30s means cached data may load first).
-  const frozenLastSeenAtRef = useRef(lastSeenAt);
-
-  const firstUnreadIndex = !isLoading && comments.length > 0
-    ? (() => {
-        const ref = frozenLastSeenAtRef.current;
-        // null  → thread never seen → all others' comments are unread
-        // string → seen at that timestamp → only newer comments are unread
-        // undefined → no tracking (e.g. discovery context) → no divider
-        if (ref === undefined) return -1;
-        if (ref === null) return comments.findIndex((c) => c.user_id !== currentUserId);
-        return comments.findIndex((c) => c.created_at > ref && c.user_id !== currentUserId);
-      })()
-    : -1;
-
-  const unreadCount =
-    firstUnreadIndex >= 0
-      ? comments.slice(firstUnreadIndex).filter((c) => c.user_id !== currentUserId).length
-      : 0;
-
-  // Scroll to unread divider (or last item) once — fire when firstUnreadIndex first becomes
-  // meaningful (covers both instant cache hits and background-refetch arrivals).
+  // Scroll to the latest comment once on open.
   const hasScrolledRef = useRef(false);
   useEffect(() => {
     if (isLoading || comments.length === 0 || hasScrolledRef.current) return;
     hasScrolledRef.current = true;
-    if (firstUnreadIndex >= 0) {
-      virtuosoRef.current?.scrollToIndex({
-        index: firstUnreadIndex,
-        align: "start",
-        behavior: "smooth",
-      });
-    } else {
-      virtuosoRef.current?.scrollToIndex({
-        index: comments.length - 1,
-        align: "end",
-        behavior: "smooth",
-      });
-    }
+    virtuosoRef.current?.scrollToIndex({
+      index: comments.length - 1,
+      align: "end",
+      behavior: "smooth",
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, firstUnreadIndex]);
+  }, [isLoading, comments.length]);
 
   // Scroll the main feed so the input is visible when the thread first opens.
   // Delay by 220ms to fire after the AnimatePresence height animation (200ms) finishes.
@@ -290,24 +257,10 @@ export function CommentThread({
           itemContent={(index, comment) => {
             const prev = comments[index - 1];
             const isContinuation = !!prev && prev.user_id === comment.user_id;
-            const showDivider = index === firstUnreadIndex && unreadCount > 0;
             const spacing: CommentItemProps["spacing"] =
-              isContinuation && !showDivider
-                ? "compact"
-                : index === 0 && !showDivider
-                  ? "none"
-                  : "normal";
+              isContinuation ? "compact" : index === 0 ? "none" : "normal";
             return (
               <div>
-                {showDivider && (
-                  <div className="my-1 flex items-center gap-2 py-2">
-                    <div className="bg-border h-px flex-1" />
-                    <span className="text-muted-foreground shrink-0 text-[10px] font-medium">
-                      {unreadCount} unread comment{unreadCount !== 1 ? "s" : ""}
-                    </span>
-                    <div className="bg-border h-px flex-1" />
-                  </div>
-                )}
                 <CommentItem
                   comment={comment}
                   currentUserId={currentUserId}

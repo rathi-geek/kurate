@@ -85,10 +85,11 @@ export function useComments(
     enabled: !!groupPostId,
   });
 
-  // Bug 4 fix: remove `key` from deps (new array ref on every call causes infinite re-subscribe)
+  // currentUserId extracted as a stable primitive so the subscription closure is always fresh.
+  const currentUserId = currentUserProfile?.id;
+
   useEffect(() => {
     if (!groupPostId) return;
-    const currentUserId = currentUserProfile?.id;
     const channel = supabase
       .channel(`comments:${groupPostId}`)
       .on(
@@ -96,19 +97,21 @@ export function useComments(
         { event: "*", schema: "public", table: "group_posts_comments",
           filter: `group_post_id=eq.${groupPostId}` },
         (payload) => {
-          // Own INSERT/DELETE are handled optimistically by useGroupFeed — don't trigger a
-          // feed refetch here, otherwise the DB seenAt may not have landed yet and the
-          // feed refetch would produce a false-positive green dot.
           const isOwnEvent =
             (payload.eventType === "INSERT" &&
               (payload.new as { user_id?: string })?.user_id === currentUserId) ||
             (payload.eventType === "DELETE" &&
               (payload.old as { user_id?: string })?.user_id === currentUserId);
 
+          // Own events are fully handled by the mutation's onSuccess — skip here to avoid
+          // double-invalidation, which causes the count to increment twice and the
+          // hasNewMessage indicator to flash briefly.
+          if (isOwnEvent) return;
+
           void queryClient.invalidateQueries({
             queryKey: queryKeys.groups.comments(groupPostId),
           });
-          if (groupId && !isOwnEvent) {
+          if (groupId) {
             void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
             void queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
           }
@@ -117,7 +120,7 @@ export function useComments(
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupPostId, queryClient]);
+  }, [groupPostId, queryClient, currentUserId]);
 
   const addMutation = useMutation({
     mutationFn: async ({
