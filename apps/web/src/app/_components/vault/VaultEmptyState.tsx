@@ -1,7 +1,8 @@
 "use client";
 
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
-import { type Variants, motion, useReducedMotion } from "framer-motion";
+import { type Variants, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 
 import { Button } from "@/components/ui/button";
 
@@ -38,7 +39,7 @@ const READ_STATUS_KEY: Record<string, string> = {
 
 export function VaultEmptyState({ onExplore, variant = "default", filters }: VaultEmptyStateProps) {
   const t = useTranslations("vault");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const isFiltered = variant === "filtered";
   const activeFilters: VaultFiltersType = filters ?? {
     time: "all",

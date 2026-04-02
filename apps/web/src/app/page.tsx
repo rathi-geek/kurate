@@ -4,7 +4,8 @@ import type { ComponentProps } from "react";
 
 import Link from "next/link";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
@@ -85,7 +86,7 @@ const STATS_PEOPLE = [
 ];
 
 export default function LandingPage() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const t = useTranslations("landing");
   const tNav = useTranslations("nav");
   const tApp = useTranslations("app");

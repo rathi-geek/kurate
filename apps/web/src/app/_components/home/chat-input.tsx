@@ -11,7 +11,8 @@ import {
 } from "react";
 
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { Input } from "@/components/ui/input";
@@ -59,7 +60,7 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
   ref,
 ) {
   const t = useTranslations("chat");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [lockedUrl, setLockedUrl] = useState<string | null>(null);

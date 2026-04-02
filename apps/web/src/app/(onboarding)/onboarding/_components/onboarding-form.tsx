@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { type Variants, motion, useReducedMotion } from "framer-motion";
+import { type Variants, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ export function OnboardingForm() {
   const router = useRouter();
   const t = useTranslations("auth.onboarding");
   const tApp = useTranslations("app");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next");
 

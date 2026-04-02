@@ -1,7 +1,8 @@
 "use client";
 
 import { memo, useEffect, useRef } from "react";
-import { AnimatePresence, type Variants, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, type Variants, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
 import type { VaultItem } from "@kurate/types";
@@ -36,7 +37,7 @@ export const VaultGrid = memo(function VaultGrid({
   onToggleRead,
 }: VaultGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
 
   useEffect(() => {
     const sentinel = sentinelRef.current;

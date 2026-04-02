@@ -1,31 +1,41 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+
+import { usePathname, useRouter } from "next/navigation";
+
+import { queryKeys } from "@kurate/query";
+import { ROUTES } from "@kurate/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AppSidebar } from "@/app/_components/sidebar";
+import { GroupsPanel } from "@/app/_components/sidebar/GroupsPanel";
 import { MobileBottomTab } from "@/app/_components/sidebar/mobile-bottom-tab";
-import { ROUTES } from "@kurate/utils";
-import { queryKeys } from "@kurate/query";
+import { PeoplePanel } from "@/app/_components/sidebar/PeoplePanel";
 import { useAuth } from "@/app/_libs/auth-context";
-import { useUnreadCounts } from "@/app/_libs/hooks/useUnreadCounts";
-import { useNotifications } from "@/app/_libs/hooks/useNotifications";
 import { useDMConversations } from "@/app/_libs/hooks/useDMConversations";
-import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 import { fetchGroupFeedPage } from "@/app/_libs/hooks/useGroupFeed";
-import { fetchGroupDetail } from "@/app/_libs/utils/fetchGroupDetail";
 import { fetchMessages } from "@/app/_libs/hooks/useMessages";
+import { useNotifications } from "@/app/_libs/hooks/useNotifications";
+import { useUnreadCounts } from "@/app/_libs/hooks/useUnreadCounts";
 import {
-  SidebarOverridesProvider,
   type SidebarOverrides,
+  SidebarOverridesProvider,
 } from "@/app/_libs/sidebar-overrides-context";
 import { createClient } from "@/app/_libs/supabase/client";
+import { fetchGroupDetail } from "@/app/_libs/utils/fetchGroupDetail";
+import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, profile } = useAuth();
   const [sidebarOverrides, setSidebarOverrides] = useState<SidebarOverrides>({});
+  const [activePanel, setActivePanel] = useState<"people" | "groups" | null>(null);
+
+  useEffect(() => {
+    setActivePanel(null);
+  }, [pathname]);
 
   const userId = user?.id ?? null;
   const userEmail = user?.email ?? "";
@@ -60,8 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     for (const g of userGroups) {
       void queryClient.prefetchInfiniteQuery({
         queryKey: queryKeys.groups.feed(g.id),
-        queryFn: ({ pageParam }) =>
-          fetchGroupFeedPage(g.id, userId, pageParam as string | null),
+        queryFn: ({ pageParam }) => fetchGroupFeedPage(g.id, userId, pageParam as string | null),
         initialPageParam: null,
         staleTime: 1000 * 30,
       });
@@ -79,8 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     for (const c of conversations) {
       void queryClient.prefetchInfiniteQuery({
         queryKey: queryKeys.people.messages(c.id),
-        queryFn: ({ pageParam }) =>
-          fetchMessages(c.id, pageParam as string | undefined),
+        queryFn: ({ pageParam }) => fetchMessages(c.id, pageParam as string | undefined),
         initialPageParam: undefined,
         staleTime: 1000 * 60,
       });
@@ -95,17 +103,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .channel("group-memberships")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "conversation_members", filter: `user_id=eq.${userId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "conversation_members",
+          filter: `user_id=eq.${userId}`,
+        },
         (payload) => {
           void queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() });
           // On DELETE (member removed / group deleted), also drop the detail cache
           if (payload.eventType === "DELETE" && payload.old?.convo_id) {
-            queryClient.removeQueries({ queryKey: queryKeys.groups.detail(payload.old.convo_id as string) });
+            queryClient.removeQueries({
+              queryKey: queryKeys.groups.detail(payload.old.convo_id as string),
+            });
           }
         },
       )
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [userId, queryClient]);
 
   const handleLogout = useCallback(async () => {
@@ -134,12 +151,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           notifMarkRead={notif.markRead}
           {...sidebarOverrides}
         />
-        <main
-          id="main-content"
-          className="flex-1 overflow-y-auto pb-16 sm:pb-0">
+        <main id="main-content" className="flex-1 overflow-y-auto pb-16 sm:pb-0">
           {children}
         </main>
       </div>
+      {activePanel === "people" && (
+        <div className="fixed inset-0 z-20 overflow-y-auto bg-background pb-16 sm:hidden">
+          <PeoplePanel userId={userId} conversations={conversations} isLoading={false} />
+        </div>
+      )}
+      {activePanel === "groups" && (
+        <div className="fixed inset-0 z-20 overflow-y-auto bg-background pb-16 sm:hidden">
+          <GroupsPanel />
+        </div>
+      )}
       <MobileBottomTab
         userId={userId}
         userAvatarUrl={userAvatarUrl}
@@ -147,6 +172,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         unreadCounts={unreadCounts}
         notifUnreadCount={notif.unreadCount}
         groupIds={groupIds}
+        activePanel={activePanel}
+        onTabClick={(tab) => setActivePanel((p) => (p === tab ? null : tab))}
       />
     </SidebarOverridesProvider>
   );

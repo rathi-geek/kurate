@@ -6,9 +6,11 @@
  * Returns null in production (NODE_ENV inlined at build time).
  */
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useState } from "react";
 import type { Variants, Transition } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 
 import {
   cardStagger,
@@ -301,7 +303,7 @@ function AnimationGroup({
 // ─── Main component ───────────────────────────────────────────────────────
 
 export function AnimationPreview() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<VariantItem>(GROUPS[0].items[0]);
   const [tick, setTick] = useState(0);

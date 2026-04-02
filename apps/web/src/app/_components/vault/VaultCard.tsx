@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 
 import Image from "next/image";
 
@@ -14,8 +14,6 @@ import { VaultRemarkModal } from "@/app/_components/vault/VaultRemarkModal";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
 import { track } from "@/app/_libs/utils/analytics";
-// TODO: restore when in-app reader is re-enabled
-// import { useMediaPlayer } from "@/app/_libs/context/MediaPlayerContext";
 import { cn } from "@/app/_libs/utils/cn";
 import {
   CheckIcon,
@@ -40,7 +38,6 @@ export interface VaultCardProps {
 
 function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: VaultCardProps) {
   const t = useTranslations("vault");
-  const cardRef = useRef<HTMLDivElement>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [remarkModalOpen, setRemarkModalOpen] = useState(false);
@@ -62,7 +59,6 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
 
   return (
     <div
-      ref={cardRef}
       className={cn(
         "rounded-card border-border bg-card group relative flex h-full min-h-0 flex-col overflow-hidden border transition-shadow duration-200 hover:shadow-md",
         item.is_read && "opacity-60",
@@ -121,8 +117,12 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
               />
             )}
 
-            {/* Hover overlay — dark scrim + action icons */}
-            <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            {/* Desktop hover overlay */}
+            <div
+              className={cn(
+                "absolute inset-0 z-10 hidden items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity duration-200",
+                "sm:flex pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100",
+              )}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -204,7 +204,6 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
               </div>
             )}
 
-            {/* Remark (read-only on card; edit via hover pencil → modal) */}
             {(item.remarks ?? "").trim() ? (
               <p className="text-muted-foreground mt-1 line-clamp-2 font-sans text-sm">
                 {item.remarks}
@@ -224,6 +223,63 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
               {timeLabel && <> · {timeLabel}</>}
             </p>
           </div>
+        </div>
+
+        {/* Mobile action row — always visible on small screens */}
+        <div className="border-border flex items-center justify-around border-t px-2 py-1 sm:hidden">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!item.is_read) track("link_marked_read");
+              onToggleRead(item);
+            }}
+            className="text-muted-foreground hover:text-foreground rounded p-2 transition-colors"
+            aria-label={item.is_read ? t("mark_unread_aria") : t("mark_read_aria")}>
+            {item.is_read ? (
+              <DoubleCheckIcon className="size-4" />
+            ) : (
+              <CheckIcon className="size-4" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setRemarkModalOpen(true);
+            }}
+            className="text-muted-foreground hover:text-foreground rounded p-2 transition-colors"
+            aria-label={t("edit_remark_aria")}>
+            <PencilIcon className="size-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShareModalOpen(true);
+            }}
+            className="text-muted-foreground hover:text-foreground rounded p-2 transition-colors"
+            aria-label={t("share_aria")}>
+            <ShareIcon className="size-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              track("link_deleted", { content_type: item.content_type });
+              if (shouldSkipConfirm()) {
+                deleteItem(item.id);
+                return;
+              }
+              setDeleteModalOpen(true);
+            }}
+            className="rounded p-2 text-red-400 transition-colors hover:text-red-500"
+            aria-label={t("delete_aria")}>
+            <TrashIcon className="size-4" />
+          </button>
         </div>
       </div>
 

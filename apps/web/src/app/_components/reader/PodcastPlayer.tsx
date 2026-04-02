@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "@/i18n/use-translations";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { springGentle } from "@/app/_libs/utils/motion";
 
 const DIRECT_AUDIO_EXTENSIONS = /\.(mp3|m4a|ogg|wav)$/i;
@@ -26,7 +27,7 @@ export function PodcastPlayer({
 }: PodcastPlayerProps) {
   const t = useTranslations("reader");
   const tCommon = useTranslations("common");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const isAudio = url ? isDirectAudio(url) : false;
 
   useEffect(() => {

@@ -2,7 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { toast } from "sonner";
 
 import { ChatInput } from "@/app/_components/home/chat-input";
@@ -30,7 +31,7 @@ interface DropComposerProps {
 
 export function DropComposer({ groupId, currentUserId, onDropPosted }: DropComposerProps) {
   const t = useTranslations("groups");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const saveItem = useSaveItem();
   const pendingVaultSave = useRef<Parameters<typeof saveItem.mutate>[0] | null>(null);
 

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { env } from "env";
-import { type Variants, motion, useReducedMotion } from "framer-motion";
+import { type Variants, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import { MagicLinkForm, MagicStep } from "./magic-link-form";
 export function LoginForm() {
   const t = useTranslations("auth.login");
   const tApp = useTranslations("app");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const searchParams = useSearchParams();
 
   const nextUrl = searchParams.get("next") ?? "";

@@ -97,35 +97,47 @@ export function AppSidebar({
         transition={springSnappy}
         className="border-ink/8 hidden h-full shrink-0 flex-col overflow-hidden border-r bg-white sm:flex">
         {/* Logo + collapse toggle */}
-        <div className="flex min-w-0 items-center gap-2 px-3 py-5">
-          <div className="ml-1 shrink-0">
-            <BrandConcentricArch s={20} className="text-ink" />
-          </div>
-          {!collapsed && (
-            <span className="text-ink flex-1 truncate font-sans text-lg font-black">Kurate</span>
+        <div
+          className={collapsed ? "flex min-w-0 items-center justify-center px-2 py-4" : "flex min-w-0 items-center gap-2 px-3 py-5"}>
+          {collapsed ? (
+            <button
+              type="button"
+              onClick={() => setCollapsed(false)}
+              className="hover:bg-ink/6 rounded p-1.5 transition-colors"
+              title={t("expand_sidebar")}
+              aria-label={t("expand_sidebar")}>
+              <BrandConcentricArch s={20} className="text-ink" />
+            </button>
+          ) : (
+            <>
+              <div className="ml-1 shrink-0">
+                <BrandConcentricArch s={20} className="text-ink" />
+              </div>
+              <span className="text-ink flex-1 truncate font-sans text-lg font-black">Kurate</span>
+              <motion.button
+                onClick={() => setCollapsed((c) => !c)}
+                className="hover:bg-ink/6 shrink-0 ml-auto cursor-pointer rounded p-1.5 transition-colors"
+                title={t("collapse_sidebar")}
+                whileTap={{ scale: 0.9 }}>
+                <motion.svg
+                  animate={{ rotate: 0 }}
+                  transition={springSnappy}
+                  width={12}
+                  height={12}
+                  viewBox="0 0 12 12"
+                  fill="none">
+                  <path
+                    d="M7.5 9.5L4 6l3.5-3.5"
+                    stroke="#1A1A1A"
+                    strokeWidth={1.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity={0.4}
+                  />
+                </motion.svg>
+              </motion.button>
+            </>
           )}
-          <motion.button
-            onClick={() => setCollapsed((c) => !c)}
-            className="hover:bg-ink/6 shrink-0 cursor-pointer rounded p-1.5 transition-colors"
-            title={collapsed ? t("expand_sidebar") : t("collapse_sidebar")}
-            whileTap={{ scale: 0.9 }}>
-            <motion.svg
-              animate={{ rotate: collapsed ? 180 : 0 }}
-              transition={springSnappy}
-              width={12}
-              height={12}
-              viewBox="0 0 12 12"
-              fill="none">
-              <path
-                d="M7.5 9.5L4 6l3.5-3.5"
-                stroke="#1A1A1A"
-                strokeWidth={1.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={0.4}
-              />
-            </motion.svg>
-          </motion.button>
         </div>
 
         {/* Navigation */}
@@ -135,7 +147,11 @@ export function AppSidebar({
             <Link
               href="/home"
               title={t("home")}
-              className={`rounded-badge hover:bg-ink/4 flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${homeActive ? "bg-ink/8" : ""}`}>
+              className={
+                collapsed
+                  ? `rounded-badge hover:bg-ink/4 flex w-full items-center justify-center px-2 py-2 transition-colors ${homeActive ? "bg-ink/8" : ""}`
+                  : `rounded-badge hover:bg-ink/4 flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${homeActive ? "bg-ink/8" : ""}`
+              }>
               <BrandArch s={14} c={homeActive ? "#1A1A1A" : "rgba(26,26,26,0.35)"} />
               {!collapsed && (
                 <span
@@ -149,7 +165,11 @@ export function AppSidebar({
             <Link
               href="/profile"
               title={t("profile")}
-              className={`rounded-badge hover:bg-ink/4 flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${profileActive ? "bg-ink/8" : ""}`}>
+              className={
+                collapsed
+                  ? `rounded-badge hover:bg-ink/4 flex w-full items-center justify-center px-2 py-2 transition-colors ${profileActive ? "bg-ink/8" : ""}`
+                  : `rounded-badge hover:bg-ink/4 flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${profileActive ? "bg-ink/8" : ""}`
+              }>
               <div
                 className={`relative flex h-[18px] w-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full ${profileActive ? "ring-ink/40 ring-1" : ""}`}>
                 {userAvatarUrl ? (
@@ -179,7 +199,11 @@ export function AppSidebar({
               type="button"
               onClick={() => setNotificationsOpen(true)}
               title="Notifications"
-              className="hover:bg-ink/4 rounded-badge flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors">
+              className={
+                collapsed
+                  ? "hover:bg-ink/4 rounded-badge flex w-full items-center justify-center px-2 py-2 transition-colors"
+                  : "hover:bg-ink/4 rounded-badge flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors"
+              }>
               <div className="relative shrink-0">
                 <BellIcon className="text-ink/35 size-[18px]" />
                 {collapsed && (

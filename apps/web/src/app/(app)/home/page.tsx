@@ -4,7 +4,8 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view";
 import { HomeTabHeader } from "@/app/_components/home/home-tab-header";
 import { VaultTabView } from "@/app/_components/home/vault-tab-view";
@@ -29,7 +30,7 @@ export default function HomePage() {
 function HomePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
 
   const { activeThreadId, isFullScreen, closeThread, openPerson } = useThread();
 

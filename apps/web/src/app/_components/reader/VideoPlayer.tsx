@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "@/i18n/use-translations";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { cn } from "@/app/_libs/utils/cn";
 import { springGentle } from "@/app/_libs/utils/motion";
 import type { SourceRect } from "@kurate/types";
@@ -32,7 +33,7 @@ export function VideoPlayer({ url, title, initialRect, onClose }: VideoPlayerPro
   const tCommon = useTranslations("common");
   const [isClosing, setIsClosing] = useState(false);
   const embed = url ? getEmbed(url) : null;
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const expandFromCard = Boolean(initialRect && !prefersReducedMotion);
 
   const handleClose = useCallback(() => {

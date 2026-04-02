@@ -1,10 +1,12 @@
 "use client";
 
-import { useTranslations } from "@/i18n/use-translations";
-import { LuNewspaper, LuLibrary } from "react-icons/lu";
+import { useRouter } from "next/navigation";
 
 import type { Tables } from "@kurate/types";
+import { LuLibrary, LuNewspaper } from "react-icons/lu";
+
 import { GroupView } from "@/app/(app)/groups/[id]/GroupPageClient";
+import { useTranslations } from "@/i18n/use-translations";
 
 interface FeedHeaderProps {
   group: Tables<"conversations">;
@@ -17,53 +19,72 @@ interface FeedHeaderProps {
 
 export function FeedHeader({ group, view, onToggleLibrary, onShowInfo }: FeedHeaderProps) {
   const t = useTranslations("groups");
+  const router = useRouter();
   const initial = (group.group_name?.[0] ?? "G").toUpperCase();
 
   return (
-    <div className="shrink-0 px-4 py-2.5 flex items-center justify-between gap-3 border-b border-border bg-background">
-      {/* Left: avatar + name + description — clickable to open info panel */}
-      <button
-        type="button"
-        onClick={onShowInfo}
-        className="flex items-center gap-2.5 min-w-0 text-left"
-      >
-        <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <span className="text-xs font-bold text-primary">{initial}</span>
-        </div>
-        <div className="min-w-0">
-          <span className="font-semibold text-sm text-foreground block truncate">
-            {group.group_name}
-          </span>
-          {group.group_description && (
-            <span className="hidden sm:block text-xs text-muted-foreground truncate max-w-xs">
-              {group.group_description}
+    <div className="border-border bg-background flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2.5">
+      {/* Left: back (mobile only) + avatar + name */}
+      <div className="flex min-w-0 items-center gap-1">
+        {/* Back arrow — mobile only */}
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="text-muted-foreground hover:text-foreground -ml-1 shrink-0 p-1 transition-colors md:hidden"
+          aria-label="Go back">
+          <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+            <path
+              d="M12 5l-5 5 5 5"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+
+        {/* Avatar + name — taps to open info panel */}
+        <button
+          type="button"
+          onClick={onShowInfo}
+          className="flex min-w-0 items-center gap-2.5 text-left">
+          <div className="bg-primary/10 flex size-8 shrink-0 items-center justify-center rounded-full">
+            <span className="text-primary text-xs font-bold">{initial}</span>
+          </div>
+          <div className="min-w-0">
+            <span className="text-foreground block truncate text-sm font-semibold">
+              {group.group_name}
             </span>
-          )}
-        </div>
-      </button>
+            {group.group_description && (
+              <span className="text-muted-foreground hidden max-w-xs truncate text-xs sm:block">
+                {group.group_description}
+              </span>
+            )}
+          </div>
+        </button>
+      </div>
 
       {/* Right: icons */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex shrink-0 items-center gap-1">
         {/* View toggle — shows destination icon */}
         <button
           type="button"
           onClick={onToggleLibrary}
           aria-label={view === GroupView.Feed ? t("show_library") : t("show_feed")}
-          className="p-1.5 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-surface"
-        >
-          {view === GroupView.Feed
-            ? <LuLibrary size={18} aria-hidden="true" />
-            : <LuNewspaper size={18} aria-hidden="true" />
-          }
+          className="text-muted-foreground hover:text-foreground hover:bg-surface rounded-md p-1.5 transition-colors">
+          {view === GroupView.Feed ? (
+            <LuLibrary size={18} aria-hidden="true" />
+          ) : (
+            <LuNewspaper size={18} aria-hidden="true" />
+          )}
         </button>
 
-        {/* Info / settings — inline panel */}
+        {/* Info / settings — hidden on mobile (avatar button already triggers it) */}
         <button
           type="button"
           onClick={onShowInfo}
           aria-label={t("info_aria")}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
-        >
+          className="text-muted-foreground hover:text-foreground hover:bg-surface hidden rounded-md p-1.5 transition-colors md:flex">
           <svg
             width="18"
             height="18"
@@ -73,8 +94,7 @@ export function FeedHeader({ group, view, onToggleLibrary, onShowInfo }: FeedHea
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            aria-hidden="true"
-          >
+            aria-hidden="true">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>

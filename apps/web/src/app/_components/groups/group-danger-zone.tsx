@@ -2,26 +2,27 @@
 
 import { useState } from "react";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/i18n/use-translations";
 
 import { queryKeys } from "@kurate/query";
-import { createClient } from "@/app/_libs/supabase/client";
 import type { Tables } from "@kurate/types";
 import type { GroupMember, GroupRole } from "@kurate/types";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+
+import { createClient } from "@/app/_libs/supabase/client";
 import { LogOutIcon } from "@/components/icons/log-out-icon";
 import { TrashIcon } from "@/components/icons/trash-icon";
-import { Input } from "@/components/ui/input";
+import { useTranslations } from "@/i18n/use-translations";
 
 const supabase = createClient();
 
@@ -63,27 +64,25 @@ function DangerConfirmModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-sm">
         <DialogHeader>
-          <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-destructive/10">
+          <div className="bg-destructive/10 mb-3 flex size-10 items-center justify-center rounded-full">
             {isLeave ? (
-              <LogOutIcon className="size-5 text-destructive" />
+              <LogOutIcon className="text-destructive size-5" />
             ) : (
-              <TrashIcon className="size-5 text-destructive" />
+              <TrashIcon className="text-destructive size-5" />
             )}
           </div>
 
           <DialogTitle className="text-base">{title}</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
+          <DialogDescription className="text-muted-foreground text-sm">
             {subtitle}
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-1 space-y-4">
           <div className="space-y-1.5">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("danger_confirm_type_prefix")}{" "}
-              <span className="font-mono font-semibold text-foreground">
-                {groupName}
-              </span>{" "}
+              <span className="text-foreground font-mono font-semibold">{groupName}</span>{" "}
               {t("danger_confirm_type_suffix")}
             </p>
             <Input
@@ -101,16 +100,14 @@ function DangerConfirmModal({
               type="button"
               onClick={() => handleOpenChange(false)}
               disabled={loading}
-              className="flex-1 rounded-card border border-border py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface disabled:opacity-50"
-            >
+              className="rounded-card border-border text-muted-foreground hover:bg-surface flex-1 border py-2 text-sm font-medium transition-colors disabled:opacity-50">
               {t("danger_confirm_cancel")}
             </button>
             <button
               type="button"
               onClick={onConfirm}
               disabled={!confirmed || loading}
-              className="flex-1 rounded-card bg-destructive py-2 text-sm font-medium text-destructive-foreground transition-all hover:bg-destructive/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-            >
+              className="rounded-card bg-destructive text-destructive-foreground hover:bg-destructive/90 flex-1 py-2 text-sm font-medium transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40">
               {loading ? `${confirmLabel}ing…` : confirmLabel}
             </button>
           </div>
@@ -129,12 +126,7 @@ export interface GroupDangerZoneProps {
   members: GroupMember[];
 }
 
-export function GroupDangerZone({
-  group,
-  currentUserId,
-  userRole,
-  members,
-}: GroupDangerZoneProps) {
+export function GroupDangerZone({ group, currentUserId, userRole, members }: GroupDangerZoneProps) {
   const t = useTranslations("groups");
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -155,7 +147,9 @@ export function GroupDangerZone({
 
   const leaveSubtitle = isOwner
     ? successor
-      ? t("leave_group_subtitle_transfer", { successor: successor.profile.display_name ?? t("anonymous") })
+      ? t("leave_group_subtitle_transfer", {
+          successor: successor.profile.display_name ?? t("anonymous"),
+        })
       : t("leave_group_subtitle_last")
     : t("leave_group_subtitle_member");
 
@@ -219,25 +213,24 @@ export function GroupDangerZone({
 
   return (
     <>
-      <div className="shrink-0 border-t border-destructive/20 px-5 py-4">
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-destructive/70">
+      <div className="border-destructive/20 shrink-0 border-t px-2 py-4 md:px-5">
+        <p className="text-destructive/70 mb-3 text-[11px] font-semibold tracking-wider uppercase">
           {t("danger_zone_label")}
         </p>
 
-        <div className="overflow-hidden rounded-card border border-destructive/25 bg-destructive/5">
+        <div className="rounded-card border-destructive/25 bg-destructive/5 overflow-hidden border">
           {/* Leave */}
           <button
             type="button"
             onClick={() => setLeaveOpen(true)}
             disabled={leaving || deleting}
-            className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-destructive/10 disabled:opacity-50"
-          >
-            <LogOutIcon className="size-4 shrink-0 text-destructive/70 transition-colors group-hover:text-destructive" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-destructive">
+            className="group hover:bg-destructive/10 flex w-full items-center gap-3 px-4 py-3 text-left transition-colors disabled:opacity-50">
+            <LogOutIcon className="text-destructive/70 group-hover:text-destructive size-4 shrink-0 transition-colors" />
+            <div className="min-w-0 flex-1">
+              <p className="text-destructive text-sm font-medium">
                 {leaving ? t("leaving") : t("leave_group")}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {isOwner ? t("leave_group_hint_owner") : t("leave_group_hint_member")}
               </p>
             </div>
@@ -246,21 +239,18 @@ export function GroupDangerZone({
           {/* Delete — owner only */}
           {isOwner && (
             <>
-              <div className="mx-4 h-px bg-destructive/15" />
+              <div className="bg-destructive/15 mx-4 h-px" />
               <button
                 type="button"
                 onClick={() => setDeleteOpen(true)}
                 disabled={leaving || deleting}
-                className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-destructive/10 disabled:opacity-50"
-              >
-                <TrashIcon className="size-4 shrink-0 text-destructive/70 transition-colors group-hover:text-destructive" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-destructive">
+                className="group hover:bg-destructive/10 flex w-full items-center gap-3 px-4 py-3 text-left transition-colors disabled:opacity-50">
+                <TrashIcon className="text-destructive/70 group-hover:text-destructive size-4 shrink-0 transition-colors" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-destructive text-sm font-medium">
                     {deleting ? t("deleting") : t("delete_group")}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t("delete_group_hint")}
-                  </p>
+                  <p className="text-muted-foreground text-xs">{t("delete_group_hint")}</p>
                 </div>
               </button>
             </>

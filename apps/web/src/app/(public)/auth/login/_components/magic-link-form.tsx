@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export function MagicLinkForm({
   onReset,
 }: MagicLinkFormProps) {
   const t = useTranslations("auth.login");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
 
   return (
     <AnimatePresence mode="wait">

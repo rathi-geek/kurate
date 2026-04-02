@@ -70,7 +70,7 @@ export function GroupInfoHeader({
 
   return (
     <>
-      <div className="flex w-full flex-col items-start gap-5 px-5 py-5">
+      <div className="flex w-full flex-col items-start gap-5 px-2 py-5 md:px-5">
         <div className="flex w-full flex-row items-start gap-3">
           <div className="flex shrink-0 flex-row items-center gap-3">
             <button
@@ -135,7 +135,12 @@ export function GroupInfoHeader({
             </button>
           )}
 
-          <GroupInfoMembersList members={members} membersLoading={membersLoading} userRole={userRole} currentUserId={currentUserId} />
+          <GroupInfoMembersList
+            members={members}
+            membersLoading={membersLoading}
+            userRole={userRole}
+            currentUserId={currentUserId}
+          />
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { type Variants, motion, useReducedMotion } from "framer-motion";
+import { type Variants, motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ export interface VaultErrorStateProps {
 
 export function VaultErrorState({ onRetry }: VaultErrorStateProps) {
   const t = useTranslations("vault");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
 
   return (
     <motion.div

@@ -7,6 +7,9 @@ export interface GroupRow {
   id: string;
   name: string;
   avatarUrl: string | null;
+  description: string | null;
+  role: string;
+  joined_at: string;
 }
 
 export async function fetchUserGroups(): Promise<GroupRow[]> {
@@ -17,8 +20,9 @@ export async function fetchUserGroups(): Promise<GroupRow[]> {
 
   const { data, error } = await supabase
     .from("conversation_members")
-    .select("conversations!conversation_members_convo_id_fkey(id, group_name, is_group, avatar:group_avatar_id(file_path, bucket_name))")
-    .eq("user_id", user.id);
+    .select("role, joined_at, conversations!conversation_members_convo_id_fkey(id, group_name, group_description, is_group, avatar:group_avatar_id(file_path, bucket_name))")
+    .eq("user_id", user.id)
+    .order("joined_at", { ascending: false });
 
   if (error) return [];
   return (data ?? [])
@@ -30,6 +34,9 @@ export async function fetchUserGroups(): Promise<GroupRow[]> {
         id: convo.id,
         name: convo.group_name,
         avatarUrl: avatar ? mediaToUrl(avatar as { file_path: string; bucket_name: string }) : null,
+        description: convo.group_description ?? null,
+        role: row.role as string,
+        joined_at: row.joined_at,
       };
     })
     .filter(Boolean) as GroupRow[];

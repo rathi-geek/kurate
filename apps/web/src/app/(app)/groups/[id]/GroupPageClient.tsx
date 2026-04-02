@@ -125,7 +125,7 @@ function GroupPageInner({ groupId }: GroupPageClientProps) {
   if (!group) return <GroupPageSkeleton />;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
+    <div className="flex-1 overflow-y-auto px-0 pb-16 md:px-4 md:pb-4">
       <div className="mx-auto h-full max-w-md flex-col overflow-hidden">
         {view === GroupView.Info ? (
           <GroupInfoPage

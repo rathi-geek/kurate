@@ -18,7 +18,7 @@ const ROLE_BADGE: Record<string, string> = {
   member: "Member",
 };
 
-export default function GroupsPage() {
+export function GroupsPanel() {
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: groups = [], isLoading } = useQuery({
@@ -62,7 +62,6 @@ export default function GroupsPage() {
               key={g.id}
               href={`/groups/${g.id}`}
               className="rounded-card border-border bg-card hover:bg-surface flex items-center gap-3 border p-4 transition-colors">
-              {/* Group avatar */}
               <div className="bg-primary/10 relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full">
                 {g.avatarUrl ? (
                   <Image src={g.avatarUrl} alt={g.name} fill className="object-cover" sizes="40px" />

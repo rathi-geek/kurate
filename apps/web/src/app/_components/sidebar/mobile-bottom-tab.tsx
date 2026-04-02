@@ -16,6 +16,8 @@ interface MobileBottomTabProps {
   unreadCounts: Map<string, number>;
   notifUnreadCount: number;
   groupIds?: Set<string>;
+  activePanel: "people" | "groups" | null;
+  onTabClick: (tab: "people" | "groups") => void;
 }
 
 export function MobileBottomTab({
@@ -24,6 +26,8 @@ export function MobileBottomTab({
   unreadCounts,
   notifUnreadCount,
   groupIds,
+  activePanel,
+  onTabClick,
 }: MobileBottomTabProps) {
   const pathname = usePathname();
 
@@ -31,6 +35,9 @@ export function MobileBottomTab({
     if (href === "/home") return pathname === "/home" || pathname === "/";
     return pathname.startsWith(href);
   }
+
+  const peopleActive = activePanel === "people" || (!activePanel && isActive("/people"));
+  const groupsActive = activePanel === "groups" || (!activePanel && isActive("/groups"));
 
   const iconActive = "#1A1A1A";
   const iconInactive = "rgba(26,26,26,0.35)";
@@ -66,24 +73,24 @@ export function MobileBottomTab({
       </Link>
 
       {/* 3. People */}
-      <Link href="/people" className={tabClass}>
+      <button type="button" onClick={() => onTabClick("people")} className={tabClass}>
         <div className="relative">
-          <LuMessageCircle size={18} color={isActive("/people") ? iconActive : iconInactive} />
+          <LuMessageCircle size={18} color={peopleActive ? iconActive : iconInactive} />
           {hasDMUnread && (
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
           )}
         </div>
-      </Link>
+      </button>
 
       {/* 4. Groups */}
-      <Link href="/groups" className={tabClass}>
+      <button type="button" onClick={() => onTabClick("groups")} className={tabClass}>
         <div className="relative">
-          <LuUsers size={18} color={isActive("/groups") ? iconActive : iconInactive} />
+          <LuUsers size={18} color={groupsActive ? iconActive : iconInactive} />
           {hasGroupUnread && (
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
           )}
         </div>
-      </Link>
+      </button>
 
       {/* 5. Profile — avatar or initials */}
       <Link href="/profile" className={tabClass}>

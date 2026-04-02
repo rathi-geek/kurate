@@ -8,7 +8,7 @@ import { queryKeys } from "@kurate/query";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 import { type ThoughtBucket, classifyThought } from "@kurate/utils";
 import { useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
 import { type ExtractedMeta, LinkPreviewCard } from "@/app/_components/home/LinkPreviewCard";
@@ -21,6 +21,7 @@ import { useAuth } from "@/app/_libs/auth-context";
 import { VaultTab } from "@/app/_libs/chat-types";
 import { db } from "@/app/_libs/db";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
@@ -43,10 +44,11 @@ interface VaultTabViewProps {
 }
 
 export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: VaultTabViewProps) {
-  const prefersReducedMotion = useReducedMotion();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollDir = useScrollDirection(scrollRef);
-  const isScrolledDown = scrollDir === "down";
+  const prefersReducedMotion = useSafeReducedMotion();
+  // const scrollRef = useRef<HTMLDivElement>(null);
+  // const scrollDir = useScrollDirection(scrollRef);
+  // const isScrolledDown = scrollDir === "down";
+  // const collapseComposerOnScroll = isScrolledDown;
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -145,9 +147,9 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
     activeBucket,
   });
 
-  useEffect(() => {
-    if (scrollDir) onScrollDirectionChange?.(scrollDir);
-  }, [scrollDir, onScrollDirectionChange]);
+  // useEffect(() => {
+  //   if (scrollDir) onScrollDirectionChange?.(scrollDir);
+  // }, [scrollDir, onScrollDirectionChange]);
 
   useEffect(() => {
     if (!isExtracting && extractedMeta) {
@@ -379,7 +381,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col">
       <VaultTabSubHeader
         vaultTab={vaultTab}
         onTabChange={handleTabChange}
@@ -395,7 +397,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
           Use opacity/pointer-events (NOT display:none) so scroll positions are preserved. */}
       <div className="relative min-h-0 flex-1">
         <div
-          ref={scrollRef}
+          // ref={scrollRef}
           className={`absolute inset-0 overflow-y-auto transition-opacity duration-150${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <VaultLibrary
             filters={fullVaultFilters}
@@ -419,19 +421,24 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
       {/* Single ChatInput — always visible, routes by content (URL → links, text/media → thoughts) */}
       <motion.div
         className="bg-background relative shrink-0"
-        animate={prefersReducedMotion ? undefined : { height: isScrolledDown ? 0 : "auto" }}
+        // animate={
+        //   prefersReducedMotion ? undefined : { height: collapseComposerOnScroll ? 0 : "auto" }
+        // }
         transition={springGentle}>
         {/* Link preview card — shown whenever a URL is detected, regardless of active tab */}
         <AnimatePresence>
           {previewPhase !== PreviewPhase.Idle && (
             <motion.div
               className="absolute right-0 bottom-full left-0 z-50 px-5"
-              animate={
-                prefersReducedMotion
-                  ? undefined
-                  : { opacity: isScrolledDown ? 0 : 1, y: isScrolledDown ? 6 : 0 }
-              }
-              style={{ pointerEvents: isScrolledDown ? "none" : "auto" }}
+              // animate={
+              //   prefersReducedMotion
+              //     ? undefined
+              //     : {
+              //         opacity: collapseComposerOnScroll ? 0 : 1,
+              //         y: collapseComposerOnScroll ? 6 : 0,
+              //       }
+              // }
+              // style={{ pointerEvents: collapseComposerOnScroll ? "none" : "auto" }}
               transition={springGentle}>
               <div className="mx-auto max-w-2xl">
                 <LinkPreviewCard

@@ -6,9 +6,8 @@ import { ROUTES } from "@kurate/utils";
 import { toast } from "sonner";
 
 import type { GroupInvite } from "@/app/_libs/hooks/useGroupInvites";
-import { useTranslations } from "@/i18n/use-translations";
-
 import { CheckIcon, CloseIcon, CopyIcon } from "@/components/icons";
+import { useTranslations } from "@/i18n/use-translations";
 
 function encodeEmail(email: string): string {
   return btoa(email).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -31,11 +30,11 @@ export function PendingGroupInvitesSection({
   if (invites.length === 0) return null;
 
   return (
-    <div className="px-5 pb-4">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="px-2 pb-4 md:px-5">
+      <p className="text-muted-foreground mb-2 text-[11px] font-semibold tracking-wider uppercase">
         {t("pending_invites_title")}
       </p>
-      <div className="overflow-hidden rounded-card border border-border">
+      <div className="rounded-card border-border overflow-hidden border">
         {invites.map((invite) => {
           const isCopied = copiedId === invite.id;
           const copyUrl = async () => {
@@ -48,21 +47,17 @@ export function PendingGroupInvitesSection({
           return (
             <div
               key={invite.id}
-              className="flex items-center gap-2.5 border-b border-border px-4 py-2.5 last:border-0"
-            >
-              <span className="flex-1 truncate text-sm text-foreground">{invite.invited_email}</span>
+              className="border-border flex items-center gap-2.5 border-b px-4 py-2.5 last:border-0">
+              <span className="text-foreground flex-1 truncate text-sm">
+                {invite.invited_email}
+              </span>
               <button
                 type="button"
                 onClick={() => void copyUrl()}
                 title={t("copy_invite_link_aria")}
                 aria-label={t("copy_invite_link_aria")}
-                className={`shrink-0 transition-colors ${isCopied ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                {isCopied ? (
-                  <CheckIcon className="size-3.5" />
-                ) : (
-                  <CopyIcon className="size-3.5" />
-                )}
+                className={`shrink-0 transition-colors ${isCopied ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                {isCopied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
               </button>
               <button
                 type="button"
@@ -72,8 +67,7 @@ export function PendingGroupInvitesSection({
                 }}
                 title={t("remove_invite_aria")}
                 aria-label={t("remove_invite_aria")}
-                className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-              >
+                className="text-muted-foreground hover:text-destructive shrink-0 transition-colors">
                 <CloseIcon className="size-3.5" />
               </button>
             </div>

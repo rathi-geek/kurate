@@ -2,7 +2,8 @@
 
 import { useId } from "react";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 
 import { cn } from "@/app/_libs/utils/cn";
 
@@ -48,7 +49,7 @@ export function SlidingTabs<T extends string>({
   className,
 }: SlidingTabsProps<T>) {
   const uid = useId();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const { pad, btn, minW } = SIZE_CONFIG[size];
   const pillId = `sliding-tab-pill-${uid}`;
 
