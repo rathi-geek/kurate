@@ -698,3 +698,200 @@ $$;
 -- CREATE TRIGGER trg_new_post_notification
 --   AFTER INSERT ON public.group_posts
 --   FOR EACH ROW EXECUTE FUNCTION public.handle_new_post_insert();
+
+-- ── Co-engagement notifications ───────────────────────────────────────────────
+-- Fires after a new must-read mark — notifies everyone who marked it before.
+
+CREATE OR REPLACE FUNCTION public.handle_also_must_read_insert()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_post_owner_id  UUID;
+  v_owner_name     TEXT;
+  v_recipient      UUID;
+  v_notif_id       UUID;
+  v_pref           BOOLEAN;
+BEGIN
+  SELECT shared_by INTO v_post_owner_id
+    FROM public.group_posts WHERE id = NEW.group_post_id;
+
+  SELECT COALESCE(NULLIF(TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')), ''), handle, 'Someone')
+    INTO v_owner_name FROM public.profiles WHERE id = v_post_owner_id;
+
+  FOR v_recipient IN
+    SELECT user_id FROM public.group_posts_must_reads
+    WHERE group_post_id = NEW.group_post_id
+      AND user_id != NEW.user_id
+      AND user_id != v_post_owner_id
+    GROUP BY user_id
+    ORDER BY MAX(created_at) DESC
+    LIMIT 20
+  LOOP
+    SELECT co_engagement_notifications INTO v_pref
+      FROM public.notification_preferences WHERE user_id = v_recipient;
+    IF v_pref = FALSE THEN CONTINUE; END IF;
+
+    SELECT id INTO v_notif_id FROM public.notifications
+    WHERE recipient_id = v_recipient
+      AND event_type = 'also_must_read'
+      AND event_id = NEW.group_post_id;
+
+    IF v_notif_id IS NULL THEN
+      INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
+      VALUES (v_recipient, NEW.user_id, 'also_must_read', NEW.group_post_id,
+              'also marked ' || v_owner_name || '''s post as must-read')
+      RETURNING id INTO v_notif_id;
+    ELSE
+      UPDATE public.notifications
+         SET actor_id = NEW.user_id, updated_at = NOW()
+       WHERE id = v_notif_id;
+    END IF;
+
+    INSERT INTO public.notification_actors (notification_id, actor_id)
+    VALUES (v_notif_id, NEW.user_id)
+    ON CONFLICT DO NOTHING;
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_also_must_read_insert
+  AFTER INSERT ON public.group_posts_must_reads
+  FOR EACH ROW EXECUTE FUNCTION public.handle_also_must_read_insert();
+
+-- Fires when a must-read is removed — cleans up co-engagement notifications.
+
+CREATE OR REPLACE FUNCTION public.handle_also_must_read_delete()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_notif_id  UUID;
+  v_remaining BIGINT;
+BEGIN
+  FOR v_notif_id IN
+    SELECT n.id FROM public.notifications n
+    JOIN public.notification_actors na ON na.notification_id = n.id
+    WHERE n.event_type = 'also_must_read'
+      AND n.event_id = OLD.group_post_id
+      AND na.actor_id = OLD.user_id
+  LOOP
+    DELETE FROM public.notification_actors
+    WHERE notification_id = v_notif_id AND actor_id = OLD.user_id;
+
+    SELECT COUNT(*) INTO v_remaining FROM public.notification_actors
+    WHERE notification_id = v_notif_id;
+
+    IF v_remaining = 0 THEN
+      DELETE FROM public.notifications WHERE id = v_notif_id;
+    ELSE
+      UPDATE public.notifications SET
+        actor_id = (SELECT actor_id FROM public.notification_actors
+                    WHERE notification_id = v_notif_id ORDER BY created_at DESC LIMIT 1),
+        updated_at = NOW()
+      WHERE id = v_notif_id;
+    END IF;
+  END LOOP;
+  RETURN OLD;
+END;
+$$;
+
+CREATE TRIGGER trg_also_must_read_delete
+  AFTER DELETE ON public.group_posts_must_reads
+  FOR EACH ROW EXECUTE FUNCTION public.handle_also_must_read_delete();
+
+-- Fires after a new comment — notifies everyone who commented before.
+
+CREATE OR REPLACE FUNCTION public.handle_also_commented_insert()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_post_owner_id  UUID;
+  v_owner_name     TEXT;
+  v_recipient      UUID;
+  v_notif_id       UUID;
+  v_pref           BOOLEAN;
+BEGIN
+  SELECT shared_by INTO v_post_owner_id
+    FROM public.group_posts WHERE id = NEW.group_post_id;
+
+  SELECT COALESCE(NULLIF(TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')), ''), handle, 'Someone')
+    INTO v_owner_name FROM public.profiles WHERE id = v_post_owner_id;
+
+  FOR v_recipient IN
+    SELECT user_id FROM public.group_posts_comments
+    WHERE group_post_id = NEW.group_post_id
+      AND user_id != NEW.user_id
+      AND user_id != v_post_owner_id
+    GROUP BY user_id
+    ORDER BY MAX(created_at) DESC
+    LIMIT 20
+  LOOP
+    SELECT co_engagement_notifications INTO v_pref
+      FROM public.notification_preferences WHERE user_id = v_recipient;
+    IF v_pref = FALSE THEN CONTINUE; END IF;
+
+    SELECT id INTO v_notif_id FROM public.notifications
+    WHERE recipient_id = v_recipient
+      AND event_type = 'also_commented'
+      AND event_id = NEW.group_post_id;
+
+    IF v_notif_id IS NULL THEN
+      INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
+      VALUES (v_recipient, NEW.user_id, 'also_commented', NEW.group_post_id,
+              'also commented on ' || v_owner_name || '''s post')
+      RETURNING id INTO v_notif_id;
+    ELSE
+      UPDATE public.notifications
+         SET actor_id = NEW.user_id, updated_at = NOW()
+       WHERE id = v_notif_id;
+    END IF;
+
+    INSERT INTO public.notification_actors (notification_id, actor_id)
+    VALUES (v_notif_id, NEW.user_id)
+    ON CONFLICT DO NOTHING;
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_also_commented_insert
+  AFTER INSERT ON public.group_posts_comments
+  FOR EACH ROW EXECUTE FUNCTION public.handle_also_commented_insert();
+
+-- Fires when a comment is deleted — cleans up co-engagement notifications.
+
+CREATE OR REPLACE FUNCTION public.handle_also_commented_delete()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_notif_id  UUID;
+  v_remaining BIGINT;
+BEGIN
+  FOR v_notif_id IN
+    SELECT n.id FROM public.notifications n
+    JOIN public.notification_actors na ON na.notification_id = n.id
+    WHERE n.event_type = 'also_commented'
+      AND n.event_id = OLD.group_post_id
+      AND na.actor_id = OLD.user_id
+  LOOP
+    DELETE FROM public.notification_actors
+    WHERE notification_id = v_notif_id AND actor_id = OLD.user_id;
+
+    SELECT COUNT(*) INTO v_remaining FROM public.notification_actors
+    WHERE notification_id = v_notif_id;
+
+    IF v_remaining = 0 THEN
+      DELETE FROM public.notifications WHERE id = v_notif_id;
+    ELSE
+      UPDATE public.notifications SET
+        actor_id = (SELECT actor_id FROM public.notification_actors
+                    WHERE notification_id = v_notif_id ORDER BY created_at DESC LIMIT 1),
+        updated_at = NOW()
+      WHERE id = v_notif_id;
+    END IF;
+  END LOOP;
+  RETURN OLD;
+END;
+$$;
+
+CREATE TRIGGER trg_also_commented_delete
+  AFTER DELETE ON public.group_posts_comments
+  FOR EACH ROW EXECUTE FUNCTION public.handle_also_commented_delete();

@@ -1035,7 +1035,7 @@ CREATE POLICY "Users can DELETE own devices"
 
   -- ── Notifications ──────────────────────────────────────────────────
 
-CREATE TYPE entity_type_enum AS ENUM ('like', 'must_read', 'comment', 'new_post', 'streak_reminder', 'weekly_digest', 'bookmark');
+CREATE TYPE entity_type_enum AS ENUM ('like', 'must_read', 'comment', 'new_post', 'streak_reminder', 'weekly_digest', 'bookmark', 'also_must_read', 'also_commented');
 
 CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid primary key default gen_random_uuid(),
@@ -1120,6 +1120,7 @@ CREATE POLICY "Users can VIEW own notification actors"
   bookmark_notifications boolean default true,
   push_enabled boolean default true,
   email_enabled boolean default false,
+  co_engagement_notifications boolean default true,
   updated_at timestamp default now()
 );
 

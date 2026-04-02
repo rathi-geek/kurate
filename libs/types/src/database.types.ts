@@ -932,6 +932,7 @@ export type Database = {
       notification_preferences: {
         Row: {
           bookmark_notifications: boolean | null
+          co_engagement_notifications: boolean | null
           comment_notifications: boolean | null
           email_enabled: boolean | null
           follow_notifications: boolean | null
@@ -946,6 +947,7 @@ export type Database = {
         }
         Insert: {
           bookmark_notifications?: boolean | null
+          co_engagement_notifications?: boolean | null
           comment_notifications?: boolean | null
           email_enabled?: boolean | null
           follow_notifications?: boolean | null
@@ -960,6 +962,7 @@ export type Database = {
         }
         Update: {
           bookmark_notifications?: boolean | null
+          co_engagement_notifications?: boolean | null
           comment_notifications?: boolean | null
           email_enabled?: boolean | null
           follow_notifications?: boolean | null
@@ -1569,6 +1572,8 @@ export type Database = {
         | "streak_reminder"
         | "weekly_digest"
         | "bookmark"
+        | "also_must_read"
+        | "also_commented"
       message_type_enum: "text" | "logged_item"
       provider_enum: "supabase" | "s3" | "r2" | "do_spaces" | "gcs"
       role_enum: "owner" | "admin" | "member"
@@ -1722,6 +1727,8 @@ export const Constants = {
         "streak_reminder",
         "weekly_digest",
         "bookmark",
+        "also_must_read",
+        "also_commented",
       ],
       message_type_enum: ["text", "logged_item"],
       provider_enum: ["supabase", "s3", "r2", "do_spaces", "gcs"],

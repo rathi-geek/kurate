@@ -43,7 +43,7 @@ export function NotificationItem({
     await markRead(notification.id);
     onNavigate();
 
-    if (!["like", "must_read", "comment", "new_post"].includes(notification.event_type)) return;
+    if (!["like", "must_read", "comment", "new_post", "also_must_read", "also_commented"].includes(notification.event_type)) return;
     if (!notification.event_id) return;
 
     const { data } = await supabase
