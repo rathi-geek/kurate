@@ -71,6 +71,9 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
   const [mediaPreview, setMediaPreview] = useState<MediaPreview | null>(null);
   const [inputKey, setInputKey] = useState(0);
 
+  const previewUrlRef = useRef<string | null>(null);
+  previewUrlRef.current = previewUrl;
+
   const resetInput = useCallback(() => setInputKey((k) => k + 1), []);
 
   const {
@@ -83,6 +86,8 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
 
   const handleLinkSaved = useCallback(
     async (result: SaveItemResult) => {
+      if (result.url !== previewUrlRef.current) return;
+
       track("vault_link_saved", {
         content_type: previewMeta?.contentType ?? "article",
         source: previewMeta?.source ?? null,
@@ -92,14 +97,25 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
       if (result.status === "duplicate") {
         toast("Already in your Vault", { description: "This link has been saved before." });
         setPreviewPhase(PreviewPhase.Idle);
+        setPreviewUrl(null);
+        setPreviewMeta(null);
+        setSavedLoggedItemId(null);
+        setSavedItemGroups([]);
+        resetExtraction();
         resetInput();
       } else if (result.status === "saved" && result.item) {
         const cached = queryClient.getQueryData<ShareableConversation[]>(
           queryKeys.vault.shareConversations(),
         );
         const convos = cached ?? (await fetchShareableConversations(userId ?? ""));
+        if (result.url !== previewUrlRef.current) return;
         if (convos.length === 0) {
           setPreviewPhase(PreviewPhase.Idle);
+          setPreviewUrl(null);
+          setPreviewMeta(null);
+          setSavedLoggedItemId(null);
+          setSavedItemGroups([]);
+          resetExtraction();
           toast("Saved to Vault");
           resetInput();
         } else {
@@ -109,7 +125,7 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         }
       }
     },
-    [queryClient, previewMeta, resetInput],
+    [queryClient, previewMeta, resetExtraction, resetInput, userId],
   );
 
   const { onSend } = useSubmitContent({
@@ -189,15 +205,28 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         setPreviewPhase(PreviewPhase.Idle);
         setPreviewUrl(null);
         setPreviewMeta(null);
+        setSavedLoggedItemId(null);
+        setSavedItemGroups([]);
         resetExtraction();
         return;
       }
-      if (url === previewUrl) return;
+
+      const previewActiveForCurrentUrl =
+        url === previewUrl &&
+        (previewPhase === PreviewPhase.Loading ||
+          previewPhase === PreviewPhase.Loaded ||
+          previewPhase === PreviewPhase.Share);
+      if (previewActiveForCurrentUrl) return;
+
+      if (url !== previewUrl) {
+        setSavedLoggedItemId(null);
+        setSavedItemGroups([]);
+      }
       setPreviewUrl(url);
       setPreviewPhase(PreviewPhase.Loading);
       void extract(url);
     },
-    [previewUrl, extract, resetExtraction],
+    [extract, previewPhase, previewUrl, resetExtraction],
   );
 
   const handleShare = useCallback(
@@ -216,17 +245,27 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
       setSavedItemGroups((prev) => [...new Set([...prev, ...groupIds])]);
       void queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
       setPreviewPhase(PreviewPhase.Idle);
+      setPreviewUrl(null);
+      setPreviewMeta(null);
+      setSavedLoggedItemId(null);
+      setSavedItemGroups([]);
+      resetExtraction();
       toast("Shared!");
       resetInput();
     },
-    [savedLoggedItemId, queryClient, resetInput],
+    [savedLoggedItemId, queryClient, resetExtraction, resetInput, userId],
   );
 
   const handleSkip = useCallback(() => {
     setPreviewPhase(PreviewPhase.Idle);
+    setPreviewUrl(null);
+    setPreviewMeta(null);
+    setSavedLoggedItemId(null);
+    setSavedItemGroups([]);
+    resetExtraction();
     toast("Saved to Vault");
     resetInput();
-  }, [resetInput]);
+  }, [resetExtraction, resetInput]);
 
   // Media upload hidden — feature not enabled (handler removed; re-add when re-enabling)
 
@@ -247,8 +286,13 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
 
   const handlePreviewClose = useCallback(() => {
     setPreviewPhase(PreviewPhase.Idle);
+    setPreviewUrl(null);
+    setPreviewMeta(null);
+    setSavedLoggedItemId(null);
+    setSavedItemGroups([]);
+    resetExtraction();
     resetInput();
-  }, [resetInput]);
+  }, [resetExtraction, resetInput]);
 
   const handleVaultChatSend = useCallback(
     async (noteText: string) => {
@@ -264,6 +308,10 @@ export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: 
         if (existingPending) {
           toast("Already in your Vault", { description: "This link has been saved before." });
           setPreviewUrl(null);
+          setPreviewMeta(null);
+          setSavedLoggedItemId(null);
+          setSavedItemGroups([]);
+          resetExtraction();
           resetInput();
           return;
         }

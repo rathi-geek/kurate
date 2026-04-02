@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export interface ExtractedMetadata {
   url: string;
@@ -26,8 +26,10 @@ export function useExtractMetadata(): UseExtractMetadataResult {
   const [isExtracting, setIsExtracting] = useState(false);
   const [metadata, setMetadata] = useState<ExtractedMetadata | null>(null);
   const [extractionFailed, setExtractionFailed] = useState(false);
+  const extractGenerationRef = useRef(0);
 
   const extract = useCallback(async (url: string) => {
+    const generation = ++extractGenerationRef.current;
     setIsExtracting(true);
     setExtractionFailed(false);
     try {
@@ -36,8 +38,10 @@ export function useExtractMetadata(): UseExtractMetadataResult {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
+      if (generation !== extractGenerationRef.current) return;
       if (res.ok) {
         const data = await res.json();
+        if (generation !== extractGenerationRef.current) return;
         setMetadata({
           url,
           ...data,
@@ -51,15 +55,20 @@ export function useExtractMetadata(): UseExtractMetadataResult {
         setExtractionFailed(true);
       }
     } catch {
+      if (generation !== extractGenerationRef.current) return;
       setExtractionFailed(true);
     } finally {
-      setIsExtracting(false);
+      if (generation === extractGenerationRef.current) {
+        setIsExtracting(false);
+      }
     }
   }, []);
 
   const reset = useCallback(() => {
+    extractGenerationRef.current += 1;
     setMetadata(null);
     setExtractionFailed(false);
+    setIsExtracting(false);
   }, []);
 
   return { isExtracting, metadata, extractionFailed, extract, reset };

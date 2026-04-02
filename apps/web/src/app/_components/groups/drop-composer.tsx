@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
@@ -33,7 +33,6 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
   const prefersReducedMotion = useReducedMotion();
   const saveItem = useSaveItem();
   const pendingVaultSave = useRef<Parameters<typeof saveItem.mutate>[0] | null>(null);
-  const chatInputRef = useRef<HTMLInputElement>(null);
 
   const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
@@ -56,12 +55,6 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     },
     [extract, reset],
   );
-
-  useEffect(() => {
-    if (detectedUrl) {
-      chatInputRef.current?.blur();
-    }
-  }, [detectedUrl]);
 
   const handleCancel = useCallback(() => {
     setDetectedUrl(null);
@@ -167,7 +160,6 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     <div className="space-y-2 px-4 pt-3 pb-1">
       {/* ChatInput — note is typed here when URL is locked, plain text for text-only posts */}
       <ChatInput
-        ref={chatInputRef}
         key={inputKey}
         onSend={handleSend}
         onUrlChange={handleUrlChange}

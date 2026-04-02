@@ -71,24 +71,28 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
   const hasText = value.trim().length > 0;
   const isCollapsed = collapsible && !focused && !hasText && !lockedUrl;
 
-  // Detect URL in value — only when no URL is already locked
+  // Detect URL in value — including while a URL is locked (e.g. user pasted a new link into the note field or global paste filled the input)
   useEffect(() => {
-    if (!onUrlChange || lockedUrl) return;
+    if (!onUrlChange) return;
     const timer = setTimeout(() => {
       const match = value.match(URL_REGEX);
       if (match) {
         const url = match[0];
-        // Strip the URL from value, keep remaining text as note pre-fill
+        // Same URL as locked (e.g. pasted again into the note) — strip from value, do not re-notify parent
+        if (lockedUrl === url) {
+          const deduped = value.replace(url, "").trim();
+          if (deduped !== value) setValue(deduped);
+          return;
+        }
         const remaining = value.replace(url, "").trim();
         setValue(remaining);
         setLockedUrl(url);
         lastReportedUrl.current = url;
         onUrlChange(url);
-      } else if (lastReportedUrl.current !== null) {
+      } else if (lastReportedUrl.current !== null && !lockedUrl) {
         lastReportedUrl.current = null;
         onUrlChange(null);
       }
-      // else: never had a URL — skip the call entirely
     }, 150);
     return () => clearTimeout(timer);
   }, [value, onUrlChange, lockedUrl]);
@@ -128,11 +132,12 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
     setLockedUrl(null);
   }, [value, lockedUrl, disabled, onSend]);
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter" || e.shiftKey) return;
+    // Avoid submitting while IME composition is active (e.g. Japanese input)
+    if (e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    handleSubmit();
   }
 
   const boxShadow = isUrl

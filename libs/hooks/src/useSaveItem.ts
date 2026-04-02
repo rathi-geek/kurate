@@ -31,6 +31,8 @@ export interface SaveItemInput {
 
 export interface SaveItemResult {
   status: "saved" | "duplicate" | "error";
+  /** Submitted URL — lets callers ignore stale save callbacks after the user switched links */
+  url: string;
   item?: {
     id: string;
     logged_item_id: string;
@@ -46,7 +48,7 @@ export function useSaveItem(supabase: SupabaseClient<any>) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return { status: "error" };
+      if (!user) return { status: "error", url: input.url };
 
       const url_hash = await generateUrlHash(input.url);
 
@@ -82,7 +84,11 @@ export function useSaveItem(supabase: SupabaseClient<any>) {
         .maybeSingle();
 
       if (existing)
-        return { status: "duplicate", item: { id: existing.id, logged_item_id: loggedItem.id } };
+        return {
+          status: "duplicate",
+          url: input.url,
+          item: { id: existing.id, logged_item_id: loggedItem.id },
+        };
 
       const { data: uli, error: uliError } = await supabase
         .from("user_logged_items")
@@ -98,7 +104,11 @@ export function useSaveItem(supabase: SupabaseClient<any>) {
 
       if (uliError) throw new Error(uliError.message);
 
-      return { status: "saved", item: { id: uli.id, logged_item_id: loggedItem.id } };
+      return {
+        status: "saved",
+        url: input.url,
+        item: { id: uli.id, logged_item_id: loggedItem.id },
+      };
     },
     onSuccess: (result) => {
       if (result.status === "saved") {
