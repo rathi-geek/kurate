@@ -10,7 +10,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useState } from "react";
 import type { Variants, Transition } from "framer-motion";
-import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 
 import {
   cardStagger,

@@ -22,7 +22,6 @@ import { VaultTab } from "@/app/_libs/chat-types";
 import { db } from "@/app/_libs/db";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
-import { useScrollDirection } from "@/app/_libs/hooks/useScrollDirection";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
 import {
@@ -43,7 +42,7 @@ interface VaultTabViewProps {
   onScrollDirectionChange?: (dir: "up" | "down") => void;
 }
 
-export function VaultTabView({ onNavigateToDiscover, onScrollDirectionChange }: VaultTabViewProps) {
+export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   const prefersReducedMotion = useSafeReducedMotion();
   // const scrollRef = useRef<HTMLDivElement>(null);
   // const scrollDir = useScrollDirection(scrollRef);
