@@ -6,8 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { queryKeys } from "@kurate/query";
-import type { Tables } from "@kurate/types";
-import type { GroupMember, GroupRole } from "@kurate/types";
+import { type Tables ,type  GroupMember,type  GroupRole } from "@kurate/types";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { EditGroupInfoModal } from "@/app/_components/groups/edit-group-info-modal";
@@ -51,18 +50,22 @@ export function GroupInfoHeader({
 
   useEffect(() => {
     if (!group.group_avatar_id) {
-      setGroupAvatarUrl(null);
       return;
     }
+    let cancelled = false;
     supabase
       .from("media_metadata")
       .select("file_path, bucket_name")
       .eq("id", group.group_avatar_id)
       .single()
       .then(({ data }) => {
-        setGroupAvatarUrl(data ? mediaToUrl(data) : null);
+        if (!cancelled) setGroupAvatarUrl(data ? mediaToUrl(data) : null);
       });
+    return () => { cancelled = true; };
   }, [group.group_avatar_id]);
+
+  // Reset avatar URL when avatar is removed (derived from prop, no effect needed)
+  const resolvedAvatarUrl = group.group_avatar_id ? groupAvatarUrl : null;
 
   const isOwner = userRole === "owner";
   const isAdminOrOwner = userRole === "owner" || userRole === "admin";
@@ -83,9 +86,9 @@ export function GroupInfoHeader({
 
             <div className="relative">
               <div className="bg-primary/10 relative flex size-20 items-center justify-center overflow-hidden rounded-full">
-                {groupAvatarUrl ? (
+                {resolvedAvatarUrl ? (
                   <Image
-                    src={groupAvatarUrl}
+                    src={resolvedAvatarUrl}
                     alt={group.group_name ?? "Group"}
                     fill
                     className="object-cover"
@@ -150,7 +153,7 @@ export function GroupInfoHeader({
         groupId={group.id}
         initialName={group.group_name ?? ""}
         initialDescription={group.group_description ?? ""}
-        initialAvatarUrl={groupAvatarUrl}
+        initialAvatarUrl={resolvedAvatarUrl}
         onAvatarUploaded={(url) => {
           setGroupAvatarUrl(url);
           void queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(groupId) });

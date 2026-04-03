@@ -67,7 +67,7 @@ export async function extractMetadataFull(url: string): Promise<MetadataFull> {
 
     // ── Generic path: fetch with Chrome UA, fallback to Slackbot ──
 
-    let response = await fetch(url, {
+    const response = await fetch(url, {
       headers: {
         "User-Agent": CHROME_UA,
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",

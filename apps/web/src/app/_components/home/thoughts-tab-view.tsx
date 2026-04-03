@@ -289,7 +289,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
     if (!lastSeen) return msgs.filter((m) => !m._pending).length;
     const cutoff = new Date(lastSeen).getTime();
     return msgs.filter((m) => !m._pending && new Date(m.createdAt).getTime() > cutoff).length;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [bucketMessages, lastReadAt]);
 
   return (

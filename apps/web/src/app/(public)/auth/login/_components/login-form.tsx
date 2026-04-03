@@ -1,9 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-
-import { env } from "env";
 import { type Variants, motion } from "framer-motion";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useTranslations } from "@/i18n/use-translations";
@@ -12,77 +8,30 @@ import { Button } from "@/components/ui/button";
 
 import { ErrorAlert } from "@/app/_components/error-alert";
 import { Spinner } from "@/app/_components/spinner";
-import { ROUTES } from "@kurate/utils";
-import { createClient } from "@/app/_libs/supabase/client";
 import { fadeUp } from "@/app/_libs/utils/motion";
 import { BrandLogo, BrandSunburst, FloatDeco } from "@/components/brand";
 import { GoogleIcon } from "@/components/icons";
 
-import { MagicLinkForm, MagicStep } from "./magic-link-form";
+import { MagicLinkForm } from "./magic-link-form";
+import { useLoginAuth } from "@/app/_libs/hooks/useLoginAuth";
 
 export function LoginForm() {
   const t = useTranslations("auth.login");
   const tApp = useTranslations("app");
   const prefersReducedMotion = useSafeReducedMotion();
-  const searchParams = useSearchParams();
 
-  const nextUrl = searchParams.get("next") ?? "";
-  const callbackUrl = nextUrl
-    ? `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(nextUrl)}`
-    : `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}`;
-
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [magicEmail, setMagicEmail] = useState("");
-  const [magicStep, setMagicStep] = useState<MagicStep>(MagicStep.Form);
-  const [magicError, setMagicError] = useState("");
-  const [magicLoading, setMagicLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
-
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (!hash) return;
-    const params = new URLSearchParams(hash.slice(1));
-    const errorCode = params.get("error_code");
-    if (errorCode) {
-      const messages: Record<string, string> = {
-        otp_expired: t("magic_link_expired"),
-        access_denied: t("magic_link_invalid"),
-      };
-      setAuthError(messages[errorCode] ?? t("magic_link_invalid"));
-      window.history.replaceState(null, "", window.location.pathname);
-    }
-  }, [t]);
-
-  async function handleGoogle() {
-    setGoogleLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: callbackUrl },
-    });
-    // signInWithOAuth redirects the browser — loading stays true until navigation completes
-  }
-
-  async function handleMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    setMagicError("");
-    setMagicLoading(true);
-
-    const supabase = createClient();
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email: magicEmail,
-      options: { emailRedirectTo: callbackUrl },
-    });
-
-    if (otpError) {
-      setMagicError(t("error_invalid"));
-      setMagicLoading(false);
-      return;
-    }
-
-    setMagicStep(MagicStep.Sent);
-    setMagicLoading(false);
-  }
+  const {
+    authError,
+    googleLoading,
+    handleGoogle,
+    magicEmail,
+    setMagicEmail,
+    magicStep,
+    magicError,
+    magicLoading,
+    handleMagicLink,
+    resetMagicLink,
+  } = useLoginAuth();
 
   const mp = (custom: number) => ({
     custom,
@@ -139,11 +88,7 @@ export function LoginForm() {
             loading={magicLoading}
             onEmailChange={setMagicEmail}
             onSubmit={handleMagicLink}
-            onReset={() => {
-              setMagicStep(MagicStep.Form);
-              setMagicEmail("");
-              setMagicError("");
-            }}
+            onReset={resetMagicLink}
           />
         </motion.div>
       </main>

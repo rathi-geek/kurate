@@ -6,10 +6,9 @@
  * Returns null in production (NODE_ENV inlined at build time).
  */
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion ,type  Variants,type  Transition } from "framer-motion";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useState } from "react";
-import type { Variants, Transition } from "framer-motion";
 
 import {
   cardStagger,

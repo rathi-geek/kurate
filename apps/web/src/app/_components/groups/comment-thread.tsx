@@ -218,7 +218,7 @@ export function CommentThread({
       align: "end",
       behavior: "smooth",
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [isLoading, comments.length]);
 
   // Scroll the main feed so the input is visible when the thread first opens.

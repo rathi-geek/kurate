@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useSubmitContent } from "@kurate/hooks";
-import type { SaveItemResult } from "@kurate/hooks";
+import { useSubmitContent ,type  SaveItemResult } from "@kurate/hooks";
 import { queryKeys } from "@kurate/query";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 import { type ThoughtBucket, classifyThought } from "@kurate/utils";

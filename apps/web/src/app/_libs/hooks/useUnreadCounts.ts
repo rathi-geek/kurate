@@ -53,7 +53,7 @@ export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
           map.set(gid, 0);
           continue;
         }
-        let query = supabase
+        const query = supabase
           .from("group_posts")
           .select("id", { count: "exact", head: true })
           .eq("convo_id", gid)

@@ -1,5 +1,4 @@
-import type { Metadata } from "next";
-import type { Route } from "next";
+import { type Metadata ,type  Route } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/_libs/supabase/server";
 import { ROUTES } from "@kurate/utils";

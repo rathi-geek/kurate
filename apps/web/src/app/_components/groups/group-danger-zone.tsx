@@ -5,8 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { queryKeys } from "@kurate/query";
-import type { Tables } from "@kurate/types";
-import type { GroupMember, GroupRole } from "@kurate/types";
+import { type Tables ,type  GroupMember,type  GroupRole } from "@kurate/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 

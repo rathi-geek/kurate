@@ -2,8 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 
-import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useSearchParams , useRouter } from "next/navigation";
 
 import type { GroupRole } from "@kurate/types";
 
