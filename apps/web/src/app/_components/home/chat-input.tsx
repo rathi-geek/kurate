@@ -124,6 +124,22 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
     if (disabled) return;
     const trimmed = value.trim();
     if (!trimmed && !lockedUrl) return;
+
+    // Synchronous URL check — catches fast paste+enter before 150ms debounce fires
+    if (!lockedUrl && onUrlChange) {
+      const match = trimmed.match(URL_REGEX);
+      if (match) {
+        const url = match[0];
+        onUrlChange(url);
+        const remaining = trimmed.replace(url, "").trim();
+        onSend(remaining);
+        setValue("");
+        setLockedUrl(null);
+        lastReportedUrl.current = null;
+        return;
+      }
+    }
+
     // Reset ref so the URL-detection effect doesn't fire onUrlChange(null) after submit,
     // which would prematurely clear the preview card before handleLinkSaved can show the share modal.
     lastReportedUrl.current = null;
@@ -131,7 +147,7 @@ export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function C
     onSend(trimmed);
     setValue("");
     setLockedUrl(null);
-  }, [value, lockedUrl, disabled, onSend]);
+  }, [value, lockedUrl, disabled, onSend, onUrlChange]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter" || e.shiftKey) return;

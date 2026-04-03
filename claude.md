@@ -1,119 +1,65 @@
-# Claude CLI Instructions
+# Monorepo Root — Kurate
 
-## Project Overview
-
-This is a **Monorepo** containing multiple applications and shared libraries managed with **pnpm** workspaces.
-
-## Directory Structure
-
+## Structure
 ```
-/
-├── apps/
-│   └── documentation/    # Docusaurus documentation site
-│       └── docs/         # Developer & Product documentation
-├── libs/                 # For shared libraries and utilities
-├── package.json          # Root package.json (use pnpm only)
-├── pnpm-lock.yaml        # pnpm lock file
-├── tsconfig.base.json    # Shared TypeScript configuration
-├── .prettierrc           # Code formatting rules
-├── .prettierignore       # Prettier ignore patterns
-├── eslint.config.js      # Linting configuration
-├── playwright.config.js  # E2E testing configuration
-├── .editorconfig         # Editor settings
-├── .gitignore            # Git ignore patterns
-└── .vscode/              # VS Code workspace settings
+apps/
+  web/          # Next.js 16, 90% done
+  mobile-app/   # Expo SDK 54, in progress
+  documentation/# Docusaurus
+libs/
+  hooks/        # @kurate/hooks — useSaveItem, useSubmitContent
+  query/        # @kurate/query — QueryProvider, client, keys
+  types/        # @kurate/types — database, thoughts, groups, people, vault
+  utils/        # @kurate/utils — slugify, extract-tags, constants (routes, errors, events)
+  locales/      # @kurate/locales — i18n, en/es/pt
+supabase/
+  migrations/   # 3 files only: initialSchema, functions, seeds
 ```
 
-## Development Guidelines
+## Rules That Apply Everywhere
+- **Package manager:** `pnpm` only — never npm or yarn
+- **TypeScript:** strict mode, no `any`
+- **Formatting:** `.prettierrc` + `eslint.config.js` at root — run `pnpm lint` before done
+- **Ports:** web :3001, mobile :19000–19002, docs :3002
 
-- **Package Management:** Use `pnpm` for all package management.
-- **Port Conflict Resolution:** When multiple applications need to run simultaneously, follow these guidelines:
-  - **Check Active Ports:** Use `lsof -i :PORT` or `netstat -tulpn | grep PORT` to identify conflicts
-  - **Default Port Assignments:**
-    - Backend (NestJS): Usually :3000 or :8000
-    - Web (Next.js): Usually :3001 or :3000
-    - Mobile (Expo): Usually :19000, :19001, :19002
-    - Documentation: Usually :3002 or :8080
-  - **Resolution Steps:**
-    - Stop conflicting processes: `kill -9 PID` or `pkill -f process_name`
-    - If PORT is used via environment variable then we can set alternative ports: `PORT={NEW_PORT} pnpm dev` otherwise we can try using `pnpm dev -p {NEW_PORT}`.
-    - Update app-specific `.env` files with non-conflicting ports
-    - Check Docker containers if using containerized services: `docker ps`
-  - **Prevention:** Always check `apps/{APP_NAME}/README.md` for recommended port configurations.
-- **Application-Specific Rules:** Each application has its own AI/development rules defined in `/apps/{APP_NAME}/AGENT.md`. These files contain markup language instructions for that specific app.
-- **Documentation Standards:**
-  - **Location**: `apps/documentation/docs/{APP-NAME}/`
-  - **Format**: Markdown (`.md`) files
-  - **Scope**: Document each significant activity, feature, or architectural change
-  - **Updates**: Keep documentation current with code changes
-  - **Requirement**: **ALWAYS** create comprehensive documentation in `apps/documentation/docs/` before implementing any significant feature or architectural change
-- **Database Development Standards:**
-  - **SQL-First Approach**: Always write SQL migration files first before implementing code
-  - **Migration Files**: Create detailed SQL migrations with proper indexes, constraints, and relationships
-  - **Migration Location**: `supabase/migrations/` (committed to git). One file per migration, named `YYYYMMDDHHMMSS_<description>.sql`
-  - **Documentation**: Mirror significant migrations in `apps/documentation/docs/backend/` as `<module>.sql` for reference
-  - **Apply Migrations**: Use `pnpm db:push` (`supabase db push`) to apply pending migrations to the hosted Supabase project
-  - **Pull Remote Schema**: Use `pnpm db:pull` (`supabase db pull`) to sync remote changes back to local
-  - **Types Generation**: Use `pnpm db:types` to regenerate TypeScript types after schema changes
-  - **Workflow**: Write `supabase/migrations/<timestamp>_<name>.sql` → `pnpm db:push` → `pnpm db:types` → Implement Code
-  - **One-time Setup**: Run `pnpm db:link --project-ref <ref>` to link the CLI to the hosted project (ref found in Supabase Dashboard → Settings → General)
-  - **CLI Usage**: All supabase commands run via `pnpm dlx supabase <cmd>` — no global install needed
-- **Getting Started:** Refer to individual app README files for setup instructions, Located at `apps/{APP_NAME}/README.md`. These contain:
-  - How to start/stop the application
-  - Access URLs and credentials
-  - Development setup requirements
-  - Testing procedures
-  - AI debugging steps
-- **Module Development Workflow:**
-  1. **Documentation First**: Create comprehensive documentation in `apps/documentation/docs/backend/{module-name}/` before any implementation
-  2. **User Confirmation**: Get explicit approval from user before proceeding with implementation
+## Database — Reset-Based (early stage project)
+⚠️ Never create new migration files. Edit these 3 directly:
+- `supabase/migrations/*_initialSchema.sql`
+- `supabase/migrations/*_functions.sql`
+- `supabase/migrations/*_seeds.sql`
 
-## Claude CLI Context Management
+Workflow: edit file → tell user → they reset db + run `pnpm db:push` → `pnpm db:types` → implement code.
 
-### Context Updates Required
+## Libs — Add Before Creating App-Local Code
+Before adding anything to `apps/web/` or `apps/mobile-app/`, check if it belongs in `/libs`:
+- Supabase/data hooks → `libs/hooks/`
+- DB-mirrored types → `libs/types/`
+- Shared constants (routes, errors, events) → `libs/utils/constants/`
+- i18n strings → `libs/locales/`
 
-Always update this `claude.md` file when:
+## When Acting as Reviewer
+When asked to review code, use this format:
 
-- Architecture changes occur
-- New applications or libraries are added
-- Development workflows change
-- Directory structure modifications
-- Configuration updates
+```
+## Review: [filename]
+### 🔴 Issues (must fix)
+### 🟠 Duplication (already exists in /libs)
+### 🟡 Libs Gap (should move to /libs)
+### 🔵 Simplifications (nice to have)
+### ✅ Looks good
+```
 
-### Best Practices
+Flag specifically:
+- Code in `mobile-app/hooks|utils|localization|types` that duplicates `/libs`
+- Direct Supabase calls in components (should be in hooks)
+- Hardcoded strings/routes instead of `@kurate/locales` / `@kurate/utils/constants`
+- Missing error/loading states
+- `any` types
 
-1. **Read First**: Always check `apps/{APP_NAME}/README.md` before working on an app.
-2. **Follow Rules**: Respect the `.cursorrules` for each application.
-3. **Document Changes**: Update relevant documentation in `apps/documentation/docs/`.
-4. **Maintain Context**: Keep this file (current - `claude.md`) with any modifications.
+## Context Management
+When user says "save context": update `memory/MEMORY.md` and `memory/WORK_LOG.md`.
 
-## Error Handling & Troubleshooting Guidelines
-
-### **CRITICAL: Proactive Error Resolution**
-
-Claude should **ALWAYS** attempt to fix errors and try solutions automatically before reporting issues to the user. This includes:
-
-1. **Analyze Error Messages**: Parse logs and error output to identify root causes
-2. **Apply Known Fixes**: Implement standard solutions for common issues
-3. **Retry Operations**: After applying fixes, retry the failed operation
-4. **Track Progress**: Use TodoWrite tool to track fix attempts and progress
-5. **Update Context**: Document successful fixes in this file for future reference
-
-### Error Detection Process
-
-1. **Monitor Background Processes**: Regular checking of bash output for errors
-2. **Parse Error Types**: Categorize errors (memory, dependency, configuration, etc.)
-3. **Apply Fix Patterns**: Use established fix patterns based on error type
-4. **Validate Solutions**: Confirm fixes work before proceeding
-5. **Document New Patterns**: Add new successful fixes to this context
-
-### Success Criteria
-
-- ✅ Errors are automatically detected and resolved
-- ✅ Users see working applications, not error messages
-- ✅ Troubleshooting context is maintained for future issues
-- ✅ Development workflow remains smooth and efficient
-
----
-
-*This file serves as the primary context for Claude CLI operations. Keep it updated with any architectural or workflow changes.*
+## App-Specific Rules
+Each app has its own `CLAUDE.md` — Claude Code loads it automatically when started in that folder.
+- `apps/web/CLAUDE.md` — Next.js conventions, design system, animation
+- `apps/mobile-app/CLAUDE.md` — Expo conventions, Gluestack, NativeWind

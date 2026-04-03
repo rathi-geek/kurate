@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { AnimatePresence } from "framer-motion";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
@@ -169,6 +169,7 @@ interface ThoughtsTabViewProps {
 }
 
 export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange }: ThoughtsTabViewProps) {
+  const queryClient = useQueryClient();
   const isSearching = searchQuery.trim().length > 0;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
@@ -264,6 +265,11 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
     });
   }, [displayBuckets, bucketMessages]);
 
+  const handleDeleteThought = useCallback(async (id: string) => {
+    await fetch(`/api/thoughts/${id}`, { method: "DELETE" });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.thoughts.all });
+  }, [queryClient]);
+
   const { lastReadAt, markBucketRead } = useBucketLastRead(userId);
 
   const getBucketUnread = useCallback((b: ThoughtBucket): number => {
@@ -352,6 +358,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
             }}
             searchQuery={searchQuery}
             extraMessages={isSearching ? (searchMessages as DisplayMessage[]) : displayMessages}
+            onDelete={handleDeleteThought}
           />
         )}
       </AnimatePresence>

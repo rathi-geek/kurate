@@ -7,7 +7,7 @@ import { BUCKET_META, type ThoughtBucket } from "@kurate/utils";
 import { motion } from "framer-motion";
 import { Virtuoso } from "react-virtuoso";
 
-import { ChevronLeftIcon } from "@/components/icons";
+import { ChevronLeftIcon, TrashIcon } from "@/components/icons";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -15,9 +15,31 @@ function formatTime(iso: string) {
 
 type DisplayMessage = ThoughtMessage & { _pending?: boolean; _failed?: boolean };
 
-function ThoughtBubble({ message, color }: { message: DisplayMessage; color: string }) {
+function ThoughtBubble({
+  message,
+  color,
+  onDelete,
+}: {
+  message: DisplayMessage;
+  color: string;
+  onDelete?: (id: string) => void;
+}) {
   return (
-    <div className="flex justify-end py-0.5">
+    <div className="group/msg relative flex justify-end py-0.5">
+      {/* Hover delete pill — left of bubble */}
+      {onDelete && !message._pending && (
+        <div
+          className="absolute top-1/2 right-full mr-1.5 z-10 flex -translate-y-1/2 items-center rounded-full border border-border/50 bg-white px-2 py-1 opacity-0 shadow-md transition-opacity group-hover/msg:opacity-100">
+          <button
+            type="button"
+            onClick={() => onDelete(message.id)}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+            aria-label="Delete thought">
+            <TrashIcon className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
       <div className="max-w-[75%]">
         <div
           className="text-ink rounded-2xl rounded-br-sm px-3 py-2 text-sm"
@@ -52,6 +74,7 @@ interface ThoughtsBucketChatProps {
   onBack: () => void;
   searchQuery: string;
   extraMessages?: DisplayMessage[];
+  onDelete?: (id: string) => void;
 }
 
 export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
@@ -59,6 +82,7 @@ export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
   onBack,
   searchQuery,
   extraMessages = [],
+  onDelete,
 }: ThoughtsBucketChatProps) {
   const meta = BUCKET_META[bucket];
 
@@ -96,7 +120,13 @@ export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
           data={filtered as DisplayMessage[]}
           initialTopMostItemIndex={filtered.length - 1}
           followOutput="smooth"
-          itemContent={(_, m) => <ThoughtBubble message={m} color={`var(${meta.colorVar})`} />}
+          itemContent={(_, m) => (
+            <ThoughtBubble
+              message={m}
+              color={`var(${meta.colorVar})`}
+              onDelete={onDelete}
+            />
+          )}
         />
       )}
     </motion.div>

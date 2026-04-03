@@ -1,83 +1,140 @@
-# CLAUDE.md — Kurate (wtf-platform)
+# Web App — Kurate
 
-## Project Overview
-Kurate is a chat-based content discovery and curation app. Two tabs: Logging (drop links, auto-extract metadata) and Discovering (AI-powered topic search and recommendations). Built-in article reader.
+## What This Is
+Chat-based content discovery and curation. Two tabs: Logging (drop links, auto-extract metadata) and Discovering (AI-powered topic search). Built-in article reader. Next.js 16 App Router + Supabase + shadcn/ui + Framer Motion + Tailwind CSS v4.
+
+## Scope
+- ✅ `apps/web/` — your workspace
+- ✅ `libs/` — consume or extend if mobile also needs it
+- ✅ `supabase/migrations/` — edit existing 3 files only, never create new ones
+- ❌ `apps/mobile-app/` — never touch
 
 ## Key Commands
 ```bash
-# Development (uses pnpm)
-pnpm dev
-
-# Build
-pnpm build
-
-# Lint
-pnpm lint
-
-# Type check
-pnpm type:check
-
-# Database
-pnpm db:generate
-pnpm db:migrate
+pnpm dev          # start dev server
+pnpm build        # build
+pnpm lint         # must pass before done
+pnpm type:check   # must pass before done
+pnpm db:types     # regenerate types after schema change
 ```
 
+## Monorepo Libs — Use Before Creating Locally
+| Need | Package |
+|------|---------|
+| Data fetching | `@kurate/query` → QueryProvider, client, keys |
+| Hooks | `@kurate/hooks` → useSaveItem, useSubmitContent |
+| Types | `@kurate/types` → database, thoughts, groups, people, vault |
+| Utils/constants | `@kurate/utils` → routes, errors, events, slugify, extract-tags |
+| Translations | `@kurate/locales` → i18n, en/es/pt |
+
+Only create locally in `apps/web/` if it is 100% web-specific.
+
+## Database
+⚠️ Reset-based approach — edit these 3 files directly, never create new migration files:
+- `supabase/migrations/*_initialSchema.sql`
+- `supabase/migrations/*_functions.sql`
+- `supabase/migrations/*_seeds.sql`
+
+After editing: notify user → they reset db → `pnpm db:types` → implement code.
+
 ## Architecture
-- **Next.js 16** (App Router) — pages in `src/app/`, API routes in `src/app/api/`
-- **Supabase** — Postgres database + Auth. Client in `src/app/_libs/supabase/`
-- **shadcn/ui** — UI component library built on Radix UI
-- **Framer Motion** — All animations. Variants defined in component files
-- **Tailwind CSS v4** — Design tokens in src/styles/tokens/
-
-## Code Conventions
-- **File naming:** kebab-case (`chat-bubble.tsx`, `user-profile.tsx`)
-- **Private folders:** `_components`, `_libs`, `_config`, `_types`
-- **Components:** Use CVA pattern for variants
-- **Forms:** React Hook Form + Zod validation
-- **TypeScript:** Strict mode enabled
-
-## Design System
-- Token reference: src/styles/tokens/ (colors.css, radius.css, typography.css, shadows.css)
-- New components must use semantic color tokens (bg-primary, text-foreground) — never Tailwind defaults or hex values
-- CVA variants go in src/lib/variants.ts if reusable; local cva() otherwise
-- Cursor rules in .cursor/rules/ enforce this automatically
-- Run pnpm lint — the no-console and unused-imports rules are enforced
+- Pages in `src/app/` — **page.tsx is always a Server Component, never add `"use client"`**
+- If a page needs Framer Motion or hooks → extract to a sub-component
+- API routes in `src/app/api/`
+- Supabase client in `src/app/_libs/supabase/`
 
 ## Folder Structure
 ```
 src/
 ├── app/
-│   ├── _components/     # Shared components
-│   ├── _config/         # Configuration files (fonts.ts, etc.)
-│   ├── _libs/           # Utilities and libraries
-│   │   ├── supabase/    # Supabase client
-│   │   └── utils/       # Utility functions (cn, etc.)
-│   ├── _types/         # Type definitions
-│   └── (routes)/       # App pages
+│   ├── _components/    # shared components
+│   ├── _config/        # fonts, metadata
+│   ├── _libs/
+│   │   ├── supabase/   # supabase client
+│   │   ├── utils/      # cn, motion variants, auth utils
+│   │   └── constants/  # routes.ts, errors.ts, events.ts
+│   ├── _types/         # type definitions
+│   └── (routes)/       # pages
 ├── components/
 │   ├── ui/             # shadcn/ui components
-│   └── brand/          # Brand SVG icons
+│   └── icons/          # ALL SVGs live here, export from index.ts
 ├── lib/
-│   └── variants.ts     # Shared CVA variant definitions
+│   └── variants.ts     # shared CVA: buttonVariants, badgeVariants, inputVariants
 └── styles/
-    ├── tokens/         # CSS design tokens (colors, typography, radius, shadows, spacing, z-index)
-    ├── base.css        # @layer base resets
-    ├── components.css  # @layer components utilities
-    ├── animations.css  # @keyframes
-    └── globals.css     # Imports only — no styles
+    └── tokens/         # colors.css, radius.css, typography.css, shadows.css
 ```
 
-## Git Workflow
-- **Run all changes locally** — test before pushing
-- **Branch from current work** — don't commit directly to `main`
-- **PRs required for main** — all changes to `main` must go through a pull request
+## Code Conventions
+- Files: kebab-case. Components: PascalCase. Never `../../../` — use `@/` aliases.
+- TypeScript strict — no `any`
+- Forms: React Hook Form + Zod
+- Package manager: `pnpm` only
 
-## Context Saving
-When the user says "save context", "save to memory", or asks to clear the conversation:
-1. Save all relevant session context into `memory/MEMORY.md`
-2. Update `memory/WORK_LOG.md` with a record of changes
+## Design System — CRITICAL
 
-## Reference Docs
-- AGENTS.md — Detailed project conventions
-- SOUL.md — Agent personas and design principles
-- README.md — Getting started
+### Colors — semantic tokens only, never hex or Tailwind primitives
+| Use | Token |
+|-----|-------|
+| Page bg | `bg-background` |
+| Section/sidebar bg | `bg-surface` |
+| Card/input/modal bg | `bg-card` |
+| Body text | `text-foreground` |
+| Headings | `text-ink` |
+| Secondary text | `text-muted-foreground` |
+| Primary button/active | `bg-primary text-primary-foreground` |
+| Borders | `border-border` |
+| Focus ring | `ring-ring` |
+| Error | `text-destructive` / `bg-destructive` |
+
+❌ `text-gray-600` → `text-muted-foreground` | ❌ `bg-white` → `bg-card` | ❌ `bg-[#1A5C4B]` → `bg-primary` | ❌ `rounded-2xl` → `rounded-card`
+
+### Radius tokens
+`rounded-button` | `rounded-card` | `rounded-input` | `rounded-badge` | `rounded-pill`
+
+### Typography
+`font-sans` (DM Sans, default) | `font-serif` (Georgia, headlines) | `font-mono` (DM Mono, code/meta)
+
+### Layout
+`container-page` (1280px) | `container-content` (800px) — never `max-w-[800px]`
+
+### Shadows
+`shadow-xs` → `shadow-xl`. Cards: `shadow-sm` rest, `shadow-md` hover. Never inline `style={{ boxShadow }}`.
+
+### Animation — spring physics only, never CSS easing
+```ts
+// src/app/_libs/utils/motion.ts
+springSnappy = { type: "spring", stiffness: 400, damping: 25 }  // tab indicators
+springGentle = { type: "spring", stiffness: 260, damping: 25 }  // most UI
+springBouncy = { type: "spring", stiffness: 200, damping: 22 }  // playful
+springHeavy  = { type: "spring", stiffness: 300, damping: 30 }  // panels, page entry
+```
+Always `const prefersReducedMotion = useReducedMotion()` — disable motion when true.
+
+## Navigation & Routing
+- Routes come from `ROUTES` in `@/app/_libs/constants/routes` — never hardcode strings
+- `Link` from `"@/i18n"` — never `"next/link"` directly
+- `<Button asChild><Link href={ROUTES.x}>` — never `<Link><Button>`
+
+## Localization
+- All user-visible text through next-intl — never hardcode English in JSX
+- Server component: `const t = await getTranslations("ns")` from `"next-intl/server"`
+- Client component: `const t = useTranslations("ns")` from `"next-intl"`
+
+## Breakpoint Contract
+- `< 768px` → MobileNav only, no AppSidebar, max 2 columns, min 44×44px tap targets, `pb-16`
+- `≥ 768px` → AppSidebar only, no MobileNav, hover states required, keyboard nav required
+
+## Accessibility
+- Every page: `<main id="main-content">`
+- Every `<nav>`: `aria-label`
+- Decorative SVGs: `aria-hidden="true"`
+- Interactive elements: `<a>` or `<button>` — never `<div onClick>`
+
+## Icons
+All SVGs in `src/components/icons/`. Import from `@/components/icons`. Reference by `IconName` enum. Never define SVGs inline.
+
+## Groups Feature — Pending Work
+Before touching any groups code, read `.cursor/rules/groups-pending.mdc` for blocked items and known bugs.
+
+## Context Management
+When user says "save context": update `memory/MEMORY.md` and `memory/WORK_LOG.md`.

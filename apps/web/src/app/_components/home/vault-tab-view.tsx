@@ -224,6 +224,9 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
         setSavedItemGroups([]);
       }
       setPreviewUrl(url);
+      // Eagerly update ref so handleVaultChatSend (called in the same tick for fast paste+enter)
+      // sees the URL before React re-renders
+      previewUrlRef.current = url;
       setPreviewPhase(PreviewPhase.Loading);
       void extract(url);
     },
@@ -298,14 +301,16 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   const handleVaultChatSend = useCallback(
     async (noteText: string) => {
       const meta = previewMeta ? { ...previewMeta, tags: extractedMeta?.tags ?? null } : null;
-      if (previewUrl) {
+      // Use ref (eagerly updated in handleUrlChange) instead of stale state for fast paste+enter
+      const effectiveUrl = previewUrlRef.current;
+      if (effectiveUrl) {
         // Cancel in-flight preview extraction — grid handles null-metadata via useRefreshLoggedItem
         resetExtraction();
         setPreviewMeta(null);
         setPreviewPhase(PreviewPhase.Idle);
 
         // Deduplicate: same URL already pending → skip
-        const existingPending = await db.pending_links.where("url").equals(previewUrl).first();
+        const existingPending = await db.pending_links.where("url").equals(effectiveUrl).first();
         if (existingPending) {
           toast("Already in your Vault", { description: "This link has been saved before." });
           setPreviewUrl(null);
@@ -321,8 +326,8 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
         // URL mode: pending row in Dexie, then POST
         void db.pending_links.add({
           tempId,
-          url: previewUrl,
-          title: previewMeta?.title ?? previewUrl,
+          url: effectiveUrl,
+          title: previewMeta?.title ?? effectiveUrl,
           source: previewMeta?.source ?? null,
           author: previewMeta?.author ?? null,
           previewImage: previewMeta?.previewImage ?? null,
@@ -334,7 +339,14 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
           createdAt: new Date().toISOString(),
           status: "sending",
         });
-        void onSend(previewUrl, undefined, meta, noteText.trim() || null)
+        // Clear preview state so next URL is detected fresh
+        setPreviewUrl(null);
+        previewUrlRef.current = null;
+        setPreviewMeta(null);
+        setSavedLoggedItemId(null);
+        setSavedItemGroups([]);
+
+        void onSend(effectiveUrl, undefined, meta, noteText.trim() || null)
           .then(async () => {
             await db.pending_links.delete(tempId);
           })
