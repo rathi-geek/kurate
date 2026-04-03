@@ -16,6 +16,7 @@ import { ROUTES } from "@kurate/utils";
 import { INTEREST_OPTIONS } from "@kurate/utils";
 import { saveUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { createClient } from "@/app/_libs/supabase/client";
+import { toast } from "sonner";
 import { cn } from "@/app/_libs/utils/cn";
 import { fadeUp } from "@/app/_libs/utils/motion";
 import { Arrow, BrandLogo } from "@/components/brand";
@@ -130,7 +131,12 @@ export function OnboardingForm() {
     }
 
     await supabase.auth.updateUser({ data: { is_onboarded: true } });
-    await saveUserInterests(user.id, interests);
+    try {
+      await saveUserInterests(user.id, interests);
+    } catch (err) {
+      console.error("[onboarding] saveUserInterests failed:", err);
+      toast.error("Could not save your interests. You can update them later in settings.");
+    }
     track("onboarding_completed", { interests_selected: interests.length });
 
     router.replace(nextUrl ?? ROUTES.APP.HOME);

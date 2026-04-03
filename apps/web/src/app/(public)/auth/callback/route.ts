@@ -30,39 +30,44 @@ export async function GET(request: NextRequest) {
 
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      const user = sessionData.session?.user;
-      let redirectPath: string;
+    if (error) {
+      console.error("[auth/callback] exchangeCodeForSession failed:", error.message);
+      return NextResponse.redirect(
+        `${origin}${ROUTES.AUTH.LOGIN}?error=auth_callback_failed`
+      );
+    }
 
-      if (user?.user_metadata?.role === "admin") {
-        redirectPath = ROUTES.ADMIN.DASHBOARD;
-      } else if (user?.user_metadata?.is_onboarded === true) {
-        // Already synced to JWT — skip DB query
+    const user = sessionData.session?.user;
+    let redirectPath: string;
+
+    if (user?.user_metadata?.role === "admin") {
+      redirectPath = ROUTES.ADMIN.DASHBOARD;
+    } else if (user?.user_metadata?.is_onboarded === true) {
+      // Already synced to JWT — skip DB query
+      redirectPath = safeNext ?? ROUTES.APP.HOME;
+    } else {
+      // Legacy or new user: check DB once, then sync to JWT
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("is_onboarded")
+        .eq("id", user!.id)
+        .single();
+
+      if (profileData?.is_onboarded) {
+        await supabase.auth.updateUser({ data: { is_onboarded: true } }).catch(() => {});
         redirectPath = safeNext ?? ROUTES.APP.HOME;
       } else {
-        // Legacy or new user: check DB once, then sync to JWT
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("is_onboarded")
-          .eq("id", user!.id)
-          .single();
-
-        if (profileData?.is_onboarded) {
-          await supabase.auth.updateUser({ data: { is_onboarded: true } });
-          redirectPath = safeNext ?? ROUTES.APP.HOME;
-        } else {
-          redirectPath = safeNext
-            ? `${ROUTES.APP.ONBOARDING}?next=${encodeURIComponent(safeNext)}`
-            : ROUTES.APP.ONBOARDING;
-        }
+        redirectPath = safeNext
+          ? `${ROUTES.APP.ONBOARDING}?next=${encodeURIComponent(safeNext)}`
+          : ROUTES.APP.ONBOARDING;
       }
-
-      const response = NextResponse.redirect(`${origin}${redirectPath}`);
-      collectedCookies.forEach(({ name, value, options }) =>
-        response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
-      );
-      return response;
     }
+
+    const response = NextResponse.redirect(`${origin}${redirectPath}`);
+    collectedCookies.forEach(({ name, value, options }) =>
+      response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
+    );
+    return response;
   }
 
   return NextResponse.redirect(`${origin}${ROUTES.AUTH.LOGIN}`);

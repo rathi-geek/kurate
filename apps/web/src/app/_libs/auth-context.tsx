@@ -116,6 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setLoading(false);
       }
+    }).catch((err) => {
+      console.error("[auth] getSession failed:", err);
+      setLoading(false);
     });
 
     const {
