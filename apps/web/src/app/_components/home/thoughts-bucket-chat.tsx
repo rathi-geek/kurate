@@ -27,7 +27,7 @@ function ThoughtBubble({
   return (
     <div className="group/msg relative flex justify-end py-0.5">
       {/* Hover delete pill — left of bubble */}
-      {onDelete && !message._pending && (
+      {onDelete && (!message._pending || message._failed) && (
         <div
           className="absolute top-1/2 right-full mr-1.5 z-10 flex -translate-y-1/2 items-center rounded-full border border-border/50 bg-white px-2 py-1 opacity-0 shadow-md transition-opacity group-hover/msg:opacity-100">
           <button
@@ -41,12 +41,11 @@ function ThoughtBubble({
       )}
 
       <div className="max-w-[75%]">
-        <div
+        <motion.div
           className="text-ink rounded-2xl rounded-br-sm px-3 py-2 text-sm"
-          style={{
-            backgroundColor: color,
-            opacity: message._pending || message._failed ? 0.7 : 1,
-          }}>
+          style={{ backgroundColor: color }}
+          animate={{ opacity: message._pending || message._failed ? 0.7 : 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 25 }}>
           <p className="leading-snug whitespace-pre-wrap">{message.text}</p>
           <div className="mt-0.5 flex items-center justify-end gap-1">
             <span className="text-ink/40 text-[9px] leading-none">
@@ -63,7 +62,7 @@ function ThoughtBubble({
               </span>
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

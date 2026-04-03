@@ -4,6 +4,10 @@ const contentTypePillClass: Record<string, string> = {
   article: "bg-brand-50 text-primary",
   video: "bg-info-bg text-info-foreground",
   podcast: "bg-warning-bg text-warning-foreground",
+  tweet: "bg-sky-50 text-sky-700",
+  substack: "bg-orange-50 text-orange-700",
+  spotify: "bg-emerald-50 text-emerald-700",
+  link: "bg-muted text-muted-foreground",
 };
 
 interface ContentTypePillProps {

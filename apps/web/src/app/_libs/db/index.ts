@@ -9,7 +9,7 @@ export interface PendingThought {
   content_type: string;
   media_id: string | null;
   createdAt: string;
-  status: "sending" | "failed";
+  status: "sending" | "failed" | "confirmed";
 }
 
 export interface PendingLink {
@@ -25,7 +25,7 @@ export interface PendingLink {
   description: string | null;
   remarks: string | null;
   createdAt: string;
-  status: "sending" | "failed";
+  status: "sending" | "failed" | "confirmed";
 }
 
 class KurateDB extends Dexie {

@@ -21,13 +21,11 @@ import { useAuth } from "@/app/_libs/auth-context";
 import { VaultTab } from "@/app/_libs/chat-types";
 import { db } from "@/app/_libs/db";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
+import { usePendingItemTimeout } from "@/app/_libs/hooks/usePendingItemTimeout";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
-import {
-  type ShareableConversation,
-  fetchShareableConversations,
-} from "@/app/_libs/utils/fetchShareableConversations";
+
 import { springGentle } from "@/app/_libs/utils/motion";
 
 const supabase = createClient();
@@ -43,6 +41,7 @@ interface VaultTabViewProps {
 }
 
 export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
+  usePendingItemTimeout();
   const prefersReducedMotion = useSafeReducedMotion();
   // const scrollRef = useRef<HTMLDivElement>(null);
   // const scrollDir = useScrollDirection(scrollRef);
@@ -75,7 +74,21 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   const previewUrlRef = useRef<string | null>(null);
   previewUrlRef.current = previewUrl;
 
+  // Tracks the most recently sent URL — survives preview state reset so
+  // handleLinkSaved can still show the share modal for the correct link.
+  const lastSentUrlRef = useRef<string | null>(null);
+
   const resetInput = useCallback(() => setInputKey((k) => k + 1), []);
+
+  /** Centralized cleanup — resets all preview/share state back to idle */
+  const resetPreviewState = useCallback(() => {
+    setPreviewPhase(PreviewPhase.Idle);
+    setPreviewUrl(null);
+    previewUrlRef.current = null;
+    setPreviewMeta(null);
+    setSavedLoggedItemId(null);
+    setSavedItemGroups([]);
+  }, []);
 
   const {
     isExtracting,
@@ -87,7 +100,8 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
 
   const handleLinkSaved = useCallback(
     async (result: SaveItemResult) => {
-      if (result.url !== previewUrlRef.current) return;
+      // Only act on the most recently sent URL — ignore stale callbacks
+      if (result.url !== lastSentUrlRef.current) return;
 
       track("vault_link_saved", {
         content_type: previewMeta?.contentType ?? "article",
@@ -95,38 +109,18 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
         has_tags: false,
         is_duplicate: result.status === "duplicate",
       });
+
       if (result.status === "duplicate") {
+        // handleVaultChatSend already cleared preview — just toast
         toast("Already in your Vault", { description: "This link has been saved before." });
-        setPreviewPhase(PreviewPhase.Idle);
-        setPreviewUrl(null);
-        setPreviewMeta(null);
-        setSavedLoggedItemId(null);
-        setSavedItemGroups([]);
-        resetExtraction();
-        resetInput();
       } else if (result.status === "saved" && result.item) {
-        const cached = queryClient.getQueryData<ShareableConversation[]>(
-          queryKeys.vault.shareConversations(),
-        );
-        const convos = cached ?? (await fetchShareableConversations(userId ?? ""));
-        if (result.url !== previewUrlRef.current) return;
-        if (convos.length === 0) {
-          setPreviewPhase(PreviewPhase.Idle);
-          setPreviewUrl(null);
-          setPreviewMeta(null);
-          setSavedLoggedItemId(null);
-          setSavedItemGroups([]);
-          resetExtraction();
-          toast("Saved to Vault");
-          resetInput();
-        } else {
-          setSavedLoggedItemId(result.item.logged_item_id);
-          setSavedItemGroups([]);
-          setPreviewPhase(PreviewPhase.Share);
-        }
+        // Show share modal
+        setSavedLoggedItemId(result.item.logged_item_id);
+        setSavedItemGroups([]);
+        setPreviewPhase(PreviewPhase.Share);
       }
     },
-    [queryClient, previewMeta, resetExtraction, resetInput, userId],
+    [previewMeta],
   );
 
   const { onSend } = useSubmitContent({
@@ -203,11 +197,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   const handleUrlChange = useCallback(
     (url: string | null) => {
       if (!url) {
-        setPreviewPhase(PreviewPhase.Idle);
-        setPreviewUrl(null);
-        setPreviewMeta(null);
-        setSavedLoggedItemId(null);
-        setSavedItemGroups([]);
+        resetPreviewState();
         resetExtraction();
         return;
       }
@@ -230,7 +220,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
       setPreviewPhase(PreviewPhase.Loading);
       void extract(url);
     },
-    [extract, previewPhase, previewUrl, resetExtraction],
+    [extract, previewPhase, previewUrl, resetExtraction, resetPreviewState],
   );
 
   const handleShare = useCallback(
@@ -248,28 +238,20 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
       );
       setSavedItemGroups((prev) => [...new Set([...prev, ...groupIds])]);
       void queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
-      setPreviewPhase(PreviewPhase.Idle);
-      setPreviewUrl(null);
-      setPreviewMeta(null);
-      setSavedLoggedItemId(null);
-      setSavedItemGroups([]);
+      resetPreviewState();
       resetExtraction();
       toast("Shared!");
       resetInput();
     },
-    [savedLoggedItemId, queryClient, resetExtraction, resetInput, userId],
+    [savedLoggedItemId, queryClient, resetExtraction, resetInput, resetPreviewState, userId],
   );
 
   const handleSkip = useCallback(() => {
-    setPreviewPhase(PreviewPhase.Idle);
-    setPreviewUrl(null);
-    setPreviewMeta(null);
-    setSavedLoggedItemId(null);
-    setSavedItemGroups([]);
+    resetPreviewState();
     resetExtraction();
     toast("Saved to Vault");
     resetInput();
-  }, [resetExtraction, resetInput]);
+  }, [resetExtraction, resetInput, resetPreviewState]);
 
   // Media upload hidden — feature not enabled (handler removed; re-add when re-enabling)
 
@@ -289,14 +271,10 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   }, []);
 
   const handlePreviewClose = useCallback(() => {
-    setPreviewPhase(PreviewPhase.Idle);
-    setPreviewUrl(null);
-    setPreviewMeta(null);
-    setSavedLoggedItemId(null);
-    setSavedItemGroups([]);
+    resetPreviewState();
     resetExtraction();
     resetInput();
-  }, [resetExtraction, resetInput]);
+  }, [resetExtraction, resetInput, resetPreviewState]);
 
   const handleVaultChatSend = useCallback(
     async (noteText: string) => {
@@ -306,23 +284,18 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
       if (effectiveUrl) {
         // Cancel in-flight preview extraction — grid handles null-metadata via useRefreshLoggedItem
         resetExtraction();
-        setPreviewMeta(null);
-        setPreviewPhase(PreviewPhase.Idle);
 
         // Deduplicate: same URL already pending → skip
         const existingPending = await db.pending_links.where("url").equals(effectiveUrl).first();
         if (existingPending) {
           toast("Already in your Vault", { description: "This link has been saved before." });
-          setPreviewUrl(null);
-          setPreviewMeta(null);
-          setSavedLoggedItemId(null);
-          setSavedItemGroups([]);
-          resetExtraction();
+          resetPreviewState();
           resetInput();
           return;
         }
 
         const tempId = crypto.randomUUID();
+        lastSentUrlRef.current = effectiveUrl;
         // URL mode: pending row in Dexie, then POST
         void db.pending_links.add({
           tempId,
@@ -339,16 +312,14 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
           createdAt: new Date().toISOString(),
           status: "sending",
         });
-        // Clear preview state so next URL is detected fresh
-        setPreviewUrl(null);
-        previewUrlRef.current = null;
-        setPreviewMeta(null);
-        setSavedLoggedItemId(null);
-        setSavedItemGroups([]);
+        // Clear preview state so input is ready for next URL
+        resetPreviewState();
 
         void onSend(effectiveUrl, undefined, meta, noteText.trim() || null)
           .then(async () => {
-            await db.pending_links.delete(tempId);
+            // Mark as confirmed — VaultLibrary will animate the transition
+            // and clean up after a short delay
+            await db.pending_links.update(tempId, { status: "confirmed" });
           })
           .catch(async () => {
             await db.pending_links.update(tempId, { status: "failed" });
@@ -384,9 +355,9 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
       extractedMeta?.tags,
       onSend,
       previewMeta,
-      previewUrl,
       resetExtraction,
       resetInput,
+      resetPreviewState,
       vaultTab,
     ],
   );
@@ -409,7 +380,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
       <div className="relative min-h-0 flex-1">
         <div
           // ref={scrollRef}
-          className={`absolute inset-0 overflow-y-auto transition-opacity duration-150${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
+          className={`absolute inset-0 overflow-y-auto transition-opacity duration-150 ${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <VaultLibrary
             filters={fullVaultFilters}
             onFiltersChange={handleLibraryFiltersChange}
@@ -417,7 +388,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
           />
         </div>
         <div
-          className={`absolute inset-0 flex flex-col overflow-hidden transition-opacity duration-150${vaultTab !== VaultTab.THOUGHTS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
+          className={`absolute inset-0 flex flex-col overflow-hidden transition-opacity duration-150 ${vaultTab !== VaultTab.THOUGHTS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <ThoughtsTabView
             userId={userId}
             searchQuery={searchQuery}
@@ -454,7 +425,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
               <div className="mx-auto max-w-2xl">
                 <LinkPreviewCard
                   phase={previewPhase}
-                  url={previewUrl!}
+                  url={previewUrl ?? lastSentUrlRef.current ?? ""}
                   metadata={previewMeta ?? undefined}
                   savedItemId={savedLoggedItemId ?? undefined}
                   savedItemGroups={savedItemGroups}

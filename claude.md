@@ -59,21 +59,26 @@ When user says `"start [feature] feature"` or `"audit [feature]"`:
 - Files found: ...
 - Flow summary: ...
 
-### 2. Issues to fix in web before mobile replicates
+### 2. Bugs & issues to fix before mobile replicates
 🔴 Must fix: ...
 🟡 Nice to fix: ...
 
-### 3. What should move to /libs
+### 3. Code quality issues
+🟣 Should fix: ...
+- God components, business logic in components, missing types, dead code
+
+### 4. What should move to /libs
 - [file/hook/type] → libs/[hooks|types|utils|locales]/
 - Reason: mobile will also need this
 
-### 4. What mobile needs to build fresh (mobile-specific only)
+### 5. What mobile needs to build fresh (mobile-specific only)
 - ...
 
 ### Suggested order:
-1. Fix web issues first
-2. Move shared code to /libs
-3. Then build mobile
+1. Fix bugs first
+2. Fix code quality issues
+3. Move shared code to /libs
+4. Then build mobile
 ```
 
 ### Reviewing Existing Code
@@ -82,10 +87,29 @@ When user pastes files for review:
 
 ```
 ## Review: [filename]
-### 🔴 Issues (must fix)
+
+### 🔴 Bugs & Issues (must fix)
+- Runtime errors, silent failures, unhandled promises, race conditions
+
 ### 🟠 Duplication (already exists in /libs)
+- Code that duplicates @kurate/* packages
+
 ### 🟡 Libs Gap (should move to /libs)
-### 🔵 Simplifications (nice to have)
+- Code mobile will also need
+
+### 🟣 Code Quality (should fix)
+- God components doing too much — split into smaller components/hooks
+- Business logic inside components — move to hooks
+- Overly complex logic that can be simplified
+- Inconsistent patterns vs rest of codebase
+- Missing TypeScript types or use of `any`
+- Dead code, unused imports, unnecessary state
+
+### 🔵 Refactor (nice to have)
+- Performance improvements (unnecessary re-renders, missing memo/callback)
+- Better naming for clarity
+- Structural improvements that aren't urgent
+
 ### ✅ Looks good
 ```
 
@@ -94,8 +118,11 @@ Flag specifically:
 - Code in `mobile-app/hooks|utils|localization|types` that duplicates `/libs`
 - Direct Supabase calls in components (should be in hooks)
 - Hardcoded strings/routes instead of `@kurate/locales` / `@kurate/utils/constants`
-- Missing error/loading states
+- Missing error/loading/empty states
 - `any` types
+- Components over 200 lines — should be split
+- Functions over 50 lines — should be extracted
+- More than 3-4 props without grouping
 
 ### After Audit — Auto-generate Next Steps
 

@@ -120,10 +120,20 @@ export function LinkPreviewCard({
             alreadySharedIds={sharedSet}
             enabled={true}
             searchPlaceholder={t("search_placeholder")}
-            noItemsText={t("no_groups")}
+            noItemsText={t("no_groups_cta")}
             noResultsText={t("no_results")}
             maxHeight="max-h-48"
             avatarSize="sm"
+            emptySlot={
+              <div className="flex flex-col items-center gap-2 py-2 text-center">
+                <p className="text-muted-foreground text-sm">
+                  Want to share with others too?
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Create a group or invite them to join the platform.
+                </p>
+              </div>
+            }
           />
 
           <div className="mt-3 flex w-full items-center justify-end gap-2">
@@ -134,13 +144,13 @@ export function LinkPreviewCard({
               {t("skip")}
             </button>
 
-            <Button
-              size="sm"
-              onClick={() => onShare(Array.from(selectedIds))}
-              className={selectedIds.size === 0 ? "opacity-50" : undefined}
-              disabled={selectedIds.size === 0}>
-              {t("share_btn_send")}
-            </Button>
+            {selectedIds.size > 0 && (
+              <Button
+                size="sm"
+                onClick={() => onShare(Array.from(selectedIds))}>
+                {t("share_btn_send")}
+              </Button>
+            )}
           </div>
         </div>
       )}

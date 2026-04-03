@@ -38,6 +38,8 @@ export interface ShareTargetGridProps {
   className?: string;
   /** Ids to hide from the target list (e.g. current group) */
   excludeIds?: string[];
+  /** Custom empty state — rendered instead of noItemsText when there are no groups */
+  emptySlot?: React.ReactNode;
 }
 
 export function ShareTargetGrid({
@@ -52,6 +54,7 @@ export function ShareTargetGrid({
   avatarSize = "md",
   className,
   excludeIds,
+  emptySlot,
 }: ShareTargetGridProps) {
   const t = useTranslations("vault");
   const { user } = useAuth();
@@ -175,7 +178,7 @@ export function ShareTargetGrid({
             ))}
           </div>
         ) : visible.length === 0 ? (
-          <p className="text-muted-foreground font-sans text-sm">{emptyLabel}</p>
+          emptySlot ?? <p className="text-muted-foreground font-sans text-sm">{emptyLabel}</p>
         ) : filtered.length === 0 ? (
           <p className="text-muted-foreground font-sans text-sm">{noMatchLabel}</p>
         ) : (

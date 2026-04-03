@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -8,7 +8,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
 import { VaultEmptyState } from "@/app/_components/vault/VaultEmptyState";
 import { VaultErrorState } from "@/app/_components/vault/VaultErrorState";
-import { VaultGrid } from "@/app/_components/vault/VaultGrid";
+import { VaultGrid, type GridEntry } from "@/app/_components/vault/VaultGrid";
 import { db } from "@/app/_libs/db";
 import { useVault } from "@/app/_libs/hooks/useVault";
 import { useAuth } from "@/app/_libs/auth-context";
@@ -25,6 +25,9 @@ export interface VaultLibraryProps {
   filters: VaultFiltersType;
   onFiltersChange: (f: VaultFiltersType) => void;
 }
+
+/** How long (ms) a confirmed pending card stays before being cleaned up from Dexie */
+const CONFIRMED_LINGER_MS = 2000;
 
 export const VaultLibrary = memo(function VaultLibrary({
   onNavigateToDiscover,
@@ -49,22 +52,59 @@ export const VaultLibrary = memo(function VaultLibrary({
 
   const serverUrls = useMemo(() => new Set(items.map((i) => i.url)), [items]);
 
-  // Only show pending cards for links not yet confirmed by the server.
-  // When `items` gains the URL, this filters it out in the SAME render that VaultCard appears
-  // → no duplication flash, no blank-gap flash.
-  const visiblePendingLinks = useMemo(
-    () => (pendingLinks ?? []).filter((p) => !serverUrls.has(p.url)),
-    [pendingLinks, serverUrls],
-  );
-
-  // Dedup: when server data includes a URL matching a pending link, remove from Dexie
+  // When server data arrives for a pending link, mark it "confirmed" in Dexie
+  // (instead of deleting immediately — this keeps the card in place)
   useEffect(() => {
     if (!pendingLinks?.length || !items.length) return;
-    const confirmed = pendingLinks.filter((p) => serverUrls.has(p.url));
-    if (confirmed.length) void db.pending_links.bulkDelete(confirmed.map((l) => l.tempId));
+    const toConfirm = pendingLinks.filter(
+      (p) => p.status === "sending" && serverUrls.has(p.url),
+    );
+    if (toConfirm.length) {
+      void db.pending_links.bulkUpdate(
+        toConfirm.map((l) => ({ key: l.tempId, changes: { status: "confirmed" as const } })),
+      );
+    }
   }, [items, pendingLinks, serverUrls]);
 
-  const hasNoItems = items.length === 0 && !pendingLinks?.length;
+  // After a short delay, clean up confirmed items from Dexie
+  useEffect(() => {
+    if (!pendingLinks?.length) return;
+    const confirmed = pendingLinks.filter((p) => p.status === "confirmed");
+    if (!confirmed.length) return;
+
+    const timer = setTimeout(() => {
+      void db.pending_links.bulkDelete(confirmed.map((l) => l.tempId));
+    }, CONFIRMED_LINGER_MS);
+
+    return () => clearTimeout(timer);
+  }, [pendingLinks]);
+
+  const dismissPending = useCallback(
+    (tempId: string) => void db.pending_links.delete(tempId),
+    [],
+  );
+
+  // Build unified list:
+  // - All pending/failed/confirmed-but-still-in-Dexie items go first (newest)
+  // - Server items that DON'T have a matching pending entry follow
+  const pendingUrls = useMemo(
+    () => new Set((pendingLinks ?? []).map((p) => p.url)),
+    [pendingLinks],
+  );
+
+  const entries = useMemo<GridEntry[]>(() => {
+    const pending: GridEntry[] = (pendingLinks ?? []).map((p) => ({
+      kind: "pending",
+      data: p,
+    }));
+    // Skip server items whose URL is still represented by a pending card
+    const confirmed: GridEntry[] = items
+      .filter((i) => !pendingUrls.has(i.url))
+      .map((i) => ({ kind: "confirmed", data: i }));
+    return [...pending, ...confirmed];
+  }, [pendingLinks, items, pendingUrls]);
+
+  const hasNoItems = entries.length === 0;
   const hasActiveFilter =
     filters.time !== "all"
     || filters.contentType !== "all"
@@ -108,8 +148,7 @@ export const VaultLibrary = memo(function VaultLibrary({
 
         {!isLoading && !isError && !isEmptyDefault && !isEmptyFiltered && (
           <VaultGrid
-            items={items}
-            pendingItems={visiblePendingLinks}
+            entries={entries}
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
             animationKey={`${filters.time}-${filters.contentType}-${filters.search}`}
@@ -117,6 +156,7 @@ export const VaultLibrary = memo(function VaultLibrary({
             deleteItem={deleteItem}
             updateRemarks={updateRemarks}
             onToggleRead={toggleRead}
+            onDismissPending={dismissPending}
           />
         )}
       </div>

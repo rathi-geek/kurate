@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
@@ -138,9 +138,11 @@ function ThoughtsAllView({
         return (
           <div className="flex justify-end px-5 py-0.5">
             <div className="max-w-[75%]">
-              <div
+              <motion.div
                 className="text-ink rounded-2xl rounded-br-sm px-3 py-2 text-sm"
-                style={{ backgroundColor: `var(${meta.colorVar})`, opacity: m._pending || m._failed ? 0.7 : 1 }}>
+                style={{ backgroundColor: `var(${meta.colorVar})` }}
+                animate={{ opacity: m._pending || m._failed ? 0.7 : 1 }}
+                transition={{ type: "spring", stiffness: 260, damping: 25 }}>
                 <p className="leading-snug whitespace-pre-wrap">{m.text || "📷 Image"}</p>
                 <div className="mt-0.5 flex items-center justify-between gap-3">
                   <span className="text-ink/40 text-[9px]">{meta.label}</span>
@@ -150,7 +152,7 @@ function ThoughtsAllView({
                     {m._failed && <span aria-label="Failed to send" className="text-red-400">!</span>}
                   </span>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         );
@@ -230,8 +232,11 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
     if (confirmed.length) void db.pending_thoughts.bulkDelete(confirmed.map((t) => t.tempId));
   }, [allMessages, pendingThoughts]);
 
-  // Merge pending thoughts at the end (newest = bottom) — only when not searching
-  const pendingMessages: DisplayMessage[] = !isSearching ? (pendingThoughts ?? []).map(pendingToMessage) : [];
+  // In-render dedup: filter out pending thoughts already confirmed by server (eliminates 1-frame flash)
+  const serverTexts = useMemo(() => new Set(allMessages.map((m) => m.text)), [allMessages]);
+  const pendingMessages: DisplayMessage[] = !isSearching
+    ? (pendingThoughts ?? []).filter((p) => !serverTexts.has(p.text)).map(pendingToMessage)
+    : [];
   const displayMessages: DisplayMessage[] = isSearching
     ? (searchMessages as DisplayMessage[])
     : ([...(allMessages as DisplayMessage[]), ...pendingMessages]);
@@ -266,9 +271,15 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
   }, [displayBuckets, bucketMessages]);
 
   const handleDeleteThought = useCallback(async (id: string) => {
+    // Check if this is a pending thought (still in Dexie) — delete locally instead of via API
+    const isPending = (pendingThoughts ?? []).some((p) => p.tempId === id);
+    if (isPending) {
+      await db.pending_thoughts.delete(id);
+      return;
+    }
     await fetch(`/api/thoughts/${id}`, { method: "DELETE" });
     void queryClient.invalidateQueries({ queryKey: queryKeys.thoughts.all });
-  }, [queryClient]);
+  }, [queryClient, pendingThoughts]);
 
   const { lastReadAt, markBucketRead } = useBucketLastRead(userId);
 

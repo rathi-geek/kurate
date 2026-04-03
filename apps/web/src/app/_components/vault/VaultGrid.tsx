@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useRef } from "react";
-import { AnimatePresence, type Variants, motion } from "framer-motion";
+import { AnimatePresence, LayoutGroup, type Variants, motion } from "framer-motion";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
@@ -11,10 +11,12 @@ import { VaultCard } from "@/app/_components/vault/VaultCard";
 import { VaultCardSkeleton } from "@/app/_components/vault/VaultCardSkeleton";
 import { PendingLinkCard } from "@/app/_components/vault/PendingLinkCard";
 
+export type GridEntry =
+  | { kind: "pending"; data: PendingLink }
+  | { kind: "confirmed"; data: VaultItem };
+
 export interface VaultGridProps {
-  items: VaultItem[];
-  /** Optimistic pending links — rendered at the top of the same grid to avoid layout shift */
-  pendingItems?: PendingLink[];
+  entries: GridEntry[];
   hasMore: boolean;
   isLoadingMore: boolean;
   /** Changes when filters change — forces stagger animation to replay */
@@ -23,11 +25,11 @@ export interface VaultGridProps {
   deleteItem: (id: string) => void;
   updateRemarks: (id: string, value: string) => void;
   onToggleRead: (item: VaultItem) => void;
+  onDismissPending?: (tempId: string) => void;
 }
 
 export const VaultGrid = memo(function VaultGrid({
-  items,
-  pendingItems = [],
+  entries,
   hasMore,
   isLoadingMore,
   animationKey,
@@ -35,6 +37,7 @@ export const VaultGrid = memo(function VaultGrid({
   deleteItem,
   updateRemarks,
   onToggleRead,
+  onDismissPending,
 }: VaultGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useSafeReducedMotion();
@@ -58,38 +61,46 @@ export const VaultGrid = memo(function VaultGrid({
 
   return (
     <>
-      <motion.div
-        key={animationKey}
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 items-stretch"
-        variants={staggerContainer as Variants}
-        initial={prefersReducedMotion ? false : "hidden"}
-        animate={prefersReducedMotion ? undefined : "visible"}
-      >
-        {/* Pending items share the same grid — no layout shift when confirmed */}
-        {pendingItems.map((link) => (
-          <PendingLinkCard key={link.tempId} link={link} />
-        ))}
+      <LayoutGroup>
+        <motion.div
+          key={animationKey}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 items-stretch"
+          variants={staggerContainer as Variants}
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate={prefersReducedMotion ? undefined : "visible"}
+        >
+          <AnimatePresence mode="popLayout">
+            {entries.map((entry) => {
+              const url = entry.kind === "pending" ? entry.data.url : entry.data.url;
+              const key = entry.kind === "pending" ? `pending-${entry.data.tempId}` : entry.data.id;
 
-        <AnimatePresence>
-          {items.map((item) => (
-            <motion.div
-              key={item.id}
-              className="h-full min-h-0"
-              variants={staggerItem as Variants}
-              initial={prefersReducedMotion ? false : "hidden"}
-              animate="visible"
-              exit="hidden"
-            >
-              <VaultCard
-                item={item}
-                deleteItem={deleteItem}
-                updateRemarks={updateRemarks}
-                onToggleRead={onToggleRead}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </motion.div>
+              return (
+                <motion.div
+                  key={key}
+                  layoutId={prefersReducedMotion ? undefined : `vault-${url}`}
+                  className="h-full min-h-0"
+                  variants={staggerItem as Variants}
+                  initial={prefersReducedMotion ? false : "hidden"}
+                  animate="visible"
+                  exit="hidden"
+                  layout={!prefersReducedMotion}
+                >
+                  {entry.kind === "pending" ? (
+                    <PendingLinkCard link={entry.data} onDismiss={onDismissPending} />
+                  ) : (
+                    <VaultCard
+                      item={entry.data}
+                      deleteItem={deleteItem}
+                      updateRemarks={updateRemarks}
+                      onToggleRead={onToggleRead}
+                    />
+                  )}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
+      </LayoutGroup>
 
       <div ref={sentinelRef} className="h-1 w-full" aria-hidden />
 
