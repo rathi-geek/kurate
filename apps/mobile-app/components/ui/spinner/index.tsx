@@ -1,14 +1,11 @@
-'use client';
-import { ActivityIndicator } from 'react-native';
 import React from 'react';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { ActivityIndicator } from 'react-native';
 import { cssInterop } from 'nativewind';
+import { cn } from '@/lib/utils';
 
 cssInterop(ActivityIndicator, {
   className: { target: 'style', nativeStyleToProp: { color: true } },
 });
-
-const spinnerStyle = tva({});
 
 const Spinner = React.forwardRef<
   React.ComponentRef<typeof ActivityIndicator>,
@@ -30,7 +27,7 @@ const Spinner = React.forwardRef<
       aria-label={ariaLabel}
       {...props}
       color={color}
-      className={spinnerStyle({ class: className })}
+      className={cn(className)}
     />
   );
 });
