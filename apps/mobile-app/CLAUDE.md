@@ -102,24 +102,50 @@ Use `className` prop. Avoid `StyleSheet.create`. For responsive sizing use `useR
 - Persistent secure state: dedicated store with Expo Secure Storage
 - Forms: react-hook-form + zod
 
-## Animation
+## Animation — `react-native-reanimated` only
 
-| Use case                     | Library                             |
-| ---------------------------- | ----------------------------------- |
-| Gesture-driven (swipe, drag) | `react-native-reanimated`           |
-| Screen/tab transitions       | `react-native-reanimated`           |
-| Entrance/exit fade/slide     | `@legendapp/motion` `<Motion.View>` |
-| Simple opacity toggle        | `@legendapp/motion`                 |
+❌ Never use `@legendapp/motion` — has type compatibility issues with React 19. Only used internally by Gluestack UI components.
 
 ```tsx
-// Entrance — @legendapp/motion
-<Motion.View initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-  transition={{ type: 'spring', damping: 20 }}>
-
-// Programmatic — Reanimated
+// Entrance fade/slide
 const opacity = useSharedValue(0);
-opacity.value = withTiming(1, { duration: 400 });
+const translateY = useSharedValue(20);
+useEffect(() => {
+  opacity.value = withTiming(1, { duration: 400 });
+  translateY.value = withTiming(0, { duration: 400 });
+}, []);
+const style = useAnimatedStyle(() => ({
+  opacity: opacity.value,
+  transform: [{ translateY: translateY.value }],
+}));
+// <Animated.View style={style}>...</Animated.View>
+
+// Spring animation
+opacity.value = withSpring(1, { damping: 20 });
+
+// Delayed entrance
+opacity.value = withDelay(200, withTiming(1, { duration: 400 }));
 ```
+
+## Localization — NEVER hardcode user-facing strings
+
+All user-visible text MUST use `@kurate/locales` via the `useLocalization` hook. This is a hard rule — no exceptions.
+
+```tsx
+// ✅
+const { t } = useLocalization();
+<Text>{t('auth.login.title')}</Text>
+<InputField placeholder={t('auth.login.magic_link_email_placeholder')} />
+
+// ❌ NEVER
+<Text>Welcome to Kurate</Text>
+<InputField placeholder="you@example.com" />
+```
+
+- Import: `import { useLocalization } from '@/context'`
+- Keys live in `libs/locales/src/en.json` — check existing keys before adding new ones
+- Interpolation: `t('auth.login.magic_link_sent_message', { email })`
+- If a key doesn't exist yet, add it to `en.json` (and `es.ts` / `pt.ts` if translations available)
 
 ## Component Rules
 
@@ -159,6 +185,32 @@ export default function MyScreen() {
   <Text className="font-sans text-base text-muted-foreground text-center">{message}</Text>
 </VStack>
 ```
+
+## Token Efficiency
+
+- Never explore the codebase blindly
+- Only read files explicitly listed in the task
+- Reviewer has already done the exploration and will give you exact paths
+- If you need a file not listed, ask the user — don't go looking
+
+## Design Reference — Web First
+
+Before building any screen:
+
+1. Find the equivalent screen in `apps/web/src/app/`
+2. Extract the design decisions — layout, spacing, colors, component structure
+3. Adapt for mobile — same visual language, native patterns
+
+Rules for adapting web → mobile:
+
+- Same color tokens (`bg-primary`, `text-foreground` etc — already matched in design system above)
+- Same spacing feel — tighter on mobile but proportional
+- Replace hover states with press states
+- Replace sidebars/dropdowns with bottom sheets/modals
+- Replace multi-column grids with single column
+- Web uses shadcn/ui → mobile uses Gluestack equivalent primitives
+- Web uses Framer Motion → mobile uses `react-native-reanimated`
+- Never copy web JSX directly — always rewrite for React Native
 
 ## Feature Workflow
 

@@ -40,7 +40,7 @@ type IAnimatedPressableProps = React.ComponentProps<typeof Pressable> &
   MotionComponentProps<typeof Pressable, ViewStyle, unknown, unknown, unknown>;
 
 const AnimatedPressable = createMotionAnimatedComponent(
-  Pressable
+  Pressable,
 ) as React.ComponentType<IAnimatedPressableProps>;
 
 export const UIActionsheet = createActionsheet({
@@ -103,18 +103,18 @@ cssInterop(UIIcon, {
   },
 });
 
-const actionsheetStyle = tva({ base: 'w-full h-full web:pointer-events-none' });
+const actionsheetStyle = tva({ base: 'h-full w-full web:pointer-events-none' });
 
 const actionsheetContentStyle = tva({
-  base: 'items-center rounded-t-lg p-4 bg-background web:pointer-events-auto web:select-none border-t border-border dark:border-border/10 max-h-[80vh] pb-safe',
+  base: 'pb-safe max-h-[80vh] items-center rounded-t-lg border-t border-border bg-background p-4 web:pointer-events-auto web:select-none dark:border-border/10',
 });
 
 const actionsheetItemStyle = tva({
-  base: 'w-full flex-row items-center p-3 rounded-sm data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-auto data-[disabled=true]:web:cursor-not-allowed data-[hover=true]:bg-accent data-[active=true]:bg-accent data-[focus=true]:bg-accent web:data-[focus-visible=true]:bg-accent gap-2',
+  base: 'w-full flex-row items-center gap-2 rounded-sm p-3 data-[active=true]:bg-accent data-[focus=true]:bg-accent data-[hover=true]:bg-accent data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-auto data-[disabled=true]:web:cursor-not-allowed web:data-[focus-visible=true]:bg-accent',
 });
 
 const actionsheetItemTextStyle = tva({
-  base: 'text-foreground font-normal text-sm',
+  base: 'text-sm font-normal text-foreground',
   variants: {
     isTruncated: {
       true: '',
@@ -132,35 +132,35 @@ const actionsheetItemTextStyle = tva({
 });
 
 const actionsheetDragIndicatorStyle = tva({
-  base: 'w-[100px] h-2 bg-muted rounded-full',
+  base: 'h-2 w-[100px] rounded-full bg-muted',
 });
 
 const actionsheetDragIndicatorWrapperStyle = tva({
-  base: 'w-full py-1 items-center',
+  base: 'w-full items-center py-1',
 });
 
 const actionsheetBackdropStyle = tva({
-  base: 'absolute left-0 top-0 right-0 bottom-0 bg-black/50 web:cursor-default web:pointer-events-auto',
+  base: 'absolute bottom-0 left-0 right-0 top-0 bg-black/50 web:pointer-events-auto web:cursor-default',
 });
 
 const actionsheetScrollViewStyle = tva({
-  base: 'w-full h-auto',
+  base: 'h-auto w-full',
 });
 
 const actionsheetVirtualizedListStyle = tva({
-  base: 'w-full h-auto',
+  base: 'h-auto w-full',
 });
 
 const actionsheetFlatListStyle = tva({
-  base: 'w-full h-auto',
+  base: 'h-auto w-full',
 });
 
 const actionsheetSectionListStyle = tva({
-  base: 'w-full h-auto',
+  base: 'h-auto w-full',
 });
 
 const actionsheetSectionHeaderTextStyle = tva({
-  base: 'leading-5 font-semibold my-0 text-muted-foreground p-3 uppercase text-xs',
+  base: 'my-0 p-3 text-xs font-semibold uppercase leading-5 text-muted-foreground',
   variants: {
     isTruncated: {
       true: '',
@@ -187,7 +187,7 @@ const actionsheetSectionHeaderTextStyle = tva({
 });
 
 const actionsheetIconStyle = tva({
-  base: 'text-foreground fill-none h-4 w-4',
+  base: 'h-4 w-4 fill-none text-foreground',
 });
 
 type IActionsheetProps = VariantProps<typeof actionsheetStyle> &
@@ -300,7 +300,7 @@ const ActionsheetItemText = React.forwardRef<
   IActionsheetItemTextProps
 >(function ActionsheetItemText(
   { isTruncated, bold, underline, strikeThrough, className, ...props },
-  ref
+  ref,
 ) {
   return (
     <UIActionsheet.ItemText
@@ -450,7 +450,7 @@ const ActionsheetSectionHeaderText = React.forwardRef<
     highlight,
     ...props
   },
-  ref
+  ref,
 ) {
   return (
     <UIActionsheet.SectionHeaderText

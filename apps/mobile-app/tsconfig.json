@@ -9,9 +9,17 @@
       "@kurate/types": ["../../libs/types/src/index.ts"],
       "@kurate/query": ["../../libs/query/src/index.ts"],
       "@kurate/locales": ["../../libs/locales/src/index.ts"],
-      "@kurate/utils": ["../../libs/utils/src/index.ts"]
+      "@kurate/utils": ["../../libs/utils/src/index.ts"],
+      "@kurate/icons/*": ["../../libs/icons/src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts",
+    "declarations.d.ts"
+  ],
   "exclude": ["node_modules", "components/ui"]
 }

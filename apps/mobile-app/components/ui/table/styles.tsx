@@ -4,7 +4,7 @@ import { isWeb } from '@gluestack-ui/utils/nativewind-utils';
 const captionTableStyle = isWeb ? 'caption-bottom' : '';
 
 export const tableStyle = tva({
-  base: `table border-collapse w-[800px]`,
+  base: `table w-[800px] border-collapse`,
 });
 
 export const tableHeaderStyle = tva({
@@ -20,7 +20,7 @@ export const tableFooterStyle = tva({
 });
 
 export const tableHeadStyle = tva({
-  base: 'flex-1 px-6 py-[14px] text-left font-bold text-[16px] leading-[22px] text-foreground/80 font-roboto',
+  base: 'font-roboto flex-1 px-6 py-[14px] text-left text-[16px] font-bold leading-[22px] text-foreground/80',
 });
 
 export const tableRowStyleStyle = tva({
@@ -36,9 +36,9 @@ export const tableRowStyleStyle = tva({
 });
 
 export const tableDataStyle = tva({
-  base: 'flex-1 px-6 py-[14px] text-left text-[16px] font-medium leading-[22px] text-foreground/80 font-roboto',
+  base: 'font-roboto flex-1 px-6 py-[14px] text-left text-[16px] font-medium leading-[22px] text-foreground/80',
 });
 
 export const tableCaptionStyle = tva({
-  base: `${captionTableStyle} px-6 py-[14px] text-[16px] font-normal leading-[22px] text-foreground/90 bg-background/90 font-roboto`,
+  base: `${captionTableStyle} font-roboto bg-background/90 px-6 py-[14px] text-[16px] font-normal leading-[22px] text-foreground/90`,
 });

@@ -57,19 +57,19 @@ cssInterop(UIIcon, {
 });
 
 const checkboxStyle = tva({
-  base: 'group/checkbox flex-row items-center justify-start gap-2 web:cursor-pointer data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-50',
+  base: 'group/checkbox flex-row items-center justify-start gap-2 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-50 web:cursor-pointer',
 });
 
 const checkboxIndicatorStyle = tva({
-  base: 'justify-center items-center w-4 h-4 shrink-0 rounded border border-input dark:bg-input/30   shadow-xs web:outline-none web:data-[focus-visible=true]:ring-[3px] web:data-[focus-visible=true]:ring-ring/50 web:data-[focus-visible=true]:border-ring data-[checked=true]:bg-primary  data-[checked=true]:border-primary dark:data-[checked=true]:bg-primary dark:data-[checked=true]:border-primary data-[invalid=true]:ring-destructive/20 data-[invalid=true]:border-destructive data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-50',
+  base: 'shadow-xs h-4 w-4 shrink-0 items-center justify-center rounded border border-input   data-[disabled=true]:cursor-not-allowed data-[checked=true]:border-primary data-[invalid=true]:border-destructive data-[checked=true]:bg-primary data-[disabled=true]:opacity-50 data-[invalid=true]:ring-destructive/20  web:outline-none web:data-[focus-visible=true]:border-ring web:data-[focus-visible=true]:ring-[3px] web:data-[focus-visible=true]:ring-ring/50 dark:bg-input/30 dark:data-[checked=true]:border-primary dark:data-[checked=true]:bg-primary',
 });
 
 const checkboxLabelStyle = tva({
-  base: 'text-foreground text-sm font-medium font-body web:select-none web:cursor-pointer data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-50',
+  base: 'font-body text-sm font-medium text-foreground data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-50 web:cursor-pointer web:select-none',
 });
 
 const checkboxIconStyle = tva({
-  base: 'text-primary-foreground fill-none h-3.5 w-3.5',
+  base: 'h-3.5 w-3.5 fill-none text-primary-foreground',
 });
 
 const CheckboxGroup = UICheckbox.Group;

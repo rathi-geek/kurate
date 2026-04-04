@@ -36,55 +36,53 @@ cssInterop(AnimatedView, { className: 'style' });
 cssInterop(AnimatedPressable, { className: 'style' });
 
 const popoverStyle = tva({
-  base: 'group/popover w-full h-full justify-center items-center web:pointer-events-none',
+  base: 'group/popover h-full w-full items-center justify-center web:pointer-events-none',
 });
 
 const popoverArrowStyle = tva({
-  base: 'bg-popover z-[1] border absolute overflow-hidden h-3.5 w-3.5 border-border dark:border-border/90',
+  base: 'absolute z-[1] h-3.5 w-3.5 overflow-hidden border border-border bg-popover dark:border-border/90',
   variants: {
     placement: {
       'top left':
-        'data-[flip=false]:border-t-0 data-[flip=false]:border-l-0 data-[flip=true]:border-b-0 data-[flip=true]:border-r-0',
-      'top':
-        'data-[flip=false]:border-t-0 data-[flip=false]:border-l-0 data-[flip=true]:border-b-0 data-[flip=true]:border-r-0',
+        'data-[flip=false]:border-l-0 data-[flip=false]:border-t-0 data-[flip=true]:border-b-0 data-[flip=true]:border-r-0',
+      top: 'data-[flip=false]:border-l-0 data-[flip=false]:border-t-0 data-[flip=true]:border-b-0 data-[flip=true]:border-r-0',
       'top right':
-        'data-[flip=false]:border-t-0 data-[flip=false]:border-l-0 data-[flip=true]:border-b-0 data-[flip=true]:border-r-0',
-      'bottom':
-        'data-[flip=false]:border-b-0 data-[flip=false]:border-r-0 data-[flip=true]:border-t-0 data-[flip=true]:border-l-0',
+        'data-[flip=false]:border-l-0 data-[flip=false]:border-t-0 data-[flip=true]:border-b-0 data-[flip=true]:border-r-0',
+      bottom:
+        'data-[flip=false]:border-b-0 data-[flip=false]:border-r-0 data-[flip=true]:border-l-0 data-[flip=true]:border-t-0',
       'bottom left':
-        'data-[flip=false]:border-b-0 data-[flip=false]:border-r-0 data-[flip=true]:border-t-0 data-[flip=true]:border-l-0',
+        'data-[flip=false]:border-b-0 data-[flip=false]:border-r-0 data-[flip=true]:border-l-0 data-[flip=true]:border-t-0',
       'bottom right':
-        'data-[flip=false]:border-b-0 data-[flip=false]:border-r-0 data-[flip=true]:border-t-0 data-[flip=true]:border-l-0',
-      'left':
-        'data-[flip=false]:border-l-0 data-[flip=false]:border-b-0 data-[flip=true]:border-r-0 data-[flip=true]:border-t-0',
+        'data-[flip=false]:border-b-0 data-[flip=false]:border-r-0 data-[flip=true]:border-l-0 data-[flip=true]:border-t-0',
+      left: 'data-[flip=false]:border-b-0 data-[flip=false]:border-l-0 data-[flip=true]:border-r-0 data-[flip=true]:border-t-0',
       'left top':
-        'data-[flip=false]:border-l-0 data-[flip=false]:border-b-0 data-[flip=true]:border-r-0 data-[flip=true]:border-t-0',
+        'data-[flip=false]:border-b-0 data-[flip=false]:border-l-0 data-[flip=true]:border-r-0 data-[flip=true]:border-t-0',
       'left bottom':
-        'data-[flip=false]:border-l-0 data-[flip=false]:border-b-0 data-[flip=true]:border-r-0 data-[flip=true]:border-t-0',
-      'right':
-        'data-[flip=false]:border-r-0 data-[flip=false]:border-t-0 data-[flip=true]:border-l-0 data-[flip=true]:border-b-0',
+        'data-[flip=false]:border-b-0 data-[flip=false]:border-l-0 data-[flip=true]:border-r-0 data-[flip=true]:border-t-0',
+      right:
+        'data-[flip=false]:border-r-0 data-[flip=false]:border-t-0 data-[flip=true]:border-b-0 data-[flip=true]:border-l-0',
       'right top':
-        'data-[flip=false]:border-r-0 data-[flip=false]:border-t-0 data-[flip=true]:border-l-0 data-[flip=true]:border-b-0',
+        'data-[flip=false]:border-r-0 data-[flip=false]:border-t-0 data-[flip=true]:border-b-0 data-[flip=true]:border-l-0',
       'right bottom':
-        'data-[flip=false]:border-r-0 data-[flip=false]:border-t-0 data-[flip=true]:border-l-0 data-[flip=true]:border-b-0',
+        'data-[flip=false]:border-r-0 data-[flip=false]:border-t-0 data-[flip=true]:border-b-0 data-[flip=true]:border-l-0',
     },
   },
 });
 
 const popoverBackdropStyle = tva({
-  base: 'absolute left-0 top-0 right-0 bottom-0 web:cursor-default',
+  base: 'absolute bottom-0 left-0 right-0 top-0 web:cursor-default',
 });
 
 const popoverCloseButtonStyle = tva({
-  base: 'group/popover-close-button z-[1] rounded-sm p-2 data-[focus-visible=true]:bg-accent web:outline-0 web:cursor-pointer data-[hover=true]:bg-accent/50',
+  base: 'group/popover-close-button z-[1] rounded-sm p-2 data-[focus-visible=true]:bg-accent data-[hover=true]:bg-accent/50 web:cursor-pointer web:outline-0',
 });
 
 const popoverContentStyle = tva({
-  base: 'bg-popover text-popover-foreground rounded-lg overflow-hidden border border-border dark:border-border/10 shadow-md p-4 w-full max-w-xs web:pointer-events-auto',
+  base: 'w-full max-w-xs overflow-hidden rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-md web:pointer-events-auto dark:border-border/10',
 });
 
 const popoverHeaderStyle = tva({
-  base: 'flex-row justify-between items-center',
+  base: 'flex-row items-center justify-between',
 });
 
 const popoverBodyStyle = tva({
@@ -92,7 +90,7 @@ const popoverBodyStyle = tva({
 });
 
 const popoverFooterStyle = tva({
-  base: 'flex-row justify-between items-center',
+  base: 'flex-row items-center justify-between',
 });
 
 type IPopoverProps = React.ComponentProps<typeof UIPopover> &

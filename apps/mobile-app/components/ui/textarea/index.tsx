@@ -16,12 +16,12 @@ const UITextarea = createTextarea({
 });
 
 const textareaStyle = tva({
-  base: 'w-full h-[100px] border border-border  dark:bg-input/30 rounded data-[hover=true]:border-border/80 data-[focus=true]:border-primary/80 data-[focus=true]:data-[hover=true]:border-primary/80 data-[disabled=true]:opacity-40 data-[disabled=true]:bg-background/90 data-[disabled=true]:data-[hover=true]:border-border/80',
+  base: 'h-[100px] w-full rounded border  border-border data-[disabled=true]:data-[hover=true]:border-border/80 data-[focus=true]:border-primary/80 data-[focus=true]:data-[hover=true]:border-primary/80 data-[hover=true]:border-border/80 data-[disabled=true]:bg-background/90 data-[disabled=true]:opacity-40 dark:bg-input/30',
 
   variants: {
     variant: {
       default:
-        'data-[focus=true]:border-primary/80 data-[focus=true]:web:ring-1 data-[focus=true]:web:ring-inset data-[focus=true]:web:ring-indicator-primary data-[invalid=true]:border-destructive data-[invalid=true]:web:ring-1 data-[invalid=true]:web:ring-inset data-[invalid=true]:web:ring-indicator-error data-[invalid=true]:data-[hover=true]:border-destructive data-[invalid=true]:data-[focus=true]:data-[hover=true]:border-primary/80 data-[invalid=true]:data-[focus=true]:data-[hover=true]:web:ring-1 data-[invalid=true]:data-[focus=true]:data-[hover=true]:web:ring-inset data-[invalid=true]:data-[focus=true]:data-[hover=true]:web:ring-indicator-primary data-[invalid=true]:data-[disabled=true]:data-[hover=true]:border-destructive data-[invalid=true]:data-[disabled=true]:data-[hover=true]:web:ring-1 data-[invalid=true]:data-[disabled=true]:data-[hover=true]:web:ring-inset data-[invalid=true]:data-[disabled=true]:data-[hover=true]:web:ring-indicator-error ',
+        'data-[focus=true]:web:ring-indicator-primary data-[invalid=true]:web:ring-indicator-error data-[invalid=true]:data-[focus=true]:data-[hover=true]:web:ring-indicator-primary data-[invalid=true]:data-[disabled=true]:data-[hover=true]:web:ring-indicator-error data-[focus=true]:border-primary/80 data-[invalid=true]:border-destructive data-[invalid=true]:data-[disabled=true]:data-[hover=true]:border-destructive data-[invalid=true]:data-[focus=true]:data-[hover=true]:border-primary/80 data-[invalid=true]:data-[hover=true]:border-destructive data-[focus=true]:web:ring-1 data-[invalid=true]:data-[disabled=true]:data-[hover=true]:web:ring-1 data-[invalid=true]:data-[focus=true]:data-[hover=true]:web:ring-1 data-[invalid=true]:web:ring-1 data-[focus=true]:web:ring-inset data-[invalid=true]:data-[disabled=true]:data-[hover=true]:web:ring-inset data-[invalid=true]:data-[focus=true]:data-[hover=true]:web:ring-inset data-[invalid=true]:web:ring-inset ',
     },
     size: {
       sm: '',
@@ -33,7 +33,7 @@ const textareaStyle = tva({
 });
 
 const textareaInputStyle = tva({
-  base: 'p-2 web:outline-0 web:outline-none flex-1 text-foreground placeholder:text-foreground/60 web:cursor-text web:data-[disabled=true]:cursor-not-allowed',
+  base: 'flex-1 p-2 text-foreground placeholder:text-foreground/60 web:cursor-text web:outline-none web:outline-0 web:data-[disabled=true]:cursor-not-allowed',
   parentVariants: {
     size: {
       sm: 'text-sm',
@@ -52,7 +52,7 @@ const Textarea = React.forwardRef<
   ITextareaProps
 >(function Textarea(
   { className, variant = 'default', size = 'md', ...props },
-  ref
+  ref,
 ) {
   return (
     <UITextarea

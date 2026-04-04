@@ -18,11 +18,11 @@ cssInterop(UILink, { className: 'style' });
 cssInterop(UILink.Text, { className: 'style' });
 
 const linkStyle = tva({
-  base: 'group/link web:outline-0 data-[disabled=true]:web:cursor-not-allowed data-[focus-visible=true]:web:ring-2 data-[focus-visible=true]:web:ring-indicator-primary data-[focus-visible=true]:web:outline-0 data-[disabled=true]:opacity-4 ',
+  base: 'group/link data-[focus-visible=true]:web:ring-indicator-primary data-[disabled=true]:opacity-4 web:outline-0 data-[disabled=true]:web:cursor-not-allowed data-[focus-visible=true]:web:outline-0 data-[focus-visible=true]:web:ring-2 ',
 });
 
 const linkTextStyle = tva({
-  base: 'underline text-primary data-[hover=true]:text-primary/80 data-[hover=true]:no-underline data-[active=true]:text-destructive/80 font-normal font-body web:font-sans web:tracking-sm web:my-0 web:bg-transparent web:border-0 web:box-border web:inline web:list-none web:m-0 web:p-0 web:relative web:text-start web:whitespace-pre-wrap web:break-words',
+  base: 'web:tracking-sm font-body font-normal text-primary underline data-[active=true]:text-destructive/80 data-[hover=true]:text-primary/80 data-[hover=true]:no-underline web:relative web:m-0 web:my-0 web:box-border web:inline web:list-none web:whitespace-pre-wrap web:break-words web:border-0 web:bg-transparent web:p-0 web:text-start web:font-sans',
 
   variants: {
     isTruncated: {
@@ -39,11 +39,11 @@ const linkTextStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
+      xs: 'text-xs',
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -74,7 +74,7 @@ const Link = React.forwardRef<React.ComponentRef<typeof UILink>, ILinkProps>(
         className={linkStyle({ class: className })}
       />
     );
-  }
+  },
 );
 
 type ILinkTextProps = React.ComponentProps<typeof UILink.Text> &

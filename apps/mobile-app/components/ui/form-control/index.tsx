@@ -15,15 +15,15 @@ const formControlStyle = tva({
 });
 
 const formControlErrorIconStyle = tva({
-  base: 'text-destructive fill-none h-[18px] w-[18px]',
+  base: 'h-[18px] w-[18px] fill-none text-destructive',
 });
 
 const formControlErrorStyle = tva({
-  base: 'flex flex-row justify-start items-center mt-1 gap-1',
+  base: 'mt-1 flex flex-row items-center justify-start gap-1',
 });
 
 const formControlErrorTextStyle = tva({
-  base: 'text-destructive text-xs font-body',
+  base: 'font-body text-xs text-destructive',
   variants: {
     isTruncated: {
       true: 'web:truncate',
@@ -50,11 +50,11 @@ const formControlErrorTextStyle = tva({
 });
 
 const formControlHelperStyle = tva({
-  base: 'flex flex-row justify-start items-center mt-1 font-body',
+  base: 'mt-1 flex flex-row items-center justify-start font-body',
 });
 
 const formControlHelperTextStyle = tva({
-  base: 'text-foreground/70 font-body text-sm',
+  base: 'font-body text-sm text-foreground/70',
   variants: {
     isTruncated: {
       true: 'web:truncate',
@@ -81,11 +81,11 @@ const formControlHelperTextStyle = tva({
 });
 
 const formControlLabelStyle = tva({
-  base: 'flex flex-row justify-start items-center mb-1',
+  base: 'mb-1 flex flex-row items-center justify-start',
 });
 
 const formControlLabelTextStyle = tva({
-  base: 'font-medium text-foreground text-base font-body',
+  base: 'font-body text-base font-medium text-foreground',
   variants: {
     isTruncated: {
       true: 'web:truncate',
@@ -112,7 +112,7 @@ const formControlLabelTextStyle = tva({
 });
 
 const formControlLabelAstrickStyle = tva({
-  base: 'font-medium text-typography text-base',
+  base: 'text-typography text-base font-medium',
   variants: {
     isTruncated: {
       true: 'web:truncate',

@@ -31,19 +31,19 @@ cssInterop(UIIcon, {
 });
 
 const inputStyle = tva({
-  base: 'h-9 w-full flex-row items-center rounded-[10px] border border-border  dark:bg-input/30 bg-transparent shadow-xs transition-[color,box-shadow] overflow-hidden data-[focus=true]:outline-none data-[focus=true]:border-ring dark:data-[focus=true]:border-ring data-[focus=true]:web:ring-[3px] data-[focus=true]:web:ring-ring/50 data-[invalid=true]:border-destructive/40 dark:data-[invalid=true]:border-destructive/40 data-[invalid=true]:web:ring-destructive/20 dark:data-[invalid=true]:web:ring-destructive/40 data-[disabled=true]:pointer-events-none data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-50 px-3 gap-2',
+  base: 'shadow-xs h-9 w-full flex-row items-center gap-2 overflow-hidden  rounded-[10px] border border-border bg-transparent px-3 transition-[color,box-shadow] data-[disabled=true]:pointer-events-none data-[disabled=true]:cursor-not-allowed data-[focus=true]:border-ring data-[invalid=true]:border-destructive/40 data-[disabled=true]:opacity-50 data-[focus=true]:outline-none data-[focus=true]:web:ring-[3px] data-[focus=true]:web:ring-ring/50 data-[invalid=true]:web:ring-destructive/20 dark:bg-input/30 dark:data-[focus=true]:border-ring dark:data-[invalid=true]:border-destructive/40 dark:data-[invalid=true]:web:ring-destructive/40',
 });
 
 const inputIconStyle = tva({
-  base: 'justify-center items-center text-muted-foreground fill-none h-4 w-4',
+  base: 'h-4 w-4 items-center justify-center fill-none text-muted-foreground',
 });
 
 const inputSlotStyle = tva({
-  base: 'justify-center items-center web:disabled:cursor-not-allowed',
+  base: 'items-center justify-center web:disabled:cursor-not-allowed',
 });
 
 const inputFieldStyle = tva({
-  base: 'flex-1 text-foreground text-sm md:text-sm py-1 h-full placeholder:text-muted-foreground  web:outline-none ios:leading-[0px] web:cursor-text web:data-[disabled=true]:cursor-not-allowed',
+  base: 'ios:leading-[0px] h-full flex-1 py-1 text-sm text-foreground placeholder:text-muted-foreground  web:cursor-text web:outline-none web:data-[disabled=true]:cursor-not-allowed md:text-sm',
 });
 
 type IInputProps = React.ComponentProps<typeof UIInput> &
@@ -58,7 +58,7 @@ const Input = React.forwardRef<React.ComponentRef<typeof UIInput>, IInputProps>(
         context={{}}
       />
     );
-  }
+  },
 );
 
 type IInputIconProps = React.ComponentProps<typeof UIInput.Icon> &

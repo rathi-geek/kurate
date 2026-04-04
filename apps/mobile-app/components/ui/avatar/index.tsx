@@ -17,23 +17,23 @@ const UIAvatar = createAvatar({
 });
 
 const avatarStyle = tva({
-  base: 'relative flex h-12 w-12 shrink-0 rounded-full bg-muted items-center justify-center group-[.avatar-group]/avatar-group:-ml-2.5',
+  base: 'relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted group-[.avatar-group]/avatar-group:-ml-2.5',
 });
 
 const avatarFallbackTextStyle = tva({
-  base: 'text-foreground text-xs font-medium text-transform:uppercase',
+  base: 'text-transform:uppercase text-xs font-medium text-foreground',
 });
 
 const avatarGroupStyle = tva({
-  base: 'group/avatar-group flex-row-reverse relative avatar-group',
+  base: 'group/avatar-group avatar-group relative flex-row-reverse',
 });
 
 const avatarBadgeStyle = tva({
-  base: 'absolute h-3 w-3 rounded-full border-2 border-background right-0 bottom-0 bg-green-500',
+  base: 'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background bg-green-500',
 });
 
 const avatarImageStyle = tva({
-  base: 'h-full w-full rounded-full absolute',
+  base: 'absolute h-full w-full rounded-full',
 });
 
 type IAvatarProps = Omit<

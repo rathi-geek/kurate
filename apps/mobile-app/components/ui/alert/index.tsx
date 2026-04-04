@@ -14,17 +14,17 @@ import { UIIcon } from '@gluestack-ui/core/icon/creator';
 const SCOPE = 'ALERT';
 
 const alertStyle = tva({
-  base: 'rounded-lg border px-2.5 py-2 flex-row gap-2 items-start ',
+  base: 'flex-row items-start gap-2 rounded-lg border px-2.5 py-2 ',
   variants: {
     variant: {
-      default: 'bg-card border-border',
-      destructive: 'bg-card border-destructive',
+      default: 'border-border bg-card',
+      destructive: 'border-destructive bg-card',
     },
   },
 });
 
 const alertTextStyle = tva({
-  base: 'font-medium tracking-tight text-sm flex-1',
+  base: 'flex-1 text-sm font-medium tracking-tight',
   parentVariants: {
     variant: {
       default: 'text-card-foreground',
@@ -34,7 +34,7 @@ const alertTextStyle = tva({
 });
 
 const alertIconStyle = tva({
-  base: 'fill-none w-4 h-4 mt-0.5',
+  base: 'mt-0.5 h-4 w-4 fill-none',
   parentVariants: {
     variant: {
       default: 'text-card-foreground',
@@ -78,7 +78,7 @@ const Alert = React.forwardRef<React.ComponentRef<typeof UIAlert>, IAlertProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 type IAlertTextProps = React.ComponentPropsWithoutRef<typeof UIAlert.Text> &

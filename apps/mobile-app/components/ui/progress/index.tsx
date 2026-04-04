@@ -20,10 +20,10 @@ cssInterop(UIProgress, { className: 'style' });
 cssInterop(UIProgress.FilledTrack, { className: 'style' });
 
 const progressStyle = tva({
-  base: 'bg-primary/20 relative h-2 w-full overflow-hidden rounded-full',
+  base: 'relative h-2 w-full overflow-hidden rounded-full bg-primary/20',
   variants: {
     orientation: {
-      horizontal: 'w-full h-2',
+      horizontal: 'h-2 w-full',
       vertical: 'h-full w-2 justify-end',
     },
   },
@@ -47,10 +47,7 @@ type IProgressFilledTrackProps = VariantProps<typeof progressFilledTrackStyle> &
 const Progress = React.forwardRef<
   React.ComponentRef<typeof UIProgress>,
   IProgressProps
->(function Progress(
-  { className, orientation = 'horizontal', ...props },
-  ref
-) {
+>(function Progress({ className, orientation = 'horizontal', ...props }, ref) {
   return (
     <UIProgress
       ref={ref}

@@ -13,7 +13,7 @@ import Animated, {
   Easing,
   FadeIn,
   FadeOut,
-  ZoomIn
+  ZoomIn,
 } from 'react-native-reanimated';
 
 const SCOPE = 'ALERT_DIALOG';
@@ -37,7 +37,7 @@ cssInterop(AnimatedPressable, { className: 'style' });
 cssInterop(AnimatedView, { className: 'style' });
 
 const alertDialogStyle = tva({
-  base: 'group/modal w-full h-full justify-center items-center web:pointer-events-none',
+  base: 'group/modal h-full w-full items-center justify-center web:pointer-events-none',
   parentVariants: {
     size: {
       xs: '',
@@ -50,7 +50,7 @@ const alertDialogStyle = tva({
 });
 
 const alertDialogContentStyle = tva({
-  base: 'bg-background rounded-lg overflow-hidden border border-border p-6',
+  base: 'overflow-hidden rounded-lg border border-border bg-background p-6',
   parentVariants: {
     size: {
       xs: 'w-[60%] max-w-[360px]',
@@ -63,21 +63,21 @@ const alertDialogContentStyle = tva({
 });
 
 const alertDialogCloseButtonStyle = tva({
-  base: 'group/alert-dialog-close-button z-10 rounded-sm p-2 data-[focus-visible=true]:bg-background/10 web:cursor-pointer outline-0',
+  base: 'group/alert-dialog-close-button z-10 rounded-sm p-2 outline-0 data-[focus-visible=true]:bg-background/10 web:cursor-pointer',
 });
 
 const alertDialogHeaderStyle = tva({
-  base: 'justify-between items-center flex-row',
+  base: 'flex-row items-center justify-between',
 });
 
 const alertDialogFooterStyle = tva({
-  base: 'flex-row justify-end items-center gap-3',
+  base: 'flex-row items-center justify-end gap-3',
 });
 
 const alertDialogBodyStyle = tva({ base: '' });
 
 const alertDialogBackdropStyle = tva({
-  base: 'absolute left-0 top-0 right-0 bottom-0 bg-black/50 web:cursor-default',
+  base: 'absolute bottom-0 left-0 right-0 top-0 bg-black/50 web:cursor-default',
 });
 
 type IAlertDialogProps = React.ComponentPropsWithoutRef<
@@ -249,6 +249,5 @@ export {
   AlertDialogCloseButton,
   AlertDialogContent,
   AlertDialogFooter,
-  AlertDialogHeader
+  AlertDialogHeader,
 };
-

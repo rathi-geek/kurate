@@ -132,14 +132,27 @@ After every audit or review, always end with:
 ## Next Commands
 
 **Web agent** (fix issues):
-"[exact prompt to paste into web agent]"
+"Read ONLY these files: [exact paths]
+Fix these specific issues: [list from audit]
+Don't explore anything else."
 
 **Web agent** (move to /libs):
-"[exact prompt to paste into web agent]"
+"Read ONLY these files: [exact paths]
+Move these to /libs: [exact what and where]
+Update these imports: [exact files that import them]
+Don't explore anything else."
 
 **Mobile agent** (build feature):
-"[exact prompt to paste into mobile agent]"
+"Read ONLY these files: [exact paths from libs/, apps/web/, apps/mobile-app/]
+These are the only files you need. Build [feature] using:
+- [exact hook from libs]
+- [exact type from libs]
+- [exact constant from libs]
+Reference [exact web file] for design pattern.
+Don't explore anything else."
 ```
+
+**Critical:** Always provide exact file paths. Never leave agents to explore on their own — that wastes tokens. You have already read everything, pass it on.
 
 ## Context Management
 

@@ -28,7 +28,7 @@ const Skeleton = forwardRef<React.ComponentRef<typeof View>, ISkeletonProps>(
       speed = 4,
       ...props
     },
-    ref
+    ref,
   ) {
     if (!isLoaded) {
       return (
@@ -45,7 +45,7 @@ const Skeleton = forwardRef<React.ComponentRef<typeof View>, ISkeletonProps>(
     } else {
       return children;
     }
-  }
+  },
 );
 
 const SkeletonText = forwardRef<
@@ -61,7 +61,7 @@ const SkeletonText = forwardRef<
     children,
     ...props
   },
-  ref
+  ref,
 ) {
   if (!isLoaded) {
     if (_lines) {

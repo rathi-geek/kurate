@@ -33,7 +33,7 @@ cssInterop(UIIcon, {
 });
 
 const fabStyle = tva({
-  base: 'group/fab bg-primary rounded-full z-20 p-4 flex-row items-center justify-center absolute hover:bg-primary/90 active:bg-primary/80 disabled:opacity-40 disabled:pointer-events-all disabled:cursor-not-allowed data-[focus=true]:web:outline-none data-[focus-visible=true]:web:ring-2 data-[focus-visible=true]:web:ring-indicator-info shadow-hard-2',
+  base: 'group/fab disabled:pointer-events-all data-[focus-visible=true]:web:ring-indicator-info absolute z-20 flex-row items-center justify-center rounded-full bg-primary p-4 shadow-hard-2 hover:bg-primary/90 active:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-40 data-[focus=true]:web:outline-none data-[focus-visible=true]:web:ring-2',
   variants: {
     size: {
       sm: 'px-3.5 py-1.5',
@@ -41,8 +41,8 @@ const fabStyle = tva({
       lg: 'px-5 py-3',
     },
     placement: {
-      'top right': 'top-4 right-4',
-      'top left': 'top-4 left-4',
+      'top right': 'right-4 top-4',
+      'top left': 'left-4 top-4',
       'bottom right': 'bottom-4 right-4',
       'bottom left': 'bottom-4 left-4',
       'top center': 'top-4 self-center',
@@ -52,7 +52,7 @@ const fabStyle = tva({
 });
 
 const fabLabelStyle = tva({
-  base: 'text-primary-foreground/90 font-normal font-body tracking-md text-left mx-2',
+  base: 'tracking-md mx-2 text-left font-body font-normal text-primary-foreground/90',
   variants: {
     isTruncated: {
       true: '',
@@ -67,11 +67,9 @@ const fabLabelStyle = tva({
       true: 'line-through',
     },
     size: {
-
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
     },
     sub: {
       true: 'text-xs',
@@ -93,12 +91,12 @@ const fabLabelStyle = tva({
 });
 
 const fabIconStyle = tva({
-  base: 'text-primary-foreground/90 fill-none',
+  base: 'fill-none text-primary-foreground/90',
   variants: {
     size: {
-      'sm': 'h-3.5 w-3.5',
-      'md': 'h-4 w-4',
-      'lg': 'h-5 w-5',
+      sm: 'h-3.5 w-3.5',
+      md: 'h-4 w-4',
+      lg: 'h-5 w-5',
     },
   },
 });
@@ -109,7 +107,7 @@ type IFabProps = Omit<React.ComponentPropsWithoutRef<typeof UIFab>, 'context'> &
 const Fab = React.forwardRef<React.ComponentRef<typeof UIFab>, IFabProps>(
   function Fab(
     { size = 'md', placement = 'bottom right', className, ...props },
-    ref
+    ref,
   ) {
     return (
       <UIFab
@@ -119,7 +117,7 @@ const Fab = React.forwardRef<React.ComponentRef<typeof UIFab>, IFabProps>(
         context={{ size }}
       />
     );
-  }
+  },
 );
 
 type IFabLabelProps = React.ComponentPropsWithoutRef<typeof UIFab.Label> &
@@ -138,7 +136,7 @@ const FabLabel = React.forwardRef<
     className,
     ...props
   },
-  ref
+  ref,
 ) {
   const { size: parentSize } = useStyleContext(SCOPE);
   return (

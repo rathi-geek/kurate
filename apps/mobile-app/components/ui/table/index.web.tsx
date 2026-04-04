@@ -30,7 +30,7 @@ const Table = React.forwardRef<HTMLTableElement, React.ComponentProps<'table'>>(
         {...props}
       />
     );
-  }
+  },
 );
 
 const TableHeader = React.forwardRef<

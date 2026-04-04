@@ -2,8 +2,8 @@ import { Text, View } from '@/components/Themed';
 
 export default function ModalScreen() {
   return (
-    <View className="bg-background flex-1 items-center justify-center">
-      <Text className="text-foreground font-mono text-2xl font-bold">
+    <View className="flex-1 items-center justify-center bg-background">
+      <Text className="font-mono text-2xl font-bold text-foreground">
         Modal
       </Text>
     </View>

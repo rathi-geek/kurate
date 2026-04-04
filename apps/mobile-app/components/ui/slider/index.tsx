@@ -24,7 +24,7 @@ export const UISlider = createSlider({
 cssInterop(UISlider.Track, { className: 'style' });
 
 const sliderStyle = tva({
-  base: 'justify-center items-center data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-none',
+  base: 'items-center justify-center data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-none',
   variants: {
     orientation: {
       horizontal: 'w-full',
@@ -38,14 +38,14 @@ const sliderStyle = tva({
 });
 
 const sliderThumbStyle = tva({
-  base: 'bg-white border border-primary ring-ring/50 absolute rounded-full shadow-sm transition-[color,box-shadow] data-[hover=true]:ring-4 data-[focus-visible=true]:ring-4 data-[focus-visible=true]:outline-hidden disabled:pointer-events-none disabled:opacity-50 web:cursor-pointer h-4 w-4',
+  base: 'data-[focus-visible=true]:outline-hidden absolute h-4 w-4 rounded-full border border-primary bg-white shadow-sm ring-ring/50 transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 data-[focus-visible=true]:ring-4 data-[hover=true]:ring-4 web:cursor-pointer',
 });
 
 const sliderTrackStyle = tva({
-  base: 'bg-muted rounded-full overflow-hidden',
+  base: 'overflow-hidden rounded-full bg-muted',
   parentVariants: {
     orientation: {
-      horizontal: 'w-full h-1.5 flex-row',
+      horizontal: 'h-1.5 w-full flex-row',
       vertical: 'h-full w-1.5 flex-col-reverse',
     },
     isReversed: {
@@ -84,13 +84,8 @@ const Slider = React.forwardRef<
   React.ComponentRef<typeof UISlider>,
   ISliderProps
 >(function Slider(
-  {
-    className,
-    orientation = 'horizontal',
-    isReversed = false,
-    ...props
-  },
-  ref
+  { className, orientation = 'horizontal', isReversed = false, ...props },
+  ref,
 ) {
   return (
     <UISlider
@@ -133,10 +128,7 @@ const SliderTrack = React.forwardRef<
   React.ComponentRef<typeof UISlider.Track>,
   ISliderTrackProps
 >(function SliderTrack({ className, ...props }, ref) {
-  const {
-    orientation: parentOrientation,
-    isReversed,
-  } = useStyleContext(SCOPE);
+  const { orientation: parentOrientation, isReversed } = useStyleContext(SCOPE);
 
   return (
     <UISlider.Track

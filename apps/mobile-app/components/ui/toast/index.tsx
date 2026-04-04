@@ -1,7 +1,11 @@
 'use client';
 import { createToastHook } from '@gluestack-ui/core/toast/creator';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
-import { tva, useStyleContext, withStyleContext } from '@gluestack-ui/utils/nativewind-utils';
+import {
+  tva,
+  useStyleContext,
+  withStyleContext,
+} from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 import React from 'react';
 import { AccessibilityInfo, Text, View } from 'react-native';
@@ -11,7 +15,7 @@ const SCOPE = 'TOAST';
 const AnimatedView = Animated.createAnimatedComponent(View);
 cssInterop(AnimatedView, { className: 'style' });
 const toastStyle = tva({
-  base: 'p-4 m-1 rounded-md gap-1 web:pointer-events-auto border-border',
+  base: 'm-1 gap-1 rounded-md border-border p-4 web:pointer-events-auto',
   variants: {
     action: {
       error: 'bg-popover text-popover-foreground',
@@ -29,7 +33,7 @@ const toastStyle = tva({
 });
 
 const toastTitleStyle = tva({
-  base: 'font-medium font-body tracking-md text-left',
+  base: 'tracking-md text-left font-body font-medium',
   variants: {
     isTruncated: {
       true: '',
@@ -45,11 +49,11 @@ const toastTitleStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
+      xs: 'text-xs',
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -125,7 +129,7 @@ const toastTitleStyle = tva({
 });
 
 const toastDescriptionStyle = tva({
-  base: 'font-normal font-body tracking-md text-left',
+  base: 'tracking-md text-left font-body font-normal',
   variants: {
     isTruncated: {
       true: '',
@@ -141,11 +145,11 @@ const toastDescriptionStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
+      xs: 'text-xs',
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -169,7 +173,7 @@ type IToastProps = React.ComponentProps<typeof Root> & {
 const Toast = React.forwardRef<React.ComponentRef<typeof Root>, IToastProps>(
   function Toast(
     { className, variant = 'solid', action = 'muted', ...props },
-    ref
+    ref,
   ) {
     return (
       <Root
@@ -180,7 +184,7 @@ const Toast = React.forwardRef<React.ComponentRef<typeof Root>, IToastProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 type IToastTitleProps = React.ComponentProps<typeof Text> & {
@@ -249,4 +253,3 @@ ToastTitle.displayName = 'ToastTitle';
 ToastDescription.displayName = 'ToastDescription';
 
 export { Toast, ToastDescription, ToastTitle, useToast };
-

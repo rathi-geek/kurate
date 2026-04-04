@@ -6,13 +6,14 @@ import { useTheme } from '@/hooks/useTheme';
 import { useLocalization } from '@/context';
 import { storageUtils } from '@/utils';
 import { useAuthStore } from '@/store';
+import { supabase } from '@/libs/supabase/client';
 import { Link } from 'expo-router';
 
 export default function TabOneScreen() {
   const { theme, mode, setMode } = useTheme();
   const { t, setLocale, switchToDeviceLocale } = useLocalization();
   const isAutoMode = mode === 'system';
-  const logout = useAuthStore(state => state.logout);
+  const reset = useAuthStore(state => state.reset);
   return (
     <View style={styles.container} className="bg-background">
       <Text className="mb-10 text-2xl font-bold text-foreground">
@@ -110,7 +111,12 @@ export default function TabOneScreen() {
           <ButtonText>Go to Modal</ButtonText>
         </Button>
       </Link>
-      <Button onPress={logout}>
+      <Button
+        onPress={() => {
+          supabase.auth.signOut();
+          reset();
+        }}
+      >
         <ButtonText>Logout</ButtonText>
       </Button>
     </View>

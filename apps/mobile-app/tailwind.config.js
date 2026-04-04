@@ -52,16 +52,16 @@ module.exports = {
 
         // Sidebar colors
         sidebar: {
-          'DEFAULT': 'rgb(var(--sidebar) / <alpha-value>)',
-          'foreground': 'rgb(var(--sidebar-foreground) / <alpha-value>)',
-          'primary': 'rgb(var(--sidebar-primary) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--sidebar) / <alpha-value>)',
+          foreground: 'rgb(var(--sidebar-foreground) / <alpha-value>)',
+          primary: 'rgb(var(--sidebar-primary) / <alpha-value>)',
           'primary-foreground':
             'rgb(var(--sidebar-primary-foreground) / <alpha-value>)',
-          'accent': 'rgb(var(--sidebar-accent) / <alpha-value>)',
+          accent: 'rgb(var(--sidebar-accent) / <alpha-value>)',
           'accent-foreground':
             'rgb(var(--sidebar-accent-foreground) / <alpha-value>)',
-          'border': 'rgb(var(--sidebar-border))',
-          'ring': 'rgb(var(--sidebar-ring) / <alpha-value>)',
+          border: 'rgb(var(--sidebar-border))',
+          ring: 'rgb(var(--sidebar-ring) / <alpha-value>)',
         },
 
         primary: {
@@ -126,9 +126,9 @@ module.exports = {
         '2xs': '10px',
       },
       boxShadow: {
-        'sm': '0 1px 3px 0 rgba(13, 46, 71, 0.07), 0 1px 2px -1px rgba(13, 46, 71, 0.04)',
-        'md': '0 4px 6px -1px rgba(13, 46, 71, 0.07), 0 2px 4px -2px rgba(13, 46, 71, 0.04)',
-        'lg': '0 10px 15px -3px rgba(13, 46, 71, 0.07), 0 4px 6px -4px rgba(13, 46, 71, 0.04)',
+        sm: '0 1px 3px 0 rgba(13, 46, 71, 0.07), 0 1px 2px -1px rgba(13, 46, 71, 0.04)',
+        md: '0 4px 6px -1px rgba(13, 46, 71, 0.07), 0 2px 4px -2px rgba(13, 46, 71, 0.04)',
+        lg: '0 10px 15px -3px rgba(13, 46, 71, 0.07), 0 4px 6px -4px rgba(13, 46, 71, 0.04)',
         'hard-1': '-2px 2px 8px 0px rgba(13, 46, 71, 0.20)',
         'hard-2': '0px 3px 10px 0px rgba(13, 46, 71, 0.20)',
         'hard-3': '2px 2px 8px 0px rgba(13, 46, 71, 0.20)',

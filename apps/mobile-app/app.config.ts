@@ -7,6 +7,10 @@ function getAppEnv(): string {
 interface AppExtra {
   appEnv: string;
   apiUrl?: string;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
+  googleWebClientId?: string;
+  googleIosClientId?: string;
   eas?: { projectId: string };
   owner?: string;
 }
@@ -15,8 +19,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const appEnv = getAppEnv();
   const isProduction = appEnv === 'production' || appEnv === 'prod';
 
-  const baseName = 'mobile-app';
-  const baseSlug = 'mobile-app';
+  const baseName = 'Kurate';
+  const baseSlug = 'kurate';
 
   const name = isProduction ? baseName : `${baseName} (${appEnv})`;
   const slug = baseSlug;
@@ -31,13 +35,17 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const iosBundleId =
     process.env.IOS_BUNDLE_IDENTIFIER || 'com.example.mobileapp';
   const androidPackage = process.env.ANDROID_PACKAGE || 'com.example.mobileapp';
-  const scheme = 'mobileapp';
+  const scheme = 'kurate';
 
   const extra: AppExtra = { appEnv };
 
   if (process.env.EXPO_PUBLIC_API_URL) {
     extra.apiUrl = process.env.EXPO_PUBLIC_API_URL;
   }
+  extra.supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+  extra.supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+  extra.googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+  extra.googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
   extra.eas = {
     projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? '',
   };
@@ -66,7 +74,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     splash: {
       image: './assets/images/splash.png',
       resizeMode: 'contain',
-      backgroundColor: '#ffffff',
+      backgroundColor: '#f5f0e8',
     },
     ios: {
       supportsTablet: true,

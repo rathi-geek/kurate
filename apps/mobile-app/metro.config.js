@@ -18,6 +18,15 @@ config.resolver.nodeModulesPaths = [
 
 config.resolver.unstable_enablePackageExports = true;
 
+// SVG transformer — import .svg files as React Native components
+config.transformer.babelTransformerPath = require.resolve(
+  'react-native-svg-transformer/expo',
+);
+config.resolver.assetExts = config.resolver.assetExts.filter(
+  ext => ext !== 'svg',
+);
+config.resolver.sourceExts.push('svg');
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName === 'zustand' || moduleName.startsWith('zustand/')) {
     return {
@@ -28,4 +37,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform);
 };
 
-module.exports = withNativeWind(config, { input: './global.css', inlineRem: 16 });
+module.exports = withNativeWind(config, {
+  input: './global.css',
+  inlineRem: 16,
+});

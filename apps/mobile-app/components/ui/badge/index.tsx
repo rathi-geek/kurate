@@ -19,15 +19,14 @@ const badgeStyle = tva({
     variant: {
       default: 'bg-primary',
       secondary: 'bg-secondary',
-      destructive:
-        'bg-destructive dark:bg-destructive/60',
-      outline: 'border border-border dark:border-border/90 bg-transparent',
+      destructive: 'bg-destructive dark:bg-destructive/60',
+      outline: 'border border-border bg-transparent dark:border-border/90',
     },
   },
 });
 
 const badgeTextStyle = tva({
-  base: 'text-xs font-medium tracking-normal uppercase',
+  base: 'text-xs font-medium uppercase tracking-normal',
   parentVariants: {
     variant: {
       default: 'text-primary-foreground',
@@ -39,7 +38,7 @@ const badgeTextStyle = tva({
 });
 
 const badgeIconStyle = tva({
-  base: 'fill-none h-3 w-3 pointer-events-none',
+  base: 'pointer-events-none h-3 w-3 fill-none',
   parentVariants: {
     variant: {
       default: 'text-primary-foreground',

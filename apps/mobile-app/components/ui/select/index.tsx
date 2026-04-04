@@ -34,15 +34,15 @@ const SelectTriggerWrapper = React.forwardRef<
 });
 
 const selectIconStyle = tva({
-  base: 'text-foreground/50 fill-none',
+  base: 'fill-none text-foreground/50',
   parentVariants: {
     size: {
       '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'h-[18px] w-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      xs: 'h-3.5 w-3.5',
+      sm: 'h-4 w-4',
+      md: 'h-[18px] w-[18px]',
+      lg: 'h-5 w-5',
+      xl: 'h-6 w-6',
     },
   },
 });
@@ -52,7 +52,7 @@ const selectStyle = tva({
 });
 
 const selectTriggerStyle = tva({
-  base: 'border border-border rounded flex-row items-center overflow-hidden data-[hover=true]:border-primary/80 data-[focus=true]:border-primary/80 data-[disabled=true]:opacity-40 data-[disabled=true]:data-[hover=true]:border-border/80',
+  base: 'flex-row items-center overflow-hidden rounded border border-border data-[disabled=true]:data-[hover=true]:border-border/80 data-[focus=true]:border-primary/80 data-[hover=true]:border-primary/80 data-[disabled=true]:opacity-40',
   variants: {
     size: {
       xl: 'h-12',
@@ -62,17 +62,17 @@ const selectTriggerStyle = tva({
     },
     variant: {
       underlined:
-        'border-0 border-b rounded-none data-[hover=true]:border-primary/80 data-[focus=true]:border-primary/80 data-[focus=true]:web:shadow-[inset_0_-1px_0_0] data-[focus=true]:web:shadow-primary/80 data-[invalid=true]:border-destructive data-[invalid=true]:web:shadow-destructive',
+        'rounded-none border-0 border-b data-[focus=true]:border-primary/80 data-[hover=true]:border-primary/80 data-[invalid=true]:border-destructive data-[focus=true]:web:shadow-[inset_0_-1px_0_0] data-[focus=true]:web:shadow-primary/80 data-[invalid=true]:web:shadow-destructive',
       outline:
-        'data-[focus=true]:border-primary/80 data-[focus=true]:web:shadow-[inset_0_0_0_1px] data-[focus=true]:data-[hover=true]:web:shadow-primary/80 data-[invalid=true]:web:shadow-[inset_0_0_0_1px] data-[invalid=true]:border-destructive data-[invalid=true]:web:shadow-destructive data-[invalid=true]:data-[hover=true]:border-destructive',
+        'data-[focus=true]:border-primary/80 data-[invalid=true]:border-destructive data-[invalid=true]:data-[hover=true]:border-destructive data-[focus=true]:web:shadow-[inset_0_0_0_1px] data-[invalid=true]:web:shadow-[inset_0_0_0_1px] data-[focus=true]:data-[hover=true]:web:shadow-primary/80 data-[invalid=true]:web:shadow-destructive',
       rounded:
-        'rounded-full data-[focus=true]:border-primary/80 data-[focus=true]:web:shadow-[inset_0_0_0_1px] data-[focus=true]:web:shadow-primary/80 data-[invalid=true]:border-destructive data-[invalid=true]:web:shadow-destructive',
+        'rounded-full data-[focus=true]:border-primary/80 data-[invalid=true]:border-destructive data-[focus=true]:web:shadow-[inset_0_0_0_1px] data-[focus=true]:web:shadow-primary/80 data-[invalid=true]:web:shadow-destructive',
     },
   },
 });
 
 const selectInputStyle = tva({
-  base: 'px-3 placeholder:text-foreground/50 web:w-full h-full text-foreground/90 pointer-events-none web:outline-none ios:leading-[0px] py-0',
+  base: 'ios:leading-[0px] pointer-events-none h-full px-3 py-0 text-foreground/90 placeholder:text-foreground/50 web:w-full web:outline-none',
   parentVariants: {
     size: {
       xl: 'text-xl',
@@ -108,7 +108,7 @@ const UISelect = createSelect(
     FlatList: ActionsheetFlatList,
     SectionList: ActionsheetSectionList,
     SectionHeaderText: ActionsheetSectionHeaderText,
-  }
+  },
 );
 
 cssInterop(UISelect, { className: 'style' });
@@ -156,7 +156,7 @@ const SelectTrigger = React.forwardRef<
   ISelectTriggerProps
 >(function SelectTrigger(
   { className, size = 'md', variant = 'outline', ...props },
-  ref
+  ref,
 ) {
   return (
     <UISelect.Trigger

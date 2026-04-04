@@ -42,7 +42,7 @@
     "production": {
       "distribution": "store",
       "android": {
-        "buildType": "apk",
+        "buildType": "app-bundle",
         "autoIncrement": false
       },
       "ios": {

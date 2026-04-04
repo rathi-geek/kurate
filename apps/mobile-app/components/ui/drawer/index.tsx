@@ -42,7 +42,7 @@ const UIDrawer = createDrawer({
 cssInterop(AnimatedPressable, { className: 'style' });
 cssInterop(AnimatedView, { className: 'style' });
 const drawerStyle = tva({
-  base: 'w-full h-full web:pointer-events-none relative',
+  base: 'relative h-full w-full web:pointer-events-none',
   variants: {
     size: {
       sm: '',
@@ -60,11 +60,11 @@ const drawerStyle = tva({
 });
 
 const drawerBackdropStyle = tva({
-  base: 'absolute left-0 top-0 right-0 bottom-0 bg-black/50 web:cursor-default',
+  base: 'absolute bottom-0 left-0 right-0 top-0 bg-black/50 web:cursor-default',
 });
 
 const drawerContentStyle = tva({
-  base: 'bg-background shadow-hard-5 p-6 absolute',
+  base: 'absolute bg-background p-6 shadow-hard-5',
   parentVariants: {
     size: {
       sm: '',
@@ -75,20 +75,20 @@ const drawerContentStyle = tva({
     anchor: {
       left: 'h-full border-r border-border/80',
       right: 'h-full border-l border-border/80',
-      top: 'w-full border-b border-border/80 rounded-b-xl',
-      bottom: 'w-full border-t border-border/80 rounded-t-xl',
+      top: 'w-full rounded-b-xl border-b border-border/80',
+      bottom: 'w-full rounded-t-xl border-t border-border/80',
     },
   },
   parentCompoundVariants: [
     {
       size: 'sm',
       anchor: 'left',
-      class: 'sm:w-1/4 w-2/5',
+      class: 'w-2/5 sm:w-1/4',
     },
     {
       size: 'sm',
       anchor: 'right',
-      class: 'sm:w-1/4 w-2/5',
+      class: 'w-2/5 sm:w-1/4',
     },
     {
       size: 'sm',
@@ -164,19 +164,19 @@ const drawerContentStyle = tva({
 });
 
 const drawerCloseButtonStyle = tva({
-  base: 'z-10 rounded-sm p-2 data-[focus-visible=true]:bg-accent web:cursor-pointer web:outline-0 data-[hover=true]:bg-accent/50',
+  base: 'z-10 rounded-sm p-2 data-[focus-visible=true]:bg-accent data-[hover=true]:bg-accent/50 web:cursor-pointer web:outline-0',
 });
 
 const drawerHeaderStyle = tva({
-  base: 'justify-between items-center flex-row pb-4',
+  base: 'flex-row items-center justify-between pb-4',
 });
 
 const drawerBodyStyle = tva({
-  base: 'mt-4 mb-6 shrink-0',
+  base: 'mb-6 mt-4 shrink-0',
 });
 
 const drawerFooterStyle = tva({
-  base: 'flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-4',
+  base: 'flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end',
 });
 
 type IDrawerProps = React.ComponentProps<typeof UIDrawer> &
@@ -258,7 +258,7 @@ const DrawerContent = React.forwardRef<
 
   const exitingAnimation =
     parentAnchor === 'left'
-        ? SlideOutLeft.duration(200)
+      ? SlideOutLeft.duration(200)
       : parentAnchor === 'right'
         ? SlideOutRight.duration(200)
         : parentAnchor === 'top'

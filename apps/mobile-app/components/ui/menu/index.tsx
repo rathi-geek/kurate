@@ -10,23 +10,23 @@ import Animated, { FadeOut, ZoomIn } from 'react-native-reanimated';
 const AnimatedView = Animated.createAnimatedComponent(ScrollView);
 
 const menuStyle = tva({
-  base: 'rounded-md bg-popover text-popover-foreground border border-border p-1 shadow-hard-5 max-h-[300px] overflow-y-auto',
+  base: 'max-h-[300px] overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-hard-5',
 });
 
 const menuItemStyle = tva({
-  base: 'min-w-[200px] p-3 flex-row items-center rounded data-[hover=true]:bg-accent data-[hover=true]:text-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[focus=true]:bg-accent data-[focus=true]:text-accent-foreground data-[focus=true]:web:outline-none data-[focus=true]:web:outline-0 data-[disabled=true]:opacity-40 data-[disabled=true]:web:cursor-not-allowed data-[focus-visible=true]:web:outline-2 data-[focus-visible=true]:web:outline-ring data-[focus-visible=true]:web:outline data-[focus-visible=true]:web:cursor-pointer data-[disabled=true]:data-[focus=true]:bg-transparent',
+  base: 'min-w-[200px] flex-row items-center rounded p-3 data-[active=true]:bg-accent data-[disabled=true]:data-[focus=true]:bg-transparent data-[focus=true]:bg-accent data-[hover=true]:bg-accent data-[active=true]:text-accent-foreground data-[focus=true]:text-accent-foreground data-[hover=true]:text-accent-foreground data-[disabled=true]:opacity-40 data-[disabled=true]:web:cursor-not-allowed data-[focus-visible=true]:web:cursor-pointer data-[focus=true]:web:outline-none data-[focus-visible=true]:web:outline data-[focus-visible=true]:web:outline-2 data-[focus=true]:web:outline-0 data-[focus-visible=true]:web:outline-ring',
 });
 
 const menuBackdropStyle = tva({
-  base: 'absolute top-0 bottom-0 left-0 right-0 web:cursor-default',
+  base: 'absolute bottom-0 left-0 right-0 top-0 web:cursor-default',
 });
 
 const menuSeparatorStyle = tva({
-  base: 'bg-border h-px w-full',
+  base: 'h-px w-full bg-border',
 });
 
 const menuItemLabelStyle = tva({
-  base: 'text-popover-foreground font-normal font-body',
+  base: 'font-body font-normal text-popover-foreground',
 
   variants: {
     isTruncated: {
@@ -56,7 +56,7 @@ const menuItemLabelStyle = tva({
 const BackdropPressable = React.forwardRef<
   React.ComponentRef<typeof Pressable>,
   React.ComponentPropsWithoutRef<typeof Pressable> &
-  VariantProps<typeof menuBackdropStyle>
+    VariantProps<typeof menuBackdropStyle>
 >(function BackdropPressable({ className, ...props }, ref) {
   return (
     <Pressable
@@ -91,7 +91,7 @@ const Item = React.forwardRef<
 const Separator = React.forwardRef<
   React.ComponentRef<typeof View>,
   React.ComponentPropsWithoutRef<typeof View> &
-  VariantProps<typeof menuSeparatorStyle>
+    VariantProps<typeof menuSeparatorStyle>
 >(function Separator({ className, ...props }, ref) {
   return (
     <View
@@ -111,7 +111,6 @@ export const UIMenu = createMenu({
   Backdrop: BackdropPressable,
   Separator: Separator,
 });
-
 
 type IMenuProps = React.ComponentProps<typeof UIMenu> &
   VariantProps<typeof menuStyle> & { className?: string };
@@ -134,7 +133,7 @@ const Menu = React.forwardRef<React.ComponentRef<typeof UIMenu>, IMenuProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 const MenuItem = UIMenu.Item;
@@ -154,7 +153,7 @@ const MenuItemLabel = React.forwardRef<
     highlight,
     ...props
   },
-  ref
+  ref,
 ) {
   return (
     <UIMenu.ItemLabel

@@ -158,6 +158,12 @@ All SVGs in `src/components/icons/`. Import from `@/components/icons`. Reference
 
 Before touching any groups code, check `memory/INDEX.md` or ask the user for the current groups status. Known blocked items: slug column missing, RLS bug on group_members, comments.parent_id FK, reactions unique constraint.
 
+## Token Efficiency
+
+- Never explore the codebase blindly
+- Only read files explicitly listed in the task
+- If you need a file not listed, ask the user — don't go looking
+
 ## Feature Workflow
 
 When user says `"fix [feature] issues"` or pastes a reviewer report:

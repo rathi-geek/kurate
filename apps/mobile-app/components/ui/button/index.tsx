@@ -32,19 +32,20 @@ cssInterop(UIIcon, {
   },
 });
 const buttonStyle = tva({
-  base: 'rounded-[10px] flex-row items-center justify-center data-[focus-visible=true]:web:outline-none data-[focus-visible=true]:web:ring-2 data-[disabled=true]:opacity-40 gap-2 h-fit',
+  base: 'h-fit flex-row items-center justify-center gap-2 rounded-[10px] data-[disabled=true]:opacity-40 data-[focus-visible=true]:web:outline-none data-[focus-visible=true]:web:ring-2',
   variants: {
     variant: {
       default:
-        'bg-primary data-[hover=true]:bg-primary/90 data-[active=true]:bg-primary/90',
+        'bg-primary data-[active=true]:bg-primary/90 data-[hover=true]:bg-primary/90',
       destructive:
-        'bg-destructive data-[hover=true]:bg-destructive/90 data-[active=true]:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+        'bg-destructive focus-visible:ring-destructive/20 data-[active=true]:bg-destructive/90 data-[hover=true]:bg-destructive/90 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40',
       outline:
-        'border border-border bg-background shadow-xs data-[hover=true]:bg-accent data-[active=true]:bg-accent dark:bg-input/[0.045] dark:border-border/90 dark:data-[hover=true]:bg-input/[0.075] dark:data-[active=true]:bg-input/[0.075]',
+        'shadow-xs border border-border bg-background data-[active=true]:bg-accent data-[hover=true]:bg-accent dark:border-border/90 dark:bg-input/[0.045] dark:data-[active=true]:bg-input/[0.075] dark:data-[hover=true]:bg-input/[0.075]',
       secondary:
-        'bg-secondary text-secondary-foreground data-[hover=true]:bg-secondary/80 data-[active=true]:bg-secondary/80',
-      ghost: 'data-[hover=true]:bg-accent data-[active=true]:bg-accent dark:data-[hover=true]:bg-accent/50 dark:data-[active=true]:bg-accent/50',
-      link: 'text-primary underline-offset-4 data-[hover=true]:underline data-[active=true]:underline',
+        'bg-secondary text-secondary-foreground data-[active=true]:bg-secondary/80 data-[hover=true]:bg-secondary/80',
+      ghost:
+        'data-[active=true]:bg-accent data-[hover=true]:bg-accent dark:data-[active=true]:bg-accent/50 dark:data-[hover=true]:bg-accent/50',
+      link: 'text-primary underline-offset-4 data-[active=true]:underline data-[hover=true]:underline',
     },
     size: {
       default: 'px-4 py-2',
@@ -55,15 +56,16 @@ const buttonStyle = tva({
   },
 });
 const buttonTextStyle = tva({
-  base: 'web:select-none font-sans',
+  base: 'font-sans web:select-none',
   parentVariants: {
     variant: {
       default: 'text-primary-foreground',
       destructive: 'text-white',
-      outline: 'text-foreground data-[hover=true]:text-accent-foreground data-[active=true]:text-accent-foreground',
+      outline:
+        'text-foreground data-[active=true]:text-accent-foreground data-[hover=true]:text-accent-foreground',
       secondary: 'text-secondary-foreground',
       ghost: 'text-foreground ',
-      link: 'text-primary data-[hover=true]:underline data-[active=true]:underline',
+      link: 'text-primary data-[active=true]:underline data-[hover=true]:underline',
     },
     size: {
       default: 'text-sm',
@@ -87,16 +89,16 @@ const buttonSpinnerStyle = tva({
 });
 
 const buttonIconStyle = tva({
-  base: 'fill-none pointer-events-none shrink-0',
+  base: 'pointer-events-none shrink-0 fill-none',
   parentVariants: {
     variant: {
       default: 'text-primary-foreground',
       destructive: 'text-white',
       outline:
-        'text-foreground data-[hover=true]:text-accent-foreground data-[active=true]:text-accent-foreground',
+        'text-foreground data-[active=true]:text-accent-foreground data-[hover=true]:text-accent-foreground',
       secondary: 'text-secondary-foreground',
       ghost:
-        'text-foreground data-[hover=true]:text-accent-foreground data-[active=true]:text-accent-foreground',
+        'text-foreground data-[active=true]:text-accent-foreground data-[hover=true]:text-accent-foreground',
       link: 'text-primary',
     },
     size: {
@@ -111,11 +113,11 @@ const buttonGroupStyle = tva({
   base: '',
   variants: {
     space: {
-      'xs': 'gap-1',
-      'sm': 'gap-2',
-      'md': 'gap-3',
-      'lg': 'gap-4',
-      'xl': 'gap-5',
+      xs: 'gap-1',
+      sm: 'gap-2',
+      md: 'gap-3',
+      lg: 'gap-4',
+      xl: 'gap-5',
       '2xl': 'gap-6',
       '3xl': 'gap-7',
       '4xl': 'gap-8',
@@ -124,8 +126,8 @@ const buttonGroupStyle = tva({
       true: 'gap-0',
     },
     flexDirection: {
-      'row': 'flex-row',
-      'column': 'flex-col',
+      row: 'flex-row',
+      column: 'flex-col',
       'row-reverse': 'flex-row-reverse',
       'column-reverse': 'flex-col-reverse',
     },
@@ -176,7 +178,17 @@ const ButtonSpinner = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof UIButton.Spinner>
 >(({ className, size, ...props }, ref) => {
   const { size: parentSize } = useStyleContext(SCOPE);
-  return <UIButton.Spinner ref={ref} {...props} className={buttonSpinnerStyle({ parentVariants: { size: parentSize }, class: className, size })} />;
+  return (
+    <UIButton.Spinner
+      ref={ref}
+      {...props}
+      className={buttonSpinnerStyle({
+        parentVariants: { size: parentSize },
+        class: className,
+        size,
+      })}
+    />
+  );
 });
 type IButtonIcon = React.ComponentPropsWithoutRef<typeof UIButton.Icon> &
   VariantProps<typeof buttonIconStyle> & {
@@ -240,7 +252,7 @@ const ButtonGroup = React.forwardRef<
       flexDirection = 'column',
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <UIButton.Group
@@ -254,7 +266,7 @@ const ButtonGroup = React.forwardRef<
         ref={ref}
       />
     );
-  }
+  },
 );
 Button.displayName = 'Button';
 ButtonText.displayName = 'ButtonText';
