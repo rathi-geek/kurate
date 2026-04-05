@@ -21,6 +21,25 @@ pnpm type:check   # must pass before done
 pnpm db:types     # regenerate types after schema change
 ```
 
+## Token Efficiency — CRITICAL
+
+⚠️ You are FORBIDDEN from launching explore agents or reading files not explicitly listed.
+
+**Before every task:**
+
+1. Read `memory/CODEBASE_MAP.md` first — use it to find all paths needed
+2. Read only those specific files
+3. If something is genuinely missing from the map → explore that specific folder only, minimum reads
+4. After exploring anything new → update `memory/CODEBASE_MAP.md` with what you found
+5. If map doesn't exist → stop and tell user: "CODEBASE_MAP.md is missing. Ask Reviewer to generate it first."
+
+**Rules:**
+
+- CODEBASE_MAP.md is always the first source — never skip it
+- Explore only when map genuinely doesn't cover what you need
+- Never do broad scans — explore the specific folder only
+- Always update the map after any new exploration
+
 ## Monorepo Libs — Use Before Creating Locally
 
 | Need            | Package                                                         |
@@ -128,7 +147,7 @@ Always `const prefersReducedMotion = useReducedMotion()` — disable motion when
 
 ## Navigation & Routing
 
-- Routes come from `ROUTES` in `@/app/_libs/constants/routes` — never hardcode strings
+- Routes from `ROUTES` in `@/app/_libs/constants/routes` — never hardcode strings
 - `Link` from `"@/i18n"` — never `"next/link"` directly
 - `<Button asChild><Link href={ROUTES.x}>` — never `<Link><Button>`
 
@@ -158,20 +177,17 @@ All SVGs in `src/components/icons/`. Import from `@/components/icons`. Reference
 
 Before touching any groups code, check `memory/INDEX.md` or ask the user for the current groups status. Known blocked items: slug column missing, RLS bug on group_members, comments.parent_id FK, reactions unique constraint.
 
-## Token Efficiency
-
-- Never explore the codebase blindly
-- Only read files explicitly listed in the task
-- If you need a file not listed, ask the user — don't go looking
-
 ## Feature Workflow
 
 When user says `"fix [feature] issues"` or pastes a reviewer report:
 
-1. Fix all 🔴 issues first
-2. Move flagged code to `/libs` as instructed
-3. Run `pnpm lint` and `pnpm type:check`
-4. Report: "Done — here's what changed: ..."
+1. Read `memory/CODEBASE_MAP.md` first to locate files
+2. Read ONLY the exact files listed in the task
+3. Fix all 🔴 bugs first
+4. Fix 🟣 code quality issues
+5. Move flagged code to `/libs` as instructed
+6. Run `pnpm lint` and `pnpm type:check`
+7. Report: "Done — here's what changed: ..."
 
 ## Context Management
 
