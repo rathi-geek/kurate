@@ -7,7 +7,8 @@ import { BUCKET_META, type ThoughtBucket } from "@kurate/utils";
 import { motion } from "framer-motion";
 import { Virtuoso } from "react-virtuoso";
 
-import { ChevronLeftIcon, TrashIcon } from "@/components/icons";
+import { useTranslations } from "@/i18n/use-translations";
+import { ChevronLeftIcon, PencilIcon, TrashIcon } from "@/components/icons";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -19,24 +20,41 @@ function ThoughtBubble({
   message,
   color,
   onDelete,
+  onEditStart,
 }: {
   message: DisplayMessage;
   color: string;
   onDelete?: (id: string) => void;
+  onEditStart?: (id: string, text: string) => void;
 }) {
+  const t = useTranslations("thoughts");
+
+  const canEdit = onEditStart && !message._pending && !message._failed && !!message.text;
+  const canDelete = onDelete && (!message._pending || message._failed);
+
   return (
-    <div className="group/msg relative flex justify-end py-0.5">
-      {/* Hover delete pill — left of bubble */}
-      {onDelete && (!message._pending || message._failed) && (
-        <div
-          className="absolute top-1/2 right-full mr-1.5 z-10 flex -translate-y-1/2 items-center rounded-full border border-border/50 bg-white px-2 py-1 opacity-0 shadow-md transition-opacity group-hover/msg:opacity-100">
-          <button
-            type="button"
-            onClick={() => onDelete(message.id)}
-            className="text-muted-foreground hover:text-destructive transition-colors"
-            aria-label="Delete thought">
-            <TrashIcon className="h-3 w-3" />
-          </button>
+    <div className="group/msg flex items-end justify-end gap-1 py-0.5">
+      {/* Hover actions — left of bubble */}
+      {(canEdit || canDelete) && (
+        <div className="flex shrink-0 items-center gap-1 self-center opacity-0 transition-opacity group-hover/msg:opacity-100">
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => onEditStart(message.id, message.text)}
+              className="text-muted-foreground hover:text-foreground p-1 transition-colors"
+              aria-label={t("edit_aria")}>
+              <PencilIcon className="size-3" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(message.id)}
+              className="text-muted-foreground hover:text-destructive p-1 transition-colors"
+              aria-label={t("delete_aria")}>
+              <TrashIcon className="size-3" />
+            </button>
+          )}
         </div>
       )}
 
@@ -52,12 +70,12 @@ function ThoughtBubble({
               {formatTime(message.createdAt)}
             </span>
             {message._pending && (
-              <span className="text-[9px] leading-none" aria-label="Sending">
+              <span className="text-[9px] leading-none" aria-label={t("status_sending")}>
                 ⏱
               </span>
             )}
             {message._failed && (
-              <span className="text-[9px] leading-none text-red-400" aria-label="Failed to send">
+              <span className="text-[9px] leading-none text-red-400" aria-label={t("status_failed")}>
                 !
               </span>
             )}
@@ -74,6 +92,7 @@ interface ThoughtsBucketChatProps {
   searchQuery: string;
   extraMessages?: DisplayMessage[];
   onDelete?: (id: string) => void;
+  onEditStart?: (id: string, text: string) => void;
 }
 
 export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
@@ -82,6 +101,7 @@ export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
   searchQuery,
   extraMessages = [],
   onDelete,
+  onEditStart,
 }: ThoughtsBucketChatProps) {
   const meta = BUCKET_META[bucket];
 
@@ -124,6 +144,7 @@ export const ThoughtsBucketChat = memo(function ThoughtsBucketChat({
               message={m}
               color={`var(${meta.colorVar})`}
               onDelete={onDelete}
+              onEditStart={onEditStart}
             />
           )}
         />

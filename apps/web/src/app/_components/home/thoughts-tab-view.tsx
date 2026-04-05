@@ -3,11 +3,14 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
+import { useTranslations } from "@/i18n/use-translations";
 import { ThoughtsBucketChat } from "@/app/_components/home/thoughts-bucket-chat";
+import { useDeleteThought } from "@/app/_libs/hooks/useDeleteThought";
+import { PencilIcon, TrashIcon } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BUCKET_BADGE_COLOR, BUCKET_META, type ThoughtBucket } from "@kurate/utils";
 import { useBucketLastRead } from "@/app/_libs/hooks/useBucketLastRead";
@@ -34,6 +37,7 @@ function BucketCard({
 }) {
   const meta = BUCKET_META[bucket];
   const latest = messages.at(-1);
+  const t = useTranslations("thoughts");
 
   return (
     <button
@@ -43,7 +47,7 @@ function BucketCard({
       style={{ backgroundColor: `var(${meta.colorVar})` }}>
       <div className="min-w-0 flex-1">
         <p className="text-ink text-sm font-semibold">{meta.label}</p>
-        <p className="text-ink/45 mt-0.5 truncate text-xs">{latest?.text || "No thoughts yet"}</p>
+        <p className="text-ink/45 mt-0.5 truncate text-xs">{latest?.text || t("no_thoughts_yet")}</p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
         {latest && <span className="text-ink/30 text-[10px]">{formatTime(latest.createdAt)}</span>}
@@ -98,18 +102,84 @@ function pendingToMessage(p: PendingThought): DisplayMessage {
   };
 }
 
+function ThoughtBubbleAll({
+  message,
+  onDelete,
+  onEditStart,
+}: {
+  message: DisplayMessage;
+  onDelete?: (id: string) => void;
+  onEditStart?: (id: string, text: string) => void;
+}) {
+  const t = useTranslations("thoughts");
+  const meta = BUCKET_META[message.bucket];
+
+  const canEdit = onEditStart && !message._pending && !message._failed && !!message.text;
+  const canDelete = onDelete && (!message._pending || message._failed);
+
+  return (
+    <div className="group/msg flex items-end justify-end gap-1 px-5 py-0.5">
+      {/* Hover actions — left of bubble, matching comment-thread pattern */}
+      {(canEdit || canDelete) && (
+        <div className="flex shrink-0 items-center gap-1 self-center opacity-0 transition-opacity group-hover/msg:opacity-100">
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => onEditStart(message.id, message.text)}
+              className="text-muted-foreground hover:text-foreground p-1 transition-colors"
+              aria-label={t("edit_aria")}>
+              <PencilIcon className="size-3" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(message.id)}
+              className="text-muted-foreground hover:text-destructive p-1 transition-colors"
+              aria-label={t("delete_aria")}>
+              <TrashIcon className="size-3" />
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="max-w-[75%]">
+        <motion.div
+          className="text-ink rounded-2xl rounded-br-sm px-3 py-2 text-sm"
+          style={{ backgroundColor: `var(${meta.colorVar})` }}
+          animate={{ opacity: message._pending || message._failed ? 0.7 : 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 25 }}>
+          <p className="leading-snug whitespace-pre-wrap">{message.text || t("image_fallback")}</p>
+          <div className="mt-0.5 flex items-center justify-between gap-3">
+            <span className="text-ink/40 text-[9px]">{meta.label}</span>
+            <span className="text-ink/40 flex items-center gap-1 text-[9px]">
+              {formatTime(message.createdAt)}
+              {message._pending && <span aria-label={t("status_sending")}>⏱</span>}
+              {message._failed && <span aria-label={t("status_failed")} className="text-red-400">!</span>}
+            </span>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 function ThoughtsAllView({
   messages,
   hasNextPage,
   isFetchingNextPage,
   onFetchMore,
   scrollToBottomTrigger,
+  onDelete,
+  onEditStart,
 }: {
   messages: DisplayMessage[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onFetchMore: () => void;
   scrollToBottomTrigger?: number;
+  onDelete?: (id: string) => void;
+  onEditStart?: (id: string, text: string) => void;
 }) {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
 
@@ -125,38 +195,14 @@ function ThoughtsAllView({
       ref={virtuosoRef}
       className="h-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       data={messages}
-      // Start at the bottom on first mount (initial load / hard refresh / page navigation)
       initialTopMostItemIndex={messages.length - 1}
-      // Stick to bottom when new messages arrive; skip if user scrolled up
       followOutput="smooth"
-      // Load older messages when scrolled to top
       startReached={() => {
         if (hasNextPage && !isFetchingNextPage) onFetchMore();
       }}
-      itemContent={(_, m) => {
-        const meta = BUCKET_META[m.bucket];
-        return (
-          <div className="flex justify-end px-5 py-0.5">
-            <div className="max-w-[75%]">
-              <motion.div
-                className="text-ink rounded-2xl rounded-br-sm px-3 py-2 text-sm"
-                style={{ backgroundColor: `var(${meta.colorVar})` }}
-                animate={{ opacity: m._pending || m._failed ? 0.7 : 1 }}
-                transition={{ type: "spring", stiffness: 260, damping: 25 }}>
-                <p className="leading-snug whitespace-pre-wrap">{m.text || "📷 Image"}</p>
-                <div className="mt-0.5 flex items-center justify-between gap-3">
-                  <span className="text-ink/40 text-[9px]">{meta.label}</span>
-                  <span className="text-ink/40 flex items-center gap-1 text-[9px]">
-                    {formatTime(m.createdAt)}
-                    {m._pending && <span aria-label="Sending">⏱</span>}
-                    {m._failed && <span aria-label="Failed to send" className="text-red-400">!</span>}
-                  </span>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        );
-      }}
+      itemContent={(_, m) => (
+        <ThoughtBubbleAll message={m} onDelete={onDelete} onEditStart={onEditStart} />
+      )}
     />
   );
 }
@@ -168,10 +214,11 @@ interface ThoughtsTabViewProps {
   onActiveBucketChange: (b: ThoughtBucket | null) => void;
   viewAll: boolean;
   onViewAllChange: (v: boolean) => void;
+  onEditStart?: (id: string, text: string) => void;
 }
 
-export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange }: ThoughtsTabViewProps) {
-  const queryClient = useQueryClient();
+export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQuery, activeBucket, onActiveBucketChange, viewAll, onViewAllChange, onEditStart }: ThoughtsTabViewProps) {
+  const t = useTranslations("thoughts");
   const isSearching = searchQuery.trim().length > 0;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
@@ -205,16 +252,8 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
 
   const pendingThoughts = useLiveQuery(() => db.pending_thoughts.toArray(), []);
 
-  const scrollTrigger = useRef(0);
-  const prevPendingLengthRef = useRef(0);
-
-  useEffect(() => {
-    const newLen = pendingThoughts?.length ?? 0;
-    if (newLen > prevPendingLengthRef.current) {
-      scrollTrigger.current += 1;
-    }
-    prevPendingLengthRef.current = newLen;
-  }, [pendingThoughts?.length]);
+  // Use pending thoughts length as scroll trigger — increases when new thoughts are added
+  const scrollTrigger = pendingThoughts?.length ?? 0;
 
   const allMessages = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
 
@@ -270,16 +309,12 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
     });
   }, [displayBuckets, bucketMessages]);
 
-  const handleDeleteThought = useCallback(async (id: string) => {
-    // Check if this is a pending thought (still in Dexie) — delete locally instead of via API
+  const deleteThought = useDeleteThought();
+
+  const handleDeleteThought = useCallback((id: string) => {
     const isPending = (pendingThoughts ?? []).some((p) => p.tempId === id);
-    if (isPending) {
-      await db.pending_thoughts.delete(id);
-      return;
-    }
-    await fetch(`/api/thoughts/${id}`, { method: "DELETE" });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.thoughts.all });
-  }, [queryClient, pendingThoughts]);
+    deleteThought.mutate({ id, isPending });
+  }, [pendingThoughts, deleteThought]);
 
   const { lastReadAt, markBucketRead } = useBucketLastRead(userId);
 
@@ -301,7 +336,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
             type="button"
             onClick={() => onViewAllChange(!viewAll)}
             className="text-ink/50 hover:text-ink/70 text-xs underline underline-offset-2 transition-colors">
-            {viewAll ? "View buckets" : "View all chats"}
+            {viewAll ? t("view_buckets") : t("view_all_chats")}
           </button>
         </div>
       </div>
@@ -313,10 +348,10 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
         ) : displayMessages.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-1 px-8 py-16 text-center">
             <p className="text-ink/50 text-sm font-medium">
-              {isSearching ? "No thoughts match your search" : "No thoughts yet"}
+              {isSearching ? t("empty_no_match") : t("empty_no_thoughts")}
             </p>
             <p className="text-ink/30 text-xs">
-              {isSearching ? "Try different keywords" : "Start typing to capture your first thought"}
+              {isSearching ? t("empty_try_keywords") : t("empty_start_typing")}
             </p>
           </div>
         ) : (
@@ -325,7 +360,9 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
             hasNextPage={isSearching ? false : !!hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
             onFetchMore={() => void fetchNextPage()}
-            scrollToBottomTrigger={scrollTrigger.current}
+            scrollToBottomTrigger={scrollTrigger}
+            onDelete={handleDeleteThought}
+            onEditStart={onEditStart}
           />
         )
       ) : (
@@ -336,10 +373,10 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
             ) : displayBuckets.length === 0 ? (
               <div className="flex flex-col items-center gap-1 px-4 py-16 text-center">
                 <p className="text-ink/50 text-sm font-medium">
-                  {isSearching ? "No buckets match your search" : "No thoughts yet"}
+                  {isSearching ? t("empty_no_buckets_match") : t("empty_no_thoughts")}
                 </p>
                 <p className="text-ink/30 text-xs">
-                  {isSearching ? "Try different keywords" : "Start typing to capture your first thought"}
+                  {isSearching ? t("empty_try_keywords") : t("empty_start_typing")}
                 </p>
               </div>
             ) : (
@@ -370,6 +407,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({ userId, searchQue
             searchQuery={searchQuery}
             extraMessages={isSearching ? (searchMessages as DisplayMessage[]) : displayMessages}
             onDelete={handleDeleteThought}
+            onEditStart={onEditStart}
           />
         )}
       </AnimatePresence>

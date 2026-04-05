@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useSubmitContent ,type  SaveItemResult } from "@kurate/hooks";
-import { queryKeys } from "@kurate/query";
+import Image from "next/image";
+
+import { type SaveItemResult, useSubmitContent } from "@kurate/hooks";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
 import { type ThoughtBucket, classifyThought } from "@kurate/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
+import { CloseIcon } from "@/components/icons";
 import { type ExtractedMeta, LinkPreviewCard } from "@/app/_components/home/LinkPreviewCard";
 import { ChatInput } from "@/app/_components/home/chat-input";
 import { PreviewPhase } from "@/app/_components/home/preview-phase";
@@ -22,10 +24,12 @@ import { db } from "@/app/_libs/db";
 import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
 import { usePendingItemTimeout } from "@/app/_libs/hooks/usePendingItemTimeout";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
+import { useEditThought } from "@/app/_libs/hooks/useEditThought";
+import { useShareToGroups } from "@/app/_libs/hooks/useShareToGroups";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
-
 import { springGentle } from "@/app/_libs/utils/motion";
+import { useTranslations } from "@/i18n/use-translations";
 
 const supabase = createClient();
 
@@ -42,6 +46,10 @@ interface VaultTabViewProps {
 export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   usePendingItemTimeout();
   const prefersReducedMotion = useSafeReducedMotion();
+  const t = useTranslations("vault");
+  const tThoughts = useTranslations("thoughts");
+  const shareToGroups = useShareToGroups();
+  const editThought = useEditThought();
   // const scrollRef = useRef<HTMLDivElement>(null);
   // const scrollDir = useScrollDirection(scrollRef);
   // const isScrolledDown = scrollDir === "down";
@@ -69,15 +77,29 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
 
   const [mediaPreview, setMediaPreview] = useState<MediaPreview | null>(null);
   const [inputKey, setInputKey] = useState(0);
+  const [editingThought, setEditingThought] = useState<{ id: string; text: string } | null>(null);
 
   const previewUrlRef = useRef<string | null>(null);
-  previewUrlRef.current = previewUrl;
+  useEffect(() => {
+    previewUrlRef.current = previewUrl;
+  }, [previewUrl]);
 
   // Tracks the most recently sent URL — survives preview state reset so
   // handleLinkSaved can still show the share modal for the correct link.
   const lastSentUrlRef = useRef<string | null>(null);
+  const [lastSentUrl, setLastSentUrl] = useState<string | null>(null);
 
   const resetInput = useCallback(() => setInputKey((k) => k + 1), []);
+
+  const handleEditStart = useCallback((id: string, text: string) => {
+    setEditingThought({ id, text });
+    setInputKey((k) => k + 1);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingThought(null);
+    setInputKey((k) => k + 1);
+  }, []);
 
   /** Centralized cleanup — resets all preview/share state back to idle */
   const resetPreviewState = useCallback(() => {
@@ -145,6 +167,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
 
   useEffect(() => {
     if (!isExtracting && extractedMeta) {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       setPreviewMeta({
         title: extractedMeta.title,
         source: extractedMeta.source,
@@ -224,25 +247,18 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
 
   const handleShare = useCallback(
     async (groupIds: string[]) => {
-      if (!savedLoggedItemId || groupIds.length === 0) return;
-      if (!userId) return;
-      await Promise.all(
-        groupIds.map((convo_id) =>
-          supabase.from("group_posts").insert({
-            convo_id,
-            logged_item_id: savedLoggedItemId,
-            shared_by: userId,
-          }),
-        ),
-      );
+      if (!savedLoggedItemId || groupIds.length === 0 || !userId) return;
+      await shareToGroups.mutateAsync({
+        loggedItemId: savedLoggedItemId,
+        groupIds,
+        userId,
+      });
       setSavedItemGroups((prev) => [...new Set([...prev, ...groupIds])]);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
       resetPreviewState();
       resetExtraction();
-      toast("Shared!");
       resetInput();
     },
-    [savedLoggedItemId, queryClient, resetExtraction, resetInput, resetPreviewState, userId],
+    [savedLoggedItemId, userId, shareToGroups, resetExtraction, resetInput, resetPreviewState],
   );
 
   const handleSkip = useCallback(() => {
@@ -277,6 +293,17 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
 
   const handleVaultChatSend = useCallback(
     async (noteText: string) => {
+      // Edit mode — update existing thought via API, then clear
+      if (editingThought) {
+        const trimmed = noteText.trim();
+        if (trimmed && trimmed !== editingThought.text) {
+          editThought.mutate({ id: editingThought.id, text: trimmed });
+        }
+        setEditingThought(null);
+        resetInput();
+        return;
+      }
+
       const meta = previewMeta ? { ...previewMeta, tags: extractedMeta?.tags ?? null } : null;
       // Use ref (eagerly updated in handleUrlChange) instead of stale state for fast paste+enter
       const effectiveUrl = previewUrlRef.current;
@@ -295,6 +322,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
 
         const tempId = crypto.randomUUID();
         lastSentUrlRef.current = effectiveUrl;
+        setLastSentUrl(effectiveUrl);
         // URL mode: pending row in Dexie, then POST
         void db.pending_links.add({
           tempId,
@@ -351,6 +379,8 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
     },
     [
       activeBucket,
+      editThought,
+      editingThought,
       extractedMeta?.tags,
       onSend,
       previewMeta,
@@ -395,6 +425,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
             onActiveBucketChange={handleActiveBucketChange}
             viewAll={thoughtsViewAll}
             onViewAllChange={setThoughtsViewAll}
+            onEditStart={handleEditStart}
           />
         </div>
       </div>
@@ -424,7 +455,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
               <div className="mx-auto max-w-2xl">
                 <LinkPreviewCard
                   phase={previewPhase}
-                  url={previewUrl ?? lastSentUrlRef.current ?? ""}
+                  url={previewUrl ?? lastSentUrl ?? ""}
                   metadata={previewMeta ?? undefined}
                   savedItemId={savedLoggedItemId ?? undefined}
                   savedItemGroups={savedItemGroups}
@@ -448,7 +479,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
               transition={springGentle}>
               <div className="mx-auto max-w-2xl">
                 <div className="bg-card flex items-center gap-3 rounded-2xl border px-3 py-2 shadow-sm">
-                  <img
+                  <Image
                     src={mediaPreview.objectUrl}
                     alt="Preview"
                     className="h-10 w-10 rounded-lg object-cover"
@@ -471,12 +502,31 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
 
         <div className="px-5 py-3 md:py-8">
           <div className="mx-auto max-w-4xl">
+            {/* Edit context banner — same pattern as DM composer */}
+            {editingThought && (
+              <div className="border-border/50 bg-surface mb-2 flex items-center gap-2 rounded-lg border px-3 py-2">
+                <div className="bg-primary w-0.5 self-stretch rounded-full" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-primary text-[11px] font-semibold">{tThoughts("edit_aria")}</p>
+                  <p className="text-muted-foreground line-clamp-1 text-[11px]">{editingThought.text}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+                  aria-label="Cancel edit">
+                  <CloseIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
             <ChatInput
               key={inputKey}
-              placeholder="Drop a thought, task, link or something you overheard."
+              placeholder={t("input_placeholder")}
               onSend={handleVaultChatSend}
-              onUrlChange={handleUrlChange}
-              collapsible={vaultTab === VaultTab.THOUGHTS}
+              onUrlChange={editingThought ? undefined : handleUrlChange}
+              collapsible={vaultTab === VaultTab.THOUGHTS && !editingThought}
+              initialValue={editingThought?.text}
+              autoFocus={!!editingThought}
             />
           </div>
         </div>

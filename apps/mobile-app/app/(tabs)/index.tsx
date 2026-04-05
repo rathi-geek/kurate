@@ -112,9 +112,11 @@ export default function TabOneScreen() {
         </Button>
       </Link>
       <Button
-        onPress={() => {
-          supabase.auth.signOut();
+        variant="destructive"
+        onPress={async () => {
+          await supabase.auth.signOut();
           reset();
+          await storageUtils.clearAllItems();
         }}
       >
         <ButtonText>Logout</ButtonText>

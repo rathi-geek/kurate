@@ -43,6 +43,8 @@ export interface ChatInputProps {
   collapsible?: boolean;
   /** When provided, shows a camera icon button that opens a file picker (currently hidden) */
   onMediaSelect?: (file: File) => void;
+  /** Pre-fill the input with this value (e.g. for edit mode). Consumed once on mount or when key changes. */
+  initialValue?: string;
 }
 
 function assignInputRef(
@@ -56,12 +58,12 @@ function assignInputRef(
 }
 
 export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(function ChatInput(
-  { onSend, onUrlChange, placeholder, notePlaceholder = "Add a note…", disabled, autoFocus, showPlusIcon = true, collapsible = false, onMediaSelect: _onMediaSelect },
+  { onSend, onUrlChange, placeholder, notePlaceholder = "Add a note…", disabled, autoFocus, showPlusIcon = true, collapsible = false, onMediaSelect: _onMediaSelect, initialValue },
   ref,
 ) {
   const t = useTranslations("chat");
   const prefersReducedMotion = useSafeReducedMotion();
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue ?? "");
   const [focused, setFocused] = useState(false);
   const [lockedUrl, setLockedUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);

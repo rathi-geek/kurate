@@ -158,7 +158,23 @@
     "filter_section_type": "Type",
     "filter_section_read_status": "Read status",
     "filter_topics": "Topics",
-    "filter_no_tags": "No tags yet"
+    "filter_no_tags": "No tags yet",
+    "input_placeholder": "Drop a thought, task, link or something you overheard."
+  },
+  "thoughts": {
+    "no_thoughts_yet": "No thoughts yet",
+    "image_fallback": "\ud83d\udcf7 Image",
+    "status_sending": "Sending",
+    "status_failed": "Failed to send",
+    "view_buckets": "View buckets",
+    "view_all_chats": "View all chats",
+    "empty_no_match": "No thoughts match your search",
+    "empty_no_thoughts": "No thoughts yet",
+    "empty_try_keywords": "Try different keywords",
+    "empty_start_typing": "Start typing to capture your first thought",
+    "empty_no_buckets_match": "No buckets match your search",
+    "edit_aria": "Edit thought",
+    "delete_aria": "Delete thought"
   },
   "landing": {
     "announcement": "Join the early access waitlist — spots are limited.",

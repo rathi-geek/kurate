@@ -33,7 +33,7 @@ export const VaultLibrary = memo(function VaultLibrary({
   onNavigateToDiscover,
   filters,
 }: VaultLibraryProps) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const {
     items,
     isLoading,
@@ -47,6 +47,8 @@ export const VaultLibrary = memo(function VaultLibrary({
     updateRemarks,
     toggleRead,
   } = useVault(filters, user?.id ?? "");
+
+  const stillLoading = authLoading || isLoading;
 
   const pendingLinks = useLiveQuery(() => db.pending_links.toArray(), []);
 
@@ -110,13 +112,13 @@ export const VaultLibrary = memo(function VaultLibrary({
     || filters.contentType !== "all"
     || filters.readStatus !== "all"
     || filters.search.trim() !== "";
-  const isEmptyDefault = !isLoading && !isError && hasNoItems && !hasActiveFilter;
-  const isEmptyFiltered = !isLoading && !isError && hasNoItems && hasActiveFilter;
+  const isEmptyDefault = !stillLoading && !isError && hasNoItems && !hasActiveFilter;
+  const isEmptyFiltered = !stillLoading && !isError && hasNoItems && hasActiveFilter;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Fetching indicator */}
-      {isFetching && !isLoading && !filters.search.trim() && (
+      {isFetching && !stillLoading && !filters.search.trim() && (
         <div className="flex justify-end px-5 pt-2">
           <span className="bg-primary/60 h-1.5 w-1.5 animate-pulse rounded-full" />
         </div>
@@ -124,7 +126,7 @@ export const VaultLibrary = memo(function VaultLibrary({
 
       {/* Scrollable content */}
       <div className="flex min-h-0 flex-1 flex-col space-y-4 p-5">
-        {isLoading && (
+        {stillLoading && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <VaultCardSkeleton key={i} />
@@ -132,7 +134,7 @@ export const VaultLibrary = memo(function VaultLibrary({
           </div>
         )}
 
-        {!isLoading && isError && <VaultErrorState onRetry={() => refetch()} />}
+        {!stillLoading && isError && <VaultErrorState onRetry={() => refetch()} />}
 
         {isEmptyDefault && (
           <VaultEmptyState onExplore={onNavigateToDiscover ?? (() => {})} />
@@ -146,7 +148,7 @@ export const VaultLibrary = memo(function VaultLibrary({
           />
         )}
 
-        {!isLoading && !isError && !isEmptyDefault && !isEmptyFiltered && (
+        {!stillLoading && !isError && !isEmptyDefault && !isEmptyFiltered && (
           <VaultGrid
             entries={entries}
             hasMore={hasMore}
