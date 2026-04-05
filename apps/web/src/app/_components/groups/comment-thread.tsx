@@ -17,6 +17,7 @@ interface CommentThreadProps {
   groupId?: string;
   currentUserId: string;
   userRole: GroupRole;
+  lastSeenAt?: string | null;
   onCommentAdded?: () => void;
   currentUserProfile?: {
     id: string;
@@ -183,6 +184,7 @@ export function CommentThread({
   groupId,
   currentUserId,
   userRole: _userRole,
+  lastSeenAt,
   onCommentAdded,
   currentUserProfile,
 }: CommentThreadProps) {
@@ -208,18 +210,32 @@ export function CommentThread({
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const threadBottomRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to the latest comment once on open.
+  // ── Unread divider ──────────────────────────────────────────────────
+  // Find the first comment newer than lastSeenAt (snapshot from before markPostSeen).
+  const unreadStartIndex = (() => {
+    if (comments.length === 0) return -1;
+    // Never seen → all comments are unread
+    if (lastSeenAt === null || lastSeenAt === undefined) return 0;
+    const idx = comments.findIndex((c) => c.created_at > lastSeenAt);
+    return idx; // -1 means all seen
+  })();
+  const unreadCount = unreadStartIndex >= 0 ? comments.length - unreadStartIndex : 0;
+
+  // Scroll to the divider (or bottom if no divider) once on open.
   const hasScrolledRef = useRef(false);
   useEffect(() => {
     if (isLoading || comments.length === 0 || hasScrolledRef.current) return;
     hasScrolledRef.current = true;
+    const scrollTarget =
+      unreadStartIndex > 0
+        ? Math.max(0, unreadStartIndex - 1) // one item above divider for context
+        : comments.length - 1;
     virtuosoRef.current?.scrollToIndex({
-      index: comments.length - 1,
-      align: "end",
+      index: scrollTarget,
+      align: unreadStartIndex > 0 ? "start" : "end",
       behavior: "smooth",
     });
-   
-  }, [isLoading, comments.length]);
+  }, [isLoading, comments.length, unreadStartIndex]);
 
   // Scroll the main feed so the input is visible when the thread first opens.
   // Delay by 220ms to fire after the AnimatePresence height animation (200ms) finishes.
@@ -259,8 +275,20 @@ export function CommentThread({
             const isContinuation = !!prev && prev.user_id === comment.user_id;
             const spacing: CommentItemProps["spacing"] =
               isContinuation ? "compact" : index === 0 ? "none" : "normal";
+            const showDivider = index === unreadStartIndex && unreadCount > 0;
             return (
               <div>
+                {showDivider && (
+                  <div className="flex items-center gap-2 py-2">
+                    <div className="border-primary/40 flex-1 border-t" />
+                    <span className="text-primary whitespace-nowrap text-[10px] font-semibold">
+                      {unreadCount === 1
+                        ? t("new_message_singular")
+                        : t("new_messages", { count: unreadCount })}
+                    </span>
+                    <div className="border-primary/40 flex-1 border-t" />
+                  </div>
+                )}
                 <CommentItem
                   comment={comment}
                   currentUserId={currentUserId}

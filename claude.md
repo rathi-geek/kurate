@@ -47,27 +47,55 @@ Before adding anything to `apps/web/` or `apps/mobile-app/`, check if it belongs
 
 ## When Acting as Reviewer
 
-### Keeping the Map Updated
+### Two Memory Files You Maintain
 
-After every feature audit or libs change, update `memory/CODEBASE_MAP.md`:
+**1. `memory/CODEBASE_MAP.md`** — static path index, updated when files are added/removed
 
-- Add new files created in web, mobile, or libs
-- Mark mobile screens as empty/partial/done
-- Add new hooks, types, constants to their sections
+- All libs exports with exact paths
+- All web screens, hooks, components with exact paths
+- All mobile screens, hooks, components with exact paths + status (empty/partial/done)
+- Built once using `find` shell commands — never by reading file contents
+- Updated after each feature when new files are created
+
+**2. `memory/FEATURE_PLAN.md`** — replaced before each feature starts
+
+- Exact files each agent needs + what to do with each file
+- Step by step implementation plan
+- Design decisions extracted from web for mobile reference
+- Web agent commands with exact paths
+- Mobile agent commands with exact paths
+
+---
+
+### Keeping CODEBASE_MAP.md Updated
+
+⚠️ Always use shell `find` commands — never launch explore sub-agents:
+
+```bash
+find apps/web/src -name "*.tsx" -o -name "*.ts" | grep -v node_modules | sort
+find apps/mobile-app/app apps/mobile-app/components apps/mobile-app/hooks -name "*.tsx" -o -name "*.ts" | grep -v node_modules | sort
+find libs -name "*.ts" | grep -v node_modules | sort
+```
+
+---
 
 ### Starting a New Feature
 
 When user says `"start [feature] feature"` or `"audit [feature]"`:
 
-1. Read `memory/CODEBASE_MAP.md` first — use it to locate relevant files fast
-2. Read only the relevant files for that feature — no blind scanning
-3. Report in this exact format — **no file changes yet**:
+1. Read `memory/CODEBASE_MAP.md` — locate relevant files from the index
+2. Read ONLY those relevant files — no blind scanning
+3. If something missing from map → use `find` on that specific folder, update map
+4. Write audit report (no file changes yet)
+5. Write `memory/FEATURE_PLAN.md` with full feature plan
+
+Audit format:
 
 ```
 ## Feature Audit: [feature]
 
 ### 1. What exists in web today
-- Files found: ...
+- Files found: [exact paths]
 - Flow summary: ...
 
 ### 2. Bugs & issues to fix before mobile replicates
@@ -76,26 +104,84 @@ When user says `"start [feature] feature"` or `"audit [feature]"`:
 
 ### 3. Code quality issues
 🟣 Should fix:
-- God components doing too much — split into smaller components/hooks
-- Business logic inside components — move to hooks
-- Overly complex logic that can be simplified
-- Inconsistent patterns vs rest of codebase
-- Missing TypeScript types or use of `any`
-- Dead code, unused imports, unnecessary state
+- God components, business logic in components, missing types, dead code
 
 ### 4. What should move to /libs
-- [file/hook/type] → libs/[hooks|types|utils|locales]/
-- Reason: mobile will also need this
+- [exact file path] → [exact libs destination]
+- Reason: ...
 
-### 5. What mobile needs to build fresh (mobile-specific only)
-- ...
-
-### Suggested order:
-1. Fix bugs first
-2. Fix code quality issues
-3. Move shared code to /libs
-4. Then build mobile
+### 5. What mobile needs to build fresh
+- [list with exact new file paths to create]
 ```
+
+FEATURE_PLAN.md format:
+
+```
+# Feature Plan: [feature]
+Last updated: [date]
+
+## Order of execution (always follow this sequence)
+1. Web — fix bugs
+2. Web — code quality
+3. Web — move to /libs
+4. Mobile — build feature
+
+## Web — Step by Step
+
+### Step 1: Fix bugs
+File: [exact path]
+- Issue: [exact problem]
+- Fix: [exactly what to change]
+
+### Step 2: Code quality
+File: [exact path]
+- Issue: [exact problem]
+- Fix: [exactly what to change]
+
+### Step 3: Move to /libs
+- Move: [exact source path] → [exact destination path]
+- Why: [reason]
+- Update imports in: [exact list of files that import it]
+
+## Mobile — Step by Step
+
+### Step 1: [first thing to build]
+New file: [exact path to create]
+Read for reference:
+- [exact web file] — [what to extract from it e.g. "card layout, spacing, color usage"]
+- [exact lib file] — [what to use from it]
+Read existing mobile:
+- [exact mobile file] — [why]
+Key design decisions from web:
+- [specific layout note e.g. "card has 12px padding, image is 16:9 ratio"]
+- [specific interaction note e.g. "long press shows action sheet with 3 options"]
+- [specific token note e.g. "uses bg-card with shadow-sm, rounded-card"]
+Build instructions:
+- [exact step 1]
+- [exact step 2]
+
+### Step 2: [next thing to build]
+...
+
+## Next Commands
+
+**Web agent:**
+"Read memory/CODEBASE_MAP.md and memory/FEATURE_PLAN.md.
+Follow Web Steps 1-3 exactly as written in the plan.
+If missing from map → explore that folder only, update map, proceed."
+
+**Mobile agent:**
+"Read memory/CODEBASE_MAP.md and memory/FEATURE_PLAN.md.
+Follow Mobile Steps in order as written in the plan.
+If missing from map → explore that folder only, update map, proceed."
+```
+
+**Critical rules:**
+
+- Always write FEATURE_PLAN.md to disk — never just print in chat
+- Never ask the user to decide the order — decide it yourself
+- Always include extracted design decisions for mobile — specific tokens, spacing, interactions
+- Always include exact new file paths mobile needs to create
 
 ### Reviewing Existing Code
 
@@ -148,7 +234,7 @@ After every audit or review, always end with:
 ## Next Commands
 
 **Web agent** (fix issues):
-"Read ONLY these files — do not explore anything else:
+"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
 
 Files to fix:
 - [exact path of each file with the bug]
@@ -160,10 +246,10 @@ Fix these specific issues:
 - [issue 1 — exact file + line description]
 - [issue 2 — exact file + line description]
 
-Do NOT explore. Do NOT launch sub-agents. If you need a file not listed, ask."
+If something is missing from the map → explore that specific folder only, update the map, then proceed."
 
 **Web agent** (move to /libs):
-"Read ONLY these files — do not explore anything else:
+"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
 
 Files to move:
 - [exact source path] → [exact destination in libs/]
@@ -171,7 +257,7 @@ Files to move:
 Files that import them (update these imports):
 - [exact paths of all files that need import updates]
 
-Do NOT explore. Do NOT launch sub-agents. If you need a file not listed, ask."
+If something is missing from the map → explore that specific folder only, update the map, then proceed."
 
 **Mobile agent** (build feature):
 "Read memory/CODEBASE_MAP.md first, then read ONLY these files:
@@ -186,7 +272,7 @@ Existing mobile files:
 - [exact mobile files relevant to this feature]
 
 Build [feature] using only what you find in these files.
-Do NOT explore. Do NOT launch sub-agents. If you need a file not listed, ask."
+If something is missing from the map → explore that specific folder only, update the map, then proceed."
 ```
 
 **Critical:** Always provide exact file paths for every agent. You have already read everything — pass it on. Never leave any agent to explore on their own.

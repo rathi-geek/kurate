@@ -3,3 +3,4 @@ export { useSaveItem, generateUrlHash } from "./useSaveItem";
 export type { SaveItemInput, SaveItemResult } from "./useSaveItem";
 export { useExtractMetadata } from "./useExtractMetadata";
 export type { ExtractedMetadata } from "./useExtractMetadata";
+export { useVault } from "./useVault";

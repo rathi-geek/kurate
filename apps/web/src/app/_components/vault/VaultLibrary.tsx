@@ -10,8 +10,9 @@ import { VaultEmptyState } from "@/app/_components/vault/VaultEmptyState";
 import { VaultErrorState } from "@/app/_components/vault/VaultErrorState";
 import { VaultGrid, type GridEntry } from "@/app/_components/vault/VaultGrid";
 import { db } from "@/app/_libs/db";
-import { useVault } from "@/app/_libs/hooks/useVault";
+import { useVault } from "@kurate/hooks";
 import { useAuth } from "@/app/_libs/auth-context";
+import { createClient } from "@/app/_libs/supabase/client";
 
 export const DEFAULT_FILTERS: VaultFiltersType = {
   time: "all",
@@ -34,6 +35,7 @@ export const VaultLibrary = memo(function VaultLibrary({
   filters,
 }: VaultLibraryProps) {
   const { user, loading: authLoading } = useAuth();
+  const supabase = createClient();
   const {
     items,
     isLoading,
@@ -46,7 +48,7 @@ export const VaultLibrary = memo(function VaultLibrary({
     deleteItem,
     updateRemarks,
     toggleRead,
-  } = useVault(filters, user?.id ?? "");
+  } = useVault(filters, user?.id ?? "", supabase);
 
   const stillLoading = authLoading || isLoading;
 

@@ -8,11 +8,12 @@ import {
 } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { startOfDay, subDays } from "date-fns";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@kurate/query";
 import type {
   ContentType,
+  Database,
   SaveSource,
   RawMetadata,
   VaultFilters,
@@ -20,7 +21,6 @@ import type {
 } from "@kurate/types";
 
 const PAGE_SIZE = 21;
-const supabase = createClient();
 
 function toVaultItem(row: Record<string, unknown>): VaultItem {
   const li = (Array.isArray(row.logged_item) ? row.logged_item[0] : row.logged_item) as
@@ -57,6 +57,7 @@ function toVaultItem(row: Record<string, unknown>): VaultItem {
 }
 
 async function fetchVaultPage(
+  supabase: SupabaseClient<Database>,
   userId: string,
   filters: VaultFilters,
   cursor: string | null,
@@ -108,7 +109,7 @@ async function fetchVaultPage(
   return items;
 }
 
-export function useVault(filters: VaultFilters, userId: string) {
+export function useVault(filters: VaultFilters, userId: string, supabase: SupabaseClient<Database>) {
   const queryClient = useQueryClient();
 
   // search is excluded from the query key — it's applied client-side in useMemo below.
@@ -121,7 +122,7 @@ export function useVault(filters: VaultFilters, userId: string) {
   const query = useInfiniteQuery({
     queryKey: queryKeys.vault.list(baseFilters),
     queryFn: ({ pageParam }) =>
-      fetchVaultPage(userId, baseFilters, pageParam as string | null),
+      fetchVaultPage(supabase, userId, baseFilters, pageParam as string | null),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
       lastPage.length === PAGE_SIZE

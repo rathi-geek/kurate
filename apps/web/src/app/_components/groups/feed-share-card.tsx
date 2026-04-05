@@ -65,6 +65,9 @@ export const FeedShareCard = memo(function FeedShareCard({
   // Seen status comes from the feed query (embedded via LEFT JOIN) — no separate query needed
   const hasNewComments =
     !!drop.latestCommentAt && (drop.seenAt === null || drop.latestCommentAt > drop.seenAt);
+  // Snapshot seenAt at the moment the thread opens — used for the "N new messages" divider.
+  // Must be captured BEFORE markPostSeen overwrites drop.seenAt.
+  const unreadDividerAtRef = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -95,7 +98,10 @@ export const FeedShareCard = memo(function FeedShareCard({
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry?.isIntersecting) setShowComments(false);
+        if (!entry?.isIntersecting) {
+          unreadDividerAtRef.current = null;
+          setShowComments(false);
+        }
       },
       { threshold: 0 },
     );
@@ -241,7 +247,10 @@ export const FeedShareCard = memo(function FeedShareCard({
               onCommentIconClick={() => {
                 const opening = !showComments;
                 if (opening) {
+                  unreadDividerAtRef.current = drop.seenAt;
                   if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
+                } else {
+                  unreadDividerAtRef.current = null;
                 }
                 setShowComments((v) => !v);
               }}
@@ -254,6 +263,7 @@ export const FeedShareCard = memo(function FeedShareCard({
           <button
             type="button"
             onClick={() => {
+              unreadDividerAtRef.current = drop.seenAt;
               if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
               setShowComments(true);
             }}
@@ -300,7 +310,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                   groupId={groupId}
                   currentUserId={currentUserId}
                   userRole={userRole}
-
+                  lastSeenAt={unreadDividerAtRef.current}
                   currentUserProfile={
                     currentUserProfile ??
                     (drop.sharer.id === currentUserId
