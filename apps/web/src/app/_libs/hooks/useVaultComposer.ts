@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { type ExtractedMeta, VaultTab } from "@kurate/types";
 import type { ExtractedMetadata } from "@kurate/hooks";
 import { db } from "@/app/_libs/db";
+import { detectContentType } from "@/app/_libs/metadata/extractor";
 import { track } from "@/app/_libs/utils/analytics";
 
 interface UseVaultComposerParams {
@@ -32,6 +33,7 @@ interface UseVaultComposerParams {
   editingThought: { id: string; text: string } | null;
   editThought: { mutate: (args: { id: string; text: string }) => void };
   setEditingThought: (value: { id: string; text: string } | null) => void;
+  onThoughtViewAllChange: (v: boolean) => void;
 }
 
 export function useVaultComposer({
@@ -50,6 +52,7 @@ export function useVaultComposer({
   editingThought,
   editThought,
   setEditingThought,
+  onThoughtViewAllChange,
 }: UseVaultComposerParams) {
   const handleVaultChatSend = useCallback(
     async (noteText: string) => {
@@ -91,7 +94,7 @@ export function useVaultComposer({
           source: previewMeta?.source ?? null,
           author: previewMeta?.author ?? null,
           previewImage: previewMeta?.previewImage ?? null,
-          contentType: previewMeta?.contentType ?? "article",
+          contentType: previewMeta?.contentType ?? detectContentType(effectiveUrl),
           readTime: previewMeta?.readTime != null ? String(previewMeta.readTime) : null,
           tags: extractedMeta?.tags ?? null,
           description: previewMeta?.description ?? null,
@@ -130,6 +133,7 @@ export function useVaultComposer({
           });
         }
         setVaultTab(VaultTab.THOUGHTS);
+        onThoughtViewAllChange(true);
         void onSend(noteText, undefined, null, null, tempId).catch(async () => {
           await db.pending_thoughts.update(tempId, { status: "failed" });
         });
@@ -151,6 +155,7 @@ export function useVaultComposer({
       setLastSentUrl,
       setVaultTab,
       vaultTab,
+      onThoughtViewAllChange,
     ],
   );
 

@@ -84,7 +84,7 @@ export function useSubmitContent(config: SubmitContentConfig) {
             author: meta?.author ?? null,
             preview_image: meta?.previewImage ?? null,
             content_type:
-              (meta?.contentType as "article" | "video" | "podcast") ?? "article",
+              (meta?.contentType as "article" | "video" | "podcast") ?? "link",
             read_time: meta?.readTime != null ? String(meta.readTime) : null, // normalise number | string → string
             save_source: "external",
             tags: meta?.tags ?? null,
@@ -170,6 +170,7 @@ export function useSubmitContent(config: SubmitContentConfig) {
                 return { ...old, pages };
               },
             );
+            void config.queryClient.invalidateQueries({ queryKey: queryKeys.thoughts.bucketSummaries() });
             if (tempId) {
               await config.onThoughtSent?.(thought, tempId);
             }

@@ -10,6 +10,7 @@ import { useTranslations } from "@/i18n/use-translations";
 import { ThoughtsBucketChat } from "@/app/_components/home/thoughts-bucket-chat";
 import { BucketCard } from "@/app/_components/home/thoughts/bucket-card";
 import { ThoughtsAllSkeleton } from "@/app/_components/home/thoughts/thoughts-all-skeleton";
+import { BucketCardSkeleton } from "@/app/_components/home/thoughts/bucket-card-skeleton";
 import { ThoughtsAllView } from "@/app/_components/home/thoughts/thoughts-all-view";
 import { type DisplayMessage, pendingToMessage } from "@/app/_components/home/thoughts/utils";
 import { useDeleteThought } from "@/app/_libs/hooks/useDeleteThought";
@@ -136,7 +137,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({
   const showSkeleton = needsFullList
     ? isSearching
       ? isSearchLoading
-      : isLoading
+      : isLoading && pendingMessages.length === 0
     : isSummariesLoading;
 
   const deleteThought = useDeleteThought();
@@ -195,7 +196,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="space-y-2">
             {showSkeleton ? (
-              <ThoughtsAllSkeleton />
+              <BucketCardSkeleton />
             ) : visibleSummaries.length === 0 ? (
               <div className="flex flex-col items-center gap-1 px-4 py-16 text-center">
                 <p className="text-ink/50 text-sm font-medium">

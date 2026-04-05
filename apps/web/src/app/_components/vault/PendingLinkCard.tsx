@@ -43,54 +43,72 @@ export function PendingLinkCard({ link, onDismiss }: PendingLinkCardProps) {
       {/* Image / type badge area */}
       <div className="relative h-[150px] w-full shrink-0 overflow-hidden">
         {link.previewImage ? (
-          <Image
-            src={link.previewImage}
-            alt=""
-            fill
-            className="object-cover"
-            unoptimized
-          />
-        ) : link.description ? (
-          <div className="bg-muted relative flex h-full w-full items-center justify-center overflow-hidden px-4 py-3">
-            <p className="text-muted-foreground relative z-10 line-clamp-4 text-center text-xs leading-relaxed">
-              {link.description}
-            </p>
-            <ContentTypePill
-              contentType={link.contentType}
-              className="absolute top-2 left-2"
+          <>
+            <Image
+              src={link.previewImage}
+              alt=""
+              fill
+              className="object-cover"
+              unoptimized
             />
-          </div>
+            {/* Status overlays — only on top of preview image */}
+            {link.status === "sending" && (
+              <motion.div
+                className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20"
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <span className="text-2xl" aria-label="Sending">⏱</span>
+              </motion.div>
+            )}
+            {isConfirmed && (
+              <motion.div
+                className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [1, 0] }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+              >
+                <span className="text-2xl" aria-label="Saved">✓</span>
+              </motion.div>
+            )}
+            {isFailed && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30">
+                <span className="text-2xl text-red-400" aria-label="Failed to send">!</span>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="bg-muted flex h-full w-full items-center justify-center">
+          <div className="bg-muted flex h-full w-full flex-col items-center justify-center gap-2 px-4">
             <ContentTypePill contentType={link.contentType} />
-          </div>
-        )}
-
-        {/* Status overlays */}
-        {link.status === "sending" && (
-          <motion.div
-            className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20"
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <span className="text-2xl" aria-label="Sending">⏱</span>
-          </motion.div>
-        )}
-
-        {isConfirmed && (
-          <motion.div
-            className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [1, 0] }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
-          >
-            <span className="text-2xl" aria-label="Saved">✓</span>
-          </motion.div>
-        )}
-
-        {isFailed && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30">
-            <span className="text-2xl text-red-400" aria-label="Failed to send">!</span>
+            {link.description && (
+              <p className="text-muted-foreground line-clamp-3 text-center text-xs leading-relaxed">
+                {link.description}
+              </p>
+            )}
+            {link.status === "sending" && (
+              <motion.span
+                className="text-lg leading-none"
+                aria-label="Sending"
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                ⏱
+              </motion.span>
+            )}
+            {isConfirmed && (
+              <motion.span
+                className="text-lg leading-none"
+                aria-label="Saved"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [1, 0] }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+              >
+                ✓
+              </motion.span>
+            )}
+            {isFailed && (
+              <span className="text-lg leading-none text-red-400" aria-label="Failed to send">!</span>
+            )}
           </div>
         )}
       </div>

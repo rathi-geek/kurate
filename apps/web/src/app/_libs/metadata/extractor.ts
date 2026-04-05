@@ -198,7 +198,7 @@ function isCloudflareChallenge(html: string): boolean {
   );
 }
 
-function detectContentType(url: string): ContentType {
+export function detectContentType(url: string): ContentType {
   const hostname = new URL(url).hostname.toLowerCase();
   if (
     ["youtube.com", "youtu.be", "vimeo.com", "twitch.tv", "dailymotion.com"].some((d) =>

@@ -5,30 +5,28 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
 import { useSubmitContent } from "@kurate/hooks";
-import type { VaultFilters as VaultFiltersType } from "@kurate/types";
+import { PreviewPhase, type VaultFilters as VaultFiltersType, VaultTab } from "@kurate/types";
 import type { ThoughtBucket } from "@kurate/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { CloseIcon } from "@/components/icons";
 import { LinkPreviewCard } from "@/app/_components/home/LinkPreviewCard";
 import { ChatInput } from "@/app/_components/home/chat-input";
-import { PreviewPhase } from "@kurate/types";
 import { ThoughtsTabView } from "@/app/_components/home/thoughts-tab-view";
 import { VaultTabSubHeader } from "@/app/_components/home/vault-tab-sub-header";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import { useAuth } from "@/app/_libs/auth-context";
-import { VaultTab } from "@kurate/types";
 import { db } from "@/app/_libs/db";
+import { useEditThought } from "@/app/_libs/hooks/useEditThought";
 import { usePendingItemTimeout } from "@/app/_libs/hooks/usePendingItemTimeout";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
-import { useEditThought } from "@/app/_libs/hooks/useEditThought";
 import { useShareToGroups } from "@/app/_libs/hooks/useShareToGroups";
 import { useVaultComposer } from "@/app/_libs/hooks/useVaultComposer";
 import { useVaultPreview } from "@/app/_libs/hooks/useVaultPreview";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
 import { springGentle } from "@/app/_libs/utils/motion";
+import { CloseIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 
 const supabase = createClient();
@@ -108,6 +106,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
     editingThought,
     editThought,
     setEditingThought,
+    onThoughtViewAllChange: setThoughtsViewAll,
   });
 
   // --- Local handlers ---
