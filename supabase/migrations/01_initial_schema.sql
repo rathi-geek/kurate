@@ -1183,6 +1183,7 @@ CREATE TABLE IF NOT EXISTS public.thoughts (
 CREATE INDEX IF NOT EXISTS thoughts_user_id_idx ON public.thoughts(user_id);
 CREATE INDEX IF NOT EXISTS thoughts_user_bucket_idx ON public.thoughts(user_id, bucket);
 CREATE INDEX IF NOT EXISTS thoughts_user_created_at_idx ON public.thoughts(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS thoughts_user_bucket_created_idx ON public.thoughts(user_id, bucket, created_at DESC);
 
 ALTER TABLE public.thoughts ENABLE ROW LEVEL SECURITY;
 

@@ -895,3 +895,46 @@ $$;
 CREATE TRIGGER trg_also_commented_delete
   AFTER DELETE ON public.group_posts_comments
   FOR EACH ROW EXECUTE FUNCTION public.handle_also_commented_delete();
+
+-- ── Bucket summaries for thoughts ────────────────────────────
+-- Returns one row per bucket with latest text, timestamp, total count, and unread count.
+
+CREATE OR REPLACE FUNCTION public.get_thought_bucket_summaries()
+RETURNS TABLE (
+  bucket            TEXT,
+  latest_text       TEXT,
+  latest_created_at TIMESTAMPTZ,
+  total_count       BIGINT,
+  unread_count      BIGINT
+)
+LANGUAGE SQL STABLE
+AS $$
+  SELECT
+    b.bucket,
+    latest.text               AS latest_text,
+    latest.created_at         AS latest_created_at,
+    COALESCE(counts.total, 0) AS total_count,
+    COALESCE(counts.unread, 0) AS unread_count
+  FROM unnest(ARRAY['media','tasks','learning','notes']) AS b(bucket)
+  LEFT JOIN LATERAL (
+    SELECT t.text, t.created_at
+    FROM public.thoughts t
+    WHERE t.user_id = auth.uid() AND t.bucket::text = b.bucket
+    ORDER BY t.created_at DESC
+    LIMIT 1
+  ) latest ON true
+  LEFT JOIN LATERAL (
+    SELECT
+      COUNT(*)::BIGINT AS total,
+      COUNT(*) FILTER (
+        WHERE t.created_at > COALESCE(
+          (SELECT blr.last_read_at FROM public.bucket_last_read blr
+           WHERE blr.user_id = auth.uid() AND blr.bucket = b.bucket),
+          '1970-01-01'::timestamptz
+        )
+      )::BIGINT AS unread
+    FROM public.thoughts t
+    WHERE t.user_id = auth.uid() AND t.bucket::text = b.bucket
+  ) counts ON true
+  ORDER BY latest.created_at DESC NULLS LAST;
+$$;

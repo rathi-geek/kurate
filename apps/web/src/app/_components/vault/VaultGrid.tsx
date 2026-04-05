@@ -71,7 +71,7 @@ export const VaultGrid = memo(function VaultGrid({
         >
           <AnimatePresence mode="popLayout">
             {entries.map((entry) => {
-              const url = entry.kind === "pending" ? entry.data.url : entry.data.url;
+              const url = entry.data.url;
               const key = entry.kind === "pending" ? `pending-${entry.data.tempId}` : entry.data.id;
 
               return (

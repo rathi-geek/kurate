@@ -19,7 +19,7 @@ import type {
   VaultItem,
 } from "@kurate/types";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 21;
 const supabase = createClient();
 
 function toVaultItem(row: Record<string, unknown>): VaultItem {

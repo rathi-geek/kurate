@@ -1,31 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Image from "next/image";
 
-import { type SaveItemResult, useSubmitContent } from "@kurate/hooks";
+import { useSubmitContent } from "@kurate/hooks";
 import type { VaultFilters as VaultFiltersType } from "@kurate/types";
-import { type ThoughtBucket, classifyThought } from "@kurate/utils";
+import type { ThoughtBucket } from "@kurate/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { toast } from "sonner";
 
 import { CloseIcon } from "@/components/icons";
-import { type ExtractedMeta, LinkPreviewCard } from "@/app/_components/home/LinkPreviewCard";
+import { LinkPreviewCard } from "@/app/_components/home/LinkPreviewCard";
 import { ChatInput } from "@/app/_components/home/chat-input";
-import { PreviewPhase } from "@/app/_components/home/preview-phase";
+import { PreviewPhase } from "@kurate/types";
 import { ThoughtsTabView } from "@/app/_components/home/thoughts-tab-view";
 import { VaultTabSubHeader } from "@/app/_components/home/vault-tab-sub-header";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import { useAuth } from "@/app/_libs/auth-context";
-import { VaultTab } from "@/app/_libs/chat-types";
+import { VaultTab } from "@kurate/types";
 import { db } from "@/app/_libs/db";
-import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
 import { usePendingItemTimeout } from "@/app/_libs/hooks/usePendingItemTimeout";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useEditThought } from "@/app/_libs/hooks/useEditThought";
 import { useShareToGroups } from "@/app/_libs/hooks/useShareToGroups";
+import { useVaultComposer } from "@/app/_libs/hooks/useVaultComposer";
+import { useVaultPreview } from "@/app/_libs/hooks/useVaultPreview";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
 import { springGentle } from "@/app/_libs/utils/motion";
@@ -50,10 +50,6 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   const tThoughts = useTranslations("thoughts");
   const shareToGroups = useShareToGroups();
   const editThought = useEditThought();
-  // const scrollRef = useRef<HTMLDivElement>(null);
-  // const scrollDir = useScrollDirection(scrollRef);
-  // const isScrolledDown = scrollDir === "down";
-  // const collapseComposerOnScroll = isScrolledDown;
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -68,82 +64,16 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeBucket, setActiveBucket] = useState<ThoughtBucket | null>(null);
   const [thoughtsViewAll, setThoughtsViewAll] = useState(true);
-
-  const [previewPhase, setPreviewPhase] = useState<PreviewPhase>(PreviewPhase.Idle);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewMeta, setPreviewMeta] = useState<ExtractedMeta | null>(null);
-  const [savedLoggedItemId, setSavedLoggedItemId] = useState<string | null>(null);
-  const [savedItemGroups, setSavedItemGroups] = useState<string[]>([]);
-
   const [mediaPreview, setMediaPreview] = useState<MediaPreview | null>(null);
   const [inputKey, setInputKey] = useState(0);
   const [editingThought, setEditingThought] = useState<{ id: string; text: string } | null>(null);
 
-  const previewUrlRef = useRef<string | null>(null);
-  useEffect(() => {
-    previewUrlRef.current = previewUrl;
-  }, [previewUrl]);
-
-  // Tracks the most recently sent URL — survives preview state reset so
-  // handleLinkSaved can still show the share modal for the correct link.
-  const lastSentUrlRef = useRef<string | null>(null);
-  const [lastSentUrl, setLastSentUrl] = useState<string | null>(null);
-
   const resetInput = useCallback(() => setInputKey((k) => k + 1), []);
 
-  const handleEditStart = useCallback((id: string, text: string) => {
-    setEditingThought({ id, text });
-    setInputKey((k) => k + 1);
-  }, []);
+  // --- Preview hook ---
+  const preview = useVaultPreview(resetInput);
 
-  const handleCancelEdit = useCallback(() => {
-    setEditingThought(null);
-    setInputKey((k) => k + 1);
-  }, []);
-
-  /** Centralized cleanup — resets all preview/share state back to idle */
-  const resetPreviewState = useCallback(() => {
-    setPreviewPhase(PreviewPhase.Idle);
-    setPreviewUrl(null);
-    previewUrlRef.current = null;
-    setPreviewMeta(null);
-    setSavedLoggedItemId(null);
-    setSavedItemGroups([]);
-  }, []);
-
-  const {
-    isExtracting,
-    metadata: extractedMeta,
-    extractionFailed,
-    extract,
-    reset: resetExtraction,
-  } = useExtractMetadata();
-
-  const handleLinkSaved = useCallback(
-    async (result: SaveItemResult) => {
-      // Only act on the most recently sent URL — ignore stale callbacks
-      if (result.url !== lastSentUrlRef.current) return;
-
-      track("vault_link_saved", {
-        content_type: previewMeta?.contentType ?? "article",
-        source: previewMeta?.source ?? null,
-        has_tags: false,
-        is_duplicate: result.status === "duplicate",
-      });
-
-      if (result.status === "duplicate") {
-        // handleVaultChatSend already cleared preview — just toast
-        toast("Already in your Vault", { description: "This link has been saved before." });
-      } else if (result.status === "saved" && result.item) {
-        // Show share modal
-        setSavedLoggedItemId(result.item.logged_item_id);
-        setSavedItemGroups([]);
-        setPreviewPhase(PreviewPhase.Share);
-      }
-    },
-    [previewMeta],
-  );
-
+  // --- Submit content ---
   const { onSend } = useSubmitContent({
     supabase,
     queryClient,
@@ -154,45 +84,46 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
         setMediaPreview(null);
       }
     },
-    onLinkSaved: handleLinkSaved,
+    onLinkSaved: preview.handleLinkSaved,
     onThoughtSent: async (_, tempId) => {
       await db.pending_thoughts.delete(tempId);
     },
     activeBucket,
   });
 
-  // useEffect(() => {
-  //   if (scrollDir) onScrollDirectionChange?.(scrollDir);
-  // }, [scrollDir, onScrollDirectionChange]);
+  // --- Composer hook ---
+  const { handleVaultChatSend } = useVaultComposer({
+    previewUrlRef: preview.previewUrlRef,
+    previewMeta: preview.previewMeta,
+    extractedMeta: preview.extractedMeta,
+    lastSentUrlRef: preview.lastSentUrlRef,
+    setLastSentUrl: preview.setLastSentUrl,
+    resetPreviewState: preview.resetPreviewState,
+    resetExtraction: preview.resetExtraction,
+    resetInput,
+    onSend,
+    activeBucket,
+    vaultTab,
+    setVaultTab,
+    editingThought,
+    editThought,
+    setEditingThought,
+  });
 
-  useEffect(() => {
-    if (!isExtracting && extractedMeta) {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      setPreviewMeta({
-        title: extractedMeta.title,
-        source: extractedMeta.source,
-        author: extractedMeta.author,
-        previewImage: extractedMeta.preview_image ?? null,
-        contentType: extractedMeta.content_type ?? null,
-        readTime: extractedMeta.read_time ?? null,
-      });
-      setPreviewPhase(PreviewPhase.Loaded);
-    } else if (!isExtracting && extractionFailed) {
-      setPreviewPhase(PreviewPhase.Loaded);
-    }
-  }, [isExtracting, extractedMeta, extractionFailed]);
+  // --- Local handlers ---
+  const handleEditStart = useCallback((id: string, text: string) => {
+    setEditingThought({ id, text });
+    setInputKey((k) => k + 1);
+  }, []);
 
-  // Revoke object URL on unmount or when mediaPreview changes
-  useEffect(() => {
-    return () => {
-      if (mediaPreview) URL.revokeObjectURL(mediaPreview.objectUrl);
-    };
-  }, [mediaPreview]);
+  const handleCancelEdit = useCallback(() => {
+    setEditingThought(null);
+    setInputKey((k) => k + 1);
+  }, []);
 
   const handleTabChange = (tab: VaultTab) => {
-    const from = vaultTab;
-    if (from !== tab) {
-      track("links_thoughts_switched", { from, to: tab, source: "manual" });
+    if (vaultTab !== tab) {
+      track("links_thoughts_switched", { from: vaultTab, to: tab, source: "manual" });
     }
     setVaultTab(tab);
     setSearchQuery("");
@@ -204,9 +135,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   };
 
   const handleActiveBucketChange = (b: ThoughtBucket | null) => {
-    if (b && b !== activeBucket) {
-      track("thoughts_bucket_view", { bucket: b });
-    }
+    if (b && b !== activeBucket) track("thoughts_bucket_view", { bucket: b });
     setActiveBucket(b);
   };
 
@@ -216,59 +145,27 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
     }
   }, [vaultTab, thoughtsViewAll]);
 
-  const handleUrlChange = useCallback(
-    (url: string | null) => {
-      if (!url) {
-        resetPreviewState();
-        resetExtraction();
-        return;
-      }
-
-      const previewActiveForCurrentUrl =
-        url === previewUrl &&
-        (previewPhase === PreviewPhase.Loading ||
-          previewPhase === PreviewPhase.Loaded ||
-          previewPhase === PreviewPhase.Share);
-      if (previewActiveForCurrentUrl) return;
-
-      if (url !== previewUrl) {
-        setSavedLoggedItemId(null);
-        setSavedItemGroups([]);
-      }
-      setPreviewUrl(url);
-      // Eagerly update ref so handleVaultChatSend (called in the same tick for fast paste+enter)
-      // sees the URL before React re-renders
-      previewUrlRef.current = url;
-      setPreviewPhase(PreviewPhase.Loading);
-      void extract(url);
-    },
-    [extract, previewPhase, previewUrl, resetExtraction, resetPreviewState],
-  );
+  useEffect(() => {
+    return () => {
+      if (mediaPreview) URL.revokeObjectURL(mediaPreview.objectUrl);
+    };
+  }, [mediaPreview]);
 
   const handleShare = useCallback(
     async (groupIds: string[]) => {
-      if (!savedLoggedItemId || groupIds.length === 0 || !userId) return;
+      if (!preview.savedLoggedItemId || groupIds.length === 0 || !userId) return;
       await shareToGroups.mutateAsync({
-        loggedItemId: savedLoggedItemId,
+        loggedItemId: preview.savedLoggedItemId,
         groupIds,
         userId,
       });
-      setSavedItemGroups((prev) => [...new Set([...prev, ...groupIds])]);
-      resetPreviewState();
-      resetExtraction();
+      preview.setSavedItemGroups((prev) => [...new Set([...prev, ...groupIds])]);
+      preview.resetPreviewState();
+      preview.resetExtraction();
       resetInput();
     },
-    [savedLoggedItemId, userId, shareToGroups, resetExtraction, resetInput, resetPreviewState],
+    [preview, userId, shareToGroups, resetInput],
   );
-
-  const handleSkip = useCallback(() => {
-    resetPreviewState();
-    resetExtraction();
-    toast("Saved to Vault");
-    resetInput();
-  }, [resetExtraction, resetInput, resetPreviewState]);
-
-  // Media upload hidden — feature not enabled (handler removed; re-add when re-enabling)
 
   const dismissMediaPreview = useCallback(() => {
     if (mediaPreview) URL.revokeObjectURL(mediaPreview.objectUrl);
@@ -284,112 +181,6 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
     setVaultFilters({ time: f.time, contentType: f.contentType, readStatus: f.readStatus });
     setSearchQuery(f.search);
   }, []);
-
-  const handlePreviewClose = useCallback(() => {
-    resetPreviewState();
-    resetExtraction();
-    resetInput();
-  }, [resetExtraction, resetInput, resetPreviewState]);
-
-  const handleVaultChatSend = useCallback(
-    async (noteText: string) => {
-      // Edit mode — update existing thought via API, then clear
-      if (editingThought) {
-        const trimmed = noteText.trim();
-        if (trimmed && trimmed !== editingThought.text) {
-          editThought.mutate({ id: editingThought.id, text: trimmed });
-        }
-        setEditingThought(null);
-        resetInput();
-        return;
-      }
-
-      const meta = previewMeta ? { ...previewMeta, tags: extractedMeta?.tags ?? null } : null;
-      // Use ref (eagerly updated in handleUrlChange) instead of stale state for fast paste+enter
-      const effectiveUrl = previewUrlRef.current;
-      if (effectiveUrl) {
-        // Cancel in-flight preview extraction — grid handles null-metadata via useRefreshLoggedItem
-        resetExtraction();
-
-        // Deduplicate: same URL already pending → skip
-        const existingPending = await db.pending_links.where("url").equals(effectiveUrl).first();
-        if (existingPending) {
-          toast("Already in your Vault", { description: "This link has been saved before." });
-          resetPreviewState();
-          resetInput();
-          return;
-        }
-
-        const tempId = crypto.randomUUID();
-        lastSentUrlRef.current = effectiveUrl;
-        setLastSentUrl(effectiveUrl);
-        // URL mode: pending row in Dexie, then POST
-        void db.pending_links.add({
-          tempId,
-          url: effectiveUrl,
-          title: previewMeta?.title ?? effectiveUrl,
-          source: previewMeta?.source ?? null,
-          author: previewMeta?.author ?? null,
-          previewImage: previewMeta?.previewImage ?? null,
-          contentType: previewMeta?.contentType ?? "article",
-          readTime: previewMeta?.readTime != null ? String(previewMeta.readTime) : null,
-          tags: extractedMeta?.tags ?? null,
-          description: previewMeta?.description ?? null,
-          remarks: noteText.trim() || null,
-          createdAt: new Date().toISOString(),
-          status: "sending",
-        });
-        // Clear preview state so input is ready for next URL
-        resetPreviewState();
-
-        void onSend(effectiveUrl, undefined, meta, noteText.trim() || null)
-          .then(async () => {
-            // Mark as confirmed — VaultLibrary will animate the transition
-            // and clean up after a short delay
-            await db.pending_links.update(tempId, { status: "confirmed" });
-          })
-          .catch(async () => {
-            await db.pending_links.update(tempId, { status: "failed" });
-          });
-      } else {
-        // Text → thoughts: classify, Dexie row, switch tab, POST
-        const tempId = crypto.randomUUID();
-        const bucket = activeBucket ?? classifyThought(noteText);
-        void db.pending_thoughts.add({
-          tempId,
-          text: noteText,
-          bucket,
-          content_type: "text",
-          media_id: null,
-          createdAt: new Date().toISOString(),
-          status: "sending",
-        });
-        if (vaultTab !== VaultTab.THOUGHTS) {
-          track("links_thoughts_switched", {
-            from: vaultTab,
-            to: VaultTab.THOUGHTS,
-            source: "auto_thought_added",
-          });
-        }
-        setVaultTab(VaultTab.THOUGHTS);
-        void onSend(noteText, undefined, null, null, tempId).catch(async () => {
-          await db.pending_thoughts.update(tempId, { status: "failed" });
-        });
-      }
-    },
-    [
-      activeBucket,
-      editThought,
-      editingThought,
-      extractedMeta?.tags,
-      onSend,
-      previewMeta,
-      resetExtraction,
-      resetInput,
-      resetPreviewState,
-      vaultTab,
-    ],
-  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -408,7 +199,6 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
           Use opacity/pointer-events (NOT display:none) so scroll positions are preserved. */}
       <div className="relative min-h-0 flex-1">
         <div
-          // ref={scrollRef}
           className={`absolute inset-0 overflow-y-auto transition-opacity duration-150 ${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <VaultLibrary
             filters={fullVaultFilters}
@@ -430,45 +220,29 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
         </div>
       </div>
 
-      {/* Single ChatInput — always visible, routes by content (URL → links, text/media → thoughts) */}
-      <motion.div
-        className="bg-background relative shrink-0"
-        // animate={
-        //   prefersReducedMotion ? undefined : { height: collapseComposerOnScroll ? 0 : "auto" }
-        // }
-        transition={springGentle}>
-        {/* Link preview card — shown whenever a URL is detected, regardless of active tab */}
+      {/* Composer section — preview overlays + ChatInput */}
+      <motion.div className="bg-background relative shrink-0" transition={springGentle}>
         <AnimatePresence>
-          {previewPhase !== PreviewPhase.Idle && (
+          {preview.previewPhase !== PreviewPhase.Idle && (
             <motion.div
               className="absolute right-0 bottom-full left-0 z-50 px-5"
-              // animate={
-              //   prefersReducedMotion
-              //     ? undefined
-              //     : {
-              //         opacity: collapseComposerOnScroll ? 0 : 1,
-              //         y: collapseComposerOnScroll ? 6 : 0,
-              //       }
-              // }
-              // style={{ pointerEvents: collapseComposerOnScroll ? "none" : "auto" }}
               transition={springGentle}>
               <div className="mx-auto max-w-2xl">
                 <LinkPreviewCard
-                  phase={previewPhase}
-                  url={previewUrl ?? lastSentUrl ?? ""}
-                  metadata={previewMeta ?? undefined}
-                  savedItemId={savedLoggedItemId ?? undefined}
-                  savedItemGroups={savedItemGroups}
-                  onClose={handlePreviewClose}
+                  phase={preview.previewPhase}
+                  url={preview.previewUrl ?? preview.lastSentUrl ?? ""}
+                  metadata={preview.previewMeta ?? undefined}
+                  savedItemId={preview.savedLoggedItemId ?? undefined}
+                  savedItemGroups={preview.savedItemGroups}
+                  onClose={preview.handlePreviewClose}
                   onShare={handleShare}
-                  onSkip={handleSkip}
+                  onSkip={preview.handleSkip}
                 />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Media preview bar */}
         <AnimatePresence>
           {mediaPreview && (
             <motion.div
@@ -502,13 +276,14 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
 
         <div className="px-5 py-3 md:py-8">
           <div className="mx-auto max-w-4xl">
-            {/* Edit context banner — same pattern as DM composer */}
             {editingThought && (
               <div className="border-border/50 bg-surface mb-2 flex items-center gap-2 rounded-lg border px-3 py-2">
                 <div className="bg-primary w-0.5 self-stretch rounded-full" />
                 <div className="min-w-0 flex-1">
                   <p className="text-primary text-[11px] font-semibold">{tThoughts("edit_aria")}</p>
-                  <p className="text-muted-foreground line-clamp-1 text-[11px]">{editingThought.text}</p>
+                  <p className="text-muted-foreground line-clamp-1 text-[11px]">
+                    {editingThought.text}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -523,7 +298,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
               key={inputKey}
               placeholder={t("input_placeholder")}
               onSend={handleVaultChatSend}
-              onUrlChange={editingThought ? undefined : handleUrlChange}
+              onUrlChange={editingThought ? undefined : preview.handleUrlChange}
               collapsible={vaultTab === VaultTab.THOUGHTS && !editingThought}
               initialValue={editingThought?.text}
               autoFocus={!!editingThought}

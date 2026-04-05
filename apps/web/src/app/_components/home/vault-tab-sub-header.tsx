@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { VaultFilterSheet } from "@/app/_components/vault/VaultFilterSheet";
 import { VaultFilters } from "@/app/_components/vault/VaultFilters";
 import { VaultSearch } from "@/app/_components/vault/VaultSearch";
-import { VaultTab } from "@/app/_libs/chat-types";
+import { VaultTab } from "@kurate/types";
 import { cn } from "@/app/_libs/utils/cn";
 import { SearchIcon, SlidersIcon } from "@/components/icons";
 import { useIsMobile } from "@/hooks/use-mobile";

@@ -9,7 +9,7 @@ import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view";
 import { HomeTabHeader } from "@/app/_components/home/home-tab-header";
 import { VaultTabView } from "@/app/_components/home/vault-tab-view";
-import { HomeTab } from "@/app/_libs/chat-types";
+import { HomeTab } from "@kurate/types";
 import { MediaPlayerProvider } from "@/app/_libs/context/MediaPlayerContext";
 import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
@@ -70,10 +70,14 @@ function HomePageInner() {
   return (
     <MediaPlayerProvider>
       <div
-        role="presentation"
+        role="button"
+        tabIndex={0}
         onClick={() => activeThreadId && closeThread()}
         onKeyDown={(e) => {
-          if (activeThreadId && e.key === "Escape") closeThread();
+          if (activeThreadId && (e.key === "Escape" || e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            closeThread();
+          }
         }}
         className={`m mx-auto flex h-full max-w-7xl flex-col overflow-hidden ${isFullScreen && activeThreadId ? "hidden" : ""}`}>
         {/* Top tab bar — slides up on scroll down */}

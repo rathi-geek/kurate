@@ -47,13 +47,3 @@ export interface ThreadComment {
   createdAt: string;
   updatedAt?: string;
 }
-
-export enum HomeTab {
-  DISCOVERING = "discovering",
-  VAULT = "vault",
-}
-
-export enum VaultTab {
-  LINKS = "links",
-  THOUGHTS = "thoughts",
-}

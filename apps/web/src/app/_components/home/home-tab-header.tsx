@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 import { useTranslations } from "@/i18n/use-translations";
-import { HomeTab } from "@/app/_libs/chat-types";
+import { HomeTab } from "@kurate/types";
 
 interface HomeTabHeaderProps {
   activeTab: HomeTab;

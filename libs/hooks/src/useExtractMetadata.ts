@@ -2,13 +2,15 @@
 
 import { useCallback, useRef, useState } from "react";
 
+import type { ContentType } from "@kurate/types";
+
 export interface ExtractedMetadata {
   url: string;
   title?: string | null;
   source?: string | null;
   author?: string | null;
   preview_image?: string | null;
-  content_type?: import("@kurate/types").ContentType;
+  content_type?: ContentType;
   read_time?: string | null;
   duration?: string | null;
   tags?: string[] | null;

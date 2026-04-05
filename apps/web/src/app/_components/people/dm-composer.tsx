@@ -8,7 +8,7 @@ import { useTranslations } from "@/i18n/use-translations";
 import { Textarea } from "@/components/ui/textarea";
 
 import { UrlExtractPreview } from "@/app/_components/shared/url-extract-preview";
-import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
+import { useExtractMetadata } from "@kurate/hooks";
 import { generateUrlHash } from "@/app/_libs/hooks/useSaveItem";
 import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";

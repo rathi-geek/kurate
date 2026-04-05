@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 import { ChatInput } from "@/app/_components/home/chat-input";
 import { UrlExtractPreview } from "@/app/_components/shared/url-extract-preview";
-import { useExtractMetadata } from "@/app/_libs/hooks/useExtractMetadata";
+import { useExtractMetadata } from "@kurate/hooks";
 import { upsertLoggedItem, useSaveItem } from "@/app/_libs/hooks/useSaveItem";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";

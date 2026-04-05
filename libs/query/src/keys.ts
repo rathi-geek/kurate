@@ -69,5 +69,6 @@ export const queryKeys = {
     all: ["thoughts"] as const,
     list: (bucket: string | null) => ["thoughts", "list", bucket] as const,
     search: (q: string) => ["thoughts", "search", q] as const,
+    bucketSummaries: () => ["thoughts", "bucketSummaries"] as const,
   },
 } as const;

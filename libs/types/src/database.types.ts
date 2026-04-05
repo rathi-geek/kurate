@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1547,6 +1547,16 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_thought_bucket_summaries: {
+        Args: never
+        Returns: {
+          bucket: string
+          latest_created_at: string
+          latest_text: string
+          total_count: number
+          unread_count: number
+        }[]
       }
       text_array_to_string: {
         Args: { arr: string[]; sep: string }
