@@ -25,8 +25,7 @@ export function BucketCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors"
-      style={{ backgroundColor: `var(${meta.colorVar})` }}>
+      className="flex w-full items-center justify-between rounded-xl bg-card px-4 py-3 text-left transition-colors">
       <div className="min-w-0 flex-1">
         <p className="text-ink text-sm font-semibold">{meta.label}</p>
         <p className="text-ink/45 mt-0.5 truncate text-xs">

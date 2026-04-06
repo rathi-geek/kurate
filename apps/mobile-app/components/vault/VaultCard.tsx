@@ -26,7 +26,7 @@ function VaultCardImage({
     return (
       <Image
         source={{ uri }}
-        className="h-[150px] w-full"
+        className="h-[120px] w-full"
         resizeMode="cover"
         onError={() => setImgError(true)}
       />
@@ -35,7 +35,7 @@ function VaultCardImage({
 
   if (fallbackText) {
     return (
-      <View className="h-[150px] w-full items-center justify-center bg-muted px-4">
+      <View className="h-[120px] w-full items-center justify-center bg-muted px-4">
         <Text
           className="text-center text-xs text-muted-foreground"
           numberOfLines={4}
@@ -47,32 +47,9 @@ function VaultCardImage({
   }
 
   return (
-    <View className="h-[150px] w-full items-center justify-center bg-muted">
+    <View className="h-[120px] w-full items-center justify-center bg-muted">
       <Link2 size={32} className="text-muted-foreground" />
     </View>
-  );
-}
-
-function VaultCardActions({
-  item,
-  onToggleRead,
-  onDelete,
-}: {
-  item: VaultItem;
-  onToggleRead: (item: VaultItem) => void;
-  onDelete: (id: string) => void;
-}) {
-  const ReadIcon = item.is_read ? CheckCheck : Check;
-
-  return (
-    <HStack className="items-center gap-2 border-t border-border px-2 py-1">
-      <Pressable onPress={() => onToggleRead(item)} className="p-2">
-        <ReadIcon size={16} className="text-muted-foreground" />
-      </Pressable>
-      <Pressable onPress={() => onDelete(item.id)} className="p-2">
-        <Trash2 size={16} className="text-red-400" />
-      </Pressable>
-    </HStack>
   );
 }
 
@@ -81,21 +58,60 @@ export const VaultCard = React.memo(function VaultCard({
   onToggleRead,
   onDelete,
 }: VaultCardProps) {
+  const [showActions, setShowActions] = useState(false);
+
   const handlePress = useCallback(() => {
-    Linking.openURL(item.url);
-  }, [item.url]);
+    if (showActions) {
+      setShowActions(false);
+    } else {
+      Linking.openURL(item.url);
+    }
+  }, [item.url, showActions]);
+
+  const handleLongPress = useCallback(() => {
+    setShowActions(true);
+  }, []);
 
   const timeLabel = item.raw_metadata?.read_time ?? item.raw_metadata?.duration;
+  const ReadIcon = item.is_read ? CheckCheck : Check;
 
   return (
     <Pressable
       onPress={handlePress}
+      onLongPress={handleLongPress}
       className={`overflow-hidden rounded-xl border border-border bg-card shadow-sm ${item.is_read ? 'opacity-60' : ''}`}
     >
-      <VaultCardImage
-        uri={item.preview_image_url}
-        fallbackText={item.description}
-      />
+      <View>
+        <VaultCardImage
+          uri={item.preview_image_url}
+          fallbackText={item.description}
+        />
+        {showActions && (
+          <Pressable
+            onPress={() => setShowActions(false)}
+            className="absolute inset-0 z-10 flex-row items-center justify-center gap-2 rounded-t-xl bg-black/40"
+          >
+            <Pressable
+              onPress={() => {
+                onToggleRead(item);
+                setShowActions(false);
+              }}
+              className="h-9 w-9 items-center justify-center rounded-full bg-white/20"
+            >
+              <ReadIcon size={16} color="white" />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                onDelete(item.id);
+                setShowActions(false);
+              }}
+              className="h-9 w-9 items-center justify-center rounded-full bg-white/20"
+            >
+              <Trash2 size={16} color="#f87171" />
+            </Pressable>
+          </Pressable>
+        )}
+      </View>
       <View className="gap-1 p-3">
         <Text
           className="font-sans text-sm font-bold text-foreground"
@@ -133,11 +149,6 @@ export const VaultCard = React.memo(function VaultCard({
           {timeLabel ? ` · ${timeLabel}` : ''}
         </Text>
       </View>
-      <VaultCardActions
-        item={item}
-        onToggleRead={onToggleRead}
-        onDelete={onDelete}
-      />
     </Pressable>
   );
 });
