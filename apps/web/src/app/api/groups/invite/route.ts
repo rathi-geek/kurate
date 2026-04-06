@@ -1,8 +1,10 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/app/_libs/supabase/server";
-import { createAdminClient } from "@/app/_libs/supabase/admin";
-import { env } from "env";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { ROUTES } from "@kurate/utils";
+import { env } from "env";
+
+import { createAdminClient } from "@/app/_libs/supabase/admin";
+import { createClient } from "@/app/_libs/supabase/server";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 export async function GET(request: NextRequest) {
@@ -33,8 +35,7 @@ export async function GET(request: NextRequest) {
     exists: true,
     profile: {
       id: profile.id,
-      display_name:
-        [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null,
+      display_name: [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null,
       avatar_url: mediaToUrl(profile.avatar as { file_path: string; bucket_name: string } | null),
       handle: profile.handle,
     },
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
+    console.error("[invite-email]", error.message, error.status); // ADD THIS
     // User already exists on the platform — suggest searching by name/handle
     if (
       error.message.toLowerCase().includes("already registered") ||
