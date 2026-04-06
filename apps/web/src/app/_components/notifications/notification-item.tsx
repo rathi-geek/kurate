@@ -14,6 +14,9 @@ const EVENT_LABELS: Record<string, string> = {
   must_read: "marked your post as must-read",
   comment: "commented on your post",
   new_post: "shared a new post",
+  must_read_broadcast: "marked a post as must-read",
+  also_must_read: "also marked this post as must-read",
+  also_commented: "also commented on this post",
 };
 
 interface NotificationItemProps {
@@ -43,7 +46,7 @@ export function NotificationItem({
     await markRead(notification.id);
     onNavigate();
 
-    if (!["like", "must_read", "comment", "new_post", "also_must_read", "also_commented"].includes(notification.event_type)) return;
+    if (!["like", "must_read", "comment", "new_post", "also_must_read", "also_commented", "must_read_broadcast", "co_engaged"].includes(notification.event_type)) return;
     if (!notification.event_id) return;
 
     const { data } = await supabase

@@ -272,7 +272,7 @@ export function CommentThread({
         <Virtuoso
           ref={virtuosoRef}
           className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ height: Math.min(comments.length * 36 + 4, 300) }}
+          style={{ height: Math.min(comments.length * 60 + 4, 250) }}
           data={comments}
           initialTopMostItemIndex={comments.length > 0 ? comments.length - 1 : 0}
           followOutput="smooth"

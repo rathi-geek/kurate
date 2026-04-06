@@ -699,46 +699,64 @@ $$;
 --   AFTER INSERT ON public.group_posts
 --   FOR EACH ROW EXECUTE FUNCTION public.handle_new_post_insert();
 
--- ── Co-engagement notifications ───────────────────────────────────────────────
--- Fires after a new must-read mark — notifies everyone who marked it before.
+-- ── Helper: get all users who engaged with a post ────────────────────────────
+-- Returns distinct user_ids from likes, must_reads, and comments (not bookmarks — unused in app).
 
-CREATE OR REPLACE FUNCTION public.handle_also_must_read_insert()
+CREATE OR REPLACE FUNCTION public.get_all_post_engagers(
+  p_post_id UUID,
+  p_exclude_users UUID[]
+)
+RETURNS TABLE(user_id UUID)
+LANGUAGE SQL STABLE AS $$
+  SELECT DISTINCT u.user_id FROM (
+    SELECT l.user_id FROM public.group_posts_likes l WHERE l.group_post_id = p_post_id
+    UNION
+    SELECT m.user_id FROM public.group_posts_must_reads m WHERE m.group_post_id = p_post_id
+    UNION
+    SELECT c.user_id FROM public.group_posts_comments c WHERE c.group_post_id = p_post_id
+  ) u
+  WHERE u.user_id != ALL(p_exclude_users);
+$$;
+
+-- ── Must-read broadcast — notifies ALL group members ─────────────────────────
+-- Fires after a new must-read mark. Notifies every group member except the actor
+-- and the post owner (who already gets a 'must_read' notification).
+
+CREATE OR REPLACE FUNCTION public.handle_must_read_broadcast()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
+  v_convo_id       UUID;
   v_post_owner_id  UUID;
-  v_owner_name     TEXT;
-  v_recipient      UUID;
+  v_member         RECORD;
   v_notif_id       UUID;
   v_pref           BOOLEAN;
 BEGIN
-  SELECT shared_by INTO v_post_owner_id
-    FROM public.group_posts WHERE id = NEW.group_post_id;
+  SELECT gp.convo_id, gp.shared_by
+    INTO v_convo_id, v_post_owner_id
+    FROM public.group_posts gp
+   WHERE gp.id = NEW.group_post_id;
 
-  SELECT COALESCE(NULLIF(TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')), ''), handle, 'Someone')
-    INTO v_owner_name FROM public.profiles WHERE id = v_post_owner_id;
-
-  FOR v_recipient IN
-    SELECT user_id FROM public.group_posts_must_reads
-    WHERE group_post_id = NEW.group_post_id
-      AND user_id != NEW.user_id
-      AND user_id != v_post_owner_id
-    GROUP BY user_id
-    ORDER BY MAX(created_at) DESC
-    LIMIT 20
+  FOR v_member IN
+    SELECT cm.user_id
+      FROM public.conversation_members cm
+     WHERE cm.convo_id = v_convo_id
+       AND cm.user_id != NEW.user_id         -- exclude the actor
+       AND cm.user_id != v_post_owner_id     -- exclude post owner (gets 'must_read')
   LOOP
-    SELECT co_engagement_notifications INTO v_pref
-      FROM public.notification_preferences WHERE user_id = v_recipient;
+    SELECT must_read_notifications INTO v_pref
+      FROM public.notification_preferences WHERE user_id = v_member.user_id;
     IF v_pref = FALSE THEN CONTINUE; END IF;
 
+    -- Aggregate: one notification per (recipient, 'must_read_broadcast', post)
     SELECT id INTO v_notif_id FROM public.notifications
-    WHERE recipient_id = v_recipient
-      AND event_type = 'also_must_read'
-      AND event_id = NEW.group_post_id;
+     WHERE recipient_id = v_member.user_id
+       AND event_type = 'must_read_broadcast'
+       AND event_id = NEW.group_post_id;
 
     IF v_notif_id IS NULL THEN
       INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
-      VALUES (v_recipient, NEW.user_id, 'also_must_read', NEW.group_post_id,
-              'also marked ' || v_owner_name || '''s post as must-read')
+      VALUES (v_member.user_id, NEW.user_id, 'must_read_broadcast', NEW.group_post_id,
+              'marked a post as must-read')
       RETURNING id INTO v_notif_id;
     ELSE
       UPDATE public.notifications
@@ -755,52 +773,16 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_also_must_read_insert
+CREATE TRIGGER trg_must_read_broadcast
   AFTER INSERT ON public.group_posts_must_reads
-  FOR EACH ROW EXECUTE FUNCTION public.handle_also_must_read_insert();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_must_read_broadcast();
 
--- Fires when a must-read is removed — cleans up co-engagement notifications.
+-- ── Cross-type co-engagement notifications ───────────────────────────────────
+-- Unified function: when ANY engagement happens (like, must_read, comment),
+-- notifies ALL prior engagers on that post regardless of engagement type.
+-- Uses TG_TABLE_NAME to determine the action label.
 
-CREATE OR REPLACE FUNCTION public.handle_also_must_read_delete()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE
-  v_notif_id  UUID;
-  v_remaining BIGINT;
-BEGIN
-  FOR v_notif_id IN
-    SELECT n.id FROM public.notifications n
-    JOIN public.notification_actors na ON na.notification_id = n.id
-    WHERE n.event_type = 'also_must_read'
-      AND n.event_id = OLD.group_post_id
-      AND na.actor_id = OLD.user_id
-  LOOP
-    DELETE FROM public.notification_actors
-    WHERE notification_id = v_notif_id AND actor_id = OLD.user_id;
-
-    SELECT COUNT(*) INTO v_remaining FROM public.notification_actors
-    WHERE notification_id = v_notif_id;
-
-    IF v_remaining = 0 THEN
-      DELETE FROM public.notifications WHERE id = v_notif_id;
-    ELSE
-      UPDATE public.notifications SET
-        actor_id = (SELECT actor_id FROM public.notification_actors
-                    WHERE notification_id = v_notif_id ORDER BY created_at DESC LIMIT 1),
-        updated_at = NOW()
-      WHERE id = v_notif_id;
-    END IF;
-  END LOOP;
-  RETURN OLD;
-END;
-$$;
-
-CREATE TRIGGER trg_also_must_read_delete
-  AFTER DELETE ON public.group_posts_must_reads
-  FOR EACH ROW EXECUTE FUNCTION public.handle_also_must_read_delete();
-
--- Fires after a new comment — notifies everyone who commented before.
-
-CREATE OR REPLACE FUNCTION public.handle_also_commented_insert()
+CREATE OR REPLACE FUNCTION public.handle_co_engagement_insert()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_post_owner_id  UUID;
@@ -808,7 +790,15 @@ DECLARE
   v_recipient      UUID;
   v_notif_id       UUID;
   v_pref           BOOLEAN;
+  v_action_label   TEXT;
 BEGIN
+  CASE TG_TABLE_NAME
+    WHEN 'group_posts_likes'      THEN v_action_label := 'liked';
+    WHEN 'group_posts_must_reads' THEN v_action_label := 'marked as must-read';
+    WHEN 'group_posts_comments'   THEN v_action_label := 'commented on';
+    ELSE v_action_label := 'engaged with';
+  END CASE;
+
   SELECT shared_by INTO v_post_owner_id
     FROM public.group_posts WHERE id = NEW.group_post_id;
 
@@ -816,31 +806,31 @@ BEGIN
     INTO v_owner_name FROM public.profiles WHERE id = v_post_owner_id;
 
   FOR v_recipient IN
-    SELECT user_id FROM public.group_posts_comments
-    WHERE group_post_id = NEW.group_post_id
-      AND user_id != NEW.user_id
-      AND user_id != v_post_owner_id
-    GROUP BY user_id
-    ORDER BY MAX(created_at) DESC
-    LIMIT 20
+    SELECT e.user_id FROM public.get_all_post_engagers(
+      NEW.group_post_id,
+      ARRAY[NEW.user_id, v_post_owner_id]
+    ) e
+    LIMIT 50
   LOOP
     SELECT co_engagement_notifications INTO v_pref
       FROM public.notification_preferences WHERE user_id = v_recipient;
     IF v_pref = FALSE THEN CONTINUE; END IF;
 
     SELECT id INTO v_notif_id FROM public.notifications
-    WHERE recipient_id = v_recipient
-      AND event_type = 'also_commented'
-      AND event_id = NEW.group_post_id;
+     WHERE recipient_id = v_recipient
+       AND event_type = 'co_engaged'
+       AND event_id = NEW.group_post_id;
 
     IF v_notif_id IS NULL THEN
       INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
-      VALUES (v_recipient, NEW.user_id, 'also_commented', NEW.group_post_id,
-              'also commented on ' || v_owner_name || '''s post')
+      VALUES (v_recipient, NEW.user_id, 'co_engaged', NEW.group_post_id,
+              v_action_label || ' ' || v_owner_name || '''s post')
       RETURNING id INTO v_notif_id;
     ELSE
       UPDATE public.notifications
-         SET actor_id = NEW.user_id, updated_at = NOW()
+         SET actor_id = NEW.user_id,
+             message = v_action_label || ' ' || v_owner_name || '''s post',
+             updated_at = NOW()
        WHERE id = v_notif_id;
     END IF;
 
@@ -853,13 +843,21 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_also_commented_insert
+CREATE TRIGGER trg_co_engagement_like
+  AFTER INSERT ON public.group_posts_likes
+  FOR EACH ROW EXECUTE FUNCTION public.handle_co_engagement_insert();
+
+CREATE TRIGGER trg_co_engagement_must_read
+  AFTER INSERT ON public.group_posts_must_reads
+  FOR EACH ROW EXECUTE FUNCTION public.handle_co_engagement_insert();
+
+CREATE TRIGGER trg_co_engagement_comment
   AFTER INSERT ON public.group_posts_comments
-  FOR EACH ROW EXECUTE FUNCTION public.handle_also_commented_insert();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_co_engagement_insert();
 
--- Fires when a comment is deleted — cleans up co-engagement notifications.
+-- ── Co-engagement cleanup on delete ──────────────────────────────────────────
 
-CREATE OR REPLACE FUNCTION public.handle_also_commented_delete()
+CREATE OR REPLACE FUNCTION public.handle_co_engagement_delete()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_notif_id  UUID;
@@ -868,7 +866,7 @@ BEGIN
   FOR v_notif_id IN
     SELECT n.id FROM public.notifications n
     JOIN public.notification_actors na ON na.notification_id = n.id
-    WHERE n.event_type = 'also_commented'
+    WHERE n.event_type = 'co_engaged'
       AND n.event_id = OLD.group_post_id
       AND na.actor_id = OLD.user_id
   LOOP
@@ -892,9 +890,17 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_also_commented_delete
+CREATE TRIGGER trg_co_engagement_delete_like
+  AFTER DELETE ON public.group_posts_likes
+  FOR EACH ROW EXECUTE FUNCTION public.handle_co_engagement_delete();
+
+CREATE TRIGGER trg_co_engagement_delete_must_read
+  AFTER DELETE ON public.group_posts_must_reads
+  FOR EACH ROW EXECUTE FUNCTION public.handle_co_engagement_delete();
+
+CREATE TRIGGER trg_co_engagement_delete_comment
   AFTER DELETE ON public.group_posts_comments
-  FOR EACH ROW EXECUTE FUNCTION public.handle_also_commented_delete();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_co_engagement_delete();
 
 -- ── Bucket summaries for thoughts ────────────────────────────
 -- Returns one row per bucket with latest text, timestamp, total count, and unread count.

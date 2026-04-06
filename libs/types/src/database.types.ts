@@ -1530,6 +1530,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_all_post_engagers: {
+        Args: { p_exclude_users: string[]; p_post_id: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
       get_discovery_feed: {
         Args: { p_user_id: string }
         Returns: {
@@ -1584,6 +1590,8 @@ export type Database = {
         | "bookmark"
         | "also_must_read"
         | "also_commented"
+        | "must_read_broadcast"
+        | "co_engaged"
       message_type_enum: "text" | "logged_item"
       provider_enum: "supabase" | "s3" | "r2" | "do_spaces" | "gcs"
       role_enum: "owner" | "admin" | "member"
@@ -1739,6 +1747,8 @@ export const Constants = {
         "bookmark",
         "also_must_read",
         "also_commented",
+        "must_read_broadcast",
+        "co_engaged",
       ],
       message_type_enum: ["text", "logged_item"],
       provider_enum: ["supabase", "s3", "r2", "do_spaces", "gcs"],

@@ -265,11 +265,21 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
         { event: "*", schema: "public", table: "group_posts_comments" },
         (payload) => {
           const row = (payload.new ?? payload.old) as { group_post_id?: string; user_id?: string };
+
+          // DELETE from another user: payload.old is empty (Supabase RLS doesn't
+          // expose the old row to non-owners). We can't know which post was affected,
+          // so refetch the entire feed + previews.
+          if (payload.eventType === "DELETE" && !row?.group_post_id) {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+            void queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
+            return;
+          }
+
           if (!row?.group_post_id) return;
           if (!new Set(postIdsRef.current).has(row.group_post_id)) return;
 
-          // Own comment DELETE: decrement count optimistically, preserve seenAt so no green dot.
-          if (payload.eventType === "DELETE" && row.user_id === currentUserId) {
+          // Own comment DELETE: decrement count optimistically and refresh latest preview.
+          if (payload.eventType === "DELETE") {
             const postId = row.group_post_id;
             queryClient.setQueryData(
               queryKeys.groups.feed(groupId),
@@ -339,7 +349,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [groupId, queryClient, resubscribeKey]);
+  }, [groupId, queryClient, resubscribeKey, currentUserId]);
 
   const markPostSeen = useCallback(
     (postId: string, seenAt: string) => {
