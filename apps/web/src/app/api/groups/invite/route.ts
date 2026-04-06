@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: "Failed to send invite. Please try again." },
+      { error: "Failed to send invite. Please try again.", debug: error.message },
       { status: 500 },
     );
   }
