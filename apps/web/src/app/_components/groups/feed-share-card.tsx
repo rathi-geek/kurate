@@ -64,13 +64,18 @@ export const FeedShareCard = memo(function FeedShareCard({
   const [showComments, setShowComments] = useState(false);
   // Seen status comes from the feed query (embedded via LEFT JOIN) — no separate query needed
   const hasNewComments =
-    !!drop.latestCommentAt && (drop.seenAt === null || drop.latestCommentAt > drop.seenAt);
+    !showComments &&
+    !!drop.latestCommentAt &&
+    (drop.seenAt === null || drop.latestCommentAt > drop.seenAt);
   // Snapshot seenAt at the moment the thread opens — used for the "N new messages" divider.
   // Must be captured BEFORE markPostSeen overwrites drop.seenAt.
   const unreadDividerAtRef = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  // Track latest values for the IntersectionObserver closure (avoids stale captures)
+  const latestCommentAtRef = useRef(drop.latestCommentAt);
+  latestCommentAtRef.current = drop.latestCommentAt;
 
   const handleLinkOpen = () => {
     if (!drop.item) return;
@@ -99,6 +104,8 @@ export const FeedShareCard = memo(function FeedShareCard({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) {
+          // Persist latest timestamp before closing so DB is up-to-date on reopen
+          if (latestCommentAtRef.current) markPostSeen?.(drop.id, latestCommentAtRef.current);
           unreadDividerAtRef.current = null;
           setShowComments(false);
         }
@@ -113,6 +120,7 @@ export const FeedShareCard = memo(function FeedShareCard({
   // (covers others' realtime messages while the thread is open)
   useEffect(() => {
     if (!showComments || !drop.latestCommentAt || !markPostSeen) return;
+    console.log("[SEEN] useEffect markPostSeen —", { postId: drop.id, latestCommentAt: drop.latestCommentAt });
     markPostSeen(drop.id, drop.latestCommentAt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showComments, drop.latestCommentAt]);
@@ -248,8 +256,11 @@ export const FeedShareCard = memo(function FeedShareCard({
                 const opening = !showComments;
                 if (opening) {
                   unreadDividerAtRef.current = drop.seenAt;
+                  console.log("[SEEN] thread open via icon —", { seenAt: drop.seenAt, latestCommentAt: drop.latestCommentAt, snapshot: unreadDividerAtRef.current });
                   if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
                 } else {
+                  // Closing: persist latest timestamp so DB is up-to-date on reopen
+                  if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
                   unreadDividerAtRef.current = null;
                 }
                 setShowComments((v) => !v);
@@ -264,6 +275,7 @@ export const FeedShareCard = memo(function FeedShareCard({
             type="button"
             onClick={() => {
               unreadDividerAtRef.current = drop.seenAt;
+              console.log("[SEEN] thread open via preview —", { seenAt: drop.seenAt, latestCommentAt: drop.latestCommentAt, snapshot: unreadDividerAtRef.current });
               if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
               setShowComments(true);
             }}

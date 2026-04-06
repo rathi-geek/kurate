@@ -193,6 +193,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
         ? lastPage[lastPage.length - 1].shared_at
         : undefined,
     staleTime: 1000 * 30,
+    refetchOnMount: "always",
     enabled: !!groupId && !!currentUserId,
   });
 
@@ -206,6 +207,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
     queryFn: () => fetchFeedCommentPreviews(postIds),
     enabled: postIds.length > 0,
     staleTime: 1000 * 30,
+    refetchOnMount: "always",
   });
 
   const drops = useMemo(() => {
@@ -295,6 +297,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
           if (payload.eventType === "INSERT" && row.user_id === currentUserId) {
             const postId = row.group_post_id;
             const serverAt = (payload.new as { created_at: string }).created_at;
+            console.log("[SEEN] realtime own INSERT —", { postId, serverAt });
             queryClient.setQueryData(
               queryKeys.groups.feed(groupId),
               (old: InfiniteData<GroupDrop[]> | undefined) => {
@@ -312,6 +315,16 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
               },
             );
             void queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
+            // Persist serverAt to DB directly — don't rely on the useEffect + stale preview
+            void supabase
+              .from("group_post_last_seen")
+              .upsert(
+                { user_id: currentUserId, group_post_id: postId, seen_at: serverAt },
+                { onConflict: "user_id,group_post_id" },
+              )
+              .then(({ error }) => {
+                if (error) console.error("[SEEN] realtime own INSERT upsert failed:", error);
+              });
             return;
           }
 
@@ -330,6 +343,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
 
   const markPostSeen = useCallback(
     (postId: string, seenAt: string) => {
+      console.log("[SEEN] markPostSeen called —", { postId, seenAt });
       // Optimistically update seenAt in the feed cache
       queryClient.setQueryData(
         queryKeys.groups.feed(groupId),
@@ -345,13 +359,16 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
           };
         },
       );
-      // Persist to DB (fire-and-forget)
+      // Persist to DB
       void supabase
         .from("group_post_last_seen")
         .upsert(
           { user_id: currentUserId, group_post_id: postId, seen_at: seenAt },
           { onConflict: "user_id,group_post_id" },
-        );
+        )
+        .then(({ error }) => {
+          if (error) console.error("[SEEN] markPostSeen upsert failed:", error);
+        });
     },
     [groupId, currentUserId, queryClient],
   );

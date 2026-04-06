@@ -214,12 +214,21 @@ export function CommentThread({
   // Find the first comment newer than lastSeenAt (snapshot from before markPostSeen).
   const unreadStartIndex = (() => {
     if (comments.length === 0) return -1;
-    // Never seen → all comments are unread
-    if (lastSeenAt === null || lastSeenAt === undefined) return 0;
-    const idx = comments.findIndex((c) => c.created_at > lastSeenAt);
+    // Never seen → all comments are unread (but only count others' messages)
+    if (lastSeenAt === null || lastSeenAt === undefined) {
+      const idx = comments.findIndex((c) => c.user_id !== currentUserId);
+      return idx; // -1 if all comments are own
+    }
+    // Find first comment from another user that's newer than lastSeenAt
+    const idx = comments.findIndex((c) => c.created_at > lastSeenAt && c.user_id !== currentUserId);
     return idx; // -1 means all seen
   })();
-  const unreadCount = unreadStartIndex >= 0 ? comments.length - unreadStartIndex : 0;
+  const unreadCount =
+    unreadStartIndex >= 0
+      ? comments.slice(unreadStartIndex).filter((c) => c.user_id !== currentUserId).length
+      : 0;
+
+  console.log("[SEEN] divider —", { lastSeenAt, unreadStartIndex, unreadCount, commentIds: comments.map((c) => ({ id: c.id.slice(0, 8), created_at: c.created_at, user_id: c.user_id.slice(0, 8) })) });
 
   // Scroll to the divider (or bottom if no divider) once on open.
   const hasScrolledRef = useRef(false);

@@ -82,6 +82,7 @@ export function useComments(
     getNextPageParam: (lastPage) =>
       lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,
     staleTime: 1000 * 30,
+    refetchOnMount: "always",
     enabled: !!groupPostId,
   });
 
@@ -177,7 +178,10 @@ export function useComments(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
       if (groupId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
+        // Don't invalidate the feed here — the realtime handler in useGroupFeed
+        // already handles own-comment updates optimistically (setting seenAt = latestCommentAt).
+        // Invalidating the feed causes a DB refetch where seen_at is stale, producing
+        // a false-positive green dot flash.
         queryClient.invalidateQueries({ queryKey: ["feed-comment-previews", groupId] });
       }
     },
