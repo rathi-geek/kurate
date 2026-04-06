@@ -1,6 +1,7 @@
 import { type Metadata ,type  Route } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/_libs/supabase/server";
+import { createAdminClient } from "@/app/_libs/supabase/admin";
 import { ROUTES } from "@kurate/utils";
 
 import { JoinErrorView } from "./JoinErrorView";
@@ -84,7 +85,9 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
     }
 
     // Check if this email invite still exists (not revoked)
-    const { data: inviteRow } = await supabase
+    // Use admin client — RLS only allows group members to read, but invitee isn't a member yet
+    const adminSupabase = createAdminClient();
+    const { data: inviteRow } = await adminSupabase
       .from("group_invites")
       .select("id")
       .eq("group_id", invite_code)
@@ -153,7 +156,8 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
 
   // Remove the email invite row now that it's been used
   if (invitedEmail) {
-    await supabase
+    const admin = createAdminClient();
+    await admin
       .from("group_invites")
       .delete()
       .eq("group_id", group.id)

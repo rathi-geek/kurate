@@ -159,8 +159,7 @@ export async function POST(request: NextRequest) {
     await db.from("group_invites").insert({
       group_id: groupId,
       invited_by: user.id,
-      email: normalizedEmail,
-      status: "pending",
+      invited_email: normalizedEmail,
     });
   } catch {
     // group_invites table not created yet — ignore
