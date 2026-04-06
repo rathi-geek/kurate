@@ -10,6 +10,8 @@ export const env = createEnv({
     SENTRY_AUTH_TOKEN: z.string().min(1, "Sentry auth token is required").optional(),
     // Supabase server-only key
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "Supabase service role key is required").optional(),
+    // Email (Resend)
+    RESEND_API_KEY: z.string().min(1, "Resend API key is required").optional(),
     // AI provider
     AI_PROVIDER: z.enum(["anthropic", "openai"]).default("anthropic"),
     ANTHROPIC_API_KEY: z.string().min(1, "Anthropic API key is required").optional(),
@@ -42,6 +44,7 @@ export const env = createEnv({
     SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
     BYPASS_AUTH: process.env.BYPASS_AUTH,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
     AI_PROVIDER: process.env.AI_PROVIDER,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     // Public
