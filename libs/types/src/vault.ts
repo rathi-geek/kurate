@@ -37,7 +37,7 @@ export type VaultItem = Omit<UserLoggedItemsRow, "save_source"> & {
 
 export type TimeFilter = "today" | "week" | "month" | "all";
 export type ContentTypeFilter = "all" | ContentType;
-export type ReadStatusFilter = "all" | "read" | "unread";
+export type ReadStatusFilter = "all" | "marked" | "unmarked";
 
 /** Viewport rect for expand-from-card animation (e.g. VideoPlayer). */
 export interface SourceRect {
@@ -67,8 +67,8 @@ export type VaultContentTypeFilterLabelKey =
 
 export type VaultReadStatusFilterLabelKey =
   | "filter_all_items"
-  | "filter_read"
-  | "filter_unread";
+  | "filter_marked"
+  | "filter_unmarked";
 
 /** Enum-derived time filter options (single source of truth). Use when backend does not provide options. */
 export const TIME_FILTER_OPTIONS: readonly {
@@ -101,8 +101,8 @@ export const READ_STATUS_FILTER_OPTIONS: readonly {
   labelKey: VaultReadStatusFilterLabelKey;
 }[] = [
   { value: "all", labelKey: "filter_all_items" },
-  { value: "read", labelKey: "filter_read" },
-  { value: "unread", labelKey: "filter_unread" },
+  { value: "marked", labelKey: "filter_marked" },
+  { value: "unmarked", labelKey: "filter_unmarked" },
 ] as const;
 
 export interface VaultFilters {

@@ -33,8 +33,8 @@ const TIME_KEY: Record<string, string> = {
 };
 
 const READ_STATUS_KEY: Record<string, string> = {
-  read:   "empty_state_filtered_read_read",
-  unread: "empty_state_filtered_read_unread",
+  marked:   "empty_state_filtered_read_read",
+  unmarked: "empty_state_filtered_read_unread",
 };
 
 export function VaultEmptyState({ onExplore, variant = "default", filters }: VaultEmptyStateProps) {

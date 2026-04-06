@@ -2,7 +2,7 @@
 
 import { memo, useState, useEffect, useRef } from "react";
 
-import type { VaultFilters as VaultFiltersType } from "@kurate/types";
+import { type VaultFilters as VaultFiltersType, VaultTab } from "@kurate/types";
 import { motion } from "framer-motion";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,7 +10,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { VaultFilterSheet } from "@/app/_components/vault/VaultFilterSheet";
 import { VaultFilters } from "@/app/_components/vault/VaultFilters";
 import { VaultSearch } from "@/app/_components/vault/VaultSearch";
-import { VaultTab } from "@kurate/types";
 import { cn } from "@/app/_libs/utils/cn";
 import { SearchIcon, SlidersIcon } from "@/components/icons";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -44,21 +43,31 @@ export const VaultTabSubHeader = memo(function VaultTabSubHeader({
   const isMobile = useIsMobile();
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-  // Delay tab re-appearance until after search closes (avoids layout jump)
-  const [showTabs, setShowTabs] = useState(!searchOpen);
+  // Delay tab re-appearance until after search closes (avoids layout jump).
+  // `tabsVisible` only flips to true inside the setTimeout callback (never synchronously).
+  const [tabsVisible, setTabsVisible] = useState(!searchOpen);
   const showTabsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (showTabsTimerRef.current) clearTimeout(showTabsTimerRef.current);
     if (searchOpen) {
-      setShowTabs(false);
+      // Hiding is safe to read from the prop directly — no setState needed
+      showTabsTimerRef.current = null;
     } else {
-      showTabsTimerRef.current = setTimeout(() => setShowTabs(true), SEARCH_EXIT_MS);
+      showTabsTimerRef.current = setTimeout(() => setTabsVisible(true), SEARCH_EXIT_MS);
     }
     return () => {
       if (showTabsTimerRef.current) clearTimeout(showTabsTimerRef.current);
     };
   }, [searchOpen]);
+
+  // Tabs hidden immediately when search opens (derived), shown after delay when it closes
+  const showTabs = searchOpen ? false : tabsVisible;
+
+  // Reset tabsVisible when search opens so next close triggers the delay
+  if (searchOpen && tabsVisible) {
+    setTabsVisible(false);
+  }
 
   const hasActiveFilter = fullVaultFilters.time !== "all" || fullVaultFilters.contentType !== "all";
 
@@ -113,6 +122,7 @@ export const VaultTabSubHeader = memo(function VaultTabSubHeader({
         <div className={cn("flex items-center gap-1", mobileSearchOpen ? "flex-1" : "ml-auto")}>
           {searchOpen ? (
             <div
+              role="presentation"
               className={cn("overflow-hidden", isMobile ? "flex-1" : "w-[220px]")}
               onBlur={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget as Node)) {

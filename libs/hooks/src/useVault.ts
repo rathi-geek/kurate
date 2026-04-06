@@ -95,9 +95,9 @@ async function fetchVaultPage(
 
   let items = (data ?? []).map((row) => toVaultItem(row as Record<string, unknown>));
 
-  if (readStatus === "read") {
+  if (readStatus === "marked") {
     items = items.filter((item) => item.is_read);
-  } else if (readStatus === "unread") {
+  } else if (readStatus === "unmarked") {
     items = items.filter((item) => !item.is_read);
   }
 

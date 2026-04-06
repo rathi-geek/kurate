@@ -91,19 +91,20 @@ export function useSubmitContent(config: SubmitContentConfig) {
             remarks: note ?? null,
           });
 
-          if (result.item) {
-            void fetch(`${base}/api/classify-content`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                logged_item_id: result.item.logged_item_id,
-                title: meta?.title ?? url,
-                description: null,
-                tags: meta?.tags ?? [],
-                content_type: meta?.contentType ?? "article",
-              }),
-            });
-          }
+          // TODO: Re-enable when Anthropic API credits are topped up
+          // if (result.item) {
+          //   void fetch(`${base}/api/classify-content`, {
+          //     method: "POST",
+          //     headers: { "Content-Type": "application/json" },
+          //     body: JSON.stringify({
+          //       logged_item_id: result.item.logged_item_id,
+          //       title: meta?.title ?? url,
+          //       description: null,
+          //       tags: meta?.tags ?? [],
+          //       content_type: meta?.contentType ?? "article",
+          //     }),
+          //   });
+          // }
 
           await config.onLinkSaved?.(result);
           config.onRouted("links");
