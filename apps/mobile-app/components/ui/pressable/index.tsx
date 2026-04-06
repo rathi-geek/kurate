@@ -15,7 +15,7 @@ const Pressable = React.forwardRef<
       {...props}
       ref={ref}
       className={cn(
-        'data-[focus-visible=true]:outline-none data-[disabled=true]:opacity-40',
+        'data-[disabled=true]:opacity-40 data-[focus-visible=true]:outline-none',
         className,
       )}
     />

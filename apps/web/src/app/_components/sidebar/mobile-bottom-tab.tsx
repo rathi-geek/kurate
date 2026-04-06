@@ -9,7 +9,10 @@ import { BrandArch } from "@/components/brand";
 import { BellIcon } from "@/components/icons";
 import { UnreadBadge } from "@/app/_components/sidebar/unread-badge";
 
+import { AvatarSkeleton } from "./AvatarSkeleton";
+
 interface MobileBottomTabProps {
+  loading?: boolean;
   userId: string | null;
   userAvatarUrl: string | null;
   userInitials: string;
@@ -21,6 +24,7 @@ interface MobileBottomTabProps {
 }
 
 export function MobileBottomTab({
+  loading = false,
   userAvatarUrl,
   userInitials,
   unreadCounts,
@@ -95,7 +99,9 @@ export function MobileBottomTab({
       {/* 5. Profile — avatar or initials */}
       <Link href="/profile" className={tabClass}>
         <div className={`relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-full ${profileActive ? "ring-2 ring-ink/40" : ""}`}>
-          {userAvatarUrl ? (
+          {loading && !userAvatarUrl ? (
+            <AvatarSkeleton size={24} />
+          ) : userAvatarUrl ? (
             <Image src={userAvatarUrl} alt={userInitials} fill className="object-cover" sizes="24px" />
           ) : (
             <div className={`flex h-full w-full items-center justify-center rounded-full font-sans text-[9px] font-bold ${profileActive ? "bg-ink text-cream" : "bg-ink/20 text-ink/60"}`}>

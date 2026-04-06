@@ -3,18 +3,21 @@ import { View, Text } from 'react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const alertStyle = cva('flex-row items-start gap-2 rounded-lg border px-2.5 py-2', {
-  variants: {
-    variant: {
-      default: 'border-border bg-card',
-      destructive: 'border-destructive bg-card',
-      solid: 'border-border bg-card',
+const alertStyle = cva(
+  'flex-row items-start gap-2 rounded-lg border px-2.5 py-2',
+  {
+    variants: {
+      variant: {
+        default: 'border-border bg-card',
+        destructive: 'border-destructive bg-card',
+        solid: 'border-border bg-card',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
     },
   },
-  defaultVariants: {
-    variant: 'default',
-  },
-});
+);
 
 const alertTextStyle = cva('flex-1 text-sm font-medium tracking-tight', {
   variants: {

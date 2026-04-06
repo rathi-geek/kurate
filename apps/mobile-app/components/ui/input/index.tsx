@@ -55,11 +55,11 @@ const InputField = React.forwardRef<
     <TextInput
       ref={ref}
       editable={!isDisabled}
-      onFocus={(e) => {
+      onFocus={e => {
         setIsFocused(true);
         props.onFocus?.(e);
       }}
-      onBlur={(e) => {
+      onBlur={e => {
         setIsFocused(false);
         props.onBlur?.(e);
       }}
@@ -95,11 +95,18 @@ type IInputIconProps = {
   size?: number;
 };
 
-const InputIcon = ({ className, as: IconComponent, size = 16 }: IInputIconProps) => {
+const InputIcon = ({
+  className,
+  as: IconComponent,
+  size = 16,
+}: IInputIconProps) => {
   if (!IconComponent) return null;
   return (
     <IconComponent
-      className={cn('h-4 w-4 items-center justify-center fill-none text-muted-foreground', className)}
+      className={cn(
+        'h-4 w-4 items-center justify-center fill-none text-muted-foreground',
+        className,
+      )}
       size={size}
     />
   );

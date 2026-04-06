@@ -8,3 +8,5 @@ export * from './useLoginAuth';
 export * from './useProfileUpsert';
 export * from './useUsernameAvailability';
 export * from './useUserInterests';
+export * from './useVault';
+export * from './useDebouncedValue';

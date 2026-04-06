@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 import { ProfileEditModal } from "@/app/_components/profile/ProfileEditModal";
+import { ProfileSkeleton } from "@/app/_components/profile/ProfileSkeleton";
 import { ContentDNA } from "@/app/_components/vault/ContentDNA";
 import { useAuth } from "@/app/_libs/auth-context";
 import { useUserInterests } from "@/app/_libs/hooks/useUserInterests";
@@ -16,7 +17,7 @@ const DASH = "—";
 
 export default function ProfilePage() {
   const t = useTranslations("profile");
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { data: interests = [] } = useUserInterests(user?.id);
   const { data: contentDNA = [] } = useContentDNA();
   const [editOpen, setEditOpen] = useState(false);
@@ -36,6 +37,10 @@ export default function ProfilePage() {
 
     fetchCounts();
   }, [user]);
+
+  if (loading && !profile) {
+    return <ProfileSkeleton />;
+  }
 
   const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
   const handle = profile?.handle ?? "";

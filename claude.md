@@ -57,13 +57,10 @@ Before adding anything to `apps/web/` or `apps/mobile-app/`, check if it belongs
 - Built once using `find` shell commands — never by reading file contents
 - Updated after each feature when new files are created
 
-**2. `memory/FEATURE_PLAN.md`** — replaced before each feature starts
+**2. `memory/FEATURE_PLAN.md`** — always overwritten with current feature
 
-- Exact files each agent needs + what to do with each file
-- Step by step implementation plan
-- Design decisions extracted from web for mobile reference
-- Web agent commands with exact paths
-- Mobile agent commands with exact paths
+- Simply overwrite it every time a new feature starts
+- No archiving needed — WORK_LOG.md captures what was built
 
 ---
 
@@ -282,6 +279,7 @@ If something is missing from the map → explore that specific folder only, upda
 ## Context Management
 
 When user says "save context": update `memory/MEMORY.md` and `memory/WORK_LOG.md`.
+When a feature is complete: append summary to `memory/WORK_LOG.md`, archive plan to `memory/plans/`.
 
 ## App-Specific Rules
 

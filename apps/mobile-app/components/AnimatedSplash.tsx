@@ -25,7 +25,10 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
     // Hold briefly, then subtle zoom-in, then zoom-through + fade out
     scale.value = withSequence(
       withDelay(300, withSpring(1.15, { damping: 12, stiffness: 100 })),
-      withDelay(200, withTiming(3, { duration: 400, easing: Easing.in(Easing.quad) })),
+      withDelay(
+        200,
+        withTiming(3, { duration: 400, easing: Easing.in(Easing.quad) }),
+      ),
     );
     opacity.value = withDelay(
       700,
@@ -43,7 +46,10 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   }));
 
   return (
-    <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-background">
+    <View
+      style={StyleSheet.absoluteFill}
+      className="items-center justify-center bg-background"
+    >
       <Animated.View style={animatedStyle} className="items-center gap-3">
         <BrandConcentricArch width={64} height={48} color="#2b5b7e" />
         <Animated.Text

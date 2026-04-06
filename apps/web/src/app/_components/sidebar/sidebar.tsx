@@ -20,6 +20,8 @@ import { BrandArch, BrandConcentricArch } from "@/components/brand";
 import { BellIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 
+import { AvatarSkeleton } from "./AvatarSkeleton";
+
 import { SidebarProvider } from "./sidebar-context";
 import { SidebarFooter } from "./sidebar-footer";
 import { SidebarGroupsSection } from "./sidebar-groups-section";
@@ -41,6 +43,7 @@ interface AppSidebarProps {
   onGroupChatClick?: (groupName: string) => void;
   activeChatHandle?: string | null;
   // Profile avatar
+  loading?: boolean;
   userAvatarUrl?: string | null;
   userInitials?: string;
   // Shared hook results from AppShell
@@ -62,6 +65,7 @@ export function AppSidebar({
   onPersonClick,
   onGroupChatClick: _onGroupChatClick,
   activeChatHandle,
+  loading = false,
   userAvatarUrl,
   userInitials = "?",
   unreadCounts = new Map(),
@@ -172,7 +176,9 @@ export function AppSidebar({
               }>
               <div
                 className={`relative flex h-[18px] w-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full ${profileActive ? "ring-ink/40 ring-1" : ""}`}>
-                {userAvatarUrl ? (
+                {loading && !userAvatarUrl ? (
+                  <AvatarSkeleton size={18} />
+                ) : userAvatarUrl ? (
                   <Image
                     src={userAvatarUrl}
                     alt={userInitials}

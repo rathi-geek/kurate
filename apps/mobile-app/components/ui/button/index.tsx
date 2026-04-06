@@ -11,10 +11,8 @@ const buttonStyle = cva(
   {
     variants: {
       variant: {
-        default:
-          'bg-primary data-[active=true]:bg-primary/90',
-        destructive:
-          'bg-destructive data-[active=true]:bg-destructive/90',
+        default: 'bg-primary data-[active=true]:bg-primary/90',
+        destructive: 'bg-destructive data-[active=true]:bg-destructive/90',
         outline:
           'border border-border bg-background data-[active=true]:bg-accent',
         secondary:
@@ -67,9 +65,7 @@ const Button = React.forwardRef<
   IButtonProps
 >(({ className, variant = 'default', size = 'default', ...props }, ref) => {
   return (
-    <TextClassContext.Provider
-      value={buttonTextStyle({ variant, size })}
-    >
+    <TextClassContext.Provider value={buttonTextStyle({ variant, size })}>
       <Pressable
         ref={ref}
         role="button"
@@ -106,7 +102,11 @@ const ButtonSpinner = React.forwardRef<
   React.ComponentProps<typeof ActivityIndicator>
 >(({ className, ...props }, ref) => {
   return (
-    <ActivityIndicator ref={ref} {...props} className={cn('h-4 w-4', className)} />
+    <ActivityIndicator
+      ref={ref}
+      {...props}
+      className={cn('h-4 w-4', className)}
+    />
   );
 });
 
@@ -124,7 +124,11 @@ const ButtonIcon = React.forwardRef<
   if (!IconComponent) return null;
   return (
     <IconComponent
-      className={cn('pointer-events-none shrink-0 fill-none', textClass, className)}
+      className={cn(
+        'pointer-events-none shrink-0 fill-none',
+        textClass,
+        className,
+      )}
       size={size}
     />
   );

@@ -29,7 +29,7 @@ import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const [sidebarOverrides, setSidebarOverrides] = useState<SidebarOverrides>({});
   const [activePanel, setActivePanel] = useState<"people" | "groups" | null>(null);
 
@@ -135,6 +135,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarOverridesProvider setOverrides={setSidebarOverrides}>
       <div className="bg-background flex h-screen">
         <AppSidebar
+          loading={loading}
           userEmail={userEmail}
           userName={userName}
           userId={userId}
@@ -166,6 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
       <MobileBottomTab
+        loading={loading}
         userId={userId}
         userAvatarUrl={userAvatarUrl}
         userInitials={userInitials}

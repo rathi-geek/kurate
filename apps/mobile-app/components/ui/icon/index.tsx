@@ -19,7 +19,10 @@ type IconProps = Omit<LucideProps, 'ref'> & {
   className?: string;
 };
 
-function IconImpl({ as: IconComponent, ...props }: Omit<LucideProps, 'ref'> & { as: LucideIcon }) {
+function IconImpl({
+  as: IconComponent,
+  ...props
+}: Omit<LucideProps, 'ref'> & { as: LucideIcon }) {
   return <IconComponent {...props} />;
 }
 
@@ -37,12 +40,17 @@ cssInterop(IconImpl, {
 const Icon = React.forwardRef<React.ComponentRef<typeof IconImpl>, IconProps>(
   function Icon({ as: IconComponent, className, size = 'md', ...props }, ref) {
     const textClass = React.useContext(TextClassContext);
-    const resolvedSize = typeof size === 'number' ? size : sizeMap[size] ?? 18;
+    const resolvedSize =
+      typeof size === 'number' ? size : (sizeMap[size] ?? 18);
 
     return (
       <IconImpl
         as={IconComponent}
-        className={cn('pointer-events-none fill-none text-foreground', textClass, className)}
+        className={cn(
+          'pointer-events-none fill-none text-foreground',
+          textClass,
+          className,
+        )}
         size={resolvedSize}
         {...props}
       />

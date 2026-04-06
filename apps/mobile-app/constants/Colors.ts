@@ -2,6 +2,7 @@
 // To update, edit constants/tokens.js and run 'pnpm generate:ts'
 
 const colorsLight = {
+  BrandPrimary: '#1a5c4b',
   Primary0: '#e7e8e7',
   Primary50: '#c4c5c2',
   Primary100: '#a1a29e',
@@ -189,6 +190,7 @@ const colorsLight = {
 } as const;
 
 const colorsDark = {
+  BrandPrimary: '#1a5c4b',
   Primary0: '#e7e8e7',
   Primary50: '#c4c5c2',
   Primary100: '#a1a29e',

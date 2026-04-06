@@ -1,167 +1,86 @@
-import { StyleSheet } from 'react-native';
-import { View } from '@/components/ui/view';
-import { Text } from '@/components/ui/text';
-import { Button, ButtonText } from '@/components/ui/button';
-import { useTheme } from '@/hooks/useTheme';
-import { useLocalization } from '@/context';
-import { storageUtils } from '@/utils';
-import { useAuthStore } from '@/store';
-import { supabase } from '@/libs/supabase/client';
-import { Link } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { HomeHeader } from '@/components/home/HomeHeader';
+import { VaultSubHeader } from '@/components/home/VaultSubHeader';
+import { VaultSearchBar } from '@/components/vault/VaultSearchBar';
+import { VaultList } from '@/components/vault/VaultList';
+import {
+  VaultFilterSheet,
+  hasActiveFilters,
+} from '@/components/vault/VaultFilterSheet';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { HomeTab, VaultTab } from '@kurate/types';
+import type { VaultFilters } from '@kurate/types';
 
-export default function TabOneScreen() {
-  const { theme, mode, setMode } = useTheme();
-  const { t, setLocale, switchToDeviceLocale } = useLocalization();
-  const isAutoMode = mode === 'system';
-  const reset = useAuthStore(state => state.reset);
+const DEFAULT_FILTER_STATE = {
+  time: 'all' as const,
+  contentType: 'all' as const,
+  readStatus: 'all' as const,
+};
+
+export default function VaultScreen() {
+  const [activeHomeTab, setActiveHomeTab] = useState(HomeTab.VAULT);
+  const [vaultTab, setVaultTab] = useState(VaultTab.LINKS);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [vaultFilters, setVaultFilters] = useState(DEFAULT_FILTER_STATE);
+
+  const debouncedSearch = useDebouncedValue(searchQuery);
+
+  const fullFilters: VaultFilters = useMemo(
+    () => ({ ...vaultFilters, search: debouncedSearch }),
+    [vaultFilters, debouncedSearch],
+  );
+
+  const activeFilter = hasActiveFilters(fullFilters);
+
+  const handleSearchToggle = useCallback(() => {
+    setSearchOpen(prev => {
+      if (prev) setSearchQuery('');
+      return !prev;
+    });
+  }, []);
+
+  const handleFilterChange = useCallback((f: VaultFilters) => {
+    setVaultFilters({
+      time: f.time,
+      contentType: f.contentType,
+      readStatus: f.readStatus,
+    });
+  }, []);
+
   return (
-    <View style={styles.container} className="bg-background">
-      <Text className="mb-10 text-2xl font-bold text-foreground">
-        Theme and Language Settings
-      </Text>
-
-      <View style={styles.section}>
-        <Text className="text-foreground" style={styles.label}>
-          Auto (Follow System)
-        </Text>
-        <Button
-          onPress={() => setMode(isAutoMode ? 'light' : 'system')}
-          className={isAutoMode ? 'bg-foreground/95' : 'bg-foreground/20'}
-          style={styles.toggleButton}
-        >
-          <ButtonText className="text-background">
-            {isAutoMode ? 'ON' : 'OFF'}
-          </ButtonText>
-        </Button>
-      </View>
-
-      {!isAutoMode && (
-        <View style={styles.section}>
-          <Text className="text-foreground" style={styles.label}>
-            Manual Theme
-          </Text>
-          <View style={styles.buttonRow}>
-            <Button
-              onPress={() => setMode('light')}
-              className={
-                mode === 'light' ? 'bg-foreground/95' : 'bg-foreground/20'
-              }
-              style={styles.themeButton}
-            >
-              <ButtonText className="text-background">Light</ButtonText>
-            </Button>
-            <Button
-              onPress={() => setMode('dark')}
-              className={
-                mode === 'dark' ? 'bg-foreground/95' : 'bg-foreground/20'
-              }
-              style={styles.themeButton}
-            >
-              <ButtonText className="text-background">Dark</ButtonText>
-            </Button>
-          </View>
-        </View>
+    <SafeAreaView className="flex-1 bg-background">
+      <HomeHeader activeTab={activeHomeTab} onTabChange={setActiveHomeTab} />
+      {activeHomeTab === HomeTab.VAULT && (
+        <>
+          <VaultSubHeader
+            vaultTab={vaultTab}
+            onTabChange={setVaultTab}
+            onSearchToggle={handleSearchToggle}
+            onFilterPress={() => setFilterSheetOpen(true)}
+            hasActiveFilter={activeFilter}
+          />
+          {searchOpen && (
+            <VaultSearchBar
+              value={searchQuery}
+              onSearch={setSearchQuery}
+              onClose={() => {
+                setSearchOpen(false);
+                setSearchQuery('');
+              }}
+            />
+          )}
+          <VaultList filters={fullFilters} />
+          <VaultFilterSheet
+            open={filterSheetOpen}
+            filters={fullFilters}
+            onChange={handleFilterChange}
+            onClose={() => setFilterSheetOpen(false)}
+          />
+        </>
       )}
-
-      <View style={styles.infoSection}>
-        <Text className="text-foreground" style={styles.infoText}>
-          Current Mode: {isAutoMode ? 'Auto (System)' : mode}
-        </Text>
-        <Text className="text-foreground" style={styles.infoText}>
-          Active Theme: {theme}
-        </Text>
-      </View>
-      <View style={styles.infoSection}>
-        <Button
-          variant="default"
-          size="default"
-          onPress={() => setLocale('en')}
-        >
-          <ButtonText>English</ButtonText>
-        </Button>
-        <Button
-          onPress={() => setLocale('es')}
-          variant="default"
-          size="default"
-        >
-          <ButtonText>Spanish</ButtonText>
-        </Button>
-        <Button
-          onPress={() => setLocale('pt')}
-          variant="default"
-          size="default"
-        >
-          <ButtonText>Portuguese</ButtonText>
-        </Button>
-      </View>
-      <Text>{t('test')}</Text>
-      <Button
-        onPress={() => {
-          storageUtils.clearAllItems();
-          switchToDeviceLocale();
-        }}
-        className="bg-foreground"
-      >
-        <ButtonText className="text-background">
-          Set to device locale
-        </ButtonText>
-      </Button>
-      <Link asChild push href="/modal" className="my-2">
-        <Button>
-          <ButtonText>Go to Modal</ButtonText>
-        </Button>
-      </Link>
-      <Button
-        variant="destructive"
-        onPress={async () => {
-          await supabase.auth.signOut();
-          reset();
-          await storageUtils.clearAllItems();
-        }}
-      >
-        <ButtonText>Logout</ButtonText>
-      </Button>
-    </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  section: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 12,
-    fontWeight: '600',
-  },
-  toggleButton: {
-    minWidth: 100,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  themeButton: {
-    flex: 1,
-    maxWidth: 120,
-  },
-  infoSection: {
-    marginTop: 40,
-    alignItems: 'center',
-    gap: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-});

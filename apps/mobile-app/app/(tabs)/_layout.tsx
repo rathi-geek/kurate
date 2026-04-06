@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
+import { Bookmark } from 'lucide-react-native';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useTheme } from '@/hooks/useTheme';
@@ -25,10 +26,10 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.Typography0,
-        tabBarInactiveTintColor: colors.Typography400,
+        tabBarActiveTintColor: '#ffffff',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.6)',
         tabBarStyle: {
-          backgroundColor: colors.Background0,
+          backgroundColor: colors.BrandPrimary,
         },
         headerShown: useClientOnlyValue(false, true),
       }}
@@ -36,9 +37,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
+          title: 'Vault',
+          headerShown: false,
           tabBarIcon: ({ color }: { color: string }) => (
-            <TabBarIcon name="code" color={color} />
+            <Bookmark size={24} color={color} />
           ),
         }}
       />
