@@ -448,7 +448,7 @@
     "edit_comment_aria": "Edit comment",
     "delete_comment_aria": "Delete comment",
     "new_message_singular": "1 new message",
-    "new_messages": "{count} new messages",
+    "new_messages": "{{count}} new messages",
     "more": "more",
     "loading": "Loading...",
     "load_more_comments": "Load more comments",

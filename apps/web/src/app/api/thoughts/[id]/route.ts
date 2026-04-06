@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/app/_libs/supabase/server";
 
-type ThoughtBucket = "media" | "tasks" | "learning" | "notes" | "misc";
+type ThoughtBucket = "tasks" | "notes";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

@@ -1589,7 +1589,7 @@ export type Database = {
       role_enum: "owner" | "admin" | "member"
       save_source_enum: "external" | "shares" | "web_extension" | "discovered"
       theme_pref_enum: "light" | "dark" | "auto"
-      thought_bucket: "media" | "tasks" | "learning" | "notes"
+      thought_bucket: "tasks" | "notes"
       thought_content_type: "text" | "image" | "voice_note" | "file"
     }
     CompositeTypes: {
@@ -1745,7 +1745,7 @@ export const Constants = {
       role_enum: ["owner", "admin", "member"],
       save_source_enum: ["external", "shares", "web_extension", "discovered"],
       theme_pref_enum: ["light", "dark", "auto"],
-      thought_bucket: ["media", "tasks", "learning", "notes"],
+      thought_bucket: ["tasks", "notes"],
       thought_content_type: ["text", "image", "voice_note", "file"],
     },
   },

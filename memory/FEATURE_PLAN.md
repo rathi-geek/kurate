@@ -148,12 +148,15 @@ Note: Thought hooks (`useBucketSummaries`, `useDeleteThought`, `useEditThought`,
 - `useDeleteThought` — delete mutation (direct Supabase)
 - `useBucketLastRead` — read/write `bucket_last_read` table
 
+**Composer (shared for Links + Thoughts):**
+- `ChatComposer` — pill-shaped text input pinned to bottom, detects URLs (→ link save), plain text (→ thought). Uses `useSubmitContent` from `@kurate/hooks`. Always visible above keyboard via KeyboardAvoidingView.
+
 **Utility hooks:**
 - `useVault` — thin wrapper passing mobile supabase to shared hook
 - `useDebouncedValue` — debounce for search
 
 **Screen:**
-- Rewrite `index.tsx` — compose all layers, both Links and Thoughts tabs
+- Rewrite `index.tsx` — compose all layers with exact stacking: header → sub-header → search → content (flex-1 scrollable) → ChatComposer (pinned bottom) → overlays (filter sheet, bucket chat)
 
 ### Design Decisions — Links Tab (for mobile agent)
 
@@ -199,6 +202,22 @@ Note: Thought hooks (`useBucketSummaries`, `useDeleteThought`, `useEditThought`,
 | **All view** | Virtuoso with startReached for older messages, each bubble shows bucket label | FlatList inverted, each bubble shows bucket label |
 | **Empty thoughts** | Centered: "No thoughts yet" + "Start typing..." (text-ink/50, text-ink/30) | Same pattern: VStack centered |
 | **Search in thoughts** | Uses same search bar, filters thoughts client-side by text | Same — filter `displayMessages` by `text.includes(query)` |
+
+### Design Decisions — ChatComposer (for mobile agent)
+
+| Aspect | Web (ChatInput) | Mobile (ChatComposer) |
+|---|---|---|
+| **Position** | Pinned to bottom of VaultTabView, shrink-0 | Pinned to bottom inside KeyboardAvoidingView |
+| **Container** | `bg-card rounded-full p-2 shadow-lg border-0` | Same: `bg-card rounded-full p-2 shadow-lg` |
+| **Left icon** | LinkIcon size 15, `text-muted-foreground ml-1` | Link from lucide, size 15, same tokens |
+| **Input** | shadcn Input, borderless, `flex-1 px-2 py-1.5 text-sm` | RN TextInput, `flex-1 px-2 py-1.5 text-sm bg-transparent` |
+| **Placeholder** | `t('vault.input_placeholder')` = "Drop a thought, task, link or something you overheard." | Same |
+| **Send button** | Animated circle `bg-primary h-8 w-8 rounded-full` + PlusIcon size 3.5, appears when hasText | Same layout, no animation (or simple opacity) |
+| **URL detection** | `URL_REGEX` from useSubmitContent, 150ms debounce, strips URL from text, calls `onUrlChange` | Same logic |
+| **Submit** | Enter key → handleSubmit | `returnKeyType="send"` + `onSubmitEditing` |
+| **Collapsible** | When `collapsible=true` + not focused + empty → `h-8` instead of `h-10` | Same behavior |
+| **Keyboard** | N/A (desktop) | `KeyboardAvoidingView` behavior="padding" (iOS) / "height" (Android) |
+| **Visibility** | Always visible at bottom of vault tab (both Links and Thoughts) | Same — always visible, both sub-tabs |
 
 ### Suggested order:
 
@@ -249,7 +268,9 @@ Shared libs:
 
 Web reference (design + logic only, do NOT copy JSX):
 - `apps/web/src/app/_components/home/home-tab-header.tsx` — header layout
+- `apps/web/src/app/_components/home/vault-tab-view.tsx` — vault tab container (see how ChatInput is positioned at bottom)
 - `apps/web/src/app/_components/home/vault-tab-sub-header.tsx` — Links/Thoughts tabs + search + filter
+- `apps/web/src/app/_components/home/chat-input.tsx` — ChatInput component (URL detection, submit, collapsible)
 - `apps/web/src/app/_components/home/thoughts-tab-view.tsx` — thoughts container logic
 - `apps/web/src/app/_components/home/thoughts-bucket-chat.tsx` — bucket chat with ThoughtBubble
 - `apps/web/src/app/_components/home/thoughts/bucket-card.tsx` — bucket card design
@@ -378,24 +399,77 @@ Build these files in this exact order:
    - Uses: useBucketSummaries, useThoughts, useDeleteThought, useBucketLastRead
    - Props: userId, searchQuery, activeBucket, onActiveBucketChange
 
---- PART 5: Screen assembly ---
+--- PART 5: Composer ---
 
-**Step 23.** Rewrite `apps/mobile-app/app/(tabs)/index.tsx` (~120 lines) — Full vault home screen:
-   - State: activeHomeTab (HomeTab, default VAULT), vaultTab (VaultTab, default LINKS), searchOpen, searchQuery, filterSheetOpen, vaultFilters, activeBucket (ThoughtBucket | null)
-   - Layout: SafeAreaView bg-background flex-1 →
-     - HomeHeader (activeTab, onTabChange)
-     - When VAULT tab:
-       - VaultSubHeader (vaultTab, onTabChange, searchOpen, onSearchToggle, onFilterPress, hasActiveFilter)
-       - If searchOpen: VaultSearchBar
-       - When LINKS sub-tab: VaultList (filters, searchQuery)
-       - When THOUGHTS sub-tab: ThoughtsTabView (userId, searchQuery, activeBucket, onActiveBucketChange)
-     - VaultFilterSheet (modal)
+**Step 23.** `apps/mobile-app/components/home/ChatComposer.tsx` (~80 lines) — Shared input for links + thoughts, pinned to bottom:
+   - Container: HStack `bg-card rounded-full p-2 shadow-lg` (pill shape, same as web ChatInput)
+   - Left: Link icon (Link from lucide, size 15, `text-muted-foreground ml-1`)
+   - Center: RN TextInput `flex-1 px-2 py-1.5 text-sm bg-transparent`. Placeholder: `t('vault.input_placeholder')` ("Drop a thought, task, link or something you overheard."). `returnKeyType="send"`, `onSubmitEditing` → handleSubmit
+   - Right: when hasText or lockedUrl → Pressable circle `bg-primary h-8 w-8 rounded-full items-center justify-center` with Plus icon (size 14, `text-primary-foreground`). Hidden when empty.
+   - URL detection: import `URL_REGEX` from `@kurate/hooks` (re-exported from `useSubmitContent`). On text change (150ms debounce): match URL → call `onUrlChange(url)`, strip URL from value, keep remainder. If no URL and previously had one → `onUrlChange(null)`.
+   - State: `value`, `focused`, `lockedUrl` (same pattern as web ChatInput)
+   - When `collapsible=true` and not focused and empty: shrink height slightly
+   - Props: `onSend: (text: string) => void | Promise<void>, onUrlChange?: (url: string | null) => void, placeholder?: string, collapsible?: boolean, initialValue?: string, autoFocus?: boolean, disabled?: boolean`
+   - Use `useLocalization` for placeholder fallback: `t('chat.placeholder')`
 
-**Step 24.** Update `apps/mobile-app/app/(tabs)/_layout.tsx` — change home tab title to 'Vault', icon to bookmark.
+--- PART 6: Screen assembly ---
 
-**Step 25.** Run `cd apps/mobile-app && pnpm lint && pnpm format`
+**Step 24.** Rewrite `apps/mobile-app/app/(tabs)/index.tsx` (~140 lines) — Full vault home screen:
+   - State: activeHomeTab (HomeTab, default VAULT), vaultTab (VaultTab, default LINKS), searchOpen, searchQuery, filterSheetOpen, vaultFilters, activeBucket (ThoughtBucket | null), editingThought (null | {id, text})
+   - Wire useSubmitContent from `@kurate/hooks`:
+     ```
+     const { onSend } = useSubmitContent({
+       supabase,
+       queryClient,
+       apiBaseUrl: EXPO_PUBLIC_API_URL,  // env var pointing to web server
+       onRouted: (dest) => setVaultTab(dest === 'links' ? VaultTab.LINKS : VaultTab.THOUGHTS),
+       activeBucket,
+     })
+     ```
+   - Layout (exact UI stacking order):
+     ```
+     SafeAreaView flex-1 bg-background
+     │
+     ├── HomeHeader                          ← fixed top
+     │   (activeTab, onTabChange)
+     │
+     ├── VaultSubHeader                      ← fixed below header
+     │   (vaultTab, onTabChange, searchOpen,
+     │    onSearchToggle, onFilterPress, hasActiveFilter)
+     │
+     ├── VaultSearchBar (if searchOpen)      ← conditional, mx-4 my-2
+     │
+     ├── View flex-1                         ← SCROLLABLE CONTENT AREA
+     │   ├── When LINKS sub-tab:
+     │   │   └── VaultList (filters, searchQuery)
+     │   └── When THOUGHTS sub-tab:
+     │       └── ThoughtsTabView (userId, searchQuery,
+     │           activeBucket, onActiveBucketChange)
+     │
+     ├── KeyboardAvoidingView                ← pinned to bottom, rises with keyboard
+     │   behavior="padding" (iOS) / "height" (Android)
+     │   └── ChatComposer                    ← mx-4 mb-2
+     │       (onSend, onUrlChange,
+     │        collapsible={vaultTab === THOUGHTS && !editingThought},
+     │        placeholder depends on vaultTab)
+     │
+     ├── VaultFilterSheet (Modal)            ← overlay, over everything
+     │
+     └── ThoughtsBucketChat                  ← absolute overlay when activeBucket set
+         (slides in from right, z-10, covers content + composer)
+     ```
+   - ChatComposer is ALWAYS visible at the bottom (both Links and Thoughts tabs)
+   - Content area (View flex-1) scrolls independently above ChatComposer
+   - ThoughtsBucketChat overlays everything including ChatComposer when a bucket is open
+   - VaultFilterSheet is a Modal so it overlays everything
 
-IMPORTANT: For bucket colors in React Native, CSS variables don't work. Define a color map:
+**Step 25.** Update `apps/mobile-app/app/(tabs)/_layout.tsx` — change home tab title to 'Vault', icon to bookmark.
+
+**Step 26.** Run `cd apps/mobile-app && pnpm lint && pnpm format`
+
+IMPORTANT NOTES:
+
+1. For bucket colors in React Native, CSS variables don't work. Define a color map:
 ```ts
 const BUCKET_COLORS: Record<ThoughtBucket, string> = {
   media: '#FDE8EF',
@@ -405,5 +479,9 @@ const BUCKET_COLORS: Record<ThoughtBucket, string> = {
 };
 ```
 Check the web CSS for actual --bucket-* values and use those hex values.
+
+2. `useSubmitContent` calls `/api/thoughts` and `/api/extract` — these are web API routes. Mobile must pass `apiBaseUrl` from env (`EXPO_PUBLIC_API_URL`) so requests go to the web server. The `useSaveItem` part (link saving) already uses Supabase directly.
+
+3. KeyboardAvoidingView is critical — without it, the keyboard covers ChatComposer on iOS.
 
 If something is missing from the map → explore that specific folder only, update the map, then proceed."

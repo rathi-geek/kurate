@@ -915,7 +915,7 @@ AS $$
     latest.created_at         AS latest_created_at,
     COALESCE(counts.total, 0) AS total_count,
     COALESCE(counts.unread, 0) AS unread_count
-  FROM unnest(ARRAY['media','tasks','learning','notes']) AS b(bucket)
+  FROM unnest(ARRAY['tasks','notes']) AS b(bucket)
   LEFT JOIN LATERAL (
     SELECT t.text, t.created_at
     FROM public.thoughts t

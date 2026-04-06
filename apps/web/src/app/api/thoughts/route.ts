@@ -9,14 +9,12 @@ async function classifyWithGemini(text: string): Promise<ThoughtBucket | null> {
 
   const prompt = `Classify this thought into exactly one bucket.
 Buckets:
-- media: movies, shows, music, podcasts, videos, books, articles
 - tasks: things to do, buy, errands, reminders, deadlines
-- learning: courses, concepts, skills, research, frameworks
-- notes: personal reflections, ideas, observations, opinions (default catch-all for anything else)
+- notes: personal reflections, ideas, observations, opinions, media to consume, things to learn (default catch-all for anything else)
 
 Thought: "${text}"
 
-Reply with exactly one word: media, tasks, learning, or notes.`;
+Reply with exactly one word: tasks or notes.`;
 
   try {
     const res = await fetch(
@@ -32,7 +30,7 @@ Reply with exactly one word: media, tasks, learning, or notes.`;
       candidates?: { content?: { parts?: { text?: string }[] } }[];
     };
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase() ?? "";
-    const valid: ThoughtBucket[] = ["media", "tasks", "learning", "notes"];
+    const valid: ThoughtBucket[] = ["tasks", "notes"];
     return valid.includes(rawText as ThoughtBucket) ? (rawText as ThoughtBucket) : null;
   } catch {
     return null;

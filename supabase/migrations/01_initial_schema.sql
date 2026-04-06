@@ -1155,9 +1155,7 @@ CREATE TYPE thought_content_type AS ENUM (
 );
 
 CREATE TYPE thought_bucket AS ENUM (
-  'media',
   'tasks',
-  'learning',
   'notes'
 );
 
@@ -1270,7 +1268,7 @@ CREATE POLICY "own rows"
 
 CREATE TABLE IF NOT EXISTS public.bucket_last_read (
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  bucket TEXT NOT NULL CHECK (bucket IN ('media', 'tasks', 'learning', 'notes')),
+  bucket TEXT NOT NULL CHECK (bucket IN ('tasks', 'notes')),
   last_read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (user_id, bucket)
 );
