@@ -285,6 +285,7 @@ CREATE TABLE IF NOT EXISTS public.conversation_members (
 CREATE INDEX idx_conversation_members_updated ON public.conversation_members (updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_conversation_members_convo_id ON public.conversation_members (convo_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_members_user_id ON public.conversation_members (user_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_members_joined ON public.conversation_members (joined_at DESC);
 
 ALTER TABLE public.conversation_members ENABLE ROW LEVEL SECURITY;
 
@@ -610,6 +611,8 @@ CREATE TABLE IF NOT EXISTS public.group_posts_comments (
 
 CREATE INDEX IF NOT EXISTS idx_group_posts_comments_post_id ON public.group_posts_comments (group_post_id);
 CREATE INDEX IF NOT EXISTS idx_group_posts_comments_parent ON public.group_posts_comments (parent_comment_id);
+CREATE INDEX IF NOT EXISTS idx_group_posts_comments_user_id ON public.group_posts_comments (user_id);
+CREATE INDEX IF NOT EXISTS idx_group_posts_comments_created ON public.group_posts_comments (created_at DESC);
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.group_posts_comments;
 
@@ -1262,6 +1265,8 @@ CREATE POLICY "own rows"
   ON public.group_post_last_seen
   FOR ALL
   USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_group_post_last_seen_post_id ON public.group_post_last_seen (group_post_id);
 
 
 -- ── Bucket Last Read ────────────────────────────────────────────────
