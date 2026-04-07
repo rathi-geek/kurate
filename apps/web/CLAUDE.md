@@ -8,7 +8,7 @@ Chat-based content discovery and curation. Two tabs: Logging (drop links, auto-e
 
 - ✅ `apps/web/` — your workspace
 - ✅ `libs/` — consume or extend if mobile also needs it
-- ✅ `supabase/migrations/` — edit existing 3 files only, never create new ones
+- ✅ `supabase/migrations/` — create new migration files, never edit existing ones
 - ❌ `apps/mobile-app/` — never touch
 
 ## Key Commands
@@ -54,13 +54,9 @@ Only create locally in `apps/web/` if it is 100% web-specific.
 
 ## Database
 
-⚠️ Reset-based approach — edit these 3 files directly, never create new migration files:
-
-- `supabase/migrations/*_initialSchema.sql`
-- `supabase/migrations/*_functions.sql`
-- `supabase/migrations/*_seeds.sql`
-
-After editing: notify user → they reset db → `pnpm db:types` → implement code.
+- Base schema: `01_initial_schema.sql`, `02_functions.sql`, `03_seed.sql` — do NOT edit
+- Create new migration files with date prefix for changes (e.g., `20260407_drop_group_name_unique.sql`)
+- After creating: notify user → they run `pnpm db:push` → `pnpm db:types` → implement code
 
 ## Architecture
 

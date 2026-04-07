@@ -16,8 +16,6 @@ import { queryKeys } from "@kurate/query";
 import { ROUTES } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
-// Postgres unique-violation code
-const PG_UNIQUE_VIOLATION = "23505";
 
 const supabase = createClient();
 
@@ -62,10 +60,6 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
         .single();
 
       if (groupError) {
-        if (groupError.code === PG_UNIQUE_VIOLATION) {
-          setError(t("name_taken"));
-          return;
-        }
         throw new Error(groupError.message);
       }
 

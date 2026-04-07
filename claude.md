@@ -24,15 +24,11 @@ supabase/
 - **Formatting:** `.prettierrc` + `eslint.config.js` at root — run `pnpm lint` before done
 - **Ports:** web :3001, mobile :19000–19002, docs :3002
 
-## Database — Reset-Based (early stage project)
+## Database
 
-⚠️ Never create new migration files. Edit these 3 directly:
-
-- `supabase/migrations/*_initialSchema.sql`
-- `supabase/migrations/*_functions.sql`
-- `supabase/migrations/*_seeds.sql`
-
-Workflow: edit file → tell user → they reset db + run `pnpm db:push` → `pnpm db:types` → implement code.
+- Base schema lives in `supabase/migrations/01_initial_schema.sql`, `02_functions.sql`, `03_seed.sql` — do NOT edit these directly
+- For schema changes, create new migration files with date prefix: `YYYYMMDD_description.sql`
+- Workflow: create migration file → tell user → they run `pnpm db:push` → `pnpm db:types` → implement code
 
 ## Libs — Add Before Creating App-Local Code
 

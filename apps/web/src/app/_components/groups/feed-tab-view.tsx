@@ -65,12 +65,16 @@ export function FeedTabView({
     }
   }, [drops, queryClient]);
 
-  // Scroll to + highlight drop from URL hash (Library card click)
+  // Scroll to + highlight drop from URL hash (notification / Library card click).
+  // The ref gate ensures we only scroll once — subsequent feed refetches won't re-trigger.
+  const hasScrolledToHashRef = useRef(false);
   useEffect(() => {
+    if (hasScrolledToHashRef.current) return;
     const hash = window.location.hash;
     if (!hash.startsWith("#drop-")) return;
     const el = document.getElementById(hash.slice(1));
     if (el) {
+      hasScrolledToHashRef.current = true;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add("ring-2", "ring-primary", "ring-offset-2");
       setTimeout(() => {
