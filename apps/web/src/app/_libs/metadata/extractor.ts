@@ -406,7 +406,27 @@ function twitterSyndicationToken(tweetId: string): string {
   return Math.floor(scaled * Math.PI).toString(36);
 }
 
-// Twitter/X: WhatsApp UA gets og:tags, syndication API as fallback
+// Extracts the tweet text from the oEmbed HTML response.
+// The HTML contains a <blockquote> with <p> tags holding the tweet text.
+function extractTweetTextFromOEmbed(html: string): string | null {
+  // Match all <p> content inside the <blockquote>
+  const blockquote = html.match(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/i)?.[1];
+  if (!blockquote) return null;
+  const paragraphs = [...blockquote.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+  if (paragraphs.length === 0) return null;
+  return paragraphs
+    .map(([, content]) =>
+      content
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<a[^>]*>([\s\S]*?)<\/a>/gi, "$1")
+        .replace(/<[^>]+>/g, "")
+        .trim(),
+    )
+    .filter(Boolean)
+    .join("\n");
+}
+
+// Twitter/X: oEmbed API first, syndication API second, WhatsApp UA last
 async function handleTwitterUrl(url: string): Promise<MetadataFull> {
   try {
     let expandedUrl = url;
@@ -418,50 +438,103 @@ async function handleTwitterUrl(url: string): Promise<MetadataFull> {
       }
     }
 
-    const response = await fetch(expandedUrl, {
-      headers: {
-        "User-Agent": "WhatsApp/2.23.20.0",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      redirect: "follow",
-    });
+    // ── Tier 1: Official oEmbed API ──
+    try {
+      const oembedResp = await fetch(
+        `https://publish.x.com/oembed?url=${encodeURIComponent(expandedUrl)}&omit_script=true&dnt=true`,
+        { signal: AbortSignal.timeout(6000) },
+      );
+      if (oembedResp.ok) {
+        const oembed = await oembedResp.json();
+        const tweetText = extractTweetTextFromOEmbed(oembed.html ?? "");
+        const authorName = oembed.author_name ?? null;
+        if (authorName || tweetText) {
+          // Fetch thumbnail separately via WhatsApp UA (oEmbed doesn't return images)
+          let thumbnail: string | null = null;
+          try {
+            const imgResp = await fetch(expandedUrl, {
+              headers: {
+                "User-Agent": "WhatsApp/2.23.20.0",
+                Accept: "text/html",
+              },
+              redirect: "follow",
+              signal: AbortSignal.timeout(5000),
+            });
+            if (imgResp.ok) {
+              const imgHtml = await imgResp.text();
+              thumbnail = extractMetaContent(imgHtml, "og:image");
+            }
+          } catch {
+            /* thumbnail is best-effort */
+          }
 
-    if (response.ok) {
-      const html = await response.text();
-      const ogTitle = extractMetaContent(html, "og:title");
-      const ogImage = extractMetaContent(html, "og:image");
-      if (ogTitle || ogImage) {
-        return {
-          title: ogTitle || "Tweet",
-          description: extractMetaContent(html, "og:description"),
-          thumbnail: ogImage,
-          contentType: "tweet",
-          html: null,
-        };
+          return {
+            title: authorName ? `${authorName} on X` : "Tweet",
+            description: tweetText,
+            thumbnail,
+            contentType: "tweet",
+            html: null,
+          };
+        }
+      }
+    } catch {
+      /* fall to tier 2 */
+    }
+
+    // ── Tier 2: Syndication API ──
+    const tweetId = expandedUrl.match(/status\/(\d+)/)?.[1];
+    if (tweetId) {
+      try {
+        const resp = await fetch(
+          `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&token=${twitterSyndicationToken(tweetId)}`,
+          { signal: AbortSignal.timeout(6000) },
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          const thumbnail =
+            data.mediaDetails?.[0]?.media_url_https ||
+            data.photos?.[0]?.url ||
+            data.user?.profile_image_url_https?.replace("_normal", "_400x400") ||
+            null;
+          return {
+            title: data.user?.name ? `${data.user.name} on X` : "Tweet",
+            description: data.text || null,
+            thumbnail,
+            contentType: "tweet",
+            html: null,
+          };
+        }
+      } catch {
+        /* fall to tier 3 */
       }
     }
 
-    // Fallback: syndication API
-    const tweetId = expandedUrl.match(/status\/(\d+)/)?.[1];
-    if (tweetId) {
-      const resp = await fetch(
-        `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&token=${twitterSyndicationToken(tweetId)}`,
-      );
-      if (resp.ok) {
-        const data = await resp.json();
-        const thumbnail =
-          data.mediaDetails?.[0]?.media_url_https ||
-          data.photos?.[0]?.url ||
-          data.user?.profile_image_url_https?.replace("_normal", "_400x400") ||
-          null;
-        return {
-          title: data.user?.name ? `${data.user.name} on X` : "Tweet",
-          description: data.text?.substring(0, 200) || null,
-          thumbnail,
-          contentType: "tweet",
-          html: null,
-        };
+    // ── Tier 3: WhatsApp UA for og:tags ──
+    try {
+      const response = await fetch(expandedUrl, {
+        headers: {
+          "User-Agent": "WhatsApp/2.23.20.0",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        redirect: "follow",
+        signal: AbortSignal.timeout(6000),
+      });
+      if (response.ok) {
+        const html = await response.text();
+        const ogTitle = extractMetaContent(html, "og:title");
+        const ogImage = extractMetaContent(html, "og:image");
+        if (ogTitle || ogImage) {
+          return {
+            title: ogTitle || "Tweet",
+            description: extractMetaContent(html, "og:description"),
+            thumbnail: ogImage,
+            contentType: "tweet",
+            html: null,
+          };
+        }
       }
+    } catch {
+      /* fall through */
     }
   } catch {
     /* fall through */

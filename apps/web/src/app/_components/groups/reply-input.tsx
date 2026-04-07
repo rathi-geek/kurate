@@ -7,6 +7,7 @@ import { SendIcon } from "@/components/icons";
 import { track } from "@/app/_libs/utils/analytics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmojiPicker } from "@/app/_components/shared/emoji-picker";
 
 interface ReplyInputProps {
   placeholder?: string;
@@ -69,6 +70,7 @@ export function ReplyInput({
           disabled={isLoading}
           className="flex-1 h-auto border-none bg-transparent px-0 py-0 shadow-none rounded-none focus-visible:border-transparent focus-visible:ring-0 text-sm"
         />
+        <EmojiPicker onSelect={(emoji) => setValue((v) => v + emoji)} />
         <Button
           type="button"
           variant="default"

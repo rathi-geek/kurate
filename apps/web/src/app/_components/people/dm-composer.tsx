@@ -13,6 +13,7 @@ import { generateUrlHash } from "@/app/_libs/hooks/useSaveItem";
 import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";
 import { CloseIcon, SendIcon } from "@/components/icons";
+import { EmojiPicker } from "@/app/_components/shared/emoji-picker";
 
 const supabase = createClient();
 
@@ -131,7 +132,7 @@ export function DmComposer({
               title: metadata.title ?? url,
               content_type: metadata.content_type ?? "article",
               preview_image_url: metadata.preview_image ?? null,
-              description: null,
+              description: metadata?.description ?? null,
               raw_metadata: {
                 source: metadata.source ?? null,
                 author: metadata.author ?? null,
@@ -268,14 +269,17 @@ export function DmComposer({
           rows={1}
           className="max-h-32 min-h-[38px] flex-1 resize-none overflow-y-auto border-0 bg-transparent px-3 py-2 text-sm shadow-none outline-none focus-visible:ring-0"
         />
-        <button
-          type="button"
-          onClick={() => void handleSend()}
-          disabled={!hasContent || sending}
-          aria-label={t("composer_send_aria")}
-          className="bg-primary text-primary-foreground enabled:hover:bg-primary enabled:hover:text-primary-foreground mr-1.5 mb-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all disabled:cursor-not-allowed disabled:opacity-25">
-          <SendIcon className="h-3.5 w-3.5" />
-        </button>
+        <div className="mr-1.5 mb-1.5 flex items-center gap-1.5">
+          <EmojiPicker onSelect={(emoji) => setText((t) => t + emoji)} />
+          <button
+            type="button"
+            onClick={() => void handleSend()}
+            disabled={!hasContent || sending}
+            aria-label={t("composer_send_aria")}
+            className="bg-primary text-primary-foreground enabled:hover:bg-primary enabled:hover:text-primary-foreground flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all disabled:cursor-not-allowed disabled:opacity-25">
+            <SendIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );

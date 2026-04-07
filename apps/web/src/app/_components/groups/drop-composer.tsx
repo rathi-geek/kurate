@@ -75,6 +75,7 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
           const loggedItemId = await upsertLoggedItem({
             url: detectedUrl,
             title: metadata?.title,
+            description: metadata?.description,
             content_type: metadata?.content_type,
             preview_image_url: metadata?.preview_image ?? null,
             source: metadata?.source,

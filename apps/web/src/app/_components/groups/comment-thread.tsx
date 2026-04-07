@@ -27,6 +27,36 @@ interface CommentThreadProps {
   };
 }
 
+const URL_PATTERN = /https?:\/\/[^\s]+/g;
+
+function renderTextWithLinks(text: string, isOwn: boolean): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  const regex = new RegExp(URL_PATTERN.source, "g");
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const url = match[0];
+    parts.push(
+      <a
+        key={match.index}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`underline break-all ${isOwn ? "text-primary-foreground/90 hover:text-primary-foreground" : "text-primary hover:text-primary/80"}`}>
+        {url}
+      </a>,
+    );
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+}
+
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -164,7 +194,7 @@ function CommentItem({
             </div>
           )}
           <span className="break-words">
-            {comment.comment_text}
+            {renderTextWithLinks(comment.comment_text, isOwn)}
             <span
               className={`ml-2 inline-block align-bottom font-mono text-[9px] leading-none ${isOwn ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
               {formatRelativeTime(comment.created_at)}
@@ -200,6 +230,7 @@ export function CommentThread({
     deleteComment,
     isAdding,
   } = useComments(groupShareId, groupId, currentUserProfile);
+  const [listHeight, setListHeight] = useState(0);
   const [replyingTo, setReplyingTo] = useState<{
     id: string;
     authorName: string;
@@ -227,8 +258,6 @@ export function CommentThread({
     unreadStartIndex >= 0
       ? comments.slice(unreadStartIndex).filter((c) => c.user_id !== currentUserId).length
       : 0;
-
-  console.log("[SEEN] divider —", { lastSeenAt, unreadStartIndex, unreadCount, commentIds: comments.map((c) => ({ id: c.id.slice(0, 8), created_at: c.created_at, user_id: c.user_id.slice(0, 8) })) });
 
   // Scroll to the divider (or bottom if no divider) once on open.
   const hasScrolledRef = useRef(false);
@@ -272,7 +301,8 @@ export function CommentThread({
         <Virtuoso
           ref={virtuosoRef}
           className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ height: Math.min(comments.length * 60 + 4, 250) }}
+          totalListHeightChanged={(h) => setListHeight(h)}
+          style={{ height: Math.min(listHeight || comments.length * 56, 250) }}
           data={comments}
           initialTopMostItemIndex={comments.length > 0 ? comments.length - 1 : 0}
           followOutput="smooth"
@@ -282,15 +312,18 @@ export function CommentThread({
           itemContent={(index, comment) => {
             const prev = comments[index - 1];
             const isContinuation = !!prev && prev.user_id === comment.user_id;
-            const spacing: CommentItemProps["spacing"] =
-              isContinuation ? "compact" : index === 0 ? "none" : "normal";
+            const spacing: CommentItemProps["spacing"] = isContinuation
+              ? "compact"
+              : index === 0
+                ? "none"
+                : "normal";
             const showDivider = index === unreadStartIndex && unreadCount > 0;
             return (
               <div>
                 {showDivider && (
                   <div className="flex items-center gap-2 py-2">
                     <div className="border-primary/40 flex-1 border-t" />
-                    <span className="text-primary whitespace-nowrap text-[10px] font-semibold">
+                    <span className="text-primary text-[10px] font-semibold whitespace-nowrap">
                       {unreadCount === 1
                         ? t("new_message_singular")
                         : t("new_messages", { count: unreadCount })}

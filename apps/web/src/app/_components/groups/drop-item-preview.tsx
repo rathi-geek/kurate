@@ -69,6 +69,12 @@ export function DropItemPreview({
           {item.title ?? item.url}
         </Link>
 
+        {item.description && (
+          <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
+            {item.description}
+          </p>
+        )}
+
         <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
           {metadata?.source && (
             <>

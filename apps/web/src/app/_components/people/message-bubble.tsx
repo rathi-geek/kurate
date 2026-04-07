@@ -13,15 +13,9 @@ import type { DMMessage } from "@kurate/types";
 import { PencilIcon, ReplyIcon, SmileIcon, TrashIcon } from "@/components/icons";
 import Link from "next/link";
 import { track } from "@/app/_libs/utils/analytics";
+import { EMOJI_ROWS } from "@kurate/utils";
 
 const supabase = createClient();
-
-const EMOJI_ROWS = [
-  ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "🎉"],
-  ["😍", "🥰", "😊", "😎", "🤔", "😅", "🥲", "😭"],
-  ["💯", "✨", "💪", "👏", "🫶", "🤝", "💀", "🫡"],
-  ["😡", "🤯", "🥳", "😴", "🤮", "👀", "🫠", "💔"],
-];
 
 function formatTime(iso: string) {
   const date = new Date(iso);
