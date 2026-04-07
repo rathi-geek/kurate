@@ -6,6 +6,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { ChevronLeft } from 'lucide-react-native';
 import { BUCKET_META } from '@kurate/utils';
 import type { ThoughtBucket } from '@kurate/utils';
+import { getBucketColors, lightTheme } from '@kurate/theme';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,12 +15,10 @@ import Animated, {
 import { ThoughtBubble, type DisplayMessage } from './ThoughtBubble';
 import { ThoughtsEmptyState } from './ThoughtsEmptyState';
 
-const BUCKET_COLORS: Record<ThoughtBucket, string> = {
-  media: '#FDF2F8',
-  tasks: '#ECFDF5',
-  learning: '#EFF6FF',
-  notes: '#FFFBEB',
-};
+const BUCKET_COLORS = getBucketColors(lightTheme) as Record<
+  ThoughtBucket,
+  string
+>;
 
 interface ThoughtsBucketChatProps {
   bucket: ThoughtBucket;

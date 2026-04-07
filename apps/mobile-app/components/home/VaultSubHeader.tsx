@@ -8,6 +8,7 @@ import { ArrowLeft, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import { useLocalization } from '@/context';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { VaultTab } from '@kurate/types';
+import { lightTheme } from '@kurate/theme';
 
 interface VaultSubHeaderProps {
   vaultTab: VaultTab;
@@ -56,7 +57,7 @@ export function VaultSubHeader({
           <TextInput
             className="flex-1 font-sans text-sm text-foreground"
             placeholder={t('vault.search_placeholder')}
-            placeholderTextColor="#5b7d99"
+            placeholderTextColor={lightTheme.brandMutedForeground}
             value={localSearch}
             onChangeText={setLocalSearch}
             autoFocus

@@ -1,3 +1,4 @@
+import { lightTheme } from '@kurate/theme';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
@@ -51,7 +52,11 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
       className="items-center justify-center bg-background"
     >
       <Animated.View style={animatedStyle} className="items-center gap-3">
-        <BrandConcentricArch width={64} height={48} color="#2b5b7e" />
+        <BrandConcentricArch
+          width={64}
+          height={48}
+          color={lightTheme.brandForeground}
+        />
         <Animated.Text
           style={{ fontFamily: 'DMSans_700Bold' }}
           className="text-2xl tracking-tight text-foreground"

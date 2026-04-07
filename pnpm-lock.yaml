@@ -116,6 +116,9 @@ importers:
       '@kurate/query':
         specifier: workspace:*
         version: link:../../libs/query
+      '@kurate/theme':
+        specifier: workspace:*
+        version: link:../../libs/theme
       '@kurate/types':
         specifier: workspace:*
         version: link:../../libs/types
@@ -754,6 +757,8 @@ importers:
       '@types/react':
         specifier: ^19.1.0
         version: 19.1.13
+
+  libs/theme: {}
 
   libs/types: {}
 

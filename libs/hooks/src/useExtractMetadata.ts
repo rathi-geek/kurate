@@ -13,6 +13,7 @@ export interface ExtractedMetadata {
   content_type?: ContentType;
   read_time?: string | null;
   duration?: string | null;
+  description?: string | null;
   tags?: string[] | null;
 }
 

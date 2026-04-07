@@ -484,4 +484,105 @@ Check the web CSS for actual --bucket-* values and use those hex values.
 
 3. KeyboardAvoidingView is critical — without it, the keyboard covers ChatComposer on iOS.
 
-If something is missing from the map → explore that specific folder only, update the map, then proceed."
+If something is missing from the map → explore that specific folder only, update the map, then proceed.
+
+---
+
+--- PART 7: Link Preview + Share to Groups/DMs (steps 27-33) ---
+
+These features are triggered from two places:
+1. **ChatComposer** → user pastes a URL → LinkPreviewCard floats above composer (Loading → Loaded → Share phase)
+2. **VaultCard action row** → user taps Share → ShareSheet opens with groups/DMs grid
+
+**Additional web files to read (design only):**
+- `apps/web/src/app/_components/home/LinkPreviewCard.tsx` — 3-phase preview card
+- `apps/web/src/app/_components/shared/url-extract-preview.tsx` — URL metadata display
+- `apps/web/src/app/_components/shared/share-target-grid.tsx` — grid of group/DM avatars with search + selection
+- `apps/web/src/app/_components/vault/VaultShareModal.tsx` — modal wrapping ShareTargetGrid
+- `apps/web/src/app/_libs/hooks/useShareToGroups.ts` — mutation: insert into group_posts / messages
+- `apps/web/src/app/_libs/utils/fetchShareableConversations.ts` — fetches groups + DMs
+- `apps/web/src/app/_libs/hooks/useVaultPreview.ts` — manages preview phases
+
+**Localization keys:**
+- `link_preview.saved_heading`, `link_preview.share_prompt`, `link_preview.skip`, `link_preview.share_btn_send`
+- `link_preview.search_placeholder`, `link_preview.no_groups`, `link_preview.no_results`, `link_preview.close_aria`
+- `link_preview.reading`, `link_preview.extracting`
+- `vault.share_modal_title`, `vault.share_modal_search_placeholder`, `vault.share_modal_share_selected`
+- `vault.share_modal_already_shared`, `vault.share_modal_no_targets`, `vault.share_modal_no_results`
+
+**Step 27.** `apps/mobile-app/hooks/useShareableConversations.ts` — fetches groups + DMs the user can share to, via direct Supabase:
+   - Query `conversation_members` joined with `conversations` for userId
+   - Split into groups (is_group=true) and DMs (is_group=false)
+   - For DMs: fetch other user's profile (name, avatar)
+   - Returns `ShareableConversation[] { id, name, type: 'group'|'dm', avatar_url, updated_at }`
+   - Uses `queryKeys.vault.shareConversations()`, staleTime 5 min
+   - Export from hooks/index.ts
+
+**Step 28.** `apps/mobile-app/hooks/useShareToGroups.ts` — mutation to share a vault item:
+   - For groups: `supabase.from('group_posts').insert({ convo_id, logged_item_id, shared_by })`
+   - For DMs: `supabase.from('messages').insert({ convo_id, sender_id, message_text: '', message_type: 'logged_item', logged_item_id })`
+   - Invalidate `queryKeys.vault.all` on success
+   - Export from hooks/index.ts
+
+**Step 29.** `apps/mobile-app/components/shared/ShareTargetGrid.tsx` (~100 lines) — Reusable grid of shareable groups/DMs:
+   - Search: TextInput with SearchIcon, filters conversations by name
+   - Grid: FlatList numColumns={4}, each item = Pressable column:
+     - Avatar (rounded-full, 48px, fallback = first letter in bg-muted)
+     - Name (text-xs, truncate, max-w-[80px])
+     - Selected: green check badge bottom-right of avatar
+     - Already shared: gray check badge, disabled, opacity-60
+   - Loading: 8 skeleton circles
+   - Empty: text message
+   - Props: `selectedIds: Set<string>, onSelectionChange: (ids: string[]) => void, alreadySharedIds: Set<string>, enabled: boolean`
+
+**Step 30.** `apps/mobile-app/components/shared/UrlExtractPreview.tsx` (~60 lines) — URL metadata display:
+   - Loading: domain text + "Reading about the page..." + animated subtitle
+   - Loaded: HStack — preview image (56x56 rounded-lg) or domain text + VStack (title text-sm font-medium numberOfLines=2, description text-xs numberOfLines=2, source · type · readTime text-xs text-muted-foreground)
+   - Props: `url: string, isLoading: boolean, metadata?: { title, source, previewImage, contentType, readTime, description }`
+
+**Step 31.** `apps/mobile-app/components/home/LinkPreviewCard.tsx` (~100 lines) — Floats ABOVE ChatComposer:
+   - Position: absolute, bottom of content area, above KeyboardAvoidingView (mx-4 mb-2)
+   - Container: `bg-card border border-border rounded-2xl overflow-hidden shadow-lg`
+   - 3 phases (from `PreviewPhase` in `@kurate/types`):
+     - **Loading**: UrlExtractPreview isLoading=true
+     - **Loaded**: UrlExtractPreview with metadata + close (X) Pressable top-right
+     - **Share**: "✓ Saved!" (text-primary text-sm font-semibold) + "Share to a group?" (text-muted-foreground text-sm) + border-t + ShareTargetGrid + "Skip" text button + "Send" primary Button (when selection > 0)
+   - Props: `phase: PreviewPhase, url: string, metadata?, savedItemGroups?: string[], onClose, onShare: (groupIds: string[]) => void, onSkip`
+
+**Step 32.** `apps/mobile-app/components/vault/VaultShareSheet.tsx` (~60 lines) — Bottom sheet for sharing from VaultCard action row:
+   - RN Modal transparent animationType slide (same pattern as VaultFilterSheet)
+   - Backdrop + Sheet at bottom: bg-background rounded-t-2xl
+   - Header: "Share to your people" — `t('vault.share_modal_title')`
+   - Body: ShareTargetGrid (enabled when open)
+   - Footer: "Share" Button (disabled when no selection)
+   - Uses useShareToGroups for the mutation
+   - Props: `open: boolean, item: VaultItem | null, onClose: () => void`
+
+**Step 33.** Wire into existing components (modifications, not new files):
+   - **VaultCard** (from Step 14): add Share icon (Share2 from lucide, size 16, text-muted-foreground) to action row between read-toggle and delete. On press → call `onShare(item)`.
+   - **VaultList** (from Step 15): add `shareItem` state. Pass `onShare={setShareItem}` to each VaultCard. Render `<VaultShareSheet open={!!shareItem} item={shareItem} onClose={() => setShareItem(null)} />`.
+   - **index.tsx** (from Step 24): manage preview state (previewPhase, previewUrl, previewMeta). When ChatComposer calls `onUrlChange(url)` → set phase to Loading, fetch metadata via `${apiBaseUrl}/api/extract`, set phase to Loaded → then Share after save. Render LinkPreviewCard:
+     ```
+     ├── View flex-1 (content area)
+     │
+     ├── LinkPreviewCard (when previewPhase !== Idle)  ← positioned above composer
+     │   (absolute bottom, mx-4, z-20)
+     │
+     ├── KeyboardAvoidingView
+     │   └── ChatComposer
+     ```
+
+### Design Decisions — Link Preview + Share (for mobile agent)
+
+| Aspect | Web | Mobile |
+|---|---|---|
+| **LinkPreviewCard position** | `absolute bottom-full` above ChatInput, max-w-2xl | Above ChatComposer, mx-4, z-20 |
+| **Preview card** | `bg-card border rounded-2xl`, animated entry/exit | `bg-card border border-border rounded-2xl shadow-lg` |
+| **Loading state** | DomainIcon + Typewriter + CyclingText | Domain text + static loading text |
+| **Loaded state** | Image 56x56 + title + description + source | Same with RN Image |
+| **Close button** | X icon absolute top-3 right-3 | Same |
+| **Share phase** | "✓ Saved!" + ShareTargetGrid + Skip/Send | Same layout |
+| **ShareTargetGrid** | flex-wrap, Avatar 48-56px, check badge | FlatList numColumns=4, same avatar + badge |
+| **VaultShareModal** | shadcn Dialog | RN Modal bottom sheet |
+| **Share mutation** | groups → group_posts, DMs → messages | Same via mobile supabase |
+| **Already shared** | Gray check badge, disabled, opacity-60 | Same |"

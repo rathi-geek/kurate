@@ -57,6 +57,7 @@
     "@kurate/locales": "workspace:*",
     "@kurate/query": "workspace:*",
     "@kurate/types": "workspace:*",
+    "@kurate/theme": "workspace:*",
     "@kurate/utils": "workspace:*",
     "@react-aria/utils": "3.33.0",
     "@react-native-async-storage/async-storage": "2.2.0",

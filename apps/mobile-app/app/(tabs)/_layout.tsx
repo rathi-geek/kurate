@@ -21,15 +21,15 @@ function TabBarIcon(props: {
 }
 
 export default function TabLayout() {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#ffffff',
+        tabBarActiveTintColor: tokens.brandWhite,
         tabBarInactiveTintColor: 'rgba(255,255,255,0.6)',
         tabBarStyle: {
-          backgroundColor: colors.BrandPrimary,
+          backgroundColor: tokens.brandPrimary,
         },
         headerShown: useClientOnlyValue(false, true),
       }}

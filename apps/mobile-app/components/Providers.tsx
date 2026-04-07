@@ -1,6 +1,6 @@
 import { useTheme } from '@/hooks';
 import React, { PropsWithChildren } from 'react';
-import { GluestackUIProvider } from './ui/gluestack-ui-provider';
+import { ThemeVarsProvider } from './ui/theme-provider';
 import {
   DarkTheme,
   DefaultTheme,
@@ -15,11 +15,11 @@ export const Providers = ({ children }: PropsWithChildren) => {
   return (
     <QueryProvider>
       <KeyboardProvider>
-        <GluestackUIProvider mode={mode}>
+        <ThemeVarsProvider mode={mode}>
           <ThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
             <LocalizationProvider>{children}</LocalizationProvider>
           </ThemeProvider>
-        </GluestackUIProvider>
+        </ThemeVarsProvider>
       </KeyboardProvider>
     </QueryProvider>
   );

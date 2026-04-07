@@ -6,13 +6,12 @@ import { Pressable } from '@/components/ui/pressable';
 import { ChevronRight } from 'lucide-react-native';
 import { BUCKET_META, BUCKET_BADGE_COLOR } from '@kurate/utils';
 import type { ThoughtBucket } from '@kurate/utils';
+import { getBucketColors, lightTheme } from '@kurate/theme';
 
-const BUCKET_COLORS: Record<ThoughtBucket, string> = {
-  media: '#FDF2F8',
-  tasks: '#ECFDF5',
-  learning: '#EFF6FF',
-  notes: '#FFFBEB',
-};
+const BUCKET_COLORS = getBucketColors(lightTheme) as Record<
+  ThoughtBucket,
+  string
+>;
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return '';

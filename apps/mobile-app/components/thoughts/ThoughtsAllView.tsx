@@ -3,15 +3,14 @@ import { FlatList } from 'react-native';
 import { View } from '@/components/ui/view';
 import { Spinner } from '@/components/ui/spinner';
 import type { ThoughtBucket } from '@kurate/utils';
+import { getBucketColors, lightTheme } from '@kurate/theme';
 import { ThoughtBubble, type DisplayMessage } from './ThoughtBubble';
 import { ThoughtsEmptyState } from './ThoughtsEmptyState';
 
-const BUCKET_COLORS: Record<ThoughtBucket, string> = {
-  media: '#FDF2F8',
-  tasks: '#ECFDF5',
-  learning: '#EFF6FF',
-  notes: '#FFFBEB',
-};
+const BUCKET_COLORS = getBucketColors(lightTheme) as Record<
+  ThoughtBucket,
+  string
+>;
 
 interface ThoughtsAllViewProps {
   messages: DisplayMessage[];

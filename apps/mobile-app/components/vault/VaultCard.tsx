@@ -6,6 +6,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Check, CheckCheck, Trash2, Link2 } from 'lucide-react-native';
 import type { VaultItem } from '@kurate/types';
+import { lightTheme } from '@kurate/theme';
 
 interface VaultCardProps {
   item: VaultItem;
@@ -98,7 +99,7 @@ export const VaultCard = React.memo(function VaultCard({
               }}
               className="h-9 w-9 items-center justify-center rounded-full bg-white/20"
             >
-              <ReadIcon size={16} color="white" />
+              <ReadIcon size={16} color={lightTheme.brandWhite} />
             </Pressable>
             <Pressable
               onPress={() => {

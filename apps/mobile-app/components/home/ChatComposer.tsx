@@ -5,6 +5,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { Link, Plus } from 'lucide-react-native';
 import { useLocalization } from '@/context';
 import { URL_REGEX } from '@kurate/hooks';
+import { lightTheme } from '@kurate/theme';
 
 interface ChatComposerProps {
   onSend: (text: string) => void | Promise<void>;
@@ -82,7 +83,7 @@ export function ChatComposer({
       <TextInput
         className="flex-1 bg-transparent px-2 py-1.5 font-sans text-sm text-foreground"
         placeholder={displayPlaceholder}
-        placeholderTextColor="#5b7d99"
+        placeholderTextColor={lightTheme.brandMutedForeground}
         value={value}
         onChangeText={setValue}
         onFocus={() => setFocused(true)}

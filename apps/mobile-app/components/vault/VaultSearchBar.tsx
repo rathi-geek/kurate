@@ -5,6 +5,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { ArrowLeft, X } from 'lucide-react-native';
 import { useLocalization } from '@/context';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { lightTheme } from '@kurate/theme';
 
 interface VaultSearchBarProps {
   value: string;
@@ -39,7 +40,7 @@ export function VaultSearchBar({
       <TextInput
         className="flex-1 font-sans text-sm text-foreground"
         placeholder={t('vault.search_placeholder')}
-        placeholderTextColor="#5b7d99"
+        placeholderTextColor={lightTheme.brandMutedForeground}
         value={localValue}
         onChangeText={setLocalValue}
         autoFocus

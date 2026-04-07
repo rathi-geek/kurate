@@ -1,15 +1,14 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
-import Colors from '@/constants/Colors';
-
-export type ColorPalette = { [key in keyof typeof Colors.light]: string };
+import { lightTheme, darkTheme } from '@kurate/theme';
+import type { ThemeTokens } from '@kurate/theme';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
   theme: 'light' | 'dark';
   mode: ThemeMode;
-  colors: ColorPalette;
+  tokens: ThemeTokens;
   setMode: (mode: ThemeMode) => void;
   toggleTheme: () => void;
 }
@@ -17,7 +16,7 @@ interface ThemeContextType {
 export const ThemeContext = createContext<ThemeContextType>({
   theme: 'light',
   mode: 'system',
-  colors: Colors.light,
+  tokens: lightTheme,
   setMode: () => {},
   toggleTheme: () => {},
 });
@@ -35,18 +34,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(resolvedTheme);
   }, [resolvedTheme]);
 
-  const colors = theme === 'dark' ? Colors.dark : Colors.light;
+  const tokens = theme === 'dark' ? darkTheme : lightTheme;
 
   const toggleTheme = () => {
     if (mode === 'system') return;
-
     const newMode = mode === 'light' ? 'dark' : 'light';
     setMode(newMode);
   };
 
   return (
     <ThemeContext.Provider
-      value={{ theme, mode, colors, setMode, toggleTheme }}
+      value={{ theme, mode, tokens, setMode, toggleTheme }}
     >
       {children}
     </ThemeContext.Provider>
