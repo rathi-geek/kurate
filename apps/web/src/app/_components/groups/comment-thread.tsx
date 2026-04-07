@@ -73,11 +73,9 @@ interface CommentItemProps {
   onEditStart: (id: string, text: string) => void;
   onDelete: (id: string) => void;
   onReply?: (id: string, authorName: string, text: string) => void;
-  isReply?: boolean;
   isContinuation?: boolean;
   spacing?: "none" | "compact" | "normal";
-  quotedAuthor?: string;
-  quotedText?: string;
+  allComments?: DropComment[];
 }
 
 function CommentItem({
@@ -86,14 +84,21 @@ function CommentItem({
   onEditStart,
   onDelete,
   onReply,
-  isReply = false,
   isContinuation = false,
   spacing = "none",
-  quotedAuthor,
-  quotedText,
+  allComments = [],
 }: CommentItemProps) {
   const t = useTranslations("groups");
   const isOwn = comment.user_id === currentUserId;
+
+  // Look up parent comment for quoted context (DM-style)
+  const parentComment = comment.parent_comment_id
+    ? allComments.find((c) => c.id === comment.parent_comment_id)
+    : null;
+  const quotedAuthor = parentComment
+    ? (parentComment.author.display_name ?? parentComment.author.handle ?? t("anonymous"))
+    : undefined;
+  const quotedText = parentComment?.comment_text;
 
   /* Actions shown on hover, outside the bubble */
   const actions = (
@@ -137,7 +142,7 @@ function CommentItem({
     <div
       className={`group/comment flex items-end gap-1 ${isOwn ? "justify-end" : "justify-start"} ${
         spacing === "compact" ? "pt-1" : spacing === "normal" ? "pt-3" : ""
-      } ${isReply ? "mt-2" : ""}`}>
+      }`}>
       {/* Avatar — others only */}
       {!isOwn && (
         <div className="shrink-0">
@@ -339,26 +344,8 @@ export function CommentThread({
                   onEditStart={(id, text) => setEditingComment({ id, text })}
                   onDelete={(id) => deleteComment(id, currentUserId)}
                   onReply={(id, authorName, text) => setReplyingTo({ id, authorName, text })}
+                  allComments={comments}
                 />
-                {/* Replies */}
-                {"replies" in comment &&
-                  comment.replies.map((reply) => (
-                    <CommentItem
-                      key={reply.id}
-                      comment={reply}
-                      currentUserId={currentUserId}
-                      onEditStart={(id, text) => setEditingComment({ id, text })}
-                      onDelete={(id) => deleteComment(id, currentUserId)}
-                      onReply={(_id, authorName, text) =>
-                        setReplyingTo({ id: comment.id, authorName, text })
-                      }
-                      isReply
-                      quotedAuthor={
-                        comment.author.display_name ?? comment.author.handle ?? t("anonymous")
-                      }
-                      quotedText={comment.comment_text}
-                    />
-                  ))}
               </div>
             );
           }}
@@ -414,6 +401,14 @@ export function CommentThread({
               addComment(text, currentUserId, replyingTo?.id ?? null);
               onCommentAdded?.();
               setReplyingTo(null);
+              // Scroll to bottom so the new comment is visible
+              requestAnimationFrame(() => {
+                virtuosoRef.current?.scrollToIndex({
+                  index: "LAST",
+                  align: "end",
+                  behavior: "smooth",
+                });
+              });
             }
           }}
           isLoading={isAdding}

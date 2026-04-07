@@ -52,19 +52,7 @@ export async function fetchComments(groupPostId: string, cursor: string | null):
     };
   });
 
-  // Build reply tree
-  const topLevel: DropComment[] = [];
-  const byId = new Map<string, DropComment>();
-  for (const c of flat) byId.set(c.id, c as DropComment);
-  for (const c of flat) {
-    if (c.parent_comment_id && byId.has(c.parent_comment_id)) {
-      byId.get(c.parent_comment_id)!.replies.push(c as DropComment["replies"][0]);
-    } else {
-      topLevel.push(c as DropComment);
-    }
-  }
-
-  return topLevel;
+  return flat as DropComment[];
 }
 
 export function useComments(
@@ -234,11 +222,7 @@ export function useComments(
         if (!old) return old;
         return {
           ...old,
-          pages: old.pages.map((page) =>
-            page
-              .filter((c) => c.id !== commentId)
-              .map((c) => ({ ...c, replies: c.replies.filter((r) => r.id !== commentId) })),
-          ),
+          pages: old.pages.map((page) => page.filter((c) => c.id !== commentId)),
         };
       });
       return { previous };
