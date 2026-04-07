@@ -160,10 +160,10 @@ export function MessageBubble({
             )}
           </div>
 
-          {/* Emoji picker panel — beside the bubble, aligned to bottom of pill */}
+          {/* Emoji picker panel — beside the bubble, top-aligned to avoid clipping near top of chat */}
           {pickerOpen && (
             <div
-              className={`border-border/50 absolute top-1/2 z-20 -translate-y-1/2 rounded-2xl border bg-white p-2 shadow-lg ${
+              className={`border-border/50 absolute top-0 z-20 rounded-2xl border bg-white p-2 shadow-lg ${
                 isOwn ? "right-full mr-10" : "left-full ml-10"
               }`}>
               {EMOJI_ROWS.map((row, i) => (
