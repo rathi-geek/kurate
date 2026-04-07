@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS public.logged_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   url TEXT NOT NULL,
   url_hash TEXT UNIQUE NOT NULL,
-  title VARCHAR(150) NOT NULL,
+  title TEXT NOT NULL,
   description TEXT,
   category_id UUID REFERENCES public.logged_categories(id) ON DELETE SET NULL,
   preview_image_url TEXT,
