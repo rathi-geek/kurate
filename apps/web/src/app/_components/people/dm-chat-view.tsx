@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { useMessages } from "@/app/_libs/hooks/useMessages";
+import { createClient } from "@/app/_libs/supabase/client";
 import type { DMConversation, DMMessage } from "@kurate/types";
 import { ROUTES } from "@kurate/utils";
 import { queryKeys } from "@kurate/query";
@@ -26,9 +27,32 @@ export function DmChatView({ convoId }: DmChatViewProps) {
   const queryClient = useQueryClient();
   const convsCache = queryClient.getQueryData<DMConversation[]>(queryKeys.people.conversations());
   const cachedConvo = convsCache?.find((c) => c.id === convoId);
+
+  // Fallback: fetch other user's name directly when cache doesn't have this convo yet (new chat)
+  const supabase = createClient();
+  const { data: fetchedName } = useQuery({
+    queryKey: ["dm-other-user", convoId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("conversation_members")
+        .select(
+          "user_id, profile:profiles!conversation_members_user_id_fkey(first_name, last_name, handle)",
+        )
+        .eq("convo_id", convoId)
+        .neq("user_id", currentUserId);
+      const raw = data?.[0]?.profile;
+      const p = Array.isArray(raw) ? raw[0] : raw;
+      if (!p) return null;
+      return [p.first_name, p.last_name].filter(Boolean).join(" ") || p.handle || null;
+    },
+    enabled: !cachedConvo && !!currentUserId,
+    staleTime: Infinity,
+  });
+
   const otherUserName =
     cachedConvo?.otherUser.display_name ??
     cachedConvo?.otherUser.handle ??
+    fetchedName ??
     "...";
   const t = useTranslations("people");
   const sidebarCtx = useSidebarContextOptional();
