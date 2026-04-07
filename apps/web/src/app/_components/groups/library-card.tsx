@@ -16,19 +16,22 @@ interface LibraryCardProps {
   drop: GroupDrop;
   currentUserId: string;
   groupId: string;
+  onNavigateToFeed?: () => void;
 }
 
 export const LibraryCard = memo(function LibraryCard({
   drop,
   currentUserId,
   groupId,
+  onNavigateToFeed,
 }: LibraryCardProps) {
   const router = useRouter();
   const t = useTranslations("groups");
   const [imgError, setImgError] = useState(false);
 
   const handleClick = () => {
-    // Navigate to group feed and scroll to the specific drop
+    // Switch to feed view, then navigate with hash to scroll to the drop
+    onNavigateToFeed?.();
     router.push(`/groups/${groupId}#drop-${drop.id}`);
   };
 

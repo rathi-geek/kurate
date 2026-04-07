@@ -10,11 +10,13 @@ interface LibraryViewProps {
   groupId: string;
   currentUserId: string;
   userRole: GroupRole;
+  onNavigateToFeed?: () => void;
 }
 
 export function LibraryView({
   groupId,
   currentUserId,
+  onNavigateToFeed,
 }: LibraryViewProps) {
   const t = useTranslations("groups");
   // Fetch all pages (no cursor — just keep fetching until no more)
@@ -59,6 +61,7 @@ export function LibraryView({
                 drop={drop}
                 currentUserId={currentUserId}
                 groupId={groupId}
+                onNavigateToFeed={onNavigateToFeed}
               />
             ))}
           </div>
@@ -82,6 +85,7 @@ export function LibraryView({
                 drop={drop}
                 currentUserId={currentUserId}
                 groupId={groupId}
+                onNavigateToFeed={onNavigateToFeed}
               />
             ))}
           </div>

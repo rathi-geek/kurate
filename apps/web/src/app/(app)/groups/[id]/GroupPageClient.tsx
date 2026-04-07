@@ -157,6 +157,7 @@ function GroupPageInner({ groupId }: GroupPageClientProps) {
                 groupId={group.id}
                 currentUserId={currentUserId}
                 userRole={userRole as GroupRole}
+                onNavigateToFeed={() => setView(GroupView.Feed)}
               />
             )}
           </>
