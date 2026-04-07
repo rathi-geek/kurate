@@ -28,7 +28,7 @@ export function DiscoveringTabView({ onScrollDirectionChange }: DiscoveringTabVi
 
   if (authLoading) {
     return (
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
+      <div ref={scrollRef} className="flex-1 no-scrollbar overflow-y-auto p-4 pb-16 md:pb-4">
         <div className="mx-auto max-w-2xl space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="rounded-card border-border bg-card h-48 animate-pulse border" />
@@ -40,7 +40,7 @@ export function DiscoveringTabView({ onScrollDirectionChange }: DiscoveringTabVi
 
   if (!user) {
     return (
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
+      <div ref={scrollRef} className="flex-1 no-scrollbar overflow-y-auto p-4 pb-16 md:pb-4">
         <div className="mx-auto flex min-h-[40vh] max-w-2xl items-center justify-center">
           <p className="text-center font-sans text-sm text-muted-foreground">
             {t("signin_to_see_discover")}
@@ -51,7 +51,7 @@ export function DiscoveringTabView({ onScrollDirectionChange }: DiscoveringTabVi
   }
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
+    <div ref={scrollRef} className="flex-1 no-scrollbar overflow-y-auto p-4 pb-16 md:pb-4">
       <div className="mx-auto max-w-2xl space-y-8">
         <DiscoveryVaultSection userId={user.id} />
         <DiscoveryTodaySection drops={todayDrops} isLoading={isLoading} userId={user.id} />
