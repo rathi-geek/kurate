@@ -136,13 +136,13 @@ export async function fetchGroupFeedPage(
 
 export async function fetchFeedCommentPreviews(
   postIds: string[],
-): Promise<Map<string, { text: string; authorName: string | null; createdAt: string }>> {
+): Promise<Map<string, { text: string; authorName: string | null; authorAvatarUrl: string | null; createdAt: string }>> {
   if (!postIds.length) return new Map();
 
   const { data, error } = await supabase
     .from("group_posts_comments")
     .select(
-      "group_post_id, comment_text, created_at, author:profiles!group_posts_comments_user_id_fkey(first_name, last_name, handle)",
+      "group_post_id, comment_text, created_at, author:profiles!group_posts_comments_user_id_fkey(first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)",
     )
     .in("group_post_id", postIds)
     .order("created_at", { ascending: false })
@@ -150,7 +150,7 @@ export async function fetchFeedCommentPreviews(
 
   if (error || !data) return new Map();
 
-  const map = new Map<string, { text: string; authorName: string | null; createdAt: string }>();
+  const map = new Map<string, { text: string; authorName: string | null; authorAvatarUrl: string | null; createdAt: string }>();
   for (const row of data) {
     if (!map.has(row.group_post_id)) {
       const rawAuthor = Array.isArray(row.author) ? row.author[0] : row.author;
@@ -161,6 +161,9 @@ export async function fetchFeedCommentPreviews(
           ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") ||
             rawAuthor.handle ||
             null
+          : null,
+        authorAvatarUrl: rawAuthor?.avatar
+          ? mediaToUrl(rawAuthor.avatar as { file_path: string; bucket_name: string })
           : null,
       });
     }
@@ -216,7 +219,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
       const preview = previewQuery.data.get(drop.id);
       return {
         ...drop,
-        latestComment: preview ? { text: preview.text, authorName: preview.authorName } : null,
+        latestComment: preview ? { text: preview.text, authorName: preview.authorName, authorAvatarUrl: preview.authorAvatarUrl } : null,
         latestCommentAt: preview?.createdAt ?? null,
       };
     });

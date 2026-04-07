@@ -40,11 +40,22 @@ function ReactionPill({ reactors, label }: { reactors: GroupProfile[]; label: st
     <div className="bg-surface border-border/50 text-muted-foreground flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]">
       <div className="flex -space-x-1">
         {reactors.slice(0, 3).map((r) => (
-          <div
-            key={r.id}
-            className="bg-primary text-primary-foreground ring-card flex size-4 items-center justify-center rounded-full text-[8px] font-bold ring-1">
-            {(r.display_name ?? r.handle ?? "?")[0]?.toUpperCase()}
-          </div>
+          r.avatar_url ? (
+            <Image
+              key={r.id}
+              src={r.avatar_url}
+              alt={r.display_name ?? ""}
+              width={16}
+              height={16}
+              className="ring-card size-4 rounded-full object-cover ring-1"
+            />
+          ) : (
+            <div
+              key={r.id}
+              className="bg-primary text-primary-foreground ring-card flex size-4 items-center justify-center rounded-full text-[8px] font-bold ring-1">
+              {(r.display_name ?? r.handle ?? "?")[0]?.toUpperCase()}
+            </div>
+          )
         ))}
       </div>
       <span>{label}</span>
@@ -145,7 +156,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                 alt={drop.sharer.display_name ?? ""}
                 width={32}
                 height={32}
-                className="shrink-0 rounded-full object-cover"
+                className="size-8 shrink-0 rounded-full object-cover"
               />
             ) : (
               <div className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
@@ -298,9 +309,19 @@ export const FeedShareCard = memo(function FeedShareCard({
             className="border-border/50 hover:bg-muted/30 w-full border-t px-4 py-3 text-left transition-colors">
             <div className="flex items-center gap-2">
               {/* Avatar */}
-              <div className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
-                {(drop.latestComment.authorName ?? "?")[0]?.toUpperCase()}
-              </div>
+              {drop.latestComment.authorAvatarUrl ? (
+                <Image
+                  src={drop.latestComment.authorAvatarUrl}
+                  alt={drop.latestComment.authorName ?? ""}
+                  width={24}
+                  height={24}
+                  className="size-6 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
+                  {(drop.latestComment.authorName ?? "?")[0]?.toUpperCase()}
+                </div>
+              )}
               {/* Author + extra count + text */}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs leading-relaxed">

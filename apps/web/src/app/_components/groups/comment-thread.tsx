@@ -147,7 +147,7 @@ function CommentItem({
               alt={comment.author.display_name ?? ""}
               width={24}
               height={24}
-              className="rounded-full object-cover"
+              className="size-6 rounded-full object-cover"
             />
           ) : (
             <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-full text-[10px] font-bold">

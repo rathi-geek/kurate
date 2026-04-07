@@ -89,6 +89,9 @@ export function mapRowToGroupDrop(row: GroupPostRow, currentUserId: string): Gro
       authorName: rawAuthor
         ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") || rawAuthor.handle || null
         : null,
+      authorAvatarUrl: rawAuthor?.avatar
+        ? mediaToUrl(rawAuthor.avatar as { file_path: string; bucket_name: string })
+        : null,
     };
   })();
 
