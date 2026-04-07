@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { FlatList } from 'react-native';
 import { View } from '@/components/ui/view';
 import { Spinner } from '@/components/ui/spinner';
@@ -8,6 +8,7 @@ import { VaultCard } from './VaultCard';
 import { VaultCardSkeleton } from './VaultCardSkeleton';
 import { VaultEmptyState } from './VaultEmptyState';
 import { VaultErrorState } from './VaultErrorState';
+import { VaultShareSheet } from './VaultShareSheet';
 
 interface VaultListProps {
   filters: VaultFilters;
@@ -46,13 +47,20 @@ export function VaultList({ filters }: VaultListProps) {
     toggleRead,
   } = useMobileVault(filters);
 
+  const [shareItem, setShareItem] = useState<VaultItem | null>(null);
+
   const handleEndReached = useCallback(() => {
     if (hasMore) loadMore();
   }, [hasMore, loadMore]);
 
   const renderItem = useCallback(
     ({ item }: { item: VaultItem }) => (
-      <VaultCard item={item} onToggleRead={toggleRead} onDelete={deleteItem} />
+      <VaultCard
+        item={item}
+        onToggleRead={toggleRead}
+        onDelete={deleteItem}
+        onShare={setShareItem}
+      />
     ),
     [toggleRead, deleteItem],
   );
@@ -90,22 +98,29 @@ export function VaultList({ filters }: VaultListProps) {
   }
 
   return (
-    <FlatList
-      data={items}
-      keyExtractor={keyExtractor}
-      renderItem={renderItem}
-      contentContainerStyle={{
-        gap: 12,
-        paddingHorizontal: 16,
-        paddingBottom: 16,
-        paddingTop: 12,
-      }}
-      onEndReached={handleEndReached}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={<VaultListFooter isLoadingMore={isLoadingMore} />}
-      refreshing={false}
-      onRefresh={refetch}
-      showsVerticalScrollIndicator={false}
-    />
+    <>
+      <FlatList
+        data={items}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        contentContainerStyle={{
+          gap: 12,
+          paddingHorizontal: 16,
+          paddingBottom: 16,
+          paddingTop: 12,
+        }}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={<VaultListFooter isLoadingMore={isLoadingMore} />}
+        refreshing={false}
+        onRefresh={refetch}
+        showsVerticalScrollIndicator={false}
+      />
+      <VaultShareSheet
+        open={!!shareItem}
+        item={shareItem}
+        onClose={() => setShareItem(null)}
+      />
+    </>
   );
 }

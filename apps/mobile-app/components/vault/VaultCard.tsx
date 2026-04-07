@@ -4,7 +4,7 @@ import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
-import { Check, CheckCheck, Trash2, Link2 } from 'lucide-react-native';
+import { Check, CheckCheck, Share2, Trash2, Link2 } from 'lucide-react-native';
 import type { VaultItem } from '@kurate/types';
 import { lightTheme } from '@kurate/theme';
 
@@ -12,6 +12,7 @@ interface VaultCardProps {
   item: VaultItem;
   onToggleRead: (item: VaultItem) => void;
   onDelete: (id: string) => void;
+  onShare?: (item: VaultItem) => void;
 }
 
 function VaultCardImage({
@@ -58,6 +59,7 @@ export const VaultCard = React.memo(function VaultCard({
   item,
   onToggleRead,
   onDelete,
+  onShare,
 }: VaultCardProps) {
   const [showActions, setShowActions] = useState(false);
 
@@ -101,6 +103,17 @@ export const VaultCard = React.memo(function VaultCard({
             >
               <ReadIcon size={16} color={lightTheme.brandWhite} />
             </Pressable>
+            {onShare && (
+              <Pressable
+                onPress={() => {
+                  onShare(item);
+                  setShowActions(false);
+                }}
+                className="h-9 w-9 items-center justify-center rounded-full bg-white/20"
+              >
+                <Share2 size={16} color={lightTheme.brandWhite} />
+              </Pressable>
+            )}
             <Pressable
               onPress={() => {
                 onDelete(item.id);

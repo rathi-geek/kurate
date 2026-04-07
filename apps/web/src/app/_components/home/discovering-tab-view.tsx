@@ -50,12 +50,21 @@ export function DiscoveringTabView({ onScrollDirectionChange }: DiscoveringTabVi
     );
   }
 
+  const feedEmpty = !isLoading && todayDrops.length === 0 && newDrops.length === 0;
+
   return (
     <div ref={scrollRef} className="flex-1 no-scrollbar overflow-y-auto p-4 pb-16 md:pb-4">
       <div className="mx-auto max-w-2xl space-y-8">
         <DiscoveryVaultSection userId={user.id} />
         <DiscoveryTodaySection drops={todayDrops} isLoading={isLoading} userId={user.id} />
         <DiscoveryNewSection drops={newDrops} isLoading={isLoading} userId={user.id} />
+
+        {feedEmpty && (
+          <div className="flex flex-col items-center justify-center gap-2 px-8 py-16 text-center">
+            <p className="text-foreground text-sm font-medium">{t("empty_title")}</p>
+            <p className="text-muted-foreground text-xs">{t("empty_subtitle")}</p>
+          </div>
+        )}
       </div>
     </div>
   );

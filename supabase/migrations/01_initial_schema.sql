@@ -32,7 +32,7 @@ ALTER TABLE public.media_metadata ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can VIEW media_metadata"
   ON public.media_metadata FOR SELECT
   TO authenticated
-  USING (auth.uid() = owner_id);
+  USING (auth.uid() = owner_id OR is_public = true);
 
 CREATE POLICY "Users can INSERT media_metadata"
   ON public.media_metadata FOR INSERT

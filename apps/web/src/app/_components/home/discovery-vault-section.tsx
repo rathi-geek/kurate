@@ -15,7 +15,24 @@ export function DiscoveryVaultSection({ userId }: DiscoveryVaultSectionProps) {
   const t = useTranslations("discovery");
   const { data: items, isLoading } = useDiscoveryVault(userId);
 
-  if (isLoading || !items?.length) return null;
+  if (!isLoading && !items?.length) return null;
+
+  if (isLoading) {
+    return (
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="bg-border h-px flex-1" />
+          <div className="bg-surface h-3 w-24 animate-pulse rounded" />
+          <span className="bg-border h-px flex-1" />
+        </div>
+        <div className="-mx-4 flex gap-3 overflow-x-auto px-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-surface h-20 w-44 shrink-0 animate-pulse rounded-card" />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-3">
@@ -30,7 +47,7 @@ export function DiscoveryVaultSection({ userId }: DiscoveryVaultSectionProps) {
         whileInView="visible"
         viewport={{ once: true }}
         variants={staggerContainer}>
-        {items.map((item) => (
+        {items!.map((item) => (
           <motion.div key={item.id} variants={staggerItem} className="shrink-0">
             <VaultDiscoveryCard title={item.title} url={item.url} createdAt={item.created_at} />
           </motion.div>

@@ -16,7 +16,31 @@ interface DiscoveryNewSectionProps {
 export function DiscoveryNewSection({ drops, isLoading, userId }: DiscoveryNewSectionProps) {
   const t = useTranslations("discovery");
 
-  if (isLoading || !drops.length) return null;
+  if (!isLoading && !drops.length) return null;
+
+  if (isLoading) {
+    return (
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="bg-border h-px flex-1" />
+          <div className="bg-surface h-3 w-32 animate-pulse rounded" />
+          <span className="bg-border h-px flex-1" />
+        </div>
+        <div className="flex flex-col gap-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="rounded-card border-border bg-card space-y-3 border p-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-surface size-8 animate-pulse rounded-full" />
+                <div className="bg-surface h-3 w-32 animate-pulse rounded" />
+              </div>
+              <div className="bg-surface h-40 w-full animate-pulse rounded-card" />
+              <div className="bg-surface h-3 w-48 animate-pulse rounded" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-3">

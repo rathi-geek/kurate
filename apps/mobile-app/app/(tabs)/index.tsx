@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,15 +8,19 @@ import { View } from '@/components/ui/view';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { VaultSubHeader } from '@/components/home/VaultSubHeader';
 import { ChatComposer } from '@/components/home/ChatComposer';
+import { LinkPreviewCard } from '@/components/home/LinkPreviewCard';
 import { VaultList } from '@/components/vault/VaultList';
 import {
   VaultFilterSheet,
   hasActiveFilters,
 } from '@/components/vault/VaultFilterSheet';
 import { ThoughtsTabView } from '@/components/thoughts/ThoughtsTabView';
+import { useExtractMetadata } from '@/hooks/useExtractMetadata';
+import { useShareToGroups } from '@/hooks/useShareToGroups';
 import { supabase } from '@/libs/supabase/client';
 import { useSubmitContent } from '@kurate/hooks';
-import { HomeTab, VaultTab } from '@kurate/types';
+import type { SaveItemResult } from '@kurate/hooks';
+import { HomeTab, VaultTab, PreviewPhase } from '@kurate/types';
 import type { VaultFilters } from '@kurate/types';
 
 const DEFAULT_FILTER_STATE: Omit<VaultFilters, 'search'> = {
@@ -37,6 +41,23 @@ export default function VaultScreen() {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [vaultFilters, setVaultFilters] = useState(DEFAULT_FILTER_STATE);
 
+  // Link preview state
+  const [previewPhase, setPreviewPhase] = useState(PreviewPhase.Idle);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [savedLoggedItemId, setSavedLoggedItemId] = useState<string | null>(
+    null,
+  );
+  const [savedItemGroups, setSavedItemGroups] = useState<string[]>([]);
+
+  const {
+    isExtracting,
+    metadata: extractedMeta,
+    extractionFailed,
+    extract,
+    reset: resetExtraction,
+  } = useExtractMetadata();
+  const shareMutation = useShareToGroups();
+
   const fullFilters: VaultFilters = useMemo(
     () => ({ ...vaultFilters, search: searchQuery }),
     [vaultFilters, searchQuery],
@@ -44,13 +65,62 @@ export default function VaultScreen() {
 
   const activeFilter = hasActiveFilters(fullFilters);
 
+  // Transition from Loading → Loaded when extraction finishes
+  useEffect(() => {
+    if (previewPhase === PreviewPhase.Loading && !isExtracting) {
+      setPreviewPhase(PreviewPhase.Loaded);
+    }
+  }, [isExtracting, previewPhase]);
+
+  const handleLinkSaved = useCallback(async (result: SaveItemResult) => {
+    if (result.status === 'saved' && result.item) {
+      setSavedLoggedItemId(result.item.logged_item_id);
+      setPreviewPhase(PreviewPhase.Share);
+    }
+  }, []);
+
   const { onSend } = useSubmitContent({
     supabase,
     queryClient,
     apiBaseUrl,
     onRouted: dest =>
       setVaultTab(dest === 'links' ? VaultTab.LINKS : VaultTab.THOUGHTS),
+    onLinkSaved: handleLinkSaved,
   });
+
+  const resetPreview = useCallback(() => {
+    setPreviewPhase(PreviewPhase.Idle);
+    setPreviewUrl(null);
+    setSavedLoggedItemId(null);
+    setSavedItemGroups([]);
+    resetExtraction();
+  }, [resetExtraction]);
+
+  const handleUrlChange = useCallback(
+    (url: string | null) => {
+      if (url) {
+        setPreviewUrl(url);
+        setPreviewPhase(PreviewPhase.Loading);
+        extract(url);
+      } else if (previewPhase === PreviewPhase.Loading) {
+        resetPreview();
+      }
+    },
+    [extract, previewPhase, resetPreview],
+  );
+
+  const handlePreviewShare = useCallback(
+    async (groupIds: string[]) => {
+      if (!savedLoggedItemId) return;
+      await shareMutation.mutateAsync({
+        loggedItemId: savedLoggedItemId,
+        conversationIds: groupIds,
+      });
+      setSavedItemGroups(prev => [...prev, ...groupIds]);
+      resetPreview();
+    },
+    [savedLoggedItemId, shareMutation, resetPreview],
+  );
 
   const handleSearchToggle = useCallback(() => {
     setSearchOpen(prev => {
@@ -103,9 +173,22 @@ export default function VaultScreen() {
               <ThoughtsTabView searchQuery={searchQuery} />
             )}
           </View>
+          {previewPhase !== PreviewPhase.Idle && previewUrl && (
+            <LinkPreviewCard
+              phase={previewPhase as Exclude<PreviewPhase, PreviewPhase.Idle>}
+              url={previewUrl}
+              metadata={extractedMeta}
+              extractionFailed={extractionFailed}
+              savedItemGroups={savedItemGroups}
+              onClose={resetPreview}
+              onShare={handlePreviewShare}
+              onSkip={resetPreview}
+            />
+          )}
           <KeyboardStickyView>
             <ChatComposer
               onSend={handleComposerSend}
+              onUrlChange={handleUrlChange}
               collapsible={vaultTab === VaultTab.THOUGHTS}
             />
           </KeyboardStickyView>

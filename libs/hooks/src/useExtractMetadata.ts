@@ -25,7 +25,10 @@ interface UseExtractMetadataResult {
   reset: () => void;
 }
 
-export function useExtractMetadata(): UseExtractMetadataResult {
+/**
+ * @param apiBaseUrl — Base URL for API calls. Leave empty for web (relative). Full URL for mobile.
+ */
+export function useExtractMetadata(apiBaseUrl = ""): UseExtractMetadataResult {
   const [isExtracting, setIsExtracting] = useState(false);
   const [metadata, setMetadata] = useState<ExtractedMetadata | null>(null);
   const [extractionFailed, setExtractionFailed] = useState(false);
@@ -36,7 +39,7 @@ export function useExtractMetadata(): UseExtractMetadataResult {
     setIsExtracting(true);
     setExtractionFailed(false);
     try {
-      const res = await fetch("/api/extract", {
+      const res = await fetch(`${apiBaseUrl}/api/extract`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),

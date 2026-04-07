@@ -529,7 +529,9 @@
     "today": "Today",
     "new_since_visit": "New Since Last Visit",
     "days_ago": "{{count}} days ago",
-    "signin_to_see_discover": "Sign in to see personalized discoveries."
+    "signin_to_see_discover": "Sign in to see personalized discoveries.",
+    "empty_title": "Your discovery feed is empty",
+    "empty_subtitle": "Join groups and start conversations to see what others are sharing."
   },
   "formats": {
     "date_short": "{date, date, short}",
