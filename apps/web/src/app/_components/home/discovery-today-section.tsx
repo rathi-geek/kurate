@@ -44,6 +44,7 @@ export function DiscoveryTodaySection({ drops, isLoading, userId }: DiscoveryTod
               currentUserId={userId}
               groupId={drop.convo_id}
               userRole="member"
+              context="discovery"
             />
           </motion.div>
         ))}

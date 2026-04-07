@@ -17,7 +17,7 @@ interface DiscoveringTabViewProps {
 export function DiscoveringTabView({ onScrollDirectionChange }: DiscoveringTabViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollDir = useScrollDirection(scrollRef);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const t = useTranslations("discovery");
 
   const { todayDrops, newDrops, isLoading } = useDiscoveryFeed(user?.id ?? "");
@@ -25,6 +25,18 @@ export function DiscoveringTabView({ onScrollDirectionChange }: DiscoveringTabVi
   useEffect(() => {
     if (scrollDir) onScrollDirectionChange?.(scrollDir);
   }, [scrollDir, onScrollDirectionChange]);
+
+  if (authLoading) {
+    return (
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-16 md:pb-4">
+        <div className="mx-auto max-w-2xl space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-card border-border bg-card h-48 animate-pulse border" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

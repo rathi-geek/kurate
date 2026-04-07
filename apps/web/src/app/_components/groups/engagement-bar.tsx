@@ -11,6 +11,7 @@ import {
   StarIcon,
   BookmarkIcon,
   MessageCircleIcon,
+  ExternalLinkIcon,
 } from "@/components/icons";
 import type { GroupDrop } from "@kurate/types";
 import type { SaveItemInput } from "@/app/_libs/hooks/useSaveItem";
@@ -27,6 +28,7 @@ interface EngagementBarProps {
   onCommentIconClick?: () => void;
   source: "group_feed" | "group_library";
   showSaveToVault?: boolean;
+  context?: "group" | "discovery";
 }
 
 export function EngagementBar({
@@ -41,6 +43,7 @@ export function EngagementBar({
   onCommentIconClick,
   source,
   showSaveToVault = true,
+  context = "group",
 }: EngagementBarProps) {
   const t = useTranslations("groups");
   const { toggleReaction } = useDropEngagement();
@@ -128,20 +131,35 @@ export function EngagementBar({
         </button>
       )}
 
-      {/* Comments toggle */}
+      {/* Comments toggle / View in group */}
       {commentCount !== undefined && (
         <button
           type="button"
-          onClick={() => { track("comment_thread_opened"); onCommentIconClick?.(); }}
+          onClick={() => {
+            track(context === "discovery" ? "discovery_view_in_group" : "comment_thread_opened");
+            onCommentIconClick?.();
+          }}
           className="ml-auto flex items-center gap-1 px-2 py-1 rounded-badge text-xs text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
-          aria-label="Toggle comments"
+          aria-label={context === "discovery" ? "View in group" : "Toggle comments"}
         >
-          <MessageCircleIcon
-            className={`size-[14px] ${hasNewComments ? "text-green-600" : ""}`}
-            filled={hasNewComments}
-          />
-          {commentCount > 0 && (
-            <span className="font-mono">{commentCount}</span>
+          {context === "discovery" ? (
+            <>
+              <MessageCircleIcon className="size-[14px]" filled={false} />
+              {commentCount > 0 && (
+                <span className="font-mono">{commentCount}</span>
+              )}
+              <ExternalLinkIcon className="size-[12px]" />
+            </>
+          ) : (
+            <>
+              <MessageCircleIcon
+                className={`size-[14px] ${hasNewComments ? "text-green-600" : ""}`}
+                filled={hasNewComments}
+              />
+              {commentCount > 0 && (
+                <span className="font-mono">{commentCount}</span>
+              )}
+            </>
           )}
         </button>
       )}

@@ -7,6 +7,8 @@ import Image from "next/image";
 import type { GroupDrop, GroupProfile, GroupRole } from "@kurate/types";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { useRouter } from "next/navigation";
+
 import { CommentThread } from "@/app/_components/groups/comment-thread";
 import { DropItemPreview } from "@/app/_components/groups/drop-item-preview";
 import { EngagementBar } from "@/app/_components/groups/engagement-bar";
@@ -30,6 +32,7 @@ interface FeedShareCardProps {
   };
   onDelete?: (dropId: string) => void;
   markPostSeen?: (postId: string, seenAt: string) => void;
+  context?: "group" | "discovery";
 }
 
 function ReactionPill({ reactors, label }: { reactors: GroupProfile[]; label: string }) {
@@ -57,13 +60,18 @@ export const FeedShareCard = memo(function FeedShareCard({
   currentUserProfile,
   onDelete,
   markPostSeen,
+  context = "group",
 }: FeedShareCardProps) {
   const t = useTranslations("groups");
+  const router = useRouter();
+  const isDiscovery = context === "discovery";
   const isSharer = drop.sharer.id === currentUserId;
   const hasMustRead = drop.engagement.mustRead.count > 0;
   const [showComments, setShowComments] = useState(false);
   // Seen status comes from the feed query (embedded via LEFT JOIN) — no separate query needed
+  // Discovery context has no real-time subscriptions, so skip new-comment tracking
   const hasNewComments =
+    !isDiscovery &&
     !showComments &&
     !!drop.latestCommentAt &&
     (drop.seenAt === null || drop.latestCommentAt > drop.seenAt);
@@ -252,25 +260,33 @@ export const FeedShareCard = memo(function FeedShareCard({
               commentCount={drop.commentCount}
               hasNewComments={hasNewComments}
               showSaveToVault={!!drop.item}
-              onCommentIconClick={() => {
-                const opening = !showComments;
-                if (opening) {
-                  unreadDividerAtRef.current = drop.seenAt;
-                  console.log("[SEEN] thread open via icon —", { seenAt: drop.seenAt, latestCommentAt: drop.latestCommentAt, snapshot: unreadDividerAtRef.current });
-                  if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
-                } else {
-                  // Closing: persist latest timestamp so DB is up-to-date on reopen
-                  if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
-                  unreadDividerAtRef.current = null;
-                }
-                setShowComments((v) => !v);
-              }}
+              context={context}
+              onCommentIconClick={
+                isDiscovery
+                  ? () => {
+                      track("discovery_view_in_group", { postId: drop.id });
+                      router.push(`/groups/${drop.convo_id}#drop-${drop.id}`);
+                    }
+                  : () => {
+                      const opening = !showComments;
+                      if (opening) {
+                        unreadDividerAtRef.current = drop.seenAt;
+                        console.log("[SEEN] thread open via icon —", { seenAt: drop.seenAt, latestCommentAt: drop.latestCommentAt, snapshot: unreadDividerAtRef.current });
+                        if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
+                      } else {
+                        // Closing: persist latest timestamp so DB is up-to-date on reopen
+                        if (drop.latestCommentAt) markPostSeen?.(drop.id, drop.latestCommentAt);
+                        unreadDividerAtRef.current = null;
+                      }
+                      setShowComments((v) => !v);
+                    }
+              }
             />
           </div>
         </div>
 
-        {/* Latest comment preview — visible when thread is closed */}
-        {!showComments && drop.latestComment && (
+        {/* Latest comment preview — visible when thread is closed (group context only) */}
+        {!isDiscovery && !showComments && drop.latestComment && (
           <button
             type="button"
             onClick={() => {
@@ -307,9 +323,9 @@ export const FeedShareCard = memo(function FeedShareCard({
           </button>
         )}
 
-        {/* Comment thread — shown on demand */}
+        {/* Comment thread — shown on demand (group context only) */}
         <AnimatePresence>
-          {showComments && (
+          {!isDiscovery && showComments && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
