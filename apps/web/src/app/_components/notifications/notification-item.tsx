@@ -11,11 +11,11 @@ const supabase = createClient();
 
 const EVENT_LABELS: Record<string, string> = {
   like: "liked your post",
-  must_read: "marked your post as must-read",
+  must_read: "recommended your post",
   comment: "commented on your post",
   new_post: "shared a new post",
-  must_read_broadcast: "marked a post as must-read",
-  also_must_read: "also marked this post as must-read",
+  must_read_broadcast: "recommended a post",
+  also_must_read: "also recommended this post",
   also_commented: "also commented on this post",
 };
 

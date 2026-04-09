@@ -1,7 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/app/_libs/supabase/server";
 import { classifyThought, type ThoughtBucket } from "@kurate/utils";
+
+// Support both cookie auth (web) and Bearer token auth (mobile)
+async function getAuthenticatedClient(req: NextRequest): Promise<{ supabase: SupabaseClient; userId: string } | null> {
+  const authHeader = req.headers.get("authorization");
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  if (bearerToken) {
+    const { createClient: createSupabase } = await import("@supabase/supabase-js");
+    const supabase = createSupabase(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${bearerToken}` } } },
+    );
+    const { data } = await supabase.auth.getUser(bearerToken);
+    if (!data.user) return null;
+    return { supabase, userId: data.user.id };
+  }
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return null;
+  return { supabase, userId: data.user.id };
+}
 
 async function classifyWithGemini(text: string): Promise<ThoughtBucket | null> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -53,13 +77,12 @@ function toThoughtMessage(row: ThoughtRow) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    const auth = await getAuthenticatedClient(req);
+    if (!auth) {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }
+    const { supabase } = auth;
+    const user = { id: auth.userId };
 
     const body = (await req.json()) as {
       content_type?: string;
@@ -125,13 +148,12 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    const auth = await getAuthenticatedClient(req);
+    if (!auth) {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }
+    const { supabase } = auth;
+    const user = { id: auth.userId };
 
     const { searchParams } = new URL(req.url);
     const bucket = searchParams.get("bucket") as ThoughtBucket | null;

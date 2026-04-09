@@ -198,7 +198,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
           Use opacity/pointer-events (NOT display:none) so scroll positions are preserved. */}
       <div className="relative min-h-0 flex-1">
         <div
-          className={`absolute inset-0 overflow-y-auto transition-opacity duration-150 ${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
+          className={`absolute inset-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden transition-opacity duration-150 ${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <VaultLibrary
             filters={fullVaultFilters}
             onFiltersChange={handleLibraryFiltersChange}
