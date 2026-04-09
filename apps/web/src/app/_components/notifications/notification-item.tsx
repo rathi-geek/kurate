@@ -4,20 +4,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 
+import type { Notification } from "@kurate/types";
 import { createClient } from "@/app/_libs/supabase/client";
-import type { Notification } from "@/app/_libs/hooks/useNotifications";
-
-const supabase = createClient();
-
-const EVENT_LABELS: Record<string, string> = {
-  like: "liked your post",
-  must_read: "recommended your post",
-  comment: "commented on your post",
-  new_post: "shared a new post",
-  must_read_broadcast: "recommended a post",
-  also_must_read: "also recommended this post",
-  also_commented: "also commented on this post",
-};
+import { useTranslations } from "@/i18n/use-translations";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -30,6 +19,7 @@ export function NotificationItem({
   onNavigate,
   markRead,
 }: NotificationItemProps) {
+  const t = useTranslations("notifications");
   const router = useRouter();
   const actor = notification.actors[0] ?? null;
 
@@ -40,7 +30,8 @@ export function NotificationItem({
     : "Someone";
 
   const initial = displayName[0]?.toUpperCase() ?? "?";
-  const label = EVENT_LABELS[notification.event_type] ?? notification.message ?? notification.event_type;
+  const eventKey = `event_${notification.event_type}` as const;
+  const label = t(eventKey) ?? notification.message ?? notification.event_type;
 
   async function handleClick() {
     await markRead(notification.id);
@@ -49,6 +40,7 @@ export function NotificationItem({
     if (!["like", "must_read", "comment", "new_post", "also_must_read", "also_commented", "must_read_broadcast", "co_engaged"].includes(notification.event_type)) return;
     if (!notification.event_id) return;
 
+    const supabase = createClient();
     const { data } = await supabase
       .from("group_posts")
       .select("convo_id")

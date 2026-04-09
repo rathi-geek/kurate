@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
 import { LuX } from "react-icons/lu";
 
+import type { Notification } from "@kurate/types";
 import {
   Sheet,
   SheetClose,
@@ -11,7 +10,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { Notification } from "@/app/_libs/hooks/useNotifications";
+import { useAutoMarkRead } from "@/app/_libs/hooks/useAutoMarkRead";
+import { useTranslations } from "@/i18n/use-translations";
 import { NotificationItem } from "./notification-item";
 
 interface NotificationPanelProps {
@@ -33,20 +33,9 @@ export function NotificationPanel({
   markAllRead,
   markRead,
 }: NotificationPanelProps) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const t = useTranslations("notifications");
 
-  // Mark all read 1.5s after panel opens (so user sees badge before it clears)
-  useEffect(() => {
-    if (open && unreadCount > 0) {
-      timerRef.current = setTimeout(() => {
-        void markAllRead();
-      }, 1500);
-    }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  useAutoMarkRead(open, unreadCount, markAllRead);
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
@@ -56,13 +45,13 @@ export function NotificationPanel({
         className="flex w-full max-w-sm flex-col p-0">
         <SheetHeader className="border-b px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
-            <SheetTitle className="text-base min-w-0 flex-1 truncate">Notifications</SheetTitle>
+            <SheetTitle className="text-base min-w-0 flex-1 truncate">{t("title")}</SheetTitle>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={() => void markAllRead()}
                 className="text-muted-foreground hover:text-foreground shrink-0 text-xs transition-colors">
-                Mark all read
+                {t("mark_all_read")}
               </button>
             )}
             <SheetClose className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary shrink-0 rounded-xs p-1 opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden">
@@ -89,9 +78,9 @@ export function NotificationPanel({
 
           {!isLoading && notifications.length === 0 && (
             <div className="text-muted-foreground flex flex-col items-center justify-center px-4 py-16 text-center">
-              <p className="text-sm font-medium">No notifications yet</p>
+              <p className="text-sm font-medium">{t("empty_title")}</p>
               <p className="mt-1 text-xs">
-                You&apos;ll see activity from your groups here
+                {t("empty_subtitle")}
               </p>
             </div>
           )}

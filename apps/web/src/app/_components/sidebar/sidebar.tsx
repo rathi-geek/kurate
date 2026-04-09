@@ -11,11 +11,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import type { DMConversation } from "@kurate/types";
+import type { DMConversation, Notification } from "@kurate/types";
 import { motion } from "framer-motion";
 
 import { NotificationPanel } from "@/app/_components/notifications/notification-panel";
-import type { Notification } from "@/app/_libs/hooks/useNotifications";
 import { BrandArch, BrandConcentricArch } from "@/components/brand";
 import { BellIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
@@ -204,7 +203,7 @@ export function AppSidebar({
             <button
               type="button"
               onClick={() => setNotificationsOpen(true)}
-              title="Notifications"
+              title={t("notifications")}
               className={
                 collapsed
                   ? "hover:bg-ink/4 rounded-badge flex w-full items-center justify-center px-2 py-2 transition-colors"
@@ -221,7 +220,7 @@ export function AppSidebar({
                 )}
               </div>
               {!collapsed && (
-                <span className="text-ink/55 font-sans text-xs font-semibold">Notifications</span>
+                <span className="text-ink/55 font-sans text-xs font-semibold">{t("notifications")}</span>
               )}
               {!collapsed && notifUnreadCount > 0 && (
                 <UnreadBadge count={notifUnreadCount} variant="inline" className="ml-auto" />
