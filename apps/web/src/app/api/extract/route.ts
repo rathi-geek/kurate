@@ -35,10 +35,28 @@ function formatIsoDuration(iso: string): string | undefined {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Support both cookie auth (web) and Bearer token auth (mobile)
+    const authHeader = req.headers.get("authorization");
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+    let user;
+    if (bearerToken) {
+      // Mobile: use Bearer token to get user
+      const { createClient: createServiceClient } = await import("@supabase/supabase-js");
+      const supabaseWithToken = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { headers: { Authorization: `Bearer ${bearerToken}` } } },
+      );
+      const { data } = await supabaseWithToken.auth.getUser(bearerToken);
+      user = data.user;
+    } else {
+      // Web: use cookie-based auth
+      const supabase = await createClient();
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    }
+
     if (!user) {
       return NextResponse.json(
         { error: "UNAUTHORIZED", message: "Authentication required." },
