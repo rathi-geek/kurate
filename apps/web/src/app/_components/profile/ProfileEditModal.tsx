@@ -123,6 +123,20 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     const ext = file.name.split(".").pop();
     const path = `profile_avatars/${user.id}.${ext}`;
 
+    // Clean up old avatar file if extension changed (e.g. .png → .jpg)
+    const { data: oldProfile } = await supabase
+      .from("profiles")
+      .select("avatar_id, avatar:avatar_id(file_path, bucket_name)")
+      .eq("id", user.id)
+      .single();
+    const oldAvatar = oldProfile?.avatar as { file_path: string; bucket_name: string } | null;
+    if (oldAvatar && oldAvatar.file_path !== path) {
+      await supabase.storage.from(oldAvatar.bucket_name).remove([oldAvatar.file_path]);
+      if (oldProfile?.avatar_id) {
+        await supabase.from("media_metadata").delete().eq("id", oldProfile.avatar_id);
+      }
+    }
+
     const { error: uploadErr } = await supabase.storage
       .from(AVATARS_BUCKET)
       .upload(path, file, { upsert: true });
@@ -157,11 +171,12 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     }
 
     const { data: { publicUrl } } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(path);
+    const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
     await supabase.from("profiles").update({ avatar_id: media.id }).eq("id", user.id);
 
     // Swap local blob URL for the real Supabase URL and free memory
     URL.revokeObjectURL(localUrl);
-    setAvatarUrl(publicUrl);
+    setAvatarUrl(cacheBustedUrl);
     setUploading(false);
   }
 
@@ -169,6 +184,24 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     if (!user) return;
     setDeletingAvatar(true);
     const supabase = createClient();
+
+    // Fetch current avatar info for full cleanup
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("avatar_id, avatar:avatar_id(file_path, bucket_name)")
+      .eq("id", user.id)
+      .single();
+
+    const avatar = profileData?.avatar as { file_path: string; bucket_name: string } | null;
+
+    if (avatar && profileData?.avatar_id) {
+      // Delete file from storage bucket
+      await supabase.storage.from(avatar.bucket_name).remove([avatar.file_path]);
+      // Delete media_metadata row
+      await supabase.from("media_metadata").delete().eq("id", profileData.avatar_id);
+    }
+
+    // Unlink avatar from profile
     const { error } = await supabase
       .from("profiles")
       .update({ avatar_id: null })
@@ -370,8 +403,10 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
                   onChange={(e) => setBio(e.target.value)}
                   placeholder={t("bio_placeholder")}
                   rows={2}
+                  maxLength={300}
                   className="min-h-0 resize-none"
                 />
+                <p className="text-muted-foreground text-right text-xs">{bio.length}/300</p>
               </div>
             </div>
 

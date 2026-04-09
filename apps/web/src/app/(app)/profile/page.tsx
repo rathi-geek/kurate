@@ -1,27 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import { ProfileEditModal } from "@/app/_components/profile/ProfileEditModal";
 import { ProfileSkeleton } from "@/app/_components/profile/ProfileSkeleton";
 import { ContentDNA } from "@/app/_components/vault/ContentDNA";
 import { useAuth } from "@/app/_libs/auth-context";
+import { ROUTES } from "@kurate/utils";
 import { useUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { useContentDNA } from "@/app/_libs/hooks/useContentDNA";
 import { createClient } from "@/app/_libs/supabase/client";
 import { useTranslations } from "@/i18n/use-translations";
+import { Button } from "@/components/ui/button";
+import { LogOutIcon } from "@/components/icons";
 
 const DASH = "—";
 
 export default function ProfilePage() {
   const t = useTranslations("profile");
+  const router = useRouter();
   const { user, profile, loading } = useAuth();
   const { data: interests = [] } = useUserInterests(user?.id);
   const { data: contentDNA = [] } = useContentDNA();
   const [editOpen, setEditOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number | null>(null);
+
+  const handleLogout = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push(ROUTES.AUTH.LOGIN);
+  }, [router]);
 
   useEffect(() => {
     if (!user) return;
@@ -113,6 +124,15 @@ export default function ProfilePage() {
       </div>
 
       <ContentDNA interests={contentDNA} totalItems={savedCount ?? 0} />
+
+      <Button
+        variant="outline"
+        className="text-destructive mt-8 w-full"
+        onClick={handleLogout}
+      >
+        <LogOutIcon className="size-4" />
+        {t("logout")}
+      </Button>
 
       <ProfileEditModal open={editOpen} onClose={() => setEditOpen(false)} />
     </div>
