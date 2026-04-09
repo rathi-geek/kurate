@@ -92,6 +92,10 @@ function RootLayoutNav() {
       </Stack.Protected>
       <Stack.Protected guard={isLoggedIn}>
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="profile-edit"
+          options={{ presentation: 'modal', headerShown: false }}
+        />
       </Stack.Protected>
     </Stack>
   );

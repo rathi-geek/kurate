@@ -10,3 +10,12 @@ export type { UseVaultPreviewConfig, UseVaultPreviewReturn } from "./useVaultPre
 export { useVaultComposer } from "./useVaultComposer";
 export type { UseVaultComposerConfig } from "./useVaultComposer";
 export type { PendingDB, PendingLinkRow, PendingThoughtRow } from "./types/pending-db";
+export {
+  AVATARS_BUCKET,
+  cleanupOldAvatar,
+  getAvatarPath,
+  linkUploadedAvatar,
+  uploadAvatar,
+  uploadAvatarFromUri,
+  deleteAvatar,
+} from "./avatarService";

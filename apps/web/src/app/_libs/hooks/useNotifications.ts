@@ -8,6 +8,7 @@ import type { Notification, NotificationActor } from "@kurate/types";
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@kurate/query";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
+import { playNotificationSound } from "@/app/_libs/utils/notificationSound";
 
 async function fetchNotifications(userId: string): Promise<Notification[]> {
   const supabase = createClient();
@@ -129,6 +130,7 @@ export function useNotifications(userId: string | null | undefined) {
         (payload) => {
           const row = payload.new as { recipient_id: string };
           if (row.recipient_id !== userId) return;
+          playNotificationSound();
           void queryClient.invalidateQueries({
             queryKey: queryKeys.notifications.list(userId),
           });

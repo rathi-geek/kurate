@@ -19,3 +19,6 @@ export * from './useShareToGroups';
 export * from './useExtractMetadata';
 export * from './useVaultPreview';
 export * from './useVaultComposer';
+export * from './useProfile';
+export * from './useUserInterestsQuery';
+export * from './useAvatarUpload';

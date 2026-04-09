@@ -36,9 +36,9 @@ import { INTEREST_OPTIONS, validateUsername } from "@kurate/utils";
 import { useUserInterests, saveUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { useUsernameAvailability } from "@/app/_libs/hooks/useUsernameAvailability";
 import { queryKeys } from "@kurate/query";
+import { uploadAvatar, deleteAvatar } from "@kurate/hooks";
 import { createClient } from "@/app/_libs/supabase/client";
 import { cn } from "@/app/_libs/utils/cn";
-import { AVATARS_BUCKET } from "@/app/_libs/utils/getMediaUrl";
 import { fadeUpHero, springGentle } from "@/app/_libs/utils/motion";
 import { track } from "@/app/_libs/utils/analytics";
 import { CameraIcon, TrashIcon } from "@/components/icons";
@@ -113,108 +113,47 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
       return;
     }
 
-    // Optimistic preview — show local file instantly before upload completes
     const previousUrl = avatarUrl;
     const localUrl = URL.createObjectURL(file);
     setAvatarUrl(localUrl);
     setUploading(true);
 
-    const supabase = createClient();
-    const ext = file.name.split(".").pop();
-    const path = `profile_avatars/${user.id}.${ext}`;
-
-    // Clean up old avatar file if extension changed (e.g. .png → .jpg)
-    const { data: oldProfile } = await supabase
-      .from("profiles")
-      .select("avatar_id, avatar:avatar_id(file_path, bucket_name)")
-      .eq("id", user.id)
-      .single();
-    const oldAvatar = oldProfile?.avatar as { file_path: string; bucket_name: string } | null;
-    if (oldAvatar && oldAvatar.file_path !== path) {
-      await supabase.storage.from(oldAvatar.bucket_name).remove([oldAvatar.file_path]);
-      if (oldProfile?.avatar_id) {
-        await supabase.from("media_metadata").delete().eq("id", oldProfile.avatar_id);
-      }
-    }
-
-    const { error: uploadErr } = await supabase.storage
-      .from(AVATARS_BUCKET)
-      .upload(path, file, { upsert: true });
-    if (uploadErr) {
+    try {
+      const supabase = createClient();
+      const cacheBustedUrl = await uploadAvatar(
+        supabase,
+        user.id,
+        file,
+        file.name,
+        file.type,
+        file.size,
+      );
+      URL.revokeObjectURL(localUrl);
+      setAvatarUrl(cacheBustedUrl);
+    } catch {
       URL.revokeObjectURL(localUrl);
       setAvatarUrl(previousUrl);
-      setUploading(false);
       toast.error(t("upload_error"));
-      return;
-    }
-
-    const { data: media, error: mediaErr } = await supabase
-      .from("media_metadata")
-      .upsert({
-        provider: "supabase",
-        bucket_name: AVATARS_BUCKET,
-        file_path: path,
-        file_name: file.name,
-        file_size: file.size,
-        file_type: file.type,
-        owner_id: user.id,
-        is_public: true,
-      }, { onConflict: "owner_id,provider,file_path,file_name" })
-      .select("id")
-      .single();
-    if (mediaErr) {
-      URL.revokeObjectURL(localUrl);
-      setAvatarUrl(previousUrl);
+    } finally {
       setUploading(false);
-      toast.error(t("upload_error"));
-      return;
     }
-
-    const { data: { publicUrl } } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(path);
-    const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
-    await supabase.from("profiles").update({ avatar_id: media.id }).eq("id", user.id);
-
-    // Swap local blob URL for the real Supabase URL and free memory
-    URL.revokeObjectURL(localUrl);
-    setAvatarUrl(cacheBustedUrl);
-    setUploading(false);
   }
 
   async function handleDeleteAvatar() {
     if (!user) return;
     setDeletingAvatar(true);
-    const supabase = createClient();
 
-    // Fetch current avatar info for full cleanup
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("avatar_id, avatar:avatar_id(file_path, bucket_name)")
-      .eq("id", user.id)
-      .single();
-
-    const avatar = profileData?.avatar as { file_path: string; bucket_name: string } | null;
-
-    if (avatar && profileData?.avatar_id) {
-      // Delete file from storage bucket
-      await supabase.storage.from(avatar.bucket_name).remove([avatar.file_path]);
-      // Delete media_metadata row
-      await supabase.from("media_metadata").delete().eq("id", profileData.avatar_id);
-    }
-
-    // Unlink avatar from profile
-    const { error } = await supabase
-      .from("profiles")
-      .update({ avatar_id: null })
-      .eq("id", user.id);
-    if (error) {
+    try {
+      const supabase = createClient();
+      await deleteAvatar(supabase, user.id);
+      setAvatarUrl("");
+      await refreshUser();
+      toast.success(t("avatar_deleted"));
+    } catch {
       toast.error(t("avatar_delete_error"));
+    } finally {
       setDeletingAvatar(false);
-      return;
     }
-    setAvatarUrl("");
-    await refreshUser();
-    setDeletingAvatar(false);
-    toast.success(t("avatar_deleted"));
   }
 
   async function handleSave() {

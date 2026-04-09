@@ -23,7 +23,8 @@
     "create_group": "Create group",
     "expand_sidebar": "Expand sidebar",
     "collapse_sidebar": "Collapse sidebar",
-    "close": "Close"
+    "close": "Close",
+    "notifications": "Notifications"
   },
   "people": {
     "page_title": "Messages",
@@ -332,7 +333,30 @@
     "upload_size_error": "Image must be under 5 MB",
     "username_taken": "Already taken",
     "username_checking": "Checking…",
-    "username_available": "Available"
+    "username_available": "Available",
+    "logout": "Log out",
+    "bio_char_count": "{count}/300",
+    "tap_to_change_photo": "Tap to change photo",
+    "confirm_logout_title": "Log out?",
+    "confirm_logout_desc": "You'll need to sign in again to access your account.",
+    "confirm_logout_confirm": "Log out",
+    "confirm_logout_cancel": "Cancel"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all read",
+    "empty_title": "No notifications yet",
+    "empty_subtitle": "You'll see activity from your groups here",
+    "event_like": "liked your post",
+    "event_must_read": "recommended your post",
+    "event_comment": "commented on your post",
+    "event_new_post": "shared a new post",
+    "event_must_read_broadcast": "recommended a post",
+    "event_also_must_read": "also recommended this post",
+    "event_also_commented": "also commented on this post",
+    "event_bookmark": "bookmarked your post",
+    "event_follow": "started following you",
+    "event_mention": "mentioned you"
   },
   "admin": {
     "nav": {

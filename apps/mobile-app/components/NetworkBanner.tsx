@@ -6,7 +6,7 @@ import { Icon } from '@/components/ui/icon';
 import { WifiOff, Wifi, WifiLow } from 'lucide-react-native';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
-export default function NetworkBanner() {
+export function NetworkBanner() {
   const networkStatus = useNetworkStatus();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(-100)).current;
