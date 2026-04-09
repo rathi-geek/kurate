@@ -36,9 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOverrides, setSidebarOverrides] = useState<SidebarOverrides>({});
   const [activePanel, setActivePanel] = useState<"people" | "groups" | null>(null);
 
-  useEffect(() => {
-    setActivePanel(null);
-  }, [pathname]);
+  useEffect(() => { setActivePanel(null); }, [pathname]);
 
   const userId = user?.id ?? null;
   const userEmail = user?.email ?? "";

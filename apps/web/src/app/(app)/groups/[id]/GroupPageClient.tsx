@@ -9,18 +9,13 @@ import type { GroupRole } from "@kurate/types";
 import { FeedHeader } from "@/app/_components/groups/feed-header";
 import { FeedTabView } from "@/app/_components/groups/feed-tab-view";
 import { GroupInfoPage } from "@/app/_components/groups/group-info-page";
+import { GroupView } from "@/app/_components/groups/group-view";
 import { LibraryView } from "@/app/_components/groups/library-view";
 import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
 import { useAuth } from "@/app/_libs/auth-context";
 import { useGroupDetail, useGroupRole } from "@/app/_libs/hooks/useGroupDetail";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
-
-export enum GroupView {
-  Feed = "feed",
-  Library = "library",
-  Info = "info",
-}
 
 interface GroupPageClientProps {
   groupId: string;

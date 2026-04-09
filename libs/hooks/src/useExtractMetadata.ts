@@ -26,9 +26,13 @@ interface UseExtractMetadataResult {
 }
 
 /**
- * @param apiBaseUrl — Base URL for API calls. Leave empty for web (relative). Full URL for mobile.
+ * @param rawApiBaseUrl — Base URL for API calls. Leave empty for web (relative). Full URL for mobile.
+ * @param accessToken — Optional auth token for API calls. Web uses cookies (not needed). Mobile passes Supabase access token.
  */
-export function useExtractMetadata(apiBaseUrl = ""): UseExtractMetadataResult {
+export function useExtractMetadata(rawApiBaseUrl = "", accessToken?: string | null): UseExtractMetadataResult {
+  const apiBaseUrl = rawApiBaseUrl.replace(/\/+$/, "");
+  const accessTokenRef = useRef(accessToken);
+  accessTokenRef.current = accessToken;
   const [isExtracting, setIsExtracting] = useState(false);
   const [metadata, setMetadata] = useState<ExtractedMetadata | null>(null);
   const [extractionFailed, setExtractionFailed] = useState(false);
@@ -38,15 +42,24 @@ export function useExtractMetadata(apiBaseUrl = ""): UseExtractMetadataResult {
     const generation = ++extractGenerationRef.current;
     setIsExtracting(true);
     setExtractionFailed(false);
+    const endpoint = `${apiBaseUrl}/api/extract`;
+    console.log("[useExtractMetadata] Fetching:", endpoint, "for URL:", url);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/extract`, {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (accessTokenRef.current) {
+        headers["Authorization"] = `Bearer ${accessTokenRef.current}`;
+      }
+      console.log("[useExtractMetadata] Starting fetch, token:", accessTokenRef.current);
+      const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ url }),
       });
+      console.log("[useExtractMetadata] Response status:", res.status);
       if (generation !== extractGenerationRef.current) return;
       if (res.ok) {
         const data = await res.json();
+        console.log("[useExtractMetadata] Extracted data:", JSON.stringify(data).slice(0, 200));
         if (generation !== extractGenerationRef.current) return;
         setMetadata({
           url,
@@ -58,9 +71,12 @@ export function useExtractMetadata(apiBaseUrl = ""): UseExtractMetadataResult {
           duration: (data as { duration?: string }).duration ?? null,
         });
       } else {
+        const errorText = await res.text().catch(() => "");
+        console.error("[useExtractMetadata] Failed:", res.status, errorText.slice(0, 200));
         setExtractionFailed(true);
       }
-    } catch {
+    } catch (err) {
+      console.error("[useExtractMetadata] Network error:", err);
       if (generation !== extractGenerationRef.current) return;
       setExtractionFailed(true);
     } finally {

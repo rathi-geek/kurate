@@ -74,6 +74,13 @@ const eslintConfig = [
         },
       ],
 
+      // React compiler rules: downgrade to warn — these flag legitimate patterns
+      // (mount detection, prop-to-state sync, Date.now in display, ref sync)
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/immutability": "warn",
+
       // Accessibility: downgrade some jsx-a11y rules from error to warn
       // (strict rules that may need gradual adoption)
       "jsx-a11y/no-static-element-interactions": "warn",

@@ -17,3 +17,5 @@ export * from './useBucketLastRead';
 export * from './useShareableConversations';
 export * from './useShareToGroups';
 export * from './useExtractMetadata';
+export * from './useVaultPreview';
+export * from './useVaultComposer';

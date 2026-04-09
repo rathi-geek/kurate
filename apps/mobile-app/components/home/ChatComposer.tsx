@@ -27,26 +27,35 @@ export function ChatComposer({
   const [focused, setFocused] = useState(false);
   const [lockedUrl, setLockedUrl] = useState<string | null>(null);
   const urlTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastReportedUrl = useRef<string | null>(null);
 
   const displayPlaceholder = placeholder ?? t('vault.input_placeholder');
   const hasText = value.trim().length > 0;
   const showSend = hasText || !!lockedUrl;
   const isCollapsed = collapsible && !focused && !hasText && !lockedUrl;
 
+  // URL detection — 150ms debounce
   useEffect(() => {
+    if (!onUrlChange) return;
     if (urlTimerRef.current) clearTimeout(urlTimerRef.current);
     urlTimerRef.current = setTimeout(() => {
       const match = value.match(URL_REGEX);
       if (match) {
         const url = match[0];
-        if (url !== lockedUrl) {
-          const remainder = value.replace(url, '').trim();
-          setValue(remainder);
-          setLockedUrl(url);
-          onUrlChange?.(url);
+        if (lockedUrl === url) {
+          // Same URL pasted again — deduplicate from value
+          const deduped = value.replace(url, '').trim();
+          if (deduped !== value) setValue(deduped);
+          return;
         }
-      } else if (!lockedUrl) {
-        onUrlChange?.(null);
+        const remaining = value.replace(url, '').trim();
+        setValue(remaining);
+        setLockedUrl(url);
+        lastReportedUrl.current = url;
+        onUrlChange(url);
+      } else if (lastReportedUrl.current !== null && !lockedUrl) {
+        lastReportedUrl.current = null;
+        onUrlChange(null);
       }
     }, 150);
     return () => {
@@ -55,25 +64,32 @@ export function ChatComposer({
   }, [value, lockedUrl, onUrlChange]);
 
   const handleSubmit = useCallback(async () => {
-    const text = value.trim();
-    if (!text && !lockedUrl) return;
+    if (disabled) return;
+    const trimmed = value.trim();
+    if (!trimmed && !lockedUrl) return;
 
+    // Fast paste+enter: URL not yet locked by debounce
     if (!lockedUrl && onUrlChange) {
-      const match = text.match(URL_REGEX);
+      const match = trimmed.match(URL_REGEX);
       if (match) {
-        onUrlChange(match[0]);
-        const remainder = text.replace(match[0], '').trim();
-        setValue(remainder);
-        setLockedUrl(match[0]);
+        const url = match[0];
+        onUrlChange(url);
+        const remaining = trimmed.replace(url, '').trim();
+        onSend(remaining);
+        setValue('');
+        setLockedUrl(null);
+        lastReportedUrl.current = null;
         return;
       }
     }
 
+    // Reset ref so URL detection effect doesn't fire onUrlChange(null) after submit
+    lastReportedUrl.current = null;
+    // Send note text (lockedUrl handled by parent via previewUrl)
+    onSend(trimmed);
     setValue('');
     setLockedUrl(null);
-    onUrlChange?.(null);
-    await onSend(text);
-  }, [value, lockedUrl, onSend, onUrlChange]);
+  }, [value, lockedUrl, disabled, onSend, onUrlChange]);
 
   return (
     <HStack

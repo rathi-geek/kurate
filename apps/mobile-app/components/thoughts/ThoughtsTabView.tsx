@@ -17,11 +17,19 @@ import type { DisplayMessage } from './ThoughtBubble';
 
 interface ThoughtsTabViewProps {
   searchQuery: string;
+  viewAll?: boolean;
+  onViewAllChange?: (v: boolean) => void;
 }
 
-export function ThoughtsTabView({ searchQuery }: ThoughtsTabViewProps) {
+export function ThoughtsTabView({
+  searchQuery,
+  viewAll: viewAllProp,
+  onViewAllChange,
+}: ThoughtsTabViewProps) {
   const { t } = useLocalization();
-  const [viewAll, setViewAll] = useState(false);
+  const [viewAllLocal, setViewAllLocal] = useState(false);
+  const viewAll = viewAllProp ?? viewAllLocal;
+  const setViewAll = onViewAllChange ?? setViewAllLocal;
   const [activeBucket, setActiveBucket] = useState<ThoughtBucket | null>(null);
 
   const { data: summaries, isLoading: summariesLoading } = useBucketSummaries();
@@ -51,7 +59,7 @@ export function ThoughtsTabView({ searchQuery }: ThoughtsTabViewProps) {
   return (
     <View className="flex-1">
       <View className="items-end px-5 py-2">
-        <Pressable onPress={() => setViewAll(v => !v)}>
+        <Pressable onPress={() => setViewAll(!viewAll)}>
           <Text className="text-xs text-foreground/50 underline">
             {viewAll
               ? t('thoughts.view_buckets')

@@ -10,6 +10,7 @@ function deriveFromSession(session: Session | null) {
   return {
     isLoggedIn: !!session,
     userId: session?.user?.id ?? null,
+    accessToken: session?.access_token ?? null,
     isOnboardingCompleted: session?.user?.user_metadata?.is_onboarded === true,
   };
 }
@@ -20,6 +21,7 @@ export const useAuthStore = create<AuthState>()(
       isLoggedIn: false,
       isOnboardingCompleted: false,
       userId: null,
+      accessToken: null,
 
       setSession: (session: Session | null) => {
         set(deriveFromSession(session));
@@ -34,6 +36,7 @@ export const useAuthStore = create<AuthState>()(
           isLoggedIn: false,
           isOnboardingCompleted: false,
           userId: null,
+          accessToken: null,
         });
       },
     }),

@@ -74,7 +74,6 @@ export async function POST(req: NextRequest) {
       .order("name");
 
     const interests = (interestRows ?? []) as { id: string; name: string }[];
-    console.log("[classify-content] interests from DB:", interests.map((i) => i.name));
     if (interests.length === 0) {
       return NextResponse.json({ classified: [] });
     }

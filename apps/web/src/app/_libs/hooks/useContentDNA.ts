@@ -21,6 +21,7 @@ export function useContentDNA() {
       } = await supabase.auth.getUser();
       if (!user) return [];
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex nested select not typed by Supabase
       const { data } = await (supabase as any)
         .from("user_logged_items")
         .select(

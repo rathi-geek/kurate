@@ -203,7 +203,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
   const rawDrops = useMemo(() => query.data?.pages.flat() ?? [], [query.data]);
   const postIds = useMemo(() => rawDrops.map((d) => d.id), [rawDrops]);
   const postIdsRef = useRef(postIds);
-  postIdsRef.current = postIds;
+  useEffect(() => { postIdsRef.current = postIds; }, [postIds]);
 
   const previewQuery = useQuery({
     queryKey: ["feed-comment-previews", groupId, postIds],
@@ -310,7 +310,6 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
           if (payload.eventType === "INSERT" && row.user_id === currentUserId) {
             const postId = row.group_post_id;
             const serverAt = (payload.new as { created_at: string }).created_at;
-            console.log("[SEEN] realtime own INSERT —", { postId, serverAt });
             queryClient.setQueryData(
               queryKeys.groups.feed(groupId),
               (old: InfiniteData<GroupDrop[]> | undefined) => {
@@ -356,7 +355,6 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
 
   const markPostSeen = useCallback(
     (postId: string, seenAt: string) => {
-      console.log("[SEEN] markPostSeen called —", { postId, seenAt });
       // Optimistically update seenAt in the feed cache
       queryClient.setQueryData(
         queryKeys.groups.feed(groupId),

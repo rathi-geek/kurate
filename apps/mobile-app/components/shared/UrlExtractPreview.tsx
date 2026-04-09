@@ -38,11 +38,14 @@ export function UrlExtractPreview({
       <HStack className="items-center gap-3 p-4">
         <Link2 size={20} className="text-muted-foreground" />
         <VStack className="gap-1">
-          <Text className="font-mono text-xs text-muted-foreground">
-            {domain}
-          </Text>
-          <Text className="text-sm text-foreground">
+          <Text className="text-sm font-medium text-foreground">
             {t('link_preview.reading')}
+          </Text>
+          <Text className="text-xs text-muted-foreground">
+            {t('link_preview.extracting')}
+          </Text>
+          <Text className="font-mono text-[10px] text-muted-foreground/50">
+            {domain}
           </Text>
         </VStack>
       </HStack>

@@ -136,7 +136,6 @@ export function useNotifications(userId: string | null | undefined) {
   useEffect(() => {
     if (!userId) return;
 
-    console.log("[useNotifications] subscribing", `notifications:${userId}`);
     const channel = supabase
       .channel(`notifications:${userId}`)
       .on(
@@ -159,7 +158,6 @@ export function useNotifications(userId: string | null | undefined) {
       });
 
     return () => {
-      console.log("[useNotifications] cleanup", `notifications:${userId}`);
       void supabase.removeChannel(channel);
     };
   }, [userId, queryClient]);

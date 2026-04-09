@@ -53,19 +53,26 @@ interface SubmitContentConfig {
   apiBaseUrl?: string;
 }
 
+export interface SendOptions {
+  meta?: ExtractedMeta | null;
+  remarks?: string | null;
+  tempId?: string;
+}
+
 export function useSubmitContent(config: SubmitContentConfig) {
   const [isPending, setIsPending] = useState(false);
   const saveItem = useSaveItem(config.supabase);
 
   const onSend = useCallback(
-    async (text: string, mediaFile?: File, preExtractedMeta?: ExtractedMeta | null, note?: string | null, tempId?: string) => {
-      const urlMatch = !mediaFile && text.match(URL_REGEX);
+    async (text: string, opts?: SendOptions) => {
+      const { meta: preExtractedMeta, remarks: note, tempId } = opts ?? {};
+      const urlMatch = text.match(URL_REGEX);
       setIsPending(true);
       try {
         if (urlMatch) {
           // ── URL path → logged_items ──────────────────────────────────────
           const url = urlMatch[0];
-          const base = config.apiBaseUrl ?? "";
+          const base = (config.apiBaseUrl ?? "").replace(/\/+$/, "");
 
           const meta: ExtractedMeta | null =
             preExtractedMeta ??
@@ -109,51 +116,14 @@ export function useSubmitContent(config: SubmitContentConfig) {
           await config.onLinkSaved?.(result);
           config.onRouted("links");
         } else {
-          // ── Text / media path → thoughts ─────────────────────────────────
-          let media_id: string | null = null;
-
-          if (mediaFile) {
-            const {
-              data: { user },
-            } = await config.supabase.auth.getUser();
-            if (!user) return;
-
-            const ext = mediaFile.name.split(".").pop() ?? "jpg";
-            const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-            const { error: uploadError } = await config.supabase.storage
-              .from("thoughts")
-              .upload(path, mediaFile);
-            if (uploadError) return;
-
-            // media_metadata is not in generated types
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data: mediaRow } = await (config.supabase as any)
-              .from("media_metadata")
-              .insert({
-                bucket_name: "thoughts",
-                file_name: mediaFile.name,
-                file_path: path,
-                file_size: mediaFile.size,
-                file_type: mediaFile.type,
-                is_public: false,
-                owner_id: user.id,
-                provider: "supabase",
-              })
-              .select("id")
-              .single();
-
-            media_id = (mediaRow as { id: string } | null)?.id ?? null;
-          }
-
-          const base = config.apiBaseUrl ?? "";
+          // ── Text path → thoughts ─────────────────────────────────
+          const base = (config.apiBaseUrl ?? "").replace(/\/+$/, "");
           const thoughtRes = await fetch(`${base}/api/thoughts`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content_type: media_id ? "image" : "text",
+              content_type: "text",
               text: text || null,
-              ...(media_id ? { media_id } : {}),
               ...(config.activeBucket ? { bucket: config.activeBucket } : {}),
             }),
           });

@@ -1,0 +1,40 @@
+import type { PendingDB } from '@kurate/hooks';
+import { usePendingStore } from '@/store/usePendingStore';
+
+export const mobilePendingDb: PendingDB = {
+  addPendingLink: async row => {
+    usePendingStore.getState().addPendingLink(row);
+  },
+
+  getPendingLinkByUrl: async url => {
+    return usePendingStore.getState().getPendingLinkByUrl(url) ?? null;
+  },
+
+  updatePendingLinkStatus: async (tempId, status) => {
+    usePendingStore.getState().updatePendingLinkStatus(tempId, status);
+  },
+
+  deletePendingLink: async tempId => {
+    usePendingStore.getState().deletePendingLink(tempId);
+  },
+
+  getAllPendingLinks: async () => {
+    return usePendingStore.getState().pendingLinks;
+  },
+
+  addPendingThought: async row => {
+    usePendingStore.getState().addPendingThought(row);
+  },
+
+  updatePendingThoughtStatus: async (tempId, status) => {
+    usePendingStore.getState().updatePendingThoughtStatus(tempId, status);
+  },
+
+  deletePendingThought: async tempId => {
+    usePendingStore.getState().deletePendingThought(tempId);
+  },
+
+  getAllPendingThoughts: async () => {
+    return usePendingStore.getState().pendingThoughts;
+  },
+};

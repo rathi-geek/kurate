@@ -50,10 +50,7 @@ export const LibraryCard = memo(function LibraryCard({
             fill
             unoptimized
             className="object-cover"
-            onError={() => {
-              console.log("[LibraryCard] image error for:", drop.item?.preview_image_url);
-              setImgError(true);
-            }}
+            onError={() => setImgError(true)}
           />
         </div>
       ) : drop.item ? (

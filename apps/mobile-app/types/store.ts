@@ -4,6 +4,7 @@ export interface AuthState {
   isLoggedIn: boolean;
   isOnboardingCompleted: boolean;
   userId: string | null;
+  accessToken: string | null;
   setSession: (session: Session | null) => void;
   setOnboardingCompleted: (completed: boolean) => void;
   reset: () => void;

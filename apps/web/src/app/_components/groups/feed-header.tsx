@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Tables } from "@kurate/types";
 import { LuLibrary, LuNewspaper } from "react-icons/lu";
 
-import { GroupView } from "@/app/(app)/groups/[id]/GroupPageClient";
+import { GroupView } from "@/app/_components/groups/group-view";
 import { useTranslations } from "@/i18n/use-translations";
 
 interface FeedHeaderProps {

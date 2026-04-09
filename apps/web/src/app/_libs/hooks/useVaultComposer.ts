@@ -6,7 +6,7 @@ import { type ThoughtBucket, classifyThought } from "@kurate/utils";
 import { toast } from "sonner";
 
 import { type ExtractedMeta, VaultTab } from "@kurate/types";
-import type { ExtractedMetadata } from "@kurate/hooks";
+import type { ExtractedMetadata, SendOptions } from "@kurate/hooks";
 import { db } from "@/app/_libs/db";
 import { detectContentType } from "@/app/_libs/metadata/extractor";
 import { track } from "@/app/_libs/utils/analytics";
@@ -20,13 +20,7 @@ interface UseVaultComposerParams {
   resetPreviewState: () => void;
   resetExtraction: () => void;
   resetInput: () => void;
-  onSend: (
-    text: string,
-    file?: File,
-    meta?: ExtractedMeta | null,
-    remarks?: string | null,
-    tempId?: string,
-  ) => Promise<void>;
+  onSend: (text: string, opts?: SendOptions) => Promise<void>;
   activeBucket: ThoughtBucket | null;
   vaultTab: VaultTab;
   setVaultTab: (value: SetStateAction<VaultTab>) => void;
@@ -105,7 +99,7 @@ export function useVaultComposer({
         // Clear preview state so input is ready for next URL
         resetPreviewState();
 
-        void onSend(effectiveUrl, undefined, meta, noteText.trim() || null)
+        void onSend(effectiveUrl, { meta, remarks: noteText.trim() || null })
           .then(async () => {
             await db.pending_links.update(tempId, { status: "confirmed" });
           })
@@ -134,7 +128,7 @@ export function useVaultComposer({
         }
         setVaultTab(VaultTab.THOUGHTS);
         onThoughtViewAllChange(true);
-        void onSend(noteText, undefined, null, null, tempId).catch(async () => {
+        void onSend(noteText, { tempId }).catch(async () => {
           await db.pending_thoughts.update(tempId, { status: "failed" });
         });
       }

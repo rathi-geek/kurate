@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 
-import { PreviewPhase } from "@kurate/types";
+import { PreviewPhase, type ExtractedMeta } from "@kurate/types";
 import { ShareTargetGrid } from "@/app/_components/shared/share-target-grid";
 import { UrlExtractPreview } from "@/app/_components/shared/url-extract-preview";
 import {
@@ -18,7 +18,6 @@ import {
 } from "@/app/_libs/utils/motion";
 import { CloseIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
-import type { ExtractedMeta } from "@kurate/types";
 
 export interface LinkPreviewCardProps {
   phase: Exclude<PreviewPhase, PreviewPhase.Idle>;
