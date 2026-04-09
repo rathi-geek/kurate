@@ -4,14 +4,14 @@ import type { ComponentProps } from "react";
 
 import Link from "next/link";
 
+import { ROUTES } from "@kurate/utils";
 import { motion } from "framer-motion";
-import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
-import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 
-import { ROUTES } from "@kurate/utils";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { BrandArch, BrandConcentricArch, BrandStar, BrandSunburst } from "@/components/brand";
+import { useTranslations } from "@/i18n/use-translations";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -34,44 +34,6 @@ const LOGOS = [
   "Wired",
   "Arc",
   "Readwise",
-];
-
-const TESTIMONIALS = [
-  {
-    quote:
-      "Kurate completely changed how I discover content. It's like having a brilliant friend who reads everything.",
-    name: "Nikhil Kamath",
-    role: "Co-founder, Zerodha",
-  },
-  {
-    quote:
-      "I organized 3 years of scattered bookmarks in a single afternoon. The AI tagging is unreal.",
-    name: "Naman Lahoti",
-    role: "Founder & Builder",
-  },
-  {
-    quote:
-      "Kurate is that extra part of your brain that remembers everything you read and connects the dots.",
-    name: "Arshia Mal",
-    role: "Product Designer",
-  },
-  {
-    quote:
-      "The social curation feed is addictive in the best way. I trust people's recommendations over any algorithm.",
-    name: "Suchet Kumar",
-    role: "Engineer & Curator",
-  },
-  {
-    quote:
-      "Finally, a reading tool that respects my time. The proof of knowledge concept is brilliant.",
-    name: "Vivek Kamath",
-    role: "Founder, Kurate",
-  },
-  {
-    quote: "Replaced Pocket, Instapaper, and my 47 open tabs. Kurate just gets it.",
-    name: "Peter Thiel",
-    role: "Founder, Founders Fund",
-  },
 ];
 
 const FEATURE_KEYS = [
@@ -173,7 +135,6 @@ export default function LandingPage() {
             </motion.div>
           </motion.div>
         </section>
-
         {/* Dark Showcase */}
         <section className="bg-muted px-6 py-16 md:py-20">
           <div className="container-page flex flex-col items-center gap-10 md:flex-row md:gap-[60px]">
@@ -234,7 +195,6 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
         {/* Logo Ticker */}
         <div aria-hidden="true" className="bg-teal overflow-hidden py-5">
           <div className="flex" style={{ animation: "marquee 20s linear infinite" }}>
@@ -247,7 +207,6 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-
         {/* Features */}
         <section id="features" aria-labelledby="features-heading" className="bg-cream px-6 py-20">
           <div className="container-page mb-[60px] text-center">
@@ -285,45 +244,7 @@ export default function LandingPage() {
             ))}
           </div>
         </section>
-
-        {/* Testimonials */}
-        <section aria-labelledby="testimonials-heading" className="bg-muted overflow-hidden py-20">
-          <div className="mb-12 px-6 text-center">
-            <h2
-              id="testimonials-heading"
-              className="text-ink font-serif text-3xl font-normal italic md:text-5xl">
-              {t("testimonials_line1")}
-              <br />
-              {t("testimonials_line2")}
-            </h2>
-          </div>
-          <div
-            aria-hidden="true"
-            className="flex w-max"
-            style={{ animation: "marquee 60s linear infinite" }}>
-            {[...TESTIMONIALS, ...TESTIMONIALS].map((t, idx) => (
-              <div
-                key={idx}
-                className="rounded-card mr-5 flex max-w-[300px] min-w-[280px] shrink-0 flex-col gap-4 bg-white p-6">
-                <div className="bg-teal/20 text-teal mx-auto flex h-11 w-11 items-center justify-center rounded-full font-sans text-sm font-bold">
-                  {t.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </div>
-                <p className="text-ink flex-1 text-center font-sans text-sm leading-relaxed">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="text-center">
-                  <div className="text-ink font-sans text-sm font-bold">{t.name}</div>
-                  <div className="text-ink/65 font-sans text-xs">{t.role}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Stats */}
+        ={/* Stats */}
         <section className="bg-muted px-6 pb-20">
           <div className="container-page flex flex-col justify-center gap-5 md:flex-row">
             {(
@@ -361,7 +282,6 @@ export default function LandingPage() {
             ))}
           </div>
         </section>
-
         {/* CTA */}
         <section aria-labelledby="cta-heading" className="bg-cream px-6 py-20">
           <motion.div
