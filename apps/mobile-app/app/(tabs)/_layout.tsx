@@ -1,24 +1,10 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import { Bookmark } from 'lucide-react-native';
+import { Bell, Users } from 'lucide-react-native';
+import BrandArch from '@kurate/icons/brand/brand-arch.svg';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useTheme } from '@/hooks/useTheme';
-
-const styles = StyleSheet.create({
-  tabBarIcon: {
-    marginBottom: -3,
-  },
-});
-
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={styles.tabBarIcon} {...props} />;
-}
 
 export default function TabLayout() {
   const { tokens } = useTheme();
@@ -37,10 +23,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Vault',
+          title: 'Home',
           headerShown: false,
           tabBarIcon: ({ color }: { color: string }) => (
-            <Bookmark size={24} color={color} />
+            <BrandArch width={18} height={18} color={color} />
           ),
         }}
       />
@@ -49,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: 'Background Task',
           tabBarIcon: ({ color }: { color: string }) => (
-            <TabBarIcon name="code" color={color} />
+            <Bell size={18} color={color} />
           ),
         }}
       />
@@ -58,7 +44,7 @@ export default function TabLayout() {
         options={{
           title: 'Crash Test',
           tabBarIcon: ({ color }: { color: string }) => (
-            <TabBarIcon name="bug" color={color} />
+            <Users size={18} color={color} />
           ),
         }}
       />

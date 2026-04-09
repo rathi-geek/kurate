@@ -5,13 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@kurate/query";
 
-const supabase = createClient();
-
 export function useUserInterests(userId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.user.interests(userId ?? ""),
     queryFn: async (): Promise<string[]> => {
       if (!userId) return [];
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("user_interests")
         .select("interests(name)")
@@ -27,6 +26,7 @@ export function useUserInterests(userId: string | undefined) {
 }
 
 export async function saveUserInterests(userId: string, selectedNames: string[]) {
+  const supabase = createClient();
   await supabase.from("user_interests").delete().eq("user_id", userId);
 
   if (selectedNames.length === 0) return;

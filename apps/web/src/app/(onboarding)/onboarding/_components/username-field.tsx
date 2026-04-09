@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/app/_components/form-field";
-import { validateUsername } from "@/app/_libs/utils/validate-username";
+import { validateUsername } from "@kurate/utils";
 import type { HandleStatus } from "@/app/_libs/hooks/useUsernameAvailability";
 
 interface UsernameFieldProps {

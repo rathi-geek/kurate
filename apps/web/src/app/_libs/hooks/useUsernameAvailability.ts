@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/app/_libs/supabase/client";
-import { validateUsername } from "@/app/_libs/utils/validate-username";
+import { validateUsername } from "@kurate/utils";
 
 export type HandleStatus = "idle" | "checking" | "available" | "taken";
 
-export function useUsernameAvailability(username: string) {
+export function useUsernameAvailability(username: string, currentHandle?: string) {
   const [status, setStatus] = useState<HandleStatus>("idle");
 
   useEffect(() => {
@@ -14,6 +14,10 @@ export function useUsernameAvailability(username: string) {
     if (!trimmed || validateUsername(trimmed) !== null) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronous reset before async check is intentional
       setStatus("idle");
+      return;
+    }
+    if (trimmed === currentHandle) {
+      setStatus("available");
       return;
     }
     const timer = setTimeout(async () => {
@@ -27,7 +31,7 @@ export function useUsernameAvailability(username: string) {
       setStatus(data ? "taken" : "available");
     }, 500);
     return () => clearTimeout(timer);
-  }, [username]);
+  }, [username, currentHandle]);
 
   return { status, setStatus };
 }

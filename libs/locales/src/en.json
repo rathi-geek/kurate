@@ -320,7 +320,19 @@
     "show_more": "Show more",
     "show_less": "Show less",
     "save_changes": "Save changes",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "remove_photo": "Remove photo",
+    "remove_photo_title": "Remove profile photo?",
+    "remove_photo_desc": "Your profile photo will be removed. This can't be undone.",
+    "remove_photo_confirm": "Remove",
+    "avatar_deleted": "Profile photo removed",
+    "avatar_delete_error": "Could not remove photo. Please try again.",
+    "save_error": "Could not save changes. Please try again.",
+    "upload_error": "Upload failed. Please try again.",
+    "upload_size_error": "Image must be under 5 MB",
+    "username_taken": "Already taken",
+    "username_checking": "Checking…",
+    "username_available": "Available"
   },
   "admin": {
     "nav": {

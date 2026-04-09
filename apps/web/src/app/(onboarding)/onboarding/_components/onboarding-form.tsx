@@ -16,7 +16,7 @@ import { fadeUp } from "@/app/_libs/utils/motion";
 import { Arrow, BrandLogo } from "@/components/brand";
 
 import { AuthPageShell } from "@/app/(public)/auth/_components/auth-page-shell";
-import { validateUsername } from "@/app/_libs/utils/validate-username";
+import { validateUsername } from "@kurate/utils";
 import { useUsernameAvailability } from "@/app/_libs/hooks/useUsernameAvailability";
 import { useProfileUpsert } from "@/app/_libs/hooks/useProfileUpsert";
 import { UsernameField } from "./username-field";

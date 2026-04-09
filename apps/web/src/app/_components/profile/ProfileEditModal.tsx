@@ -5,10 +5,22 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "@/i18n/use-translations";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -20,15 +32,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useAuth } from "@/app/_libs/auth-context";
-import { INTEREST_OPTIONS } from "@kurate/utils";
+import { INTEREST_OPTIONS, validateUsername } from "@kurate/utils";
 import { useUserInterests, saveUserInterests } from "@/app/_libs/hooks/useUserInterests";
+import { useUsernameAvailability } from "@/app/_libs/hooks/useUsernameAvailability";
 import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";
 import { cn } from "@/app/_libs/utils/cn";
 import { AVATARS_BUCKET } from "@/app/_libs/utils/getMediaUrl";
 import { fadeUpHero, springGentle } from "@/app/_libs/utils/motion";
 import { track } from "@/app/_libs/utils/analytics";
-import { CameraIcon } from "@/components/icons";
+import { CameraIcon, TrashIcon } from "@/components/icons";
 
 const VISIBLE_COUNT = 8;
 
@@ -54,8 +67,14 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  const { status: handleStatus, setStatus: setHandleStatus } = useUsernameAvailability(
+    username,
+    profile?.handle ?? undefined,
+  );
 
   useEffect(() => {
     if (open && profile) {
@@ -67,8 +86,9 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
       setExpanded(false);
       setNameError(null);
       setUsernameError(null);
+      setHandleStatus("idle");
     }
-  }, [open, profile]);
+  }, [open, profile, setHandleStatus]);
 
   // Sync interests from query when modal opens or data loads
   useEffect(() => {
@@ -87,7 +107,14 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (file.size > MAX_SIZE) {
+      toast.error(t("upload_size_error"));
+      return;
+    }
+
     // Optimistic preview — show local file instantly before upload completes
+    const previousUrl = avatarUrl;
     const localUrl = URL.createObjectURL(file);
     setAvatarUrl(localUrl);
     setUploading(true);
@@ -99,7 +126,13 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     const { error: uploadErr } = await supabase.storage
       .from(AVATARS_BUCKET)
       .upload(path, file, { upsert: true });
-    if (uploadErr) { setUploading(false); return; }
+    if (uploadErr) {
+      URL.revokeObjectURL(localUrl);
+      setAvatarUrl(previousUrl);
+      setUploading(false);
+      toast.error(t("upload_error"));
+      return;
+    }
 
     const { data: media, error: mediaErr } = await supabase
       .from("media_metadata")
@@ -115,7 +148,13 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
       }, { onConflict: "owner_id,provider,file_path,file_name" })
       .select("id")
       .single();
-    if (mediaErr) { setUploading(false); return; }
+    if (mediaErr) {
+      URL.revokeObjectURL(localUrl);
+      setAvatarUrl(previousUrl);
+      setUploading(false);
+      toast.error(t("upload_error"));
+      return;
+    }
 
     const { data: { publicUrl } } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(path);
     await supabase.from("profiles").update({ avatar_id: media.id }).eq("id", user.id);
@@ -124,6 +163,25 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     URL.revokeObjectURL(localUrl);
     setAvatarUrl(publicUrl);
     setUploading(false);
+  }
+
+  async function handleDeleteAvatar() {
+    if (!user) return;
+    setDeletingAvatar(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_id: null })
+      .eq("id", user.id);
+    if (error) {
+      toast.error(t("avatar_delete_error"));
+      setDeletingAvatar(false);
+      return;
+    }
+    setAvatarUrl("");
+    await refreshUser();
+    setDeletingAvatar(false);
+    toast.success(t("avatar_deleted"));
   }
 
   async function handleSave() {
@@ -147,12 +205,17 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
     const first_name = spaceIdx === -1 ? trimmedName : trimmedName.slice(0, spaceIdx);
     const last_name = spaceIdx === -1 ? null : trimmedName.slice(spaceIdx + 1) || null;
 
-    await supabase.from("profiles").update({
+    const { error } = await supabase.from("profiles").update({
       first_name,
       last_name,
       handle: trimmedUsername,
       about: bio,
     }).eq("id", user.id);
+    if (error) {
+      toast.error(t("save_error"));
+      setSaving(false);
+      return;
+    }
 
     await saveUserInterests(user.id, interests);
 
@@ -172,8 +235,13 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
 
   const avatarLetter = name ? name[0].toUpperCase() : "?";
   const visibleInterests = expanded ? INTEREST_OPTIONS : INTEREST_OPTIONS.slice(0, VISIBLE_COUNT);
-  const canSave = name.trim().length > 0 && username.trim().length > 0;
-  const busy = saving || uploading;
+  const canSave =
+    name.trim().length > 0 &&
+    username.trim().length > 0 &&
+    !usernameError &&
+    handleStatus !== "taken" &&
+    handleStatus !== "checking";
+  const busy = saving || uploading || deletingAvatar;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -194,28 +262,53 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
           <div className="max-h-[68vh] space-y-5 overflow-y-auto px-6 py-5">
             {/* Avatar upload */}
             <div className="flex flex-col items-center gap-1.5">
-              <button
-                type="button"
-                className="group relative cursor-pointer"
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                title={t("change_photo")}>
-                <div className="relative h-16 w-16 overflow-hidden rounded-full bg-primary">
-                  {avatarUrl ? (
-                    <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="64px" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xl font-bold text-primary-foreground">
-                      {uploading ? "…" : avatarLetter}
+              <div className="relative inline-block">
+                <button
+                  type="button"
+                  className="relative cursor-pointer"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  title={t("change_photo")}>
+                  <div className="relative h-16 w-16 overflow-hidden rounded-full bg-primary">
+                    {avatarUrl ? (
+                      <Image src={avatarUrl} alt={name} fill className="object-cover blur-[2px]" sizes="64px" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xl font-bold text-primary-foreground blur-[1px]">
+                        {uploading ? "…" : avatarLetter}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
+                      <CameraIcon className="size-4 text-white" />
                     </div>
-                  )}
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                  <CameraIcon className="size-4 text-white" />
-                </div>
-              </button>
-              <p className="text-muted-foreground/60 font-mono text-[10px] tracking-wider uppercase">
-                {t("change_photo")}
-              </p>
+                  </div>
+                </button>
+                {avatarUrl && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        type="button"
+                        className="border-background bg-card text-muted-foreground hover:text-destructive absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 shadow-sm transition-colors"
+                        disabled={busy}
+                        title={t("remove_photo")}
+                      >
+                        <TrashIcon className="size-3" />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t("remove_photo_title")}</AlertDialogTitle>
+                        <AlertDialogDescription>{t("remove_photo_desc")}</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAvatar}>
+                          {t("remove_photo_confirm")}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
               <input
                 ref={fileRef}
                 type="file"
@@ -245,11 +338,28 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
                 </label>
                 <Input
                   value={username}
-                  onChange={(e) => { setUsername(e.target.value); setUsernameError(null); }}
-                  onBlur={() => { if (!username.trim()) setUsernameError("Required"); }}
+                  onChange={(e) => {
+                    const v = e.target.value.toLowerCase().replace(/\s/g, "");
+                    setUsername(v);
+                    setUsernameError(v.trim() ? validateUsername(v.trim()) : null);
+                  }}
+                  onBlur={() => {
+                    const trimmed = username.trim();
+                    if (!trimmed) setUsernameError("Required");
+                    else setUsernameError(validateUsername(trimmed));
+                  }}
                   placeholder={t("username_placeholder")}
                 />
                 {usernameError && <p className="text-destructive text-xs">{usernameError}</p>}
+                {!usernameError && handleStatus === "checking" && (
+                  <p className="text-muted-foreground text-xs">{t("username_checking")}</p>
+                )}
+                {!usernameError && handleStatus === "available" && (
+                  <p className="text-success text-xs">{t("username_available")}</p>
+                )}
+                {!usernameError && handleStatus === "taken" && (
+                  <p className="text-destructive text-xs">{t("username_taken")}</p>
+                )}
               </div>
               <div className="space-y-1">
                 <label className="text-muted-foreground font-mono text-[10px] font-medium tracking-wider uppercase">

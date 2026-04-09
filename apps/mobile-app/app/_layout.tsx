@@ -15,6 +15,7 @@ import 'react-native-reanimated';
 import { ThemeProvider as AppThemeProvider } from '@/context';
 import { Providers } from '@/components/Providers';
 import { AnimatedSplash } from '@/components/AnimatedSplash';
+import { NetworkBanner } from '@/components/NetworkBanner';
 import { useFCM } from '@/hooks';
 import { useAuthStore } from '@/store';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -64,6 +65,7 @@ export default function RootLayout() {
     <AppThemeProvider>
       <Providers>
         <StatusBar style="auto" />
+        <NetworkBanner />
         <RootLayoutNav />
         {showSplash && <AnimatedSplash onFinish={handleSplashFinish} />}
       </Providers>
