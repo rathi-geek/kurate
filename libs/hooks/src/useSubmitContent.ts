@@ -1,11 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@kurate/query";
-import type { ThoughtBucket } from "@kurate/utils";
+import { classifyThought, type ThoughtBucket } from "@kurate/utils";
 
 import { useSaveItem, type SaveItemResult } from "./useSaveItem";
 
@@ -51,6 +51,8 @@ interface SubmitContentConfig {
   activeBucket?: ThoughtBucket | null;
   /** Base URL for API calls. Leave empty for web (relative). Full URL for mobile. */
   apiBaseUrl?: string;
+  /** Optional auth token for API calls. Web uses cookies. Mobile passes Supabase access token. */
+  accessToken?: string | null;
 }
 
 export interface SendOptions {
@@ -62,6 +64,16 @@ export interface SendOptions {
 export function useSubmitContent(config: SubmitContentConfig) {
   const [isPending, setIsPending] = useState(false);
   const saveItem = useSaveItem(config.supabase);
+  const accessTokenRef = useRef(config.accessToken);
+  accessTokenRef.current = config.accessToken;
+
+  function authHeaders(): Record<string, string> {
+    const h: Record<string, string> = { "Content-Type": "application/json" };
+    if (accessTokenRef.current) {
+      h["Authorization"] = `Bearer ${accessTokenRef.current}`;
+    }
+    return h;
+  }
 
   const onSend = useCallback(
     async (text: string, opts?: SendOptions) => {
@@ -78,7 +90,7 @@ export function useSubmitContent(config: SubmitContentConfig) {
             preExtractedMeta ??
             (await fetch(`${base}/api/extract`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: authHeaders(),
               body: JSON.stringify({ url }),
             })
               .then((r) => (r.ok ? (r.json() as Promise<ExtractedMeta>) : null))
@@ -116,21 +128,38 @@ export function useSubmitContent(config: SubmitContentConfig) {
           await config.onLinkSaved?.(result);
           config.onRouted("links");
         } else {
-          // ── Text path → thoughts ─────────────────────────────────
-          const base = (config.apiBaseUrl ?? "").replace(/\/+$/, "");
-          const thoughtRes = await fetch(`${base}/api/thoughts`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          // ── Text path → thoughts (direct Supabase, no API route needed) ──
+          const bucket: ThoughtBucket = config.activeBucket ?? classifyThought(text);
+
+          const { data: { user } } = await config.supabase.auth.getUser();
+          if (!user) {
+            config.onRouted("thoughts");
+            return;
+          }
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data, error } = await (config.supabase as any)
+            .from("thoughts")
+            .insert({
+              user_id: user.id,
               content_type: "text",
               text: text || null,
-              ...(config.activeBucket ? { bucket: config.activeBucket } : {}),
-            }),
-          });
+              bucket,
+              bucket_source: config.activeBucket ? "user" : "auto",
+            })
+            .select()
+            .single();
 
-          if (thoughtRes.ok) {
-            const thought = (await thoughtRes.json()) as ThoughtMessage;
-            // Inject into React Query cache (avoids a second GET)
+          if (!error && data) {
+            const thought: ThoughtMessage = {
+              id: data.id as string,
+              bucket: data.bucket as ThoughtBucket,
+              text: (data.text as string) ?? "",
+              createdAt: data.created_at as string,
+              media_id: null,
+              content_type: "text",
+            };
+            // Inject into React Query cache
             config.queryClient.setQueryData<InfiniteThoughtsData>(
               queryKeys.thoughts.list(null),
               (old) => {
@@ -146,7 +175,6 @@ export function useSubmitContent(config: SubmitContentConfig) {
               await config.onThoughtSent?.(thought, tempId);
             }
           } else {
-            // Fallback: invalidate so next focus re-fetches
             await config.queryClient.invalidateQueries({ queryKey: queryKeys.thoughts.all });
           }
 

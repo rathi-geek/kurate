@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { KeyboardStickyView } from 'react-native-keyboard-controller';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -18,6 +18,7 @@ import { ThoughtsTabView } from '@/components/thoughts/ThoughtsTabView';
 import { useVaultPreview } from '@/hooks/useVaultPreview';
 import { useVaultComposer } from '@/hooks/useVaultComposer';
 import { useShareToGroups } from '@/hooks/useShareToGroups';
+import { useAuthStore } from '@/store';
 import { supabase } from '@/libs/supabase/client';
 import { useSubmitContent } from '@kurate/hooks';
 import { HomeTab, VaultTab, PreviewPhase } from '@kurate/types';
@@ -34,6 +35,7 @@ const apiBaseUrl =
 
 export default function VaultScreen() {
   const queryClient = useQueryClient();
+  const accessToken = useAuthStore(state => state.accessToken);
   const { bottom } = useSafeAreaInsets();
   const bottomPadding = Math.max(bottom / 2, 4);
 
@@ -43,7 +45,7 @@ export default function VaultScreen() {
   const [vaultFilters, setVaultFilters] = useState(DEFAULT_FILTER_STATE);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [thoughtsViewAll, setThoughtsViewAll] = useState(false);
+  const [thoughtsViewAll, setThoughtsViewAll] = useState(true);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [inputKey, setInputKey] = useState(0);
 
@@ -62,6 +64,7 @@ export default function VaultScreen() {
     supabase,
     queryClient,
     apiBaseUrl,
+    accessToken,
     onRouted: dest => {
       setVaultTab(dest === 'links' ? VaultTab.LINKS : VaultTab.THOUGHTS);
     },
@@ -87,7 +90,6 @@ export default function VaultScreen() {
     setVaultTab(tab);
     setSearchQuery('');
     setSearchOpen(false);
-    if (tab === VaultTab.LINKS) setThoughtsViewAll(false);
   }, []);
 
   const handleSearchToggle = useCallback(() => {
@@ -128,7 +130,7 @@ export default function VaultScreen() {
     >
       <HomeHeader activeTab={activeHomeTab} onTabChange={setActiveHomeTab} />
       {activeHomeTab === HomeTab.VAULT && (
-        <View className="flex-1">
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <VaultSubHeader
             vaultTab={vaultTab}
             onTabChange={handleTabChange}
@@ -164,14 +166,14 @@ export default function VaultScreen() {
               onSkip={preview.handleSkip}
             />
           )}
-          <KeyboardStickyView>
+          <View className="bg-background py-2">
             <ChatComposer
               key={inputKey}
               onSend={handleVaultChatSend}
               onUrlChange={preview.handleUrlChange}
               collapsible={vaultTab === VaultTab.THOUGHTS}
             />
-          </KeyboardStickyView>
+          </View>
           {vaultTab === VaultTab.LINKS && (
             <VaultFilterSheet
               open={filterSheetOpen}
@@ -180,7 +182,7 @@ export default function VaultScreen() {
               onClose={() => setFilterSheetOpen(false)}
             />
           )}
-        </View>
+        </KeyboardAvoidingView>
       )}
     </SafeAreaView>
   );

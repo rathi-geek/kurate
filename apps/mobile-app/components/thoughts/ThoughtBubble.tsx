@@ -1,7 +1,6 @@
 import React from 'react';
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
-import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { BUCKET_META } from '@kurate/utils';
 import type { ThoughtMessage } from '@kurate/types';
@@ -42,21 +41,25 @@ export const ThoughtBubble = React.memo(function ThoughtBubble({
         <Text className="text-sm leading-snug text-foreground">
           {message.text}
         </Text>
+        <View className="mt-0.5 flex-row items-center justify-between gap-3">
+          {showBucketLabel && (
+            <Text className="text-[9px] text-foreground/40">
+              {BUCKET_META[message.bucket].label}
+            </Text>
+          )}
+          <View className="flex-row items-center gap-1">
+            <Text className="text-[9px] text-foreground/40">
+              {formatTime(message.createdAt)}
+            </Text>
+            {message._pending && (
+              <Text className="text-[9px] text-foreground/40">⏱</Text>
+            )}
+            {message._failed && (
+              <Text className="text-[9px] text-red-400">!</Text>
+            )}
+          </View>
+        </View>
       </Pressable>
-      <HStack className="mt-0.5 justify-end gap-1.5 px-1">
-        {showBucketLabel && (
-          <Text className="text-[9px] text-foreground/40">
-            {BUCKET_META[message.bucket].label}
-          </Text>
-        )}
-        <Text className="text-[9px] text-foreground/40">
-          {formatTime(message.createdAt)}
-        </Text>
-        {message._pending && (
-          <Text className="text-[9px] text-foreground/40">⏱</Text>
-        )}
-        {message._failed && <Text className="text-[9px] text-red-400">!</Text>}
-      </HStack>
     </View>
   );
 });

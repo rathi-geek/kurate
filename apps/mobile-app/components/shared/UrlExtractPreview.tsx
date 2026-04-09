@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image } from 'react-native';
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
-import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
 import { Link2 } from 'lucide-react-native';
 import { useLocalization } from '@/context';
 import type { ExtractedMeta } from '@kurate/types';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 interface UrlExtractPreviewProps {
   url: string;
@@ -23,6 +29,35 @@ function getDomain(url: string): string {
   }
 }
 
+function PulsingText({
+  children,
+  className,
+}: {
+  children: string;
+  className?: string;
+}) {
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.4, { duration: 800 }),
+        withTiming(1, { duration: 800 }),
+      ),
+      -1,
+      true,
+    );
+  }, [opacity]);
+
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <Animated.Text style={animStyle} className={className}>
+      {children}
+    </Animated.Text>
+  );
+}
+
 export function UrlExtractPreview({
   url,
   isLoading,
@@ -35,33 +70,33 @@ export function UrlExtractPreview({
 
   if (isLoading) {
     return (
-      <HStack className="items-center gap-3 p-4">
+      <View className="flex-row items-center gap-3 p-4">
         <Link2 size={20} className="text-muted-foreground" />
         <VStack className="gap-1">
-          <Text className="text-sm font-medium text-foreground">
+          <PulsingText className="font-sans text-sm font-medium text-foreground">
             {t('link_preview.reading')}
-          </Text>
-          <Text className="text-xs text-muted-foreground">
+          </PulsingText>
+          <PulsingText className="font-sans text-xs text-muted-foreground">
             {t('link_preview.extracting')}
-          </Text>
+          </PulsingText>
           <Text className="font-mono text-[10px] text-muted-foreground/50">
             {domain}
           </Text>
         </VStack>
-      </HStack>
+      </View>
     );
   }
 
   if (extractionFailed || !metadata) {
     return (
-      <HStack className="items-center gap-3 p-4">
+      <View className="flex-row items-center gap-3 p-4">
         <Link2 size={20} className="text-muted-foreground" />
         <VStack className="gap-1">
           <Text className="font-mono text-xs text-muted-foreground">
             {domain}
           </Text>
         </VStack>
-      </HStack>
+      </View>
     );
   }
 
@@ -70,7 +105,7 @@ export function UrlExtractPreview({
     .join(' · ');
 
   return (
-    <HStack className="items-start gap-3 p-4">
+    <View className="flex-row items-start gap-3 p-4">
       {metadata.previewImage && !imgError ? (
         <Image
           source={{ uri: metadata.previewImage }}
@@ -98,6 +133,6 @@ export function UrlExtractPreview({
           </Text>
         ) : null}
       </VStack>
-    </HStack>
+    </View>
   );
 }

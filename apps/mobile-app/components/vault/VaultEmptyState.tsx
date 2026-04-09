@@ -1,6 +1,6 @@
 import { VStack } from '@/components/ui/vstack';
 import { Text } from '@/components/ui/text';
-import { Archive } from 'lucide-react-native';
+import BrandConcentricArch from '@kurate/icons/brand/brand-concentric-arch.svg';
 import { useLocalization } from '@/context';
 import type { VaultFilters } from '@kurate/types';
 
@@ -64,7 +64,11 @@ export function VaultEmptyState({
 
   return (
     <VStack className="flex-1 items-center justify-center gap-4 p-8">
-      <Archive size={48} className="text-muted-foreground opacity-30" />
+      <BrandConcentricArch
+        width={56}
+        height={42}
+        className="mb-5 text-muted-foreground opacity-30"
+      />
       <Text className="text-center font-sans text-lg font-bold text-foreground">
         {title}
       </Text>

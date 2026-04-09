@@ -63,18 +63,20 @@ export function BucketCard({
           <Text className="text-[10px] text-foreground/30">
             {formatRelativeTime(latestCreatedAt)}
           </Text>
-          {unreadCount > 0 && (
-            <View
-              className="rounded-full px-1.5 py-0.5"
-              style={{ backgroundColor: BUCKET_BADGE_COLOR[bucket] }}
-            >
-              <Text className="text-[9px] font-bold text-white">
-                {unreadCount}
-              </Text>
-            </View>
-          )}
+          <HStack className="items-center gap-1">
+            {unreadCount > 0 && (
+              <View
+                className="rounded-full px-1.5 py-0.5"
+                style={{ backgroundColor: BUCKET_BADGE_COLOR[bucket] }}
+              >
+                <Text className="text-[9px] font-bold text-white">
+                  {unreadCount}
+                </Text>
+              </View>
+            )}
+            <ChevronRight size={16} className=" text-foreground/30" />
+          </HStack>
         </VStack>
-        <ChevronRight size={16} className="ml-2 text-foreground/30" />
       </HStack>
     </Pressable>
   );
