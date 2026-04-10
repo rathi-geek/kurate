@@ -1,6 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
+import { formatDateLabel } from "@kurate/utils";
 import { motion } from "framer-motion";
 import { useTranslations } from "@/i18n/use-translations";
 
@@ -19,7 +19,7 @@ export function DiscoveryTodaySection({ drops, isLoading, userId }: DiscoveryTod
 
   if (!isLoading && !drops.length) return null;
 
-  const dateLabel = format(new Date(), "MMMM d");
+  const dateLabel = formatDateLabel();
 
   if (isLoading) {
     return (

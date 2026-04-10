@@ -7,7 +7,7 @@ import {
   type InfiniteData,
 } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { startOfDay, subDays } from "date-fns";
+import { startOfDay, subDays } from "@kurate/utils";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { queryKeys } from "@kurate/query";

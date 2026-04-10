@@ -1,17 +1,17 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import { useRef, useState, type ComponentProps } from "react";
 
 import Link from "next/link";
 
+import { ROUTES } from "@kurate/utils";
 import { motion } from "framer-motion";
-import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
-import { useTranslations } from "@/i18n/use-translations";
 
 import { Button } from "@/components/ui/button";
 
-import { ROUTES } from "@kurate/utils";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { BrandArch, BrandConcentricArch, BrandStar, BrandSunburst } from "@/components/brand";
+import { useTranslations } from "@/i18n/use-translations";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -36,44 +36,6 @@ const LOGOS = [
   "Readwise",
 ];
 
-const TESTIMONIALS = [
-  {
-    quote:
-      "Kurate completely changed how I discover content. It's like having a brilliant friend who reads everything.",
-    name: "Nikhil Kamath",
-    role: "Co-founder, Zerodha",
-  },
-  {
-    quote:
-      "I organized 3 years of scattered bookmarks in a single afternoon. The AI tagging is unreal.",
-    name: "Naman Lahoti",
-    role: "Founder & Builder",
-  },
-  {
-    quote:
-      "Kurate is that extra part of your brain that remembers everything you read and connects the dots.",
-    name: "Arshia Mal",
-    role: "Product Designer",
-  },
-  {
-    quote:
-      "The social curation feed is addictive in the best way. I trust people's recommendations over any algorithm.",
-    name: "Suchet Kumar",
-    role: "Engineer & Curator",
-  },
-  {
-    quote:
-      "Finally, a reading tool that respects my time. The proof of knowledge concept is brilliant.",
-    name: "Vivek Kamath",
-    role: "Founder, Kurate",
-  },
-  {
-    quote: "Replaced Pocket, Instapaper, and my 47 open tabs. Kurate just gets it.",
-    name: "Peter Thiel",
-    role: "Founder, Founders Fund",
-  },
-];
-
 const FEATURE_KEYS = [
   { icon: "arch", bg: "bg-teal/20", titleKey: "feature_1_title", descKey: "feature_1_desc" },
   { icon: "star", bg: "bg-slate-subtle", titleKey: "feature_2_title", descKey: "feature_2_desc" },
@@ -87,6 +49,8 @@ const STATS_PEOPLE = [
 
 export default function LandingPage() {
   const prefersReducedMotion = useSafeReducedMotion();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
   const t = useTranslations("landing");
   const tNav = useTranslations("nav");
   const tApp = useTranslations("app");
@@ -170,6 +134,68 @@ export default function LandingPage() {
               <Button asChild size="lg">
                 <Link href={ROUTES.AUTH.LOGIN}>{t("get_started")}</Link>
               </Button>
+            </motion.div>
+            <motion.div
+              initial={prefersReducedMotion ? false : undefined}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={fadeUp}
+              transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.45 }}
+              role="button"
+              tabIndex={0}
+              aria-label={isPlaying ? "Pause video" : "Play video"}
+              onClick={() => {
+                if (videoRef.current) {
+                  if (isPlaying) {
+                    videoRef.current.pause();
+                  } else {
+                    videoRef.current.play();
+                  }
+                  setIsPlaying(!isPlaying);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault();
+                  if (videoRef.current) {
+                    if (isPlaying) {
+                      videoRef.current.pause();
+                    } else {
+                      videoRef.current.play();
+                    }
+                    setIsPlaying(!isPlaying);
+                  }
+                }
+              }}
+              className="group relative mx-auto mt-12 w-full max-w-4xl cursor-pointer overflow-hidden rounded-card bg-black shadow-2xl">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="block w-full">
+                <source
+                  src="https://eavlskuuyzzttyqsfsqc.supabase.co/storage/v1/object/public/assets/WhatsApp%20Video%202026-04-09%20at%2020.09.04.mp4"
+                  type="video/mp4"
+                />
+              </video>
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">
+                  {isPlaying ? (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                      <rect x="3" y="2" width="4" height="12" rx="1" />
+                      <rect x="9" y="2" width="4" height="12" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M4 2.5v11l9-5.5L4 2.5z" />
+                    </svg>
+                  )}
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         </section>
@@ -282,43 +308,6 @@ export default function LandingPage() {
                   {t(feature.descKey)}
                 </p>
               </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section aria-labelledby="testimonials-heading" className="bg-muted overflow-hidden py-20">
-          <div className="mb-12 px-6 text-center">
-            <h2
-              id="testimonials-heading"
-              className="text-ink font-serif text-3xl font-normal italic md:text-5xl">
-              {t("testimonials_line1")}
-              <br />
-              {t("testimonials_line2")}
-            </h2>
-          </div>
-          <div
-            aria-hidden="true"
-            className="flex w-max"
-            style={{ animation: "marquee 60s linear infinite" }}>
-            {[...TESTIMONIALS, ...TESTIMONIALS].map((t, idx) => (
-              <div
-                key={idx}
-                className="rounded-card mr-5 flex max-w-[300px] min-w-[280px] shrink-0 flex-col gap-4 bg-white p-6">
-                <div className="bg-teal/20 text-teal mx-auto flex h-11 w-11 items-center justify-center rounded-full font-sans text-sm font-bold">
-                  {t.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </div>
-                <p className="text-ink flex-1 text-center font-sans text-sm leading-relaxed">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="text-center">
-                  <div className="text-ink font-sans text-sm font-bold">{t.name}</div>
-                  <div className="text-ink/65 font-sans text-xs">{t.role}</div>
-                </div>
-              </div>
             ))}
           </div>
         </section>

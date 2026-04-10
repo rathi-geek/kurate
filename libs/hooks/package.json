@@ -18,7 +18,6 @@
   "dependencies": {
     "@kurate/query": "workspace:*",
     "@kurate/types": "workspace:*",
-    "@kurate/utils": "workspace:*",
-    "date-fns": "^4.1.0"
+    "@kurate/utils": "workspace:*"
   }
 }

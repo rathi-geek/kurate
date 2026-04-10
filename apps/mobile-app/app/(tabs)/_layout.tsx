@@ -1,13 +1,14 @@
 import React from 'react';
 import { Image } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Bell, User, Users } from 'lucide-react-native';
+import { Bell, User } from 'lucide-react-native';
 import BrandArch from '@kurate/icons/brand/brand-arch.svg';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { useLocalization } from '@/context';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useProfile } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/store';
@@ -53,9 +54,25 @@ function ProfileTabIcon({ focused }: { focused: boolean }) {
   );
 }
 
+function NotificationBadge({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <View className="absolute -right-1 -top-1 h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1">
+      <Text
+        className="font-sans text-[10px] font-bold text-white"
+        style={{ lineHeight: 12 }}
+      >
+        {count > 99 ? '99+' : String(count)}
+      </Text>
+    </View>
+  );
+}
+
 export default function TabLayout() {
   const { tokens } = useTheme();
   const { t } = useLocalization();
+  const userId = useAuthStore(state => state.userId);
+  const { unreadCount } = useNotifications(userId);
 
   return (
     <Tabs
@@ -79,21 +96,28 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="notifications"
+        options={{
+          title: t('notifications.title'),
+          headerShown: false,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <View>
+              <Bell size={18} color={color} />
+              <NotificationBadge count={unreadCount} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="background-task"
         options={{
-          title: 'Background Task',
-          tabBarIcon: ({ color }: { color: string }) => (
-            <Bell size={18} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="crash-test"
         options={{
-          title: 'Crash Test',
-          tabBarIcon: ({ color }: { color: string }) => (
-            <Users size={18} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen

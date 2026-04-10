@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
 
 import type { Notification } from "@kurate/types";
+import { formatRelativeTime } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 import { useTranslations } from "@/i18n/use-translations";
 
@@ -85,7 +85,7 @@ export function NotificationItem({
           <span className="text-muted-foreground">{label}</span>
         </p>
         <p className="text-muted-foreground mt-0.5 text-xs">
-          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+          {formatRelativeTime(notification.created_at)}
         </p>
       </div>
     </button>

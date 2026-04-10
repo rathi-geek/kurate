@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { startOfDay } from "date-fns";
+import { startOfDay } from "@kurate/utils";
 
 import { createClient } from "@/app/_libs/supabase/client";
 import type { GroupDrop } from "@kurate/types";

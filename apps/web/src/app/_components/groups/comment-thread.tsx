@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import type { DropComment, GroupRole } from "@kurate/types";
+import { formatRelativeTime } from "@kurate/utils";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
 import { ReplyInput } from "@/app/_components/groups/reply-input";
@@ -57,15 +58,6 @@ function renderTextWithLinks(text: string, isOwn: boolean): React.ReactNode {
   return parts.length > 0 ? parts : text;
 }
 
-function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 interface CommentItemProps {
   comment: DropComment | DropComment["replies"][number];

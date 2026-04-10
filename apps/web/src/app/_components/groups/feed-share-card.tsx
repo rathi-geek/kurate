@@ -15,7 +15,7 @@ import { EngagementBar } from "@/app/_components/groups/engagement-bar";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
 import { track } from "@/app/_libs/utils/analytics";
-import { formatRelativeTime } from "@/app/_libs/utils/formatRelativeTime";
+import { formatRelativeTime } from "@kurate/utils";
 import { ChevronDownIcon, ShareIcon, TrashIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 

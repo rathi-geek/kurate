@@ -8,7 +8,7 @@ import { ROUTES } from "@kurate/utils";
 import type { DMConversation } from "@kurate/types";
 
 import { FindUserSheet } from "@/app/_components/people/find-user-sheet";
-import { formatRelativeTime } from "@/app/_libs/utils/formatRelativeTime";
+import { formatRelativeTime } from "@kurate/utils";
 import { PlusIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 

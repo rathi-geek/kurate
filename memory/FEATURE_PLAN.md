@@ -1,310 +1,458 @@
-# Feature Plan: Notifications
-
+# Feature Plan: Groups
 Last updated: 2026-04-09
 
-## Feature Audit: Notifications
-
-### 1. What exists in web today
-
-**Files:**
-- `apps/web/src/app/(app)/notifications/page.tsx` — full-page notification list
-- `apps/web/src/app/_components/notifications/notification-panel.tsx` — right-side sheet (sidebar bell)
-- `apps/web/src/app/_components/notifications/notification-item.tsx` — single notification row
-- `apps/web/src/app/_libs/hooks/useNotifications.ts` — fetch, realtime, mark read/all read
-- `apps/web/src/app/_components/app-shell.tsx` — single useNotifications instance at app level
-- `apps/web/src/app/_components/sidebar/sidebar.tsx` — bell icon + NotificationPanel
-- `apps/web/src/app/_components/sidebar/mobile-bottom-tab.tsx` — bell icon + unread dot
-
-**Flow:**
-1. AppShell creates one `useNotifications(userId)`, passes to sidebar + mobile tab
-2. Desktop: bell in sidebar opens NotificationPanel (Sheet)
-3. Mobile web: `/notifications` full page via bottom tab
-4. Both auto-mark-all-read after 1.5s
-5. Each item: avatar (circle, letter fallback), actor name, event label, relative time
-6. Click → markRead → Supabase lookup group_posts.convo_id → navigate to group#drop-{eventId}
-7. Realtime: Postgres changes on INSERT invalidates query
-
-**Database (3 tables):**
-- `notifications` — id, recipient_id, actor_id, event_id, event_type, is_read, message, created_at
-- `notification_actors` — junction for multi-actor aggregation
-- `notification_preferences` — per-type toggles + email/push enabled
-
-**Event types with labels:** like, must_read, comment, new_post, must_read_broadcast, also_must_read, also_commented
-**Event types without labels:** bookmark, follow, mention, co_engaged
-
-### 2. Bugs & issues to fix before mobile replicates
-
-🔴 **Must fix:**
-1. **Hardcoded English in notification-item.tsx** — EVENT_LABELS is plain object (line 12-20), not using @kurate/locales
-2. **Hardcoded English in notifications/page.tsx** — "Notifications" (line 34), "Mark all read" (line 40), "No notifications yet" (line 63), empty state subtitle (line 65)
-3. **Hardcoded English in notification-panel.tsx** — "Mark all read" (line 64), "No notifications yet" (line 92), empty state subtitle (line 93)
-4. **Hardcoded "Notifications" in sidebar.tsx** — Line 224, despite having useTranslations("sidebar") available
-5. **Zero notification i18n keys in en.json** — No notifications.* namespace exists
-
-🟡 **Nice to fix:**
-1. **Missing event labels** — bookmark, follow, mention types exist in DB preferences but no labels
-2. **Multi-actor display incomplete** — Only first actor shown. "John liked" instead of "John and 2 others liked"
-3. **No notification preferences UI** — table exists but no settings screen
-
-### 3. Code quality issues
-
-🟣 **Should fix:**
-1. **Module-scope Supabase client in notification-item.tsx** — `const supabase = createClient()` at line 10, should be in hook or inside handler
-2. **Navigation logic in component** — handleClick does Supabase query to resolve convo_id — should be in hook
-3. **Duplicated auto-mark-read timer** — Identical 1.5s setTimeout pattern in both page.tsx and panel.tsx
-4. **Types exported from hook file** — Notification/NotificationActor types in useNotifications.ts — should be in @kurate/types
-
-### 4. What should move to /libs
-
-| Source | Destination | Reason |
-|---|---|---|
-| `Notification`, `NotificationActor` types | `libs/types/src/notifications.ts` | Mobile needs same types |
-| EVENT_LABELS | `libs/locales/src/en.json` as `notifications.*` keys | Both platforms need same labels, must be localized |
-
-### 5. What mobile needs to build fresh
-
-- `apps/mobile-app/hooks/useNotifications.ts` — fetch + realtime + mark read
-- `apps/mobile-app/app/(tabs)/notifications.tsx` — notification screen
-- `apps/mobile-app/components/notifications/notification-item.tsx` — notification row
-- Tab bar integration — unread badge on bell icon
-- Push notification deep linking (useFCM already exists)
-
----
-
-## Order of execution
-
-1. Web — fix bugs (i18n all hardcoded strings)
-2. Web — code quality (extract types, deduplicate timer, fix module-scope client)
-3. Web — move to /libs (types, locales)
-4. Mobile — build notification feature
+## Order of execution (always follow this sequence)
+1. Web — fix bugs (5 items)
+2. Web — code quality (7 items)
+3. Web — move to /libs (10 items)
+4. Mobile — build feature (13 screens/components)
 
 ---
 
 ## Web — Step by Step
 
-### Step 1: Add notification i18n keys to en.json
+### Step 1: Fix bugs
 
-File: `libs/locales/src/en.json`
+#### 1a. Extract GroupsPageClient from page.tsx
+File: `apps/web/src/app/(app)/groups/page.tsx`
+- Issue: `"use client"` on a page.tsx violates codebase rule (pages must be Server Components)
+- Fix: Create `apps/web/src/app/(app)/groups/GroupsPageClient.tsx` with all the current client logic. Make `page.tsx` a thin Server Component that renders `<GroupsPageClient />`.
 
-Add namespace:
-```json
-"notifications": {
-  "title": "Notifications",
-  "mark_all_read": "Mark all read",
-  "empty_title": "No notifications yet",
-  "empty_subtitle": "You'll see activity from your groups here",
-  "event_like": "liked your post",
-  "event_must_read": "recommended your post",
-  "event_comment": "commented on your post",
-  "event_new_post": "shared a new post",
-  "event_must_read_broadcast": "recommended a post",
-  "event_also_must_read": "also recommended this post",
-  "event_also_commented": "also commented on this post",
-  "event_bookmark": "bookmarked your post",
-  "event_follow": "started following you",
-  "event_mention": "mentioned you"
-}
-```
+#### 1b. Fix unsafe `as any` cast in invite API
+File: `apps/web/src/app/api/groups/invite/route.ts` (lines 157-164)
+- Issue: `const db = supabase as any` bypasses TypeScript, try/catch silently swallows errors. The `group_invites` table exists and is used elsewhere.
+- Fix: Remove `as any` cast, use `supabase` directly. Remove try/catch — let errors propagate or handle explicitly.
 
-Also add to sidebar namespace: `"notifications": "Notifications"`
+#### 1c. Fix infinite fetch loop in LibraryView
+File: `apps/web/src/app/_components/groups/library-view.tsx` (lines 29-30)
+- Issue: `if (hasNextPage) { fetchNextPage(); }` runs on every render, causing an infinite loop.
+- Fix: Wrap in `useEffect` with `[hasNextPage, isFetchingNextPage]` deps, guard with `!isFetchingNextPage`.
 
-### Step 2: Replace hardcoded strings in notification-item.tsx
+#### 1d. Fix missing useEffect deps in FeedShareCard
+File: `apps/web/src/app/_components/groups/feed-share-card.tsx` (line 136)
+- Issue: `useEffect` uses `drop.id`, `markPostSeen`, `latestCommentAtRef` but only has `[showComments]` in deps.
+- Fix: Add `drop.id` and `markPostSeen` to dep array. `latestCommentAtRef` is a ref (stable) so OK to omit.
 
-File: `apps/web/src/app/_components/notifications/notification-item.tsx`
+#### 1e. Fix typo in LibraryCard className
+File: `apps/web/src/app/_components/groups/library-card.tsx` (line 46)
+- Issue: `overflow-hiddrop.cden` should be `overflow-hidden`
+- Fix: Replace `overflow-hiddrop.cden` with `overflow-hidden`.
 
-- Remove `EVENT_LABELS` constant
-- Add `useTranslations("notifications")` from `@/i18n/use-translations`
-- Replace label lookup: `const label = t(\`event_${notification.event_type}\`) ?? notification.message ?? notification.event_type`
-- Move Supabase call out of module scope — import createClient inside handleClick
+---
 
-### Step 3: Replace hardcoded strings in notifications/page.tsx
+### Step 2: Code quality
 
-File: `apps/web/src/app/(app)/notifications/page.tsx`
+#### 2a. Extract CommentItem to its own file
+File: `apps/web/src/app/_components/groups/comment-thread.tsx` (lines 31-207)
+- Issue: File is 411 lines. `CommentItem` is 175 lines and is a standalone component.
+- Fix: Move `CommentItem`, `CommentItemProps`, and `renderTextWithLinks` to `apps/web/src/app/_components/groups/comment-item.tsx`. Import in `comment-thread.tsx`.
 
-- Add `const t = useTranslations("notifications")`
-- Replace: "Notifications" → `t("title")`, "Mark all read" → `t("mark_all_read")`, empty state strings → `t("empty_title")`, `t("empty_subtitle")`
+#### 2b. Extract DangerConfirmModal to its own file
+File: `apps/web/src/app/_components/groups/group-danger-zone.tsx` (lines 28-117)
+- Issue: `DangerConfirmModal` is 90 lines and is a reusable component.
+- Fix: Move `DangerConfirmModal` and `DangerConfirmModalProps` to `apps/web/src/app/_components/groups/danger-confirm-modal.tsx`. Import in `group-danger-zone.tsx`.
 
-### Step 4: Replace hardcoded strings in notification-panel.tsx
+#### 2c. Move delete-drop logic to a hook
+File: `apps/web/src/app/_components/groups/feed-tab-view.tsx` (lines 86-89)
+- Issue: Direct `supabase.from("group_posts").delete()` call inside component.
+- Fix: Add a `deleteDrop` mutation to `useGroupFeed.ts` or create a small `useDeleteDrop` hook. Call it from `feed-tab-view.tsx`.
 
-File: `apps/web/src/app/_components/notifications/notification-panel.tsx`
+#### 2d. Deduplicate ProfileRow type and toProfile helper
+Files: `apps/web/src/app/_libs/hooks/useGroupFeed.ts`, `apps/web/src/app/_libs/utils/mapGroupDrop.ts`
+- Issue: `ProfileRow` type defined in both files. `toProfile()` function duplicated.
+- Fix: Keep canonical versions in `mapGroupDrop.ts` (already exports them). Import in `useGroupFeed.ts`. Remove duplicates.
 
-- Add `useTranslations("notifications")`
-- Replace same hardcoded strings as page.tsx
+#### 2e. Deduplicate feed mapping logic
+Files: `apps/web/src/app/_libs/hooks/useGroupFeed.ts` (lines 69-134), `apps/web/src/app/_libs/utils/mapGroupDrop.ts`
+- Issue: `fetchGroupFeedPage` contains inline mapping that duplicates `mapRowToGroupDrop`.
+- Fix: Use `mapRowToGroupDrop` from `mapGroupDrop.ts` inside `fetchGroupFeedPage`. Adapt input shape if needed.
 
-### Step 5: Fix sidebar hardcoded "Notifications"
+#### 2f. Fix sequential awaits in useUnreadCounts
+File: `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` (lines 47-62)
+- Issue: Group unread queries run sequentially in a for loop (`for...of` + `await`).
+- Fix: Use `Promise.all(groupIdArr.map(...))` to parallelize.
 
-File: `apps/web/src/app/_components/sidebar/sidebar.tsx`
+#### 2g. Replace inline SVGs with icon components
+Files: `apps/web/src/app/_components/groups/feed-header.tsx` (lines 35-42, 88-99), `apps/web/src/app/(app)/groups/page.tsx` (lines 90-100)
+- Issue: Inline `<svg>` elements instead of components from `@/components/icons`.
+- Fix: Use `ChevronLeftIcon`, `ChevronRightIcon` from `@/components/icons`. If missing, add them.
 
-- Line 207 title: `"Notifications"` → `t("notifications")`
-- Line 224 span: `"Notifications"` → `t("notifications")`
+---
 
-### Step 6: Extract types to @kurate/types
+### Step 3: Move to /libs
 
-Move from `apps/web/src/app/_libs/hooks/useNotifications.ts`:
-- `NotificationActor` type → `libs/types/src/notifications.ts`
-- `Notification` type → `libs/types/src/notifications.ts`
-- Export from `libs/types/src/index.ts`
-- Update imports in: useNotifications.ts, notification-panel.tsx, notification-item.tsx, sidebar.tsx
+> **Critical prerequisite:** Hooks currently import `createClient` from `@/app/_libs/supabase/client`. To share across web/mobile, either:
+> (A) Accept a Supabase client as parameter in each hook, or
+> (B) Create a shared client wrapper in `libs/` that each platform configures.
+>
+> **Recommendation:** Option A is simpler — each hook factory takes `supabase` as arg. Web passes its client, mobile passes its client. This is a pattern change that applies to ALL hooks being moved.
 
-### Step 7: Deduplicate auto-mark-read timer
+#### 3a. Move ProfileRow + toProfile to libs/types and libs/utils
+- `ProfileRow` type → add to `libs/types/src/groups.ts`
+- `toProfile()` → add to `libs/utils/src/profile.ts` (new file)
+- Update imports in: `useGroupFeed.ts`, `mapGroupDrop.ts`, `useGroupMembers.ts`
 
-Create: `apps/web/src/app/_libs/hooks/useAutoMarkRead.ts`
-```ts
-export function useAutoMarkRead(active: boolean, unreadCount: number, markAllRead: () => Promise<void>, delay = 1500)
-```
-- Contains the timer ref + useEffect logic
-- Replace in both notifications/page.tsx and notification-panel.tsx
+#### 3b. Move mapGroupDrop.ts to libs/utils
+- Move: `apps/web/src/app/_libs/utils/mapGroupDrop.ts` → `libs/utils/src/mapGroupDrop.ts`
+- Export from `libs/utils/src/index.ts`
+- Update imports in: `useGroupFeed.ts`, any other consumers
 
-### Step 8: Fix module-scope Supabase in notification-item.tsx
+#### 3c. Move fetchGroupDetail.ts to libs/utils
+- Move: `apps/web/src/app/_libs/utils/fetchGroupDetail.ts` → `libs/utils/src/fetchGroupDetail.ts`
+- Change to accept `supabase` client as parameter
+- Update imports in: `useGroupDetail.ts`
 
-File: `apps/web/src/app/_components/notifications/notification-item.tsx`
+#### 3d. Move fetchUserGroups.ts to libs/hooks
+- Move: `apps/web/src/app/_libs/utils/fetchUserGroups.ts` → `libs/hooks/src/useUserGroups.ts`
+- Wrap as a hook (useUserGroups) that accepts supabase client
+- Update imports in: `groups/page.tsx`, `sidebar-groups-section.tsx`
 
-- Remove `const supabase = createClient()` at line 10
-- Call `createClient()` inside `handleClick()` instead
+#### 3e. Move useGroupDetail.ts to libs/hooks
+- Move: `apps/web/src/app/_libs/hooks/useGroupDetail.ts` → `libs/hooks/src/useGroupDetail.ts`
+- Change `fetchGroupDetail`/`fetchGroupRole` to accept supabase client
+- Update imports in: `GroupPageClient.tsx`
+
+#### 3f. Move useGroupMembers.ts to libs/hooks
+- Move: `apps/web/src/app/_libs/hooks/useGroupMembers.ts` → `libs/hooks/src/useGroupMembers.ts`
+- Change to accept supabase client
+- Update imports in: `feed-tab-view.tsx`, `group-info-page.tsx`
+
+#### 3g. Move useGroupInvites.ts to libs/hooks
+- Move: `apps/web/src/app/_libs/hooks/useGroupInvites.ts` → `libs/hooks/src/useGroupInvites.ts`
+- Change to accept supabase client
+- Update imports in: `group-info-page.tsx`
+
+#### 3h. Move useDropEngagement.ts to libs/hooks
+- Move: `apps/web/src/app/_libs/hooks/useDropEngagement.ts` → `libs/hooks/src/useDropEngagement.ts`
+- Change to accept supabase client
+- Update imports in: `engagement-bar.tsx`
+
+#### 3i. Move useComments.ts to libs/hooks
+- Move: `apps/web/src/app/_libs/hooks/useComments.ts` → `libs/hooks/src/useComments.ts`
+- Change to accept supabase client
+- Update imports in: `comment-thread.tsx`, `feed-tab-view.tsx`
+
+#### 3j. Move useShareToGroups.ts to libs/hooks (consolidate)
+- Web: `apps/web/src/app/_libs/hooks/useShareToGroups.ts`
+- Mobile: `apps/mobile-app/hooks/useShareToGroups.ts`
+- Both are near-identical. Consolidate into `libs/hooks/src/useShareToGroups.ts`
+- Accept supabase client + userId as params
+- Delete both app-local versions, update imports
 
 ---
 
 ## Mobile — Step by Step
 
-### Step 1: Add useNotifications hook
+> **Design philosophy:** Same visual language as web, adapted for native. Same color tokens, proportional spacing. Bottom sheets replace modals/dropdowns. Single column. Press states replace hover.
+>
+> **Shared libs used:** `@kurate/types`, `@kurate/query`, `@kurate/hooks` (after Step 3), `@kurate/utils`, `@kurate/locales`
 
-New file: `apps/mobile-app/hooks/useNotifications.ts`
+### Step M1: Tab navigation — add Groups tab
+New file: `apps/mobile-app/app/(tabs)/groups.tsx`
 Read for reference:
-- `apps/web/src/app/_libs/hooks/useNotifications.ts` — query shape, realtime pattern, mark read logic
-- `apps/mobile-app/libs/supabase/client.ts` — mobile Supabase client
-- `libs/query/src/keys.ts` — queryKeys.notifications
-- `libs/types/src/notifications.ts` — Notification, NotificationActor types (after web step 6)
-
-Build instructions:
-- Fetch notifications with same Supabase query shape as web
-- Avatar URL: `${EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}?t=${Date.now()}`
-- Realtime subscription on notifications table INSERT
-- markRead(id) and markAllRead() mutations
-- Return: `{ notifications, unreadCount, isLoading, markRead, markAllRead }`
-
-### Step 2: Add notification item component
-
-New file: `apps/mobile-app/components/notifications/notification-item.tsx`
-Read for reference:
-- `apps/web/src/app/_components/notifications/notification-item.tsx` — layout: avatar (36px circle, letter fallback), name + event label, relative time
-- `apps/mobile-app/CLAUDE.md` — NativeWind classes, component rules
-
+- `apps/web/src/app/(app)/groups/page.tsx` — list layout, role badges, empty state
+- `libs/types/src/groups.ts` — GroupRow, GroupRole types
+Read existing mobile:
+- `apps/mobile-app/app/(tabs)/_layout.tsx` — current tab setup
 Key design decisions from web:
-- Avatar: 36px circle, `bg-primary/10`, letter fallback `text-primary text-sm font-bold`
-- Unread dot: 10px `bg-primary` circle absolute positioned top-right of avatar
-- Text: `<Text fontSemibold>{name}</Text> <Text muted>{eventLabel}</Text>`
-- Timestamp: `text-muted-foreground text-xs` below
-- Row: `px-4 py-3`, full-width Pressable
-
+- Groups list: avatar (40px circle) + name + role badge + description + chevron
+- Empty state: centered text + "Create a Group" button
+- Create button: top-right, pill shape, `bg-primary`
 Build instructions:
-- Use `HStack`, `VStack`, `Text`, `Pressable` from `@/components/ui/`
-- Avatar with RN `Image` + letter fallback
-- Event labels via `useLocalization` → `t('notifications.event_like')` etc.
-- Relative time with `date-fns` `formatDistanceToNow`
-- onPress: markRead → navigate to group page (use `expo-router` `router.push`)
+- Add "Groups" tab to `_layout.tsx` with `Users` icon from lucide
+- Create `groups.tsx` screen using `useUserGroups` from `@kurate/hooks`
+- FlatList with group rows (avatar, name, role badge, description)
+- Empty state with create button
+- FAB or header button for "Create Group"
 
-### Step 3: Add notification screen
-
-New file: `apps/mobile-app/app/(tabs)/notifications.tsx`
+### Step M2: Create group bottom sheet
+New file: `apps/mobile-app/components/groups/create-group-sheet.tsx`
 Read for reference:
-- `apps/web/src/app/(app)/notifications/page.tsx` — layout: header with title + mark all read, scrollable list, loading skeleton, empty state
-
+- `apps/web/src/app/_components/groups/create-group-dialog.tsx` — fields, validation, submit flow
 Key design decisions from web:
-- Header: "Notifications" title left, "Mark all read" button right (only if unreadCount > 0)
-- Loading: 3 skeleton rows (circle + 2 lines)
-- Empty: centered icon-less "No notifications yet" + subtitle
-- Auto-mark-all-read after 1.5s
-
+- Two fields: name (required), description (optional)
+- Submit creates conversation + owner membership
+- Navigates to group after creation
 Build instructions:
-- Use `FlatList` for notification list (not ScrollView + map)
-- `SafeAreaView` with `bg-background`
-- Header: `HStack` with title `Text` + mark all read `Pressable`
-- Loading skeleton with animated opacity
-- Empty state: `VStack` centered with `useLocalization` strings
-- useEffect with 1.5s timer for auto-mark-all-read
+- Bottom sheet with name Input + description Textarea
+- Submit → Supabase insert → invalidate groups list → navigate to group
+- Loading + error states
 
-### Step 4: Add notifications tab to navigation
+### Step M3: Group detail screen (shell + feed/library/info routing)
+New file: `apps/mobile-app/app/(tabs)/groups/[id].tsx`
+New file: `apps/mobile-app/components/groups/group-header.tsx`
+Read for reference:
+- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx` — view routing, realtime redirect
+- `apps/web/src/app/_components/groups/feed-header.tsx` — header layout
+- `apps/web/src/app/_components/groups/group-view.ts` — GroupView enum
+Key design decisions from web:
+- Header: back button + avatar + group name + library toggle + info button
+- Three views: Feed (default), Library, Info
+- Realtime: redirect on membership DELETE
+Build instructions:
+- Dynamic route `[id].tsx`
+- Use `useGroupDetail` + `useGroupRole` from `@kurate/hooks`
+- State for `view` (Feed/Library/Info)
+- Header component with back, avatar, name, toggle buttons
+- Render appropriate view based on state
 
-File: `apps/mobile-app/app/(tabs)/_layout.tsx`
+### Step M4: Group feed view + drop cards
+New file: `apps/mobile-app/components/groups/feed-view.tsx`
+New file: `apps/mobile-app/components/groups/feed-drop-card.tsx`
+New file: `apps/mobile-app/components/groups/drop-item-preview.tsx`
+Read for reference:
+- `apps/web/src/app/_components/groups/feed-tab-view.tsx` — feed layout, infinite scroll, empty/loading states
+- `apps/web/src/app/_components/groups/feed-share-card.tsx` — card structure, seen tracking, comment toggle
+- `apps/web/src/app/_components/groups/drop-item-preview.tsx` — link preview image, title, metadata
+Key design decisions from web:
+- Card: sharer header (avatar 32px + name + "dropped . time"), optional note (italic), link preview (220px image), text-only content, reaction pills, engagement bar, latest comment preview, expandable comment thread
+- Must-read cards: `border-warning-foreground/30 bg-warning-bg/40`
+- New comments: green dot on comment icon
+- Latest comment preview: avatar + author + "+N more" + text + chevron
+Build instructions:
+- FlatList with `useGroupFeed` from `@kurate/hooks`
+- `onEndReached` for infinite scroll
+- `FeedDropCard` component with all sub-sections
+- Press on comment preview → expand thread (see Step M6)
+- Seen tracking via `markPostSeen`
 
-- Add `Tabs.Screen` for `notifications`
-- Icon: `Bell` from `lucide-react-native`
-- Badge: show unread count dot (use `useNotifications` in layout or pass via context)
-- Tab label via `useLocalization` → `t('notifications.title')`
+### Step M5: Drop composer
+New file: `apps/mobile-app/components/groups/drop-composer.tsx`
+Read for reference:
+- `apps/web/src/app/_components/groups/drop-composer.tsx` — URL detection, metadata extraction, text-only, preview card
+- `apps/web/src/app/_components/home/chat-input.tsx` — input behavior
+Key design decisions from web:
+- Single input: detects URLs automatically, shows preview below
+- Link post: URL + optional note
+- Text-only post: plain text content
+- After link share: toast with "Save to vault?" action
+Build instructions:
+- TextInput with URL regex detection
+- `useExtractMetadata` from `@kurate/hooks` for preview
+- Preview card component (image, title, source, close button)
+- Submit: upsert logged_item → insert group_post → optional vault save toast
+- Reset input after submit
 
-### Step 5: Wire up push notification deep links
+### Step M6: Comment thread (bottom sheet or inline)
+New file: `apps/mobile-app/components/groups/comment-thread.tsx`
+New file: `apps/mobile-app/components/groups/comment-bubble.tsx`
+New file: `apps/mobile-app/components/groups/reply-input.tsx`
+Read for reference:
+- `apps/web/src/app/_components/groups/comment-thread.tsx` — DM-style bubbles, reply-to, edit, delete, unread divider
+- `apps/web/src/app/_components/groups/reply-input.tsx` — input with send button
+Key design decisions from web:
+- Own comments: right-aligned, `bg-primary text-primary-foreground`, rounded-tr-sm
+- Others: left-aligned, `bg-surface border`, avatar + name, rounded-tl-sm
+- Reply-to: quoted block with accent bar, author name, truncated text
+- Unread divider: "N new messages" with primary-colored lines
+- Continuation: same author grouped, no repeated name/avatar
+- Timestamp: inline at end of bubble, mono text
+Build instructions:
+- FlatList (inverted for bottom-anchored scroll) with `useComments` from `@kurate/hooks`
+- `CommentBubble` component handling own/other styling
+- Reply-to context banner above input
+- Edit mode: pre-fills input, banner shows "Editing"
+- Delete: long-press action sheet or swipe
+- `ReplyInput` with TextInput + send button
 
-File: `apps/mobile-app/hooks/useFCM.ts` (existing)
+### Step M7: Engagement bar
+New file: `apps/mobile-app/components/groups/engagement-bar.tsx`
+Read for reference:
+- `apps/web/src/app/_components/groups/engagement-bar.tsx` — like, must-read, bookmark, comment toggle
+Key design decisions from web:
+- Row of icon buttons: Heart (like), Star (must-read), Bookmark (vault), MessageCircle (comments)
+- Active states: red for like, warning for must-read, primary for bookmark
+- Count shown next to icon, mono font
+- Comment icon: green fill when new comments
+Build instructions:
+- HStack of Pressable buttons
+- `useDropEngagement` from `@kurate/hooks` for like/must-read
+- `useVaultToggle` for bookmark (from web hook, needs lib move)
+- Optimistic UI — count changes immediately
 
-- On notification tap → extract event_type + event_id from payload
-- Navigate: lookup group_posts.convo_id → `router.push` to group screen
-- Match same routing logic as web notification-item handleClick
+### Step M8: Library view
+New file: `apps/mobile-app/components/groups/library-view.tsx`
+New file: `apps/mobile-app/components/groups/library-card.tsx`
+Read for reference:
+- `apps/web/src/app/_components/groups/library-view.tsx` — must-read section, all-shared grid
+- `apps/web/src/app/_components/groups/library-card.tsx` — card with image, title, metadata, engagement
+Key design decisions from web:
+- Two sections: "MUST READ" at top, "ALL SHARED" below
+- Cards: preview image (aspect-video), title, source + read time, engagement bar
+- Card click → navigate to feed with scroll-to-drop
+Build instructions:
+- SectionList with must-read + all-shared sections
+- `LibraryCard` component: Image + title + metadata + EngagementBar
+- Single column on mobile (2 columns on tablet if needed)
+- Press → navigate to feed view with drop ID param
 
-### Step 6: Add translation keys
+### Step M9: Group info screen
+New file: `apps/mobile-app/components/groups/group-info-view.tsx`
+New file: `apps/mobile-app/components/groups/group-members-list.tsx`
+Read for reference:
+- `apps/web/src/app/_components/groups/group-info-page.tsx` — layout
+- `apps/web/src/app/_components/groups/group-info-header.tsx` — avatar, name, description, edit button
+- `apps/web/src/app/_components/groups/group-info-members-list.tsx` — member rows
+Key design decisions from web:
+- Header: large avatar (80px), name, description, edit pencil (owner only)
+- "Add member" button (dashed border, plus icon) — admin/owner only
+- Members list: avatar 40px + name + handle + role badge + chevron (owner only)
+- Pending invites section (admin/owner)
+- Danger zone at bottom: leave + delete (owner)
+Build instructions:
+- ScrollView with header, add-member button, FlatList of members
+- `useGroupMembers` + `useGroupInvites` from `@kurate/hooks`
+- Tap member → action sheet (owner only): promote/demote, remove
+- Danger zone: leave + delete buttons at bottom
 
-File: `libs/locales/src/en.json`
+### Step M10: Edit group info sheet
+New file: `apps/mobile-app/components/groups/edit-group-info-sheet.tsx`
+Read for reference:
+- `apps/web/src/app/_components/groups/edit-group-info-modal.tsx` — avatar upload, name, description
+Key design decisions from web:
+- Avatar upload: tap avatar → image picker → upload to Supabase storage → update media_metadata → update conversation
+- Name + description fields
+Build instructions:
+- Bottom sheet with avatar (pressable → expo-image-picker), name Input, description Textarea
+- Upload flow: pick image → upload to storage → upsert media_metadata → update conversations.group_avatar_id
+- Save + cancel buttons
 
-- Verify all notification keys from web Step 1 exist
-- Add any mobile-specific keys if needed (e.g. "notifications.push_permission_title")
+### Step M11: Invite member sheet
+New file: `apps/mobile-app/components/groups/invite-member-sheet.tsx`
+Read for reference:
+- `apps/web/src/app/_components/groups/group-invite-modal.tsx` — search, email detection, batch add, role selector
+Key design decisions from web:
+- Search input: debounced, searches profiles by name/handle
+- Email detection: if email typed, check platform user or offer email invite
+- Multi-select with chips
+- Role selector: member/admin toggle
+- Batch add button
+Build instructions:
+- Bottom sheet with search Input
+- FlatList of search results with checkboxes
+- Email branch: "Invite by email" + "Copy invite link" buttons
+- Selected chips row + role picker
+- "Add N members" submit button
+- `useGroupInvites` for pending invites management
+
+### Step M12: Join group deep link handler
+New file: `apps/mobile-app/app/groups/join/[invite_code].tsx`
+Read for reference:
+- `apps/web/src/app/(app)/groups/join/[invite_code]/page.tsx` — auth check, email validation, capacity check, join flow
+Key design decisions from web:
+- Server-side on web; on mobile this is a screen triggered by deep link
+- Check auth → check onboarding → validate email (if present) → check capacity → join → redirect
+Build instructions:
+- Screen that handles deep link `/groups/join/:invite_code`
+- On mount: check auth, validate, join group via Supabase insert
+- Error states: wrong account, revoked, invalid, full
+- Success: navigate to group detail
+
+### Step M13: Sidebar/tab unread badges
+Read for reference:
+- `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` — localStorage tracking, realtime subscription
+- `apps/web/src/app/_components/sidebar/sidebar-groups-section.tsx` — unread badge
+Key design decisions from web:
+- Unread count per group: new posts since last visit (by others)
+- Realtime: increment on new post INSERT
+- Mark read on group visit (localStorage on web → AsyncStorage on mobile)
+Build instructions:
+- `useGroupUnreadCounts` hook: AsyncStorage for last-seen, Supabase realtime for increments
+- Badge component on groups tab icon + individual group rows
+- Mark read when navigating to a group
 
 ---
 
 ## Next Commands
 
-**Web agent:**
-"Read memory/CODEBASE_MAP.md and memory/FEATURE_PLAN.md.
-Follow Web Steps 1-8 exactly as written in the plan.
+**Web agent (fix bugs — Step 1):**
+"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
 
 Files to fix:
-- `libs/locales/src/en.json` — add notification i18n keys
-- `apps/web/src/app/_components/notifications/notification-item.tsx` — replace EVENT_LABELS with i18n, fix module-scope client
-- `apps/web/src/app/(app)/notifications/page.tsx` — replace hardcoded strings with i18n, use useAutoMarkRead
-- `apps/web/src/app/_components/notifications/notification-panel.tsx` — replace hardcoded strings with i18n, use useAutoMarkRead
-- `apps/web/src/app/_components/sidebar/sidebar.tsx` — fix hardcoded 'Notifications' on line 207 and 224
+- `apps/web/src/app/(app)/groups/page.tsx`
+- `apps/web/src/app/api/groups/invite/route.ts`
+- `apps/web/src/app/_components/groups/library-view.tsx`
+- `apps/web/src/app/_components/groups/feed-share-card.tsx`
+- `apps/web/src/app/_components/groups/library-card.tsx`
 
-New files to create:
-- `libs/types/src/notifications.ts` — Notification + NotificationActor types
-- `apps/web/src/app/_libs/hooks/useAutoMarkRead.ts` — shared auto-mark-read timer hook
-
-Files to update imports in:
-- `apps/web/src/app/_libs/hooks/useNotifications.ts` — import types from @kurate/types
-- `apps/web/src/app/_components/notifications/notification-panel.tsx` — import types from @kurate/types
-- `apps/web/src/app/_components/notifications/notification-item.tsx` — import types from @kurate/types
-- `apps/web/src/app/_components/sidebar/sidebar.tsx` — import types from @kurate/types
-- `libs/types/src/index.ts` — export notifications types
-
-Context files (read for understanding only):
-- `apps/web/src/app/_libs/hooks/useNotifications.ts` — current types + fetch logic
-- `apps/web/src/i18n/use-translations.ts` — useTranslations pattern
+Fix these specific issues:
+1. `groups/page.tsx` — extract client logic to `GroupsPageClient.tsx`, make page.tsx a Server Component
+2. `invite/route.ts:157-164` — remove `as any` cast, use supabase directly, remove unnecessary try/catch
+3. `library-view.tsx:29-30` — wrap `fetchNextPage()` in useEffect with `[hasNextPage, isFetchingNextPage]` guards
+4. `feed-share-card.tsx:136` — add `drop.id` and `markPostSeen` to useEffect dep array
+5. `library-card.tsx:46` — fix `overflow-hiddrop.cden` → `overflow-hidden`
 
 Run `pnpm lint` and `pnpm type:check` when done."
 
-**Mobile agent:**
+**Web agent (code quality — Step 2):**
+"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
+
+Files to refactor:
+- `apps/web/src/app/_components/groups/comment-thread.tsx` — extract CommentItem + renderTextWithLinks to `comment-item.tsx`
+- `apps/web/src/app/_components/groups/group-danger-zone.tsx` — extract DangerConfirmModal to `danger-confirm-modal.tsx`
+- `apps/web/src/app/_components/groups/feed-tab-view.tsx` — move delete-drop Supabase call to useGroupFeed hook
+- `apps/web/src/app/_libs/hooks/useGroupFeed.ts` — import ProfileRow/toProfile from mapGroupDrop.ts, use mapRowToGroupDrop for mapping
+- `apps/web/src/app/_libs/utils/mapGroupDrop.ts` — canonical source for ProfileRow, toProfile, mapRowToGroupDrop
+- `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` — parallelize group queries with Promise.all
+- `apps/web/src/app/_components/groups/feed-header.tsx` — replace inline SVGs with ChevronLeftIcon/ChevronRightIcon
+- `apps/web/src/app/(app)/groups/page.tsx` — replace inline SVG chevron with icon component
+
+Run `pnpm lint` and `pnpm type:check` when done."
+
+**Web agent (move to /libs — Step 3):**
+"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
+
+Files to move (change to accept supabase client as parameter):
+- `apps/web/src/app/_libs/utils/mapGroupDrop.ts` → `libs/utils/src/mapGroupDrop.ts`
+- `apps/web/src/app/_libs/utils/fetchGroupDetail.ts` → `libs/utils/src/fetchGroupDetail.ts`
+- `apps/web/src/app/_libs/utils/fetchUserGroups.ts` → `libs/hooks/src/useUserGroups.ts`
+- `apps/web/src/app/_libs/hooks/useGroupDetail.ts` → `libs/hooks/src/useGroupDetail.ts`
+- `apps/web/src/app/_libs/hooks/useGroupMembers.ts` → `libs/hooks/src/useGroupMembers.ts`
+- `apps/web/src/app/_libs/hooks/useGroupInvites.ts` → `libs/hooks/src/useGroupInvites.ts`
+- `apps/web/src/app/_libs/hooks/useDropEngagement.ts` → `libs/hooks/src/useDropEngagement.ts`
+- `apps/web/src/app/_libs/hooks/useComments.ts` → `libs/hooks/src/useComments.ts`
+- `apps/web/src/app/_libs/hooks/useShareToGroups.ts` + `apps/mobile-app/hooks/useShareToGroups.ts` → `libs/hooks/src/useShareToGroups.ts`
+
+Files that import them (update these imports after move):
+- `apps/web/src/app/(app)/groups/page.tsx` (or GroupsPageClient.tsx after bug fix)
+- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx`
+- `apps/web/src/app/_components/groups/feed-tab-view.tsx`
+- `apps/web/src/app/_components/groups/feed-share-card.tsx`
+- `apps/web/src/app/_components/groups/engagement-bar.tsx`
+- `apps/web/src/app/_components/groups/comment-thread.tsx`
+- `apps/web/src/app/_components/groups/group-info-page.tsx`
+- `apps/web/src/app/_components/groups/group-info-header.tsx`
+- `apps/web/src/app/_components/sidebar/sidebar-groups-section.tsx`
+- `apps/web/src/app/_libs/hooks/useGroupFeed.ts`
+
+Pattern: Each moved hook should accept `supabase: SupabaseClient` as first parameter. Web callers pass `createClient()`, mobile callers pass their own client.
+
+Update barrel exports in `libs/hooks/src/index.ts`, `libs/utils/src/index.ts`, `libs/types/src/index.ts`.
+
+Run `pnpm lint` and `pnpm type:check` when done."
+
+**Mobile agent (build groups — Step M1-M13):**
 "Read memory/CODEBASE_MAP.md and memory/FEATURE_PLAN.md.
-Follow Mobile Steps 1-6 in order as written in the plan.
+Follow Mobile Steps M1-M13 in order as written in the plan.
 
-Shared libs:
-- `libs/query/src/keys.ts` — queryKeys.notifications
-- `libs/types/src/notifications.ts` — Notification, NotificationActor types
-- `libs/locales/src/en.json` — notification translation keys
-- `libs/types/src/database.types.ts` — DB types
+Shared libs (read these first):
+- `libs/types/src/groups.ts`
+- `libs/query/src/keys.ts`
+- `libs/hooks/src/index.ts` (after Step 3 moves)
+- `libs/utils/src/index.ts`
+- `libs/locales/src/en.json`
 
-Web reference (design + logic):
-- `apps/web/src/app/(app)/notifications/page.tsx` — page layout, loading, empty state
-- `apps/web/src/app/_components/notifications/notification-item.tsx` — item layout, navigation logic
-- `apps/web/src/app/_libs/hooks/useNotifications.ts` — fetch query shape, realtime, mark read
+Web reference (design + logic — read for each step as noted):
+- `apps/web/src/app/(app)/groups/page.tsx`
+- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx`
+- `apps/web/src/app/_components/groups/` (all files listed per step)
 
 Existing mobile files:
-- `apps/mobile-app/app/(tabs)/_layout.tsx` — add notifications tab here
-- `apps/mobile-app/hooks/useFCM.ts` — push notification handler (wire deep links)
-- `apps/mobile-app/libs/supabase/client.ts` — mobile Supabase client
-- `apps/mobile-app/store/useAuthStore.ts` — auth state (userId)
-- `apps/mobile-app/context/LocalizationContext.tsx` — useLocalization
+- `apps/mobile-app/app/(tabs)/_layout.tsx`
+- `apps/mobile-app/components/ui/` (all Gluestack components)
+- `apps/mobile-app/hooks/index.ts`
+- `apps/mobile-app/libs/supabase/client.ts`
+- `apps/mobile-app/context/`
 
-IMPORTANT:
-- UI components are custom CVA + NativeWind wrappers at @/components/ui/ (Text, VStack, HStack, Pressable, etc). Import from @/components/ui/text, @/components/ui/vstack, etc.
-- Use FlatList for notification list, not ScrollView + map
-- Avatar URLs need cache-busting ?t=timestamp
-- All strings via useLocalization — import from @/context
-
-Run `pnpm lint` and `pnpm format` when done."
+Build each step as written. Use Gluestack UI + NativeWind + lucide-react-native.
+If something is missing from the map → explore that specific folder only, update the map, then proceed."
