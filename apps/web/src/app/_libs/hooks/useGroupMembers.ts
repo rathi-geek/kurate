@@ -1,87 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useGroupMembers as _useGroupMembers } from "@kurate/hooks";
 
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@kurate/query";
-import type { GroupMember, GroupRole } from "@kurate/types";
-import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 const supabase = createClient();
 
-async function fetchGroupMembers(groupId: string): Promise<GroupMember[]> {
-  const { data, error } = await supabase
-    .from("conversation_members")
-    .select(
-      "id, convo_id, user_id, role, joined_at, updated_at, profile:profiles!conversation_members_user_id_fkey(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)",
-    )
-    .eq("convo_id", groupId);
-
-  if (error) {
-    // Fallback without profile join
-    const { data: fallback, error: fallbackError } = await supabase
-      .from("conversation_members")
-      .select("id, convo_id, user_id, role, joined_at, updated_at")
-      .eq("convo_id", groupId);
-
-    if (fallbackError) throw new Error(fallbackError.message);
-
-    return (fallback ?? []).map((row) => ({
-      ...row,
-      profile: { id: row.user_id, display_name: null, avatar_url: null, handle: "" },
-    }));
-  }
-
-  return (data ?? []).map((row) => {
-    const rawProfile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
-    return {
-      ...row,
-      profile: rawProfile
-        ? {
-            id: rawProfile.id,
-            display_name:
-              [rawProfile.first_name, rawProfile.last_name].filter(Boolean).join(" ") || rawProfile.handle || null,
-            avatar_url: rawProfile.avatar ? mediaToUrl(rawProfile.avatar as { file_path: string; bucket_name: string }) : null,
-            handle: rawProfile.handle ?? "",
-          }
-        : { id: row.user_id, display_name: null, avatar_url: null, handle: "" },
-    };
-  });
-}
-
 export function useGroupMembers(groupId: string, currentUserId: string) {
-  const queryClient = useQueryClient();
-
-  const query = useQuery({
-    queryKey: queryKeys.groups.members(groupId),
-    queryFn: () => fetchGroupMembers(groupId),
-    staleTime: 1000 * 60,
-    enabled: !!groupId,
-  });
-
-  useEffect(() => {
-    if (!groupId) return;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`group-members-${groupId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "conversation_members", filter: `convo_id=eq.${groupId}` },
-        () => { void queryClient.invalidateQueries({ queryKey: queryKeys.groups.members(groupId) }); },
-      )
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [groupId, queryClient]);
-
-  const members = query.data ?? [];
-  const currentMember = members.find((m) => m.user_id === currentUserId);
-  const currentRole = (currentMember?.role as GroupRole) ?? "member";
-
-  return {
-    members,
-    currentRole,
-    isLoading: query.isLoading,
-    refetch: query.refetch,
-  };
+  return _useGroupMembers(supabase, groupId, currentUserId);
 }

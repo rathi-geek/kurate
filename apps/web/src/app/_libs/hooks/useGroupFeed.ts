@@ -6,165 +6,132 @@ import { useInfiniteQuery, useQuery, useQueryClient ,type  InfiniteData } from "
 
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@kurate/query";
-import type { GroupDrop } from "@kurate/types";
-import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
+import type { Database, GroupDrop, GroupProfile } from "@kurate/types";
+
+type ContentType = Database["public"]["Enums"]["content_type_enum"];
 
 const supabase = createClient();
 const PAGE_SIZE = 20;
-
-type ProfileRow = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar: { file_path: string; bucket_name: string } | null;
-  handle: string | null;
-};
-
-function toProfile(p: ProfileRow | null) {
-  if (!p) return null;
-  return {
-    id: p.id,
-    display_name:
-      [p.first_name, p.last_name].filter(Boolean).join(" ") || p.handle || null,
-    avatar_url: p.avatar ? mediaToUrl(p.avatar) : null,
-    handle: p.handle ?? null,
-  };
-}
 
 export async function fetchGroupFeedPage(
   groupId: string,
   currentUserId: string,
   cursor: string | null,
 ): Promise<GroupDrop[]> {
-  let query = supabase
-    .from("group_posts")
-    .select(
-      `
-      id,
-      convo_id,
-      logged_item_id,
-      shared_by,
-      note,
-      content,
-      shared_at,
-      sharer:profiles!group_posts_shared_by_fkey(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle),
-      item:logged_items!group_posts_logged_item_id_fkey(url, title, preview_image_url, content_type, raw_metadata, description),
-      likes:group_posts_likes(id, user_id, liker:profiles!group_posts_likes_user_id_fkey(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)),
-      must_reads:group_posts_must_reads(id, user_id, reader:profiles!group_posts_must_reads_user_id_fkey(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)),
-      comment_count:group_posts_comments(count),
-      my_seen:group_post_last_seen!left(seen_at)
-      `,
-    )
-    .eq("convo_id", groupId)
-    .order("shared_at", { ascending: false })
-    .limit(PAGE_SIZE);
+  const { data, error } = await supabase.rpc("get_group_feed_page", {
+    p_group_id: groupId,
+    p_user_id: currentUserId,
+    p_cursor: cursor ?? undefined,
+    p_limit: PAGE_SIZE,
+  });
 
-  if (cursor) {
-    query = query.lt("shared_at", cursor);
-  }
-
-  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row) => {
-    const rawLikes = (row.likes ?? []) as Array<{
-      id: string;
-      user_id: string;
-      liker: ProfileRow | null;
-    }>;
-    const rawMustReads = (row.must_reads ?? []) as Array<{
-      id: string;
-      user_id: string;
-      reader: ProfileRow | null;
-    }>;
-    const rawItem = Array.isArray(row.item) ? row.item[0] : row.item;
-    const rawSharer = Array.isArray(row.sharer) ? row.sharer[0] : row.sharer;
-    const rawSeen = Array.isArray(row.my_seen) ? row.my_seen[0] : row.my_seen as { seen_at: string } | null | undefined;
+  // Fetch reactor profiles for the returned posts (max 3 per reaction type)
+  const postIds = (data ?? []).map((r) => r.id);
+  const [likeReactors, mustReadReactors] = postIds.length
+    ? await Promise.all([
+        fetchReactors("group_posts_likes", postIds),
+        fetchReactors("group_posts_must_reads", postIds),
+      ])
+    : [new Map<string, GroupProfile[]>(), new Map<string, GroupProfile[]>()];
 
-    const engagement = {
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    convo_id: row.convo_id,
+    logged_item_id: row.logged_item_id,
+    shared_by: row.shared_by,
+    note: row.note,
+    content: row.content ?? null,
+    shared_at: row.shared_at,
+    sharer: {
+      id: row.sharer_id ?? row.shared_by,
+      display_name: row.sharer_display_name ?? null,
+      avatar_path: row.sharer_avatar_path,
+      handle: row.sharer_handle ?? null,
+    },
+    item: row.item_url != null
+      ? {
+          url: row.item_url ?? "",
+          title: row.item_title ?? null,
+          preview_image_url: row.item_preview_image ?? null,
+          content_type: (row.item_content_type ?? "article") as ContentType,
+          raw_metadata: row.item_raw_metadata ?? null,
+          description: row.item_description ?? null,
+        }
+      : null,
+    engagement: {
       like: {
-        count: rawLikes.length,
-        didReact: rawLikes.some((r) => r.user_id === currentUserId),
-        reactors: rawLikes.map((r) => toProfile(r.liker)).filter(Boolean) as GroupDrop["engagement"]["like"]["reactors"],
+        count: Number(row.like_count),
+        didReact: row.did_like ?? false,
+        reactors: likeReactors.get(row.id) ?? [],
       },
       mustRead: {
-        count: rawMustReads.length,
-        didReact: rawMustReads.some((r) => r.user_id === currentUserId),
-        reactors: rawMustReads.map((r) => toProfile(r.reader)).filter(Boolean) as GroupDrop["engagement"]["mustRead"]["reactors"],
+        count: Number(row.must_read_count),
+        didReact: row.did_must_read ?? false,
+        reactors: mustReadReactors.get(row.id) ?? [],
       },
-      readBy: {
-        count: 0,
-        didReact: false,
-        reactors: [],
-      },
-    };
+      readBy: { count: 0, didReact: false, reactors: [] },
+    },
+    commentCount: Number(row.comment_count),
+    seenAt: row.seen_at ?? null,
+    latestCommentAt: null,
+    latestComment: null,
+  } satisfies GroupDrop));
+}
 
-    return {
-      id: row.id,
-      convo_id: row.convo_id,
-      logged_item_id: row.logged_item_id,
-      shared_by: row.shared_by,
-      note: row.note,
-      content: (row as { content?: string | null }).content ?? null,
-      shared_at: row.shared_at,
-      sharer: {
-        id: rawSharer?.id ?? row.shared_by,
-        display_name: rawSharer
-          ? [rawSharer.first_name, rawSharer.last_name].filter(Boolean).join(" ") || rawSharer.handle || null
-          : null,
-        avatar_url: rawSharer?.avatar ? mediaToUrl(rawSharer.avatar as { file_path: string; bucket_name: string }) : null,
-        handle: rawSharer?.handle ?? "",
-      },
-      item: rawItem
-        ? {
-            url: rawItem.url ?? "",
-            title: rawItem.title ?? null,
-            preview_image_url: rawItem.preview_image_url ?? null,
-            content_type: rawItem.content_type ?? "article",
-            raw_metadata: rawItem.raw_metadata ?? null,
-            description: rawItem.description ?? null,
-          }
-        : null,
-      engagement,
-      commentCount: (row.comment_count as { count: number }[])[0]?.count ?? 0,
-      seenAt: rawSeen?.seen_at ?? null,
-      latestCommentAt: null,
-      latestComment: null,
-    } satisfies GroupDrop;
-  });
+async function fetchReactors(
+  table: "group_posts_likes" | "group_posts_must_reads",
+  postIds: string[],
+): Promise<Map<string, GroupProfile[]>> {
+  const fk = table === "group_posts_likes"
+    ? "profiles!group_posts_likes_user_id_fkey"
+    : "profiles!group_posts_must_reads_user_id_fkey";
+
+  const { data } = await supabase
+    .from(table)
+    .select(`group_post_id, user_id, reactor:${fk}(id, first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)`)
+    .in("group_post_id", postIds);
+
+  const map = new Map<string, GroupProfile[]>();
+  for (const row of data ?? []) {
+    const raw = Array.isArray(row.reactor) ? row.reactor[0] : row.reactor;
+    if (!raw) continue;
+    const avatar = raw.avatar
+      ? (Array.isArray(raw.avatar) ? raw.avatar[0] : raw.avatar) as { file_path: string; bucket_name: string } | undefined
+      : null;
+    const profile: GroupProfile = {
+      id: raw.id,
+      display_name: [raw.first_name, raw.last_name].filter(Boolean).join(" ") || raw.handle || null,
+      avatar_path: avatar ? `${avatar.bucket_name}/${avatar.file_path}` : null,
+      handle: raw.handle ?? null,
+    };
+    const list = map.get(row.group_post_id) ?? [];
+    list.push(profile);
+    map.set(row.group_post_id, list);
+  }
+  return map;
 }
 
 export async function fetchFeedCommentPreviews(
   postIds: string[],
-): Promise<Map<string, { text: string; authorName: string | null; authorAvatarUrl: string | null; createdAt: string }>> {
+): Promise<Map<string, { text: string; authorName: string | null; authorAvatarPath: string | null; createdAt: string }>> {
   if (!postIds.length) return new Map();
 
-  const { data, error } = await supabase
-    .from("group_posts_comments")
-    .select(
-      "group_post_id, comment_text, created_at, author:profiles!group_posts_comments_user_id_fkey(first_name, last_name, avatar:avatar_id(file_path, bucket_name), handle)",
-    )
-    .in("group_post_id", postIds)
-    .order("created_at", { ascending: false })
-    .limit(10);
+  const { data, error } = await supabase.rpc("get_feed_comment_previews", {
+    p_post_ids: postIds,
+  });
 
   if (error || !data) return new Map();
 
-  const map = new Map<string, { text: string; authorName: string | null; authorAvatarUrl: string | null; createdAt: string }>();
+  const map = new Map<string, { text: string; authorName: string | null; authorAvatarPath: string | null; createdAt: string }>();
   for (const row of data) {
     if (!map.has(row.group_post_id)) {
-      const rawAuthor = Array.isArray(row.author) ? row.author[0] : row.author;
       map.set(row.group_post_id, {
         text: row.comment_text,
         createdAt: row.created_at,
-        authorName: rawAuthor
-          ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") ||
-            rawAuthor.handle ||
-            null
-          : null,
-        authorAvatarUrl: rawAuthor?.avatar
-          ? mediaToUrl(rawAuthor.avatar as { file_path: string; bucket_name: string })
-          : null,
+        authorName: row.author_display_name ?? null,
+        authorAvatarPath: row.author_avatar_path,
       });
     }
   }
@@ -219,7 +186,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
       const preview = previewQuery.data.get(drop.id);
       return {
         ...drop,
-        latestComment: preview ? { text: preview.text, authorName: preview.authorName, authorAvatarUrl: preview.authorAvatarUrl } : null,
+        latestComment: preview ? { text: preview.text, authorName: preview.authorName, authorAvatarPath: preview.authorAvatarPath } : null,
         latestCommentAt: preview?.createdAt ?? null,
       };
     });
@@ -384,9 +351,18 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
     [groupId, currentUserId, queryClient],
   );
 
+  const deleteDrop = useCallback(
+    async (dropId: string) => {
+      await supabase.from("group_posts").delete().eq("id", dropId);
+      void query.refetch();
+    },
+    [query],
+  );
+
   return {
     drops,
     markPostSeen,
+    deleteDrop,
     fetchNextPage: query.fetchNextPage,
     hasNextPage: query.hasNextPage ?? false,
     isLoading: query.isLoading,

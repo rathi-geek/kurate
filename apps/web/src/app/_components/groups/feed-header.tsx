@@ -6,6 +6,7 @@ import type { Tables } from "@kurate/types";
 import { LuLibrary, LuNewspaper } from "react-icons/lu";
 
 import { GroupView } from "@/app/_components/groups/group-view";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 
 interface FeedHeaderProps {
@@ -32,15 +33,7 @@ export function FeedHeader({ group, view, onToggleLibrary, onShowInfo }: FeedHea
           onClick={() => router.back()}
           className="text-muted-foreground hover:text-foreground -ml-1 shrink-0 p-1 transition-colors md:hidden"
           aria-label="Go back">
-          <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
-            <path
-              d="M12 5l-5 5 5 5"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <ChevronLeftIcon className="size-5" />
         </button>
 
         {/* Avatar + name — taps to open info panel */}
@@ -85,18 +78,7 @@ export function FeedHeader({ group, view, onToggleLibrary, onShowInfo }: FeedHea
           onClick={onShowInfo}
           aria-label={t("info_aria")}
           className="text-muted-foreground hover:text-foreground hover:bg-surface hidden rounded-md p-1.5 transition-colors md:flex">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          <ChevronRightIcon className="size-[18px]" />
         </button>
       </div>
     </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { type Json ,type  GroupDrop } from "@kurate/types";
-import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
 
 export type ProfileRow = {
   id: string;
@@ -11,13 +10,13 @@ export type ProfileRow = {
   handle: string | null;
 };
 
-function toProfile(p: ProfileRow | null) {
+export function toProfile(p: ProfileRow | null) {
   if (!p) return null;
   return {
     id: p.id,
     display_name:
       [p.first_name, p.last_name].filter(Boolean).join(" ") || p.handle || null,
-    avatar_url: p.avatar ? mediaToUrl(p.avatar) : null,
+    avatar_path: p.avatar ? `${p.avatar.bucket_name}/${p.avatar.file_path}` : null,
     handle: p.handle ?? null,
   };
 }
@@ -89,8 +88,11 @@ export function mapRowToGroupDrop(row: GroupPostRow, currentUserId: string): Gro
       authorName: rawAuthor
         ? [rawAuthor.first_name, rawAuthor.last_name].filter(Boolean).join(" ") || rawAuthor.handle || null
         : null,
-      authorAvatarUrl: rawAuthor?.avatar
-        ? mediaToUrl(rawAuthor.avatar as { file_path: string; bucket_name: string })
+      authorAvatarPath: rawAuthor?.avatar
+        ? (() => {
+            const a = rawAuthor.avatar as { file_path: string; bucket_name: string };
+            return `${a.bucket_name}/${a.file_path}`;
+          })()
         : null,
     };
   })();
@@ -108,10 +110,13 @@ export function mapRowToGroupDrop(row: GroupPostRow, currentUserId: string): Gro
       display_name: rawSharer
         ? [rawSharer.first_name, rawSharer.last_name].filter(Boolean).join(" ") || rawSharer.handle || null
         : null,
-      avatar_url: rawSharer?.avatar
-        ? mediaToUrl(rawSharer.avatar as { file_path: string; bucket_name: string })
+      avatar_path: rawSharer?.avatar
+        ? (() => {
+            const a = rawSharer.avatar as { file_path: string; bucket_name: string };
+            return `${a.bucket_name}/${a.file_path}`;
+          })()
         : null,
-      handle: rawSharer?.handle ?? "",
+      handle: rawSharer?.handle ?? null,
     },
     item: rawItem
       ? {

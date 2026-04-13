@@ -7,13 +7,10 @@ import { useTranslations } from "@/i18n/use-translations";
 import { useGroupFeed } from "@/app/_libs/hooks/useGroupFeed";
 import { fetchComments } from "@/app/_libs/hooks/useComments";
 import { useGroupMembers } from "@/app/_libs/hooks/useGroupMembers";
-import { createClient } from "@/app/_libs/supabase/client";
 import { DropComposer } from "@/app/_components/groups/drop-composer";
 import { FeedShareCard } from "@/app/_components/groups/feed-share-card";
 import { queryKeys } from "@kurate/query";
 import type { GroupRole } from "@kurate/types";
-
-const supabase = createClient();
 
 interface FeedTabViewProps {
   groupId: string;
@@ -28,12 +25,17 @@ export function FeedTabView({
 }: FeedTabViewProps) {
   const t = useTranslations("groups");
   const queryClient = useQueryClient();
-  const { drops, markPostSeen, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage, refetch } =
+  const { drops, markPostSeen, deleteDrop, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage, refetch } =
     useGroupFeed(groupId, currentUserId);
   const { members } = useGroupMembers(groupId, currentUserId);
-  const rawCurrentUserProfile = members.find((m) => m.user_id === currentUserId)?.profile;
-  const currentUserProfile = rawCurrentUserProfile
-    ? { ...rawCurrentUserProfile, handle: rawCurrentUserProfile.handle ?? "" }
+  const me = members.find((m) => m.user_id === currentUserId);
+  const currentUserProfile = me
+    ? {
+        id: me.profile_id,
+        display_name: me.profile_display_name,
+        avatar_path: me.profile_avatar_path,
+        handle: me.profile_handle,
+      }
     : undefined;
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -83,9 +85,8 @@ export function FeedTabView({
     }
   }, [drops]);
 
-  const handleDeleteDrop = async (dropId: string) => {
-    await supabase.from("group_posts").delete().eq("id", dropId);
-    refetch();
+  const handleDeleteDrop = (dropId: string) => {
+    void deleteDrop(dropId);
   };
 
   return (
@@ -132,7 +133,7 @@ interface FeedBodyProps {
   currentUserId: string;
   groupId: string;
   userRole: GroupRole;
-  currentUserProfile?: { id: string; display_name: string | null; avatar_url: string | null; handle: string };
+  currentUserProfile?: { id: string; display_name: string | null; avatar_path: string | null; handle: string };
   onDelete: (id: string) => void;
   markPostSeen?: (postId: string, seenAt: string) => void;
 }

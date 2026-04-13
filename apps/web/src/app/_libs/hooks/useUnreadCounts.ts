@@ -46,20 +46,20 @@ export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
     // Group post unread counts — tracked via localStorage last-seen timestamps
     if (groupIds && groupIds.size > 0) {
       const groupIdArr = Array.from(groupIds);
-      for (const gid of groupIdArr) {
-        const lastSeen = localStorage.getItem(`group_last_seen:${gid}`);
-        if (!lastSeen) {
-          // No prior visit — treat as all-read until realtime fires
-          map.set(gid, 0);
-          continue;
-        }
-        const query = supabase
-          .from("group_posts")
-          .select("id", { count: "exact", head: true })
-          .eq("convo_id", gid)
-          .neq("shared_by", userId)
-          .gt("shared_at", lastSeen);
-        const { count } = await query;
+      const results = await Promise.all(
+        groupIdArr.map(async (gid) => {
+          const lastSeen = localStorage.getItem(`group_last_seen:${gid}`);
+          if (!lastSeen) return { gid, count: 0 };
+          const { count } = await supabase
+            .from("group_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("convo_id", gid)
+            .neq("shared_by", userId)
+            .gt("shared_at", lastSeen);
+          return { gid, count: count ?? 0 };
+        }),
+      );
+      for (const { gid, count } of results) {
         if (count) map.set(gid, count);
       }
     }

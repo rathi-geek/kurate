@@ -3,6 +3,7 @@ export { BellIcon } from "./bell-icon";
 export { CameraIcon } from "./camera-icon";
 export { ChevronDownIcon } from "./chevron-down-icon";
 export { ChevronLeftIcon } from "./chevron-left-icon";
+export { ChevronRightIcon } from "./chevron-right-icon";
 export { CloseIcon } from "./close-icon";
 export { CopyIcon } from "./copy-icon";
 export { DotsHorizontalIcon } from "./dots-horizontal-icon";
