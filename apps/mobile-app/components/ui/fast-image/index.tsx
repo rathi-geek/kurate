@@ -7,12 +7,9 @@ cssInterop(FastImage, { className: 'style' });
 
 type IFastImageProps = FastImageProps & { className?: string };
 
-const Image = React.forwardRef<
-  React.ComponentRef<typeof FastImage>,
-  IFastImageProps
->(function Image(props, ref) {
-  return <FastImage ref={ref} {...props} />;
-});
+// FastImage is a class component whose types don't surface a ref prop in
+// its JSX intrinsics — skip forwardRef, nothing in this codebase needs the ref.
+const Image = (props: IFastImageProps) => <FastImage {...props} />;
 Image.displayName = 'Image';
 
 export { Image };

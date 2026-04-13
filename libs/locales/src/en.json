@@ -454,6 +454,7 @@
     "settings_aria": "Group settings",
     "delete_group": "Delete group",
     "delete_group_confirm": "Are you sure you want to delete this group? This cannot be undone.",
+    "delete_drop_confirm": "Delete this drop?",
     "anonymous": "Anonymous",
     "feed_empty": "Nothing shared yet. Be the first to drop a link.",
     "library_empty": "Nothing saved to the library yet.",

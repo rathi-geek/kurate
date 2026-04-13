@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 
 import type { Database } from '@kurate/types';
 
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as string;
+export const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as string;
 const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey as string;
 
 if (!supabaseUrl || !supabaseAnonKey) {
