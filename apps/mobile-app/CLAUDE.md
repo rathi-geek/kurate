@@ -2,7 +2,7 @@
 
 ## Stack
 
-Expo SDK 54, Expo Router (typed routes), React Native 0.81, TypeScript strict, NativeWind + GlueStack UI, lucide-react-native, EAS builds, pnpm workspaces.
+Expo SDK 54, Expo Router (typed routes), React Native 0.81, TypeScript strict, NativeWind (no Gluestack — thin custom wrappers under `components/ui/`), lucide-react-native, EAS builds, pnpm workspaces.
 
 ## Key Commands
 
@@ -76,22 +76,18 @@ Only create locally if it is 100% mobile-specific (device permissions, native ge
 
 ❌ Never `style={{ color: '#2b5b7e' }}` or `className="bg-[#f5f0e8]"`
 
-### Components — always Gluestack, never raw React Native
+### Components — use `components/ui/*` wrappers, never raw React Native when a wrapper exists
+
+The mobile app is **NativeWind only** — there is no Gluestack. `components/ui/` holds thin NativeWind wrappers (View, Text, HStack, VStack, Pressable, Button, Input, Alert, Icon, SafeAreaView, Spinner, etc.). Import from there, not from `react-native`.
 
 ```tsx
 // ✅
-import {
-  View,
-  Text,
-  HStack,
-  VStack,
-  Card,
-  SafeAreaView,
-  ScrollView,
-} from '@/components/ui/...';
+import { View, Text, HStack, VStack, SafeAreaView } from '@/components/ui/...';
 // ❌
 import { View, Text, ScrollView } from 'react-native';
 ```
+
+If a primitive you need (e.g., `Card`, `Avatar`, `Badge`, `Textarea`, `Skeleton`, `BottomSheet`) is not yet in `components/ui/`, **add it there first** (thin NativeWind wrapper, ≤50 lines, no business logic) — then import it. Do not inline raw `react-native` imports to work around a missing wrapper.
 
 ### Typography — always DM Sans
 
@@ -171,13 +167,42 @@ const { t } = useLocalization();
 - No `any` types
 - Icons: `lucide-react-native` only — `<Home className="text-primary" size={24} />`
 
-## Lists
+## Lists — always FlashList, never FlatList / SectionList
+
+Use `FlashList` from `@shopify/flash-list` for **every** dynamic list. `FlatList` and `SectionList` from `react-native` are **forbidden** in this codebase. For sectioned content, give FlashList a flat data array with inline header items (or `stickyHeaderIndices`) — not `SectionList`.
 
 ```tsx
-// ✅ FlatList for dynamic data
-<FlatList data={items} keyExtractor={i => i.id} renderItem={...} />
+// ✅ FlashList for dynamic data
+import { FlashList } from '@shopify/flash-list';
+<FlashList
+  data={items}
+  keyExtractor={i => i.id}
+  estimatedItemSize={72}
+  renderItem={({ item }) => <Row item={item} />}
+/>
+// ❌ FlatList, SectionList
 // ❌ ScrollView + map — ok only for < 10 static items
 ```
+
+Always pass a realistic `estimatedItemSize`. Tune during smoke tests.
+
+## Images — always FastImage, never RN `Image` or `expo-image`
+
+Use `FastImage` from `react-native-fast-image` for **every** image. `Image` from `react-native` and `expo-image` are **forbidden**.
+
+```tsx
+// ✅
+import FastImage from 'react-native-fast-image';
+<FastImage
+  source={{ uri: url }}
+  resizeMode={FastImage.resizeMode.cover}
+  style={{ width: 40, height: 40, borderRadius: 9999 }}
+/>
+// ❌ import { Image } from 'react-native';
+// ❌ import { Image } from 'expo-image';
+```
+
+`FastImage` does not accept `className` — apply NativeWind styles via `style` (or wrap in a styled `View`).
 
 ## Standard Patterns
 
@@ -217,7 +242,7 @@ Rules for adapting web → mobile:
 - Replace hover states with press states
 - Replace sidebars/dropdowns with bottom sheets/modals
 - Replace multi-column grids with single column
-- Web shadcn/ui → Gluestack equivalent
+- Web shadcn/ui → NativeWind wrapper in `components/ui/` (add it there if missing)
 - Web Framer Motion → `react-native-reanimated`
 - Never copy web JSX directly — always rewrite for React Native
 
@@ -227,7 +252,7 @@ When user says `"build [feature]"` or pastes a reviewer report:
 
 1. Read `memory/CODEBASE_MAP.md` — get all paths needed
 2. Read ONLY those files — libs, web reference, existing mobile files
-3. Adapt for Expo/NativeWind/Gluestack — never copy web code directly
+3. Adapt for Expo/NativeWind — never copy web code directly
 4. Build screen by screen, run checklist before each handoff
 5. After each screen: "Done — paste these files into Reviewer for review: ..."
 
