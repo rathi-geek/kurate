@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { ChevronLeft, Pencil, Plus } from 'lucide-react-native';
 import { View } from '@/components/ui/view';
@@ -16,6 +16,7 @@ import type { GroupRole, Tables } from '@kurate/types';
 import { GroupMembersList } from '@/components/groups/group-members-list';
 import { GroupDangerZone } from '@/components/groups/group-danger-zone';
 import { EditGroupInfoSheet } from '@/components/groups/edit-group-info-sheet';
+import { InviteMemberSheet } from '@/components/groups/invite-member-sheet';
 
 interface GroupInfoViewProps {
   group: Tables<'conversations'>;
@@ -47,18 +48,22 @@ export function GroupInfoView({
   const isAdminOrOwner = isOwner || userRole === 'admin';
 
   const [editOpen, setEditOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(
     groupAvatarUrl,
+  );
+
+  const memberIds = useMemo(
+    () => new Set(members.map(m => m.user_id)),
+    [members],
   );
 
   const handleEditPress = () => setEditOpen(true);
   const handleEditClose = () => setEditOpen(false);
   const handleAvatarUploaded = (url: string) => setLocalAvatarUrl(url);
 
-  // M11 stub: add-member button. Will open the invite-member sheet when M11 lands.
-  const handleAddMemberPress = () => {
-    /* M11: open invite-member-sheet */
-  };
+  const handleAddMemberPress = () => setInviteOpen(true);
+  const handleInviteClose = () => setInviteOpen(false);
 
   return (
     <SafeAreaView
@@ -189,6 +194,13 @@ export function GroupInfoView({
         initialAvatarUrl={localAvatarUrl}
         onClose={handleEditClose}
         onAvatarUploaded={handleAvatarUploaded}
+      />
+
+      <InviteMemberSheet
+        open={inviteOpen}
+        groupId={groupId}
+        memberIds={memberIds}
+        onClose={handleInviteClose}
       />
     </SafeAreaView>
   );
