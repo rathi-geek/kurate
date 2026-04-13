@@ -15,6 +15,7 @@ import { supabaseUrl } from '@/libs/supabase/client';
 import { DropItemPreview } from '@/components/groups/drop-item-preview';
 import { DropShareSheet } from '@/components/groups/drop-share-sheet';
 import { EngagementBar } from '@/components/groups/engagement-bar';
+import { CommentThreadSheet } from '@/components/groups/comment-thread-sheet';
 
 interface FeedDropCardProps {
   drop: GroupDrop;
@@ -38,6 +39,7 @@ export function FeedDropCard({
 }: FeedDropCardProps) {
   const { t } = useLocalization();
   const [shareOpen, setShareOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   const sharerAvatar = avatarUrlFromPath(drop.sharer.avatar_path);
   const canDelete = drop.shared_by === currentUserId || currentRole === 'owner';
@@ -57,7 +59,7 @@ export function FeedDropCard({
   }, [drop.id, onDelete, t]);
 
   return (
-    <View className="gap-3 px-4 py-3">
+    <View className="mx-4 my-2 gap-3 overflow-hidden  shadow-sm">
       <HStack className="items-start gap-2">
         <Avatar
           uri={sharerAvatar}
@@ -105,7 +107,14 @@ export function FeedDropCard({
       ) : null}
 
       {drop.item ? (
-        <DropItemPreview item={drop.item} />
+        <VStack className="rounded-xl border border-border">
+          <DropItemPreview item={drop.item} />
+          <EngagementBar
+            drop={drop}
+            currentUserId={currentUserId}
+            onCommentsPress={() => setCommentsOpen(true)}
+          />
+        </VStack>
       ) : drop.content ? (
         <View className="rounded-xl bg-secondary p-3">
           <Text className="font-sans text-sm text-foreground">
@@ -114,13 +123,19 @@ export function FeedDropCard({
         </View>
       ) : null}
 
-      <EngagementBar drop={drop} currentUserId={currentUserId} />
-
       <DropShareSheet
         open={shareOpen}
         loggedItemId={drop.logged_item_id}
         excludeGroupId={drop.convo_id}
         onClose={() => setShareOpen(false)}
+      />
+
+      <CommentThreadSheet
+        open={commentsOpen}
+        groupPostId={drop.id}
+        groupId={drop.convo_id}
+        currentRole={currentRole}
+        onClose={() => setCommentsOpen(false)}
       />
     </View>
   );

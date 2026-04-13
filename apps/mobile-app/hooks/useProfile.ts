@@ -14,6 +14,7 @@ export interface ProfileData {
   handle: string | null;
   about: string | null;
   avatarUrl: string | null;
+  avatarPath: string | null;
 }
 
 type AvatarJoin = { file_path: string; bucket_name: string } | null;
@@ -21,6 +22,11 @@ type AvatarJoin = { file_path: string; bucket_name: string } | null;
 function resolveAvatarUrl(avatar: AvatarJoin): string | null {
   if (!avatar?.file_path) return null;
   return `${supabaseUrl}/storage/v1/object/public/${avatar.bucket_name}/${avatar.file_path}?t=${Date.now()}`;
+}
+
+function resolveAvatarPath(avatar: AvatarJoin): string | null {
+  if (!avatar?.file_path) return null;
+  return `${avatar.bucket_name}/${avatar.file_path}`;
 }
 
 async function fetchProfile(userId: string): Promise<ProfileData> {
@@ -34,13 +40,15 @@ async function fetchProfile(userId: string): Promise<ProfileData> {
 
   if (error) throw error;
 
+  const avatar = data.avatar as AvatarJoin;
   return {
     id: data.id,
     firstName: data.first_name,
     lastName: data.last_name,
     handle: data.handle,
     about: data.about,
-    avatarUrl: resolveAvatarUrl(data.avatar as AvatarJoin),
+    avatarUrl: resolveAvatarUrl(avatar),
+    avatarPath: resolveAvatarPath(avatar),
   };
 }
 

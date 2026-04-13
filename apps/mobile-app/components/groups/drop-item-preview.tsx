@@ -31,10 +31,10 @@ export function DropItemPreview({ item }: DropItemPreviewProps) {
     <Pressable
       onPress={handlePress}
       disabled={!url}
-      className="overflow-hidden rounded-xl border border-border bg-secondary active:opacity-80"
+      className="active:opacity-80"
     >
       {item.preview_image_url ? (
-        <View style={{ width: '100%', height: 200 }} className="bg-accent">
+        <View style={{ width: '100%', height: 140 }} className="bg-accent">
           <Image
             source={{ uri: item.preview_image_url }}
             style={{ width: '100%', height: '100%' }}

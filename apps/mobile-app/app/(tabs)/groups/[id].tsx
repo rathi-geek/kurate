@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -12,8 +12,9 @@ import { supabase } from '@/libs/supabase/client';
 import { useAuthStore } from '@/store';
 import { useGroupDetail, useGroupMembers, type GroupRow } from '@kurate/hooks';
 import { queryKeys } from '@kurate/query';
-import { GroupHeader } from '@/components/groups/group-header';
+import { GroupHeader, type GroupView } from '@/components/groups/group-header';
 import { FeedView } from '@/components/groups/feed-view';
+import { LibraryView } from '@/components/groups/library-view';
 import { DropComposer } from '@/components/groups/drop-composer';
 
 export default function GroupDetailScreen() {
@@ -35,7 +36,14 @@ export default function GroupDetailScreen() {
   const name = group?.group_name ?? cachedRow?.name ?? '';
   const avatarUrl = cachedRow?.avatarUrl ?? null;
 
+  const [view, setView] = useState<GroupView>('feed');
+
   const handleBack = () => router.back();
+
+  const handleNavigateToFeed = useCallback(() => {
+    // TODO: scroll to specific drop once we add per-drop scroll-to support.
+    setView('feed');
+  }, []);
 
   if (!groupId) {
     return (
@@ -56,7 +64,13 @@ export default function GroupDetailScreen() {
       edges={['top', 'left', 'right']}
     >
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <GroupHeader name={name} avatarUrl={avatarUrl} onBack={handleBack} />
+        <GroupHeader
+          name={name}
+          avatarUrl={avatarUrl}
+          onBack={handleBack}
+          view={view}
+          onViewChange={setView}
+        />
         <View className="flex-1">
           {isLoading && !cachedRow ? (
             <VStack className="flex-1 items-center justify-center">
@@ -66,13 +80,20 @@ export default function GroupDetailScreen() {
             <Alert variant="destructive" className="mx-4 my-2">
               <AlertText>{t('groups.error_generic')}</AlertText>
             </Alert>
-          ) : (
+          ) : view === 'feed' ? (
             <FeedView groupId={groupId} currentRole={currentRole} />
+          ) : (
+            <LibraryView
+              groupId={groupId}
+              onNavigateToFeed={handleNavigateToFeed}
+            />
           )}
         </View>
-        <View className="bg-background py-2">
-          <DropComposer groupId={groupId} />
-        </View>
+        {view === 'feed' ? (
+          <View className="bg-background py-2">
+            <DropComposer groupId={groupId} />
+          </View>
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

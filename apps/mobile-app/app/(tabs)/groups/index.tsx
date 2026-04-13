@@ -4,7 +4,6 @@ import { Plus } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
-import { View } from '@/components/ui/view';
 import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
 import { Text } from '@/components/ui/text';
@@ -47,11 +46,6 @@ export default function GroupsScreen() {
       <GroupRow group={item} onPress={handlePressRow} />
     ),
     [handlePressRow],
-  );
-
-  const renderSeparator = useCallback(
-    () => <View className="ml-16 h-px bg-border" />,
-    [],
   );
 
   return (
