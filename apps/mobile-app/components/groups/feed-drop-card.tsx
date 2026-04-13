@@ -14,6 +14,7 @@ import type { GroupDrop } from '@kurate/types';
 import { supabaseUrl } from '@/libs/supabase/client';
 import { DropItemPreview } from '@/components/groups/drop-item-preview';
 import { DropShareSheet } from '@/components/groups/drop-share-sheet';
+import { EngagementBar } from '@/components/groups/engagement-bar';
 
 interface FeedDropCardProps {
   drop: GroupDrop;
@@ -112,6 +113,8 @@ export function FeedDropCard({
           </Text>
         </View>
       ) : null}
+
+      <EngagementBar drop={drop} currentUserId={currentUserId} />
 
       <DropShareSheet
         open={shareOpen}
