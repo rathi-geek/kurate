@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { ChevronLeft, Pencil, Plus } from 'lucide-react-native';
 import { View } from '@/components/ui/view';
@@ -15,6 +15,7 @@ import { useGroupMembers, useGroupInvites } from '@kurate/hooks';
 import type { GroupRole, Tables } from '@kurate/types';
 import { GroupMembersList } from '@/components/groups/group-members-list';
 import { GroupDangerZone } from '@/components/groups/group-danger-zone';
+import { EditGroupInfoSheet } from '@/components/groups/edit-group-info-sheet';
 
 interface GroupInfoViewProps {
   group: Tables<'conversations'>;
@@ -45,10 +46,14 @@ export function GroupInfoView({
   const isOwner = userRole === 'owner';
   const isAdminOrOwner = isOwner || userRole === 'admin';
 
-  // M10 stub: edit pencil. Will open the edit-group-info sheet when M10 lands.
-  const handleEditPress = () => {
-    /* M10: open edit-group-info-sheet */
-  };
+  const [editOpen, setEditOpen] = useState(false);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(
+    groupAvatarUrl,
+  );
+
+  const handleEditPress = () => setEditOpen(true);
+  const handleEditClose = () => setEditOpen(false);
+  const handleAvatarUploaded = (url: string) => setLocalAvatarUrl(url);
 
   // M11 stub: add-member button. Will open the invite-member sheet when M11 lands.
   const handleAddMemberPress = () => {
@@ -81,7 +86,7 @@ export function GroupInfoView({
             <HStack className="items-start gap-3">
               <View className="relative">
                 <Avatar
-                  uri={groupAvatarUrl}
+                  uri={localAvatarUrl}
                   name={group.group_name ?? 'G'}
                   size={80}
                 />
@@ -175,6 +180,16 @@ export function GroupInfoView({
           members={members}
         />
       </View>
+
+      <EditGroupInfoSheet
+        open={editOpen}
+        groupId={groupId}
+        initialName={group.group_name ?? ''}
+        initialDescription={group.group_description ?? ''}
+        initialAvatarUrl={localAvatarUrl}
+        onClose={handleEditClose}
+        onAvatarUploaded={handleAvatarUploaded}
+      />
     </SafeAreaView>
   );
 }
