@@ -5,12 +5,16 @@ type NestedRecord = { [key: string]: string | NestedRecord };
 /**
  * Server-side translation helper for Server Components and async page functions.
  * Drop-in replacement for next-intl's getTranslations() — but synchronous.
+ * Supports `{{var}}` interpolation matching the client-side `useTranslations`.
  *
  * Usage:
  *   const t = getT("groups");
  *   t("create_group")
+ *   t("join_wrong_account_desc", { invitedEmail, currentEmail })
  */
-export function getT(namespace: string): (key: string) => string {
+export function getT(
+  namespace: string,
+): (key: string, values?: Record<string, unknown>) => string {
   const translation = resources[defaultLocale].translation as NestedRecord;
 
   // Resolve nested namespace e.g. "auth.onboarding" → translation.auth.onboarding
@@ -19,7 +23,7 @@ export function getT(namespace: string): (key: string) => string {
     translation,
   );
 
-  return (key: string): string => {
+  return (key: string, values?: Record<string, unknown>): string => {
     if (typeof ns !== "object") return key;
     const value = key
       .split(".")
@@ -27,6 +31,10 @@ export function getT(namespace: string): (key: string) => string {
         (obj, k) => (typeof obj === "object" ? (obj[k] ?? key) : obj),
         ns,
       );
-    return typeof value === "string" ? value : key;
+    if (typeof value !== "string") return key;
+    if (!values) return value;
+    return value.replace(/\{\{(\w+)\}\}/g, (_, k) =>
+      values[k] != null ? String(values[k]) : "",
+    );
   };
 }

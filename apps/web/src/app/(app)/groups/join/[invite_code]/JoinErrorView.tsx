@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@kurate/utils";
+import { useTranslations } from "@/i18n/use-translations";
 
 interface JoinErrorViewProps {
   title: string;
@@ -10,6 +11,7 @@ interface JoinErrorViewProps {
 
 export function JoinErrorView({ title, description }: JoinErrorViewProps) {
   const router = useRouter();
+  const t = useTranslations("groups");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-6 sm:pb-0">
@@ -38,7 +40,7 @@ export function JoinErrorView({ title, description }: JoinErrorViewProps) {
           onClick={() => router.push(ROUTES.APP.HOME)}
           className="w-full rounded-card bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
         >
-          Go to home
+          {t("join_go_home")}
         </button>
       </div>
     </div>
