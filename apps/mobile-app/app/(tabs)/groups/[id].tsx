@@ -16,6 +16,7 @@ import { GroupHeader, type GroupView } from '@/components/groups/group-header';
 import { FeedView } from '@/components/groups/feed-view';
 import { LibraryView } from '@/components/groups/library-view';
 import { DropComposer } from '@/components/groups/drop-composer';
+import { GroupInfoView } from '@/components/groups/group-info-view';
 
 export default function GroupDetailScreen() {
   const { t } = useLocalization();
@@ -37,6 +38,7 @@ export default function GroupDetailScreen() {
   const avatarUrl = cachedRow?.avatarUrl ?? null;
 
   const [view, setView] = useState<GroupView>('feed');
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const handleBack = () => router.back();
 
@@ -44,6 +46,9 @@ export default function GroupDetailScreen() {
     // TODO: scroll to specific drop once we add per-drop scroll-to support.
     setView('feed');
   }, []);
+
+  const handleOpenInfo = useCallback(() => setInfoOpen(true), []);
+  const handleCloseInfo = useCallback(() => setInfoOpen(false), []);
 
   if (!groupId) {
     return (
@@ -55,6 +60,19 @@ export default function GroupDetailScreen() {
           <AlertText>{t('groups.error_generic')}</AlertText>
         </Alert>
       </SafeAreaView>
+    );
+  }
+
+  if (infoOpen && group) {
+    return (
+      <GroupInfoView
+        group={group}
+        groupId={groupId}
+        groupAvatarUrl={avatarUrl}
+        currentUserId={userId}
+        userRole={(currentRole as 'owner' | 'admin' | 'member') ?? 'member'}
+        onBack={handleCloseInfo}
+      />
     );
   }
 
@@ -70,6 +88,7 @@ export default function GroupDetailScreen() {
           onBack={handleBack}
           view={view}
           onViewChange={setView}
+          onOpenInfo={handleOpenInfo}
         />
         <View className="flex-1">
           {isLoading && !cachedRow ? (

@@ -16,6 +16,7 @@ interface GroupHeaderProps {
   onBack: () => void;
   view: GroupView;
   onViewChange: (view: GroupView) => void;
+  onOpenInfo?: () => void;
 }
 
 export function GroupHeader({
@@ -24,6 +25,7 @@ export function GroupHeader({
   onBack,
   view,
   onViewChange,
+  onOpenInfo,
 }: GroupHeaderProps) {
   const { t } = useLocalization();
 
@@ -37,13 +39,20 @@ export function GroupHeader({
         >
           <Icon as={ChevronLeft} size="lg" className="text-foreground" />
         </Pressable>
-        <Avatar uri={avatarUrl} name={name} size={32} />
-        <Text
-          numberOfLines={1}
-          className="min-w-0 flex-1 font-sans text-base font-semibold text-foreground"
+        <Pressable
+          onPress={onOpenInfo}
+          disabled={!onOpenInfo}
+          className="min-w-0 flex-1 flex-row items-center gap-2 active:opacity-70"
+          accessibilityLabel={t('groups.info_aria')}
         >
-          {name}
-        </Text>
+          <Avatar uri={avatarUrl} name={name} size={32} />
+          <Text
+            numberOfLines={1}
+            className="min-w-0 flex-1 font-sans text-base font-semibold text-foreground"
+          >
+            {name}
+          </Text>
+        </Pressable>
 
         <HStack className="shrink-0 items-center rounded-full border border-border bg-card p-0.5">
           <Pressable
