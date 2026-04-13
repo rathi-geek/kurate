@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Bell, User } from 'lucide-react-native';
+import { Bell, User, Users } from 'lucide-react-native';
 import BrandArch from '@kurate/icons/brand/brand-arch.svg';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
@@ -92,6 +92,16 @@ export default function TabLayout() {
           headerShown: false,
           tabBarIcon: ({ color }: { color: string }) => (
             <BrandArch width={18} height={18} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{
+          title: t('groups.my_groups_title'),
+          headerShown: false,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Users size={18} color={color} />
           ),
         }}
       />

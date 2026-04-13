@@ -22,6 +22,11 @@ export {
 export { fetchGroupDetail, fetchGroupRole } from "./fetchGroupDetail";
 export { useGroupDetail, useGroupRole } from "./useGroupDetail";
 export { useGroupMembers } from "./useGroupMembers";
+export {
+  useGroupFeed,
+  fetchGroupFeedPage,
+  fetchFeedCommentPreviews,
+} from "./useGroupFeed";
 export { useGroupInvites } from "./useGroupInvites";
 export type { GroupInvite } from "./useGroupInvites";
 export { useDropEngagement } from "./useDropEngagement";

@@ -17,10 +17,9 @@ import {
 import { ThoughtsTabView } from '@/components/thoughts/ThoughtsTabView';
 import { useVaultPreview } from '@/hooks/useVaultPreview';
 import { useVaultComposer } from '@/hooks/useVaultComposer';
-import { useShareToGroups } from '@/hooks/useShareToGroups';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/libs/supabase/client';
-import { useSubmitContent } from '@kurate/hooks';
+import { useShareToGroups, useSubmitContent } from '@kurate/hooks';
 import { HomeTab, VaultTab, PreviewPhase } from '@kurate/types';
 import type { VaultFilters } from '@kurate/types';
 
@@ -83,7 +82,8 @@ export default function VaultScreen() {
     resetInput,
   });
 
-  const shareMutation = useShareToGroups();
+  const userId = useAuthStore(state => state.userId) ?? '';
+  const shareMutation = useShareToGroups(supabase);
 
   // --- Simple handlers ---
   const handleTabChange = useCallback((tab: VaultTab) => {
@@ -112,14 +112,15 @@ export default function VaultScreen() {
       if (!preview.savedLoggedItemId || groupIds.length === 0) return;
       await shareMutation.mutateAsync({
         loggedItemId: preview.savedLoggedItemId,
-        conversationIds: groupIds,
+        groupIds,
+        userId,
       });
       preview.setSavedItemGroups(prev => [...new Set([...prev, ...groupIds])]);
       preview.resetPreviewState();
       preview.resetExtraction();
       resetInput();
     },
-    [preview, shareMutation, resetInput],
+    [preview, shareMutation, userId, resetInput],
   );
 
   return (
