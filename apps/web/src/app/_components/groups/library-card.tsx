@@ -43,7 +43,7 @@ export const LibraryCard = memo(function LibraryCard({
       aria-label={drop.item?.title ?? drop.content ?? drop.note ?? t("drop_aria_fallback")}>
       {/* Preview image (link drops only) */}
       {drop.item?.preview_image_url && !imgError ? (
-        <div className="bg-surface overflow-hiddrop.cden relative aspect-video w-full shrink-0">
+        <div className="bg-surface overflow-hidden relative aspect-video w-full shrink-0">
           <Image
             src={drop.item.preview_image_url}
             alt={drop.item.title ?? ""}

@@ -30,7 +30,7 @@ export function MemberActionModal({ member, open, onOpenChange }: MemberActionMo
 
   const role = (member.role ?? "member") as GroupRole;
   const name =
-    member.profile.display_name ?? member.profile.handle ?? t("member_fallback_name");
+    member.profile_display_name ?? member.profile_handle ?? t("member_fallback_name");
   const isAdmin = role === "admin";
 
   const handleRoleChange = async () => {
@@ -82,8 +82,8 @@ export function MemberActionModal({ member, open, onOpenChange }: MemberActionMo
             </div>
             <div className="min-w-0">
               <p className="text-foreground truncate text-sm font-medium">{name}</p>
-              {member.profile.handle && (
-                <p className="text-muted-foreground text-xs">@{member.profile.handle}</p>
+              {member.profile_handle && (
+                <p className="text-muted-foreground text-xs">@{member.profile_handle}</p>
               )}
             </div>
             <span className="rounded-badge bg-muted text-muted-foreground ml-auto shrink-0 px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase">

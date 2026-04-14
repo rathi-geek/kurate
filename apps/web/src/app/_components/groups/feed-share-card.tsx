@@ -15,7 +15,8 @@ import { EngagementBar } from "@/app/_components/groups/engagement-bar";
 import { VaultShareModal } from "@/app/_components/vault/VaultShareModal";
 import { useRefreshLoggedItem } from "@/app/_libs/hooks/useRefreshLoggedItem";
 import { track } from "@/app/_libs/utils/analytics";
-import { formatRelativeTime } from "@/app/_libs/utils/formatRelativeTime";
+import { avatarUrl } from "@/app/_libs/utils/getMediaUrl";
+import { formatRelativeTime } from "@kurate/utils";
 import { ChevronDownIcon, ShareIcon, TrashIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 
@@ -27,7 +28,7 @@ interface FeedShareCardProps {
   currentUserProfile?: {
     id: string;
     display_name: string | null;
-    avatar_url: string | null;
+    avatar_path: string | null;
     handle: string;
   };
   onDelete?: (dropId: string) => void;
@@ -40,10 +41,10 @@ function ReactionPill({ reactors, label }: { reactors: GroupProfile[]; label: st
     <div className="bg-surface border-border/50 text-muted-foreground flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]">
       <div className="flex -space-x-1">
         {reactors.slice(0, 3).map((r) => (
-          r.avatar_url ? (
+          avatarUrl(r.avatar_path) ? (
             <Image
               key={r.id}
-              src={r.avatar_url}
+              src={avatarUrl(r.avatar_path)!}
               alt={r.display_name ?? ""}
               width={16}
               height={16}
@@ -140,8 +141,7 @@ export const FeedShareCard = memo(function FeedShareCard({
   useEffect(() => {
     if (!showComments || !drop.latestCommentAt || !markPostSeen) return;
     markPostSeen(drop.id, drop.latestCommentAt);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showComments, drop.latestCommentAt]);
+  }, [showComments, drop.latestCommentAt, drop.id, markPostSeen]);
 
   return (
     <div ref={cardRef}>
@@ -149,9 +149,9 @@ export const FeedShareCard = memo(function FeedShareCard({
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex flex-col">
           <div className="flex min-w-0 items-center gap-2">
-            {drop.sharer.avatar_url ? (
+            {avatarUrl(drop.sharer.avatar_path) ? (
               <Image
-                src={drop.sharer.avatar_url}
+                src={avatarUrl(drop.sharer.avatar_path)!}
                 alt={drop.sharer.display_name ?? ""}
                 width={32}
                 height={32}
@@ -306,9 +306,9 @@ export const FeedShareCard = memo(function FeedShareCard({
             className="border-border/50 hover:bg-muted/30 w-full border-t px-4 py-3 text-left transition-colors">
             <div className="flex items-center gap-2">
               {/* Avatar */}
-              {drop.latestComment.authorAvatarUrl ? (
+              {avatarUrl(drop.latestComment.authorAvatarPath) ? (
                 <Image
-                  src={drop.latestComment.authorAvatarUrl}
+                  src={avatarUrl(drop.latestComment.authorAvatarPath)!}
                   alt={drop.latestComment.authorName ?? ""}
                   width={24}
                   height={24}
@@ -363,7 +363,7 @@ export const FeedShareCard = memo(function FeedShareCard({
                       ? {
                           id: currentUserId,
                           display_name: drop.sharer.display_name ?? null,
-                          avatar_url: drop.sharer.avatar_url ?? null,
+                          avatar_path: drop.sharer.avatar_path ?? null,
                           handle: drop.sharer.handle ?? "",
                         }
                       : undefined)

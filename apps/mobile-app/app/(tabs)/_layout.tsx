@@ -1,27 +1,80 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Image } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Bookmark } from 'lucide-react-native';
+import { Bell, User, Users } from 'lucide-react-native';
+import BrandArch from '@kurate/icons/brand/brand-arch.svg';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { Text } from '@/components/ui/text';
+import { View } from '@/components/ui/view';
+import { useLocalization } from '@/context';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useGroupUnreadCounts } from '@/hooks/useGroupUnreadCounts';
+import { useProfile } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuthStore } from '@/store';
 
-const styles = StyleSheet.create({
-  tabBarIcon: {
-    marginBottom: -3,
-  },
-});
+function ProfileTabIcon({ focused }: { focused: boolean }) {
+  const { tokens } = useTheme();
+  const userId = useAuthStore(state => state.userId);
+  const { data: profile } = useProfile(userId ?? undefined);
 
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={styles.tabBarIcon} {...props} />;
+  const displayName = [profile?.firstName, profile?.lastName]
+    .filter(Boolean)
+    .join(' ');
+  const initial =
+    displayName?.[0]?.toUpperCase() ??
+    profile?.handle?.[0]?.toUpperCase() ??
+    null;
+
+  const ringClass = focused
+    ? 'border-2 border-white'
+    : 'border border-white/40';
+
+  return (
+    <View
+      className={`h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-background ${ringClass}`}
+    >
+      {profile?.avatarUrl ? (
+        <Image
+          source={{ uri: profile.avatarUrl }}
+          className="h-full w-full rounded-full"
+          resizeMode="cover"
+        />
+      ) : initial ? (
+        <Text
+          className="font-sans font-bold text-primary"
+          style={{ fontSize: 9 }}
+        >
+          {initial}
+        </Text>
+      ) : (
+        <User size={12} color={tokens.brandPrimary} />
+      )}
+    </View>
+  );
+}
+
+function NotificationBadge({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <View className="absolute -right-1 -top-1 h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1">
+      <Text
+        className="font-sans text-[10px] font-bold text-white"
+        style={{ lineHeight: 12 }}
+      >
+        {count > 99 ? '99+' : String(count)}
+      </Text>
+    </View>
+  );
 }
 
 export default function TabLayout() {
   const { tokens } = useTheme();
+  const { t } = useLocalization();
+  const userId = useAuthStore(state => state.userId);
+  const { unreadCount } = useNotifications(userId);
+  const { totalUnread: groupsUnread } = useGroupUnreadCounts(userId ?? '');
 
   return (
     <Tabs
@@ -37,28 +90,58 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Vault',
+          title: 'Home',
           headerShown: false,
           tabBarIcon: ({ color }: { color: string }) => (
-            <Bookmark size={24} color={color} />
+            <BrandArch width={18} height={18} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{
+          title: t('groups.my_groups_title'),
+          headerShown: false,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <View>
+              <Users size={18} color={color} />
+              <NotificationBadge count={groupsUnread} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: t('notifications.title'),
+          headerShown: false,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <View>
+              <Bell size={18} color={color} />
+              <NotificationBadge count={unreadCount} />
+            </View>
           ),
         }}
       />
       <Tabs.Screen
         name="background-task"
         options={{
-          title: 'Background Task',
-          tabBarIcon: ({ color }: { color: string }) => (
-            <TabBarIcon name="code" color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="crash-test"
         options={{
-          title: 'Crash Test',
-          tabBarIcon: ({ color }: { color: string }) => (
-            <TabBarIcon name="bug" color={color} />
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: t('profile.title'),
+          headerShown: false,
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <ProfileTabIcon focused={focused} />
           ),
         }}
       />

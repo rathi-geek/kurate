@@ -4,33 +4,14 @@ import { useEffect } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { Notification, NotificationActor } from "@kurate/types";
 import { createClient } from "@/app/_libs/supabase/client";
 import { queryKeys } from "@kurate/query";
 import { mediaToUrl } from "@/app/_libs/utils/getMediaUrl";
-
-const supabase = createClient();
-
-export type NotificationActor = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  handle: string | null;
-  avatar_url: string | null;
-};
-
-export type Notification = {
-  id: string;
-  recipient_id: string;
-  actor_id: string | null;
-  event_id: string | null;
-  event_type: string;
-  is_read: boolean;
-  message: string | null;
-  created_at: string;
-  actors: NotificationActor[];
-};
+import { playNotificationSound } from "@/app/_libs/utils/notificationSound";
 
 async function fetchNotifications(userId: string): Promise<Notification[]> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("notifications")
     .select(`
@@ -136,6 +117,7 @@ export function useNotifications(userId: string | null | undefined) {
   useEffect(() => {
     if (!userId) return;
 
+    const supabase = createClient();
     const channel = supabase
       .channel(`notifications:${userId}`)
       .on(
@@ -148,6 +130,7 @@ export function useNotifications(userId: string | null | undefined) {
         (payload) => {
           const row = payload.new as { recipient_id: string };
           if (row.recipient_id !== userId) return;
+          playNotificationSound();
           void queryClient.invalidateQueries({
             queryKey: queryKeys.notifications.list(userId),
           });
@@ -158,7 +141,7 @@ export function useNotifications(userId: string | null | undefined) {
       });
 
     return () => {
-      void supabase.removeChannel(channel);
+      void createClient().removeChannel(channel);
     };
   }, [userId, queryClient]);
 
@@ -167,6 +150,7 @@ export function useNotifications(userId: string | null | undefined) {
 
   async function markAllRead() {
     if (!userId) return;
+    const supabase = createClient();
     await supabase
       .from("notifications")
       .update({ is_read: true })
@@ -178,6 +162,7 @@ export function useNotifications(userId: string | null | undefined) {
   }
 
   async function markRead(id: string) {
+    const supabase = createClient();
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
     void queryClient.invalidateQueries({
       queryKey: queryKeys.notifications.list(userId ?? ""),

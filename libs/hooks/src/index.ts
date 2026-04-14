@@ -10,3 +10,28 @@ export type { UseVaultPreviewConfig, UseVaultPreviewReturn } from "./useVaultPre
 export { useVaultComposer } from "./useVaultComposer";
 export type { UseVaultComposerConfig } from "./useVaultComposer";
 export type { PendingDB, PendingLinkRow, PendingThoughtRow } from "./types/pending-db";
+export {
+  AVATARS_BUCKET,
+  cleanupOldAvatar,
+  getAvatarPath,
+  linkUploadedAvatar,
+  uploadAvatar,
+  uploadAvatarFromUri,
+  deleteAvatar,
+} from "./avatarService";
+export { fetchGroupDetail, fetchGroupRole } from "./fetchGroupDetail";
+export { useGroupDetail, useGroupRole } from "./useGroupDetail";
+export { useGroupMembers } from "./useGroupMembers";
+export {
+  useGroupFeed,
+  fetchGroupFeedPage,
+  fetchFeedCommentPreviews,
+} from "./useGroupFeed";
+export { useGroupInvites } from "./useGroupInvites";
+export type { GroupInvite } from "./useGroupInvites";
+export { useDropEngagement } from "./useDropEngagement";
+export { useComments, fetchComments } from "./useComments";
+export { useShareToGroups } from "./useShareToGroups";
+export { useVaultToggle } from "./useVaultToggle";
+export { fetchUserGroups } from "./useUserGroups";
+export type { GroupRow } from "./useUserGroups";

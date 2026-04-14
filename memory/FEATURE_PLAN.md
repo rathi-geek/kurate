@@ -1,588 +1,513 @@
-## Feature Audit: Vault Section — Home Page (Links + Thoughts)
+# Feature Plan: Groups
 
-### 1. What exists in web today
+Last updated: 2026-04-09
 
-**Full component hierarchy (top → bottom):**
+## Order of execution (always follow this sequence)
 
-```
-HomePageClient (home-page-client.tsx)
-├── HomeTabHeader (home-tab-header.tsx)
-│   ├── Mobile: BrandConcentricArch logo + active tab label + ⋮ dropdown (Vault/Discover)
-│   └── Desktop: SlidingTabs centered (Vault/Discover)
-├── VaultTabView (vault-tab-view.tsx) — when VAULT tab active
-│   ├── VaultTabSubHeader (vault-tab-sub-header.tsx)
-│   │   ├── Links / Thoughts tab buttons with animated underline
-│   │   ├── Search toggle → VaultSearch inline
-│   │   └── Filter button → VaultFilters popover (desktop) / VaultFilterSheet (mobile)
-│   ├── Content area (both always mounted, opacity toggle)
-│   │   ├── VaultLibrary (VaultLibrary.tsx) — when LINKS sub-tab
-│   │   │   ├── Loading → 6x VaultCardSkeleton
-│   │   │   ├── Error → VaultErrorState
-│   │   │   ├── Empty → VaultEmptyState (default or filtered variant)
-│   │   │   └── Data → VaultGrid → VaultCard[] with infinite scroll
-│   │   └── ThoughtsTabView (thoughts-tab-view.tsx) — when THOUGHTS sub-tab
-│   │       ├── "View all chats" / "View buckets" toggle
-│   │       ├── Bucket view (default):
-│   │       │   ├── Loading → BucketCardSkeleton (4 rows)
-│   │       │   ├── Empty → centered message
-│   │       │   └── Data → BucketCard[] (media, tasks, learning, notes)
-│   │       ├── All view (when toggled):
-│   │       │   ├── Loading → ThoughtsAllSkeleton
-│   │       │   ├── Empty → centered message
-│   │       │   └── Data → ThoughtsAllView (Virtuoso list of ThoughtBubbleAll)
-│   │       └── ThoughtsBucketChat (slides in when bucket tapped):
-│   │           ├── Back button
-│   │           └── Virtuoso list of ThoughtBubble messages
-│   └── Composer section (LinkPreviewCard + ChatInput)
-└── DiscoveringTabView — when DISCOVERING tab active
-```
+1. Web — fix bugs (5 items)
+2. Web — code quality (7 items)
+3. Web — move to /libs (10 items)
+4. Mobile — build feature (13 screens/components)
 
-**Key files — Links:**
-- `apps/web/src/app/_components/home/home-page-client.tsx` — top-level: VAULT/DISCOVERING tabs
-- `apps/web/src/app/_components/home/home-tab-header.tsx` — Kurate logo + tab label + ⋮ menu
-- `apps/web/src/app/_components/home/vault-tab-view.tsx` — Links/Thoughts sub-tabs, filters, search, composer
-- `apps/web/src/app/_components/home/vault-tab-sub-header.tsx` — Links/Thoughts switcher + search + filter
-- `apps/web/src/app/_components/vault/VaultLibrary.tsx` — grid container with loading/error/empty + VaultGrid
-- `apps/web/src/app/_components/vault/VaultCard.tsx` — individual vault card
-- `apps/web/src/app/_components/vault/VaultGrid.tsx` — grid layout + infinite scroll
-- `apps/web/src/app/_components/vault/VaultFilters.tsx` — filter chip groups (time, type, read status)
-- `apps/web/src/app/_components/vault/VaultFilterSheet.tsx` — mobile bottom sheet for filters
-- `apps/web/src/app/_components/vault/VaultSearch.tsx` — search input with debounce
-- `apps/web/src/app/_components/vault/VaultCardSkeleton.tsx` — loading skeleton
-- `apps/web/src/app/_components/vault/VaultEmptyState.tsx` — empty state (default + filtered)
-- `apps/web/src/app/_components/vault/VaultErrorState.tsx` — error state with retry
-- `apps/web/src/app/_libs/hooks/useVault.ts` — infinite query + mutations
-- `apps/web/src/app/_libs/hooks/useVaultFilterOptions.ts` — filter options from types
-- `apps/web/src/app/_libs/hooks/useDebouncedValue.ts` — debounce hook
+---
 
-**Key files — Thoughts:**
-- `apps/web/src/app/_components/home/thoughts-tab-view.tsx` — thoughts container (bucket view + all view + bucket chat overlay)
-- `apps/web/src/app/_components/home/thoughts-bucket-chat.tsx` — single bucket chat view (slides in from right, Virtuoso list, ThoughtBubble)
-- `apps/web/src/app/_components/home/thoughts/bucket-card.tsx` — bucket summary card (colored bg, label, latest text, time, unread badge, chevron)
-- `apps/web/src/app/_components/home/thoughts/bucket-card-skeleton.tsx` — bucket card loading skeleton
-- `apps/web/src/app/_components/home/thoughts/thoughts-all-view.tsx` — all thoughts flat list (Virtuoso, ThoughtBubbleAll with bucket label)
-- `apps/web/src/app/_components/home/thoughts/thoughts-all-skeleton.tsx` — all thoughts skeleton
-- `apps/web/src/app/_components/home/thoughts/utils.ts` — DisplayMessage type, formatTime, pendingToMessage
-- `apps/web/src/app/_libs/hooks/useBucketSummaries.ts` — fetches bucket summaries via `/api/thoughts/buckets`
-- `apps/web/src/app/_libs/hooks/useBucketLastRead.ts` — bucket last-read tracking (supabase `bucket_last_read` table)
-- `apps/web/src/app/_libs/hooks/useDeleteThought.ts` — delete thought mutation (API + optimistic)
-- `apps/web/src/app/_libs/hooks/useEditThought.ts` — edit thought mutation (API + optimistic)
-- `apps/web/src/app/api/thoughts/route.ts` — GET (list/search) + POST (create with auto/AI bucket classification)
-- `apps/web/src/app/api/thoughts/[id]/route.ts` — PATCH (edit) + DELETE
-- `apps/web/src/app/api/thoughts/buckets/route.ts` — GET bucket summaries (RPC: `get_thought_bucket_summaries`)
+## Web — Step by Step
 
-**Shared libs for Thoughts:**
-- `libs/types/src/thoughts.ts` — `ThoughtMessage { id, bucket, text, createdAt, media_id, content_type }`
-- `libs/utils/src/constants/thoughts.ts` — `ThoughtBucket` type, `THOUGHT_BUCKETS`, `BUCKET_META` (label + colorVar), `BUCKET_BADGE_COLOR`, `THOUGHT_KEYWORD_MAP`, `classifyThought()`
-- `libs/query/src/keys.ts` — `queryKeys.thoughts.all`, `.list(bucket)`, `.search(q)`, `.bucketSummaries()`
+### Step 1: Fix bugs
 
-**Localization keys — Links:**
-- `chat.tab_vault`, `chat.tab_discovering`
-- `vault.search_placeholder`, `vault.filters_aria`, `vault.clear_filters`, `vault.filter_done`
-- `vault.filter_section_time`, `vault.filter_section_type`, `vault.filter_section_read_status`
-- `vault.time_*`, `vault.filter_*`, `vault.empty_state_*`, `vault.error_state_*`
-- `vault.mark_read_aria`, `vault.mark_unread_aria`, `vault.delete_aria`
+#### 1a. Extract GroupsPageClient from page.tsx
 
-**Localization keys — Thoughts:**
-- `thoughts.no_thoughts_yet`, `thoughts.image_fallback`
-- `thoughts.status_sending`, `thoughts.status_failed`
-- `thoughts.view_buckets`, `thoughts.view_all_chats`
-- `thoughts.empty_no_match`, `thoughts.empty_no_thoughts`
-- `thoughts.empty_try_keywords`, `thoughts.empty_start_typing`, `thoughts.empty_no_buckets_match`
-- `thoughts.edit_aria`, `thoughts.delete_aria`
+File: `apps/web/src/app/(app)/groups/page.tsx`
 
-### 2. Bugs & issues to fix before mobile replicates
+- Issue: `"use client"` on a page.tsx violates codebase rule (pages must be Server Components)
+- Fix: Create `apps/web/src/app/(app)/groups/GroupsPageClient.tsx` with all the current client logic. Make `page.tsx` a thin Server Component that renders `<GroupsPageClient />`.
 
-🔴 Must fix: None blocking
+#### 1b. Fix unsafe `as any` cast in invite API
 
-🟡 Nice to fix:
-- `useVault.ts:25-57` — `toVaultItem` uses unsafe `as Record<string, unknown>` casting
-- `vault-tab-view.tsx` — 310 lines, god component with 10+ state variables
-- Thoughts API routes use `(supabase as any)` casts — works but bypasses type safety
+File: `apps/web/src/app/api/groups/invite/route.ts` (lines 157-164)
 
-### 3. Code quality issues
+- Issue: `const db = supabase as any` bypasses TypeScript, try/catch silently swallows errors. The `group_invites` table exists and is used elsewhere.
+- Fix: Remove `as any` cast, use `supabase` directly. Remove try/catch — let errors propagate or handle explicitly.
 
-🟣 Should fix:
-- `useVault.ts` — lives in `apps/web/` but mobile needs same logic. Move to `libs/hooks/`.
-- `useBucketSummaries.ts` — fetches via `/api/thoughts/buckets` (web API route). Mobile can't use web API routes — needs direct Supabase RPC call instead.
-- `useDeleteThought.ts` / `useEditThought.ts` — use web API routes (`/api/thoughts/:id`). Mobile needs direct Supabase calls.
-- `useBucketLastRead.ts` — uses web's `createClient()`. Mobile needs its own supabase client.
+#### 1c. Fix infinite fetch loop in LibraryView
 
-### 4. What should move to /libs
+File: `apps/web/src/app/_components/groups/library-view.tsx` (lines 29-30)
 
-- `apps/web/src/app/_libs/hooks/useVault.ts` → `libs/hooks/src/useVault.ts`
-  - Reason: mobile needs the same infinite query + mutations
-  - Change: accept `supabase: SupabaseClient<Database>` as parameter
+- Issue: `if (hasNextPage) { fetchNextPage(); }` runs on every render, causing an infinite loop.
+- Fix: Wrap in `useEffect` with `[hasNextPage, isFetchingNextPage]` deps, guard with `!isFetchingNextPage`.
 
-Note: Thought hooks (`useBucketSummaries`, `useDeleteThought`, `useEditThought`, `useBucketLastRead`) use web API routes that don't exist on mobile. Rather than moving them to libs, mobile should create its own versions that call Supabase directly (same pattern, different data source).
+#### 1d. Fix missing useEffect deps in FeedShareCard
 
-### 5. What mobile needs to build fresh
+File: `apps/web/src/app/_components/groups/feed-share-card.tsx` (line 136)
 
-**Header layer:**
-- `HomeHeader` — Kurate logo (BrandLogo exists) + active tab label + ⋮ popover menu
+- Issue: `useEffect` uses `drop.id`, `markPostSeen`, `latestCommentAtRef` but only has `[showComments]` in deps.
+- Fix: Add `drop.id` and `markPostSeen` to dep array. `latestCommentAtRef` is a ref (stable) so OK to omit.
 
-**Sub-header layer:**
-- `VaultSubHeader` — Links/Thoughts tab switcher + search icon + filter icon
+#### 1e. Fix typo in LibraryCard className
 
-**Search:**
-- `VaultSearchBar` — text input with debounce, back arrow to close
+File: `apps/web/src/app/_components/groups/library-card.tsx` (line 46)
 
-**Filters (Links only):**
-- `VaultFilterSheet` — bottom sheet with Time/Type/ReadStatus chip groups
+- Issue: `overflow-hiddrop.cden` should be `overflow-hidden`
+- Fix: Replace `overflow-hiddrop.cden` with `overflow-hidden`.
 
-**Links tab components:**
-- `VaultCard`, `VaultCardSkeleton`, `VaultEmptyState`, `VaultErrorState`, `VaultList`
+---
 
-**Thoughts tab components:**
-- `BucketCard` — colored card per bucket (media/tasks/learning/notes) with label, latest text, time, unread badge
-- `BucketCardSkeleton` — bucket card loading skeleton
-- `ThoughtBubble` — single thought message bubble (colored bg per bucket, text, time, pending/failed status)
-- `ThoughtsBucketChat` — full-screen bucket chat view (back button + FlatList of ThoughtBubble)
-- `ThoughtsAllView` — flat list of all thoughts across buckets (ThoughtBubble with bucket label)
-- `ThoughtsTabView` — container: "View all / View buckets" toggle, renders bucket cards or all-view, opens bucket chat
-- `ThoughtsEmptyState` — empty state for no thoughts
+### Step 2: Code quality
 
-**Thought hooks (mobile-specific, direct Supabase):**
-- `useThoughts` — infinite query on `thoughts` table
-- `useBucketSummaries` — calls Supabase RPC `get_thought_bucket_summaries`
-- `useDeleteThought` — delete mutation (direct Supabase)
-- `useBucketLastRead` — read/write `bucket_last_read` table
+#### 2a. Extract CommentItem to its own file
 
-**Composer (shared for Links + Thoughts):**
-- `ChatComposer` — pill-shaped text input pinned to bottom, detects URLs (→ link save), plain text (→ thought). Uses `useSubmitContent` from `@kurate/hooks`. Always visible above keyboard via KeyboardAvoidingView.
+File: `apps/web/src/app/_components/groups/comment-thread.tsx` (lines 31-207)
 
-**Utility hooks:**
-- `useVault` — thin wrapper passing mobile supabase to shared hook
-- `useDebouncedValue` — debounce for search
+- Issue: File is 411 lines. `CommentItem` is 175 lines and is a standalone component.
+- Fix: Move `CommentItem`, `CommentItemProps`, and `renderTextWithLinks` to `apps/web/src/app/_components/groups/comment-item.tsx`. Import in `comment-thread.tsx`.
 
-**Screen:**
-- Rewrite `index.tsx` — compose all layers with exact stacking: header → sub-header → search → content (flex-1 scrollable) → ChatComposer (pinned bottom) → overlays (filter sheet, bucket chat)
+#### 2b. Extract DangerConfirmModal to its own file
 
-### Design Decisions — Links Tab (for mobile agent)
+File: `apps/web/src/app/_components/groups/group-danger-zone.tsx` (lines 28-117)
 
-| Aspect | Web | Mobile |
-|---|---|---|
-| **Header** | BrandConcentricArch (20px) + active tab label (text-lg font-black) + ⋮ dropdown | BrandLogo component + active tab label + ⋮ Pressable → popover |
-| **Tab menu** | DropdownMenu with Vault/Discover | Popover or ActionSheet with Vault/Discover |
-| **Sub-header** | Links/Thoughts buttons with motion.div underline | Links/Thoughts Pressable with bottom border |
-| **Active tab text** | `text-ink` | `text-foreground` |
-| **Inactive tab text** | `text-ink/40` | `text-foreground/40` |
-| **Search input** | `bg-card rounded-full px-3 py-1.5 shadow-sm` + back arrow | Same pattern, RN TextInput |
-| **Search debounce** | 300ms | 300ms |
-| **Filter sheet** | Framer Motion bottom sheet | RN Modal animationType slide |
-| **Filter chips** | `rounded-badge px-3 py-1.5 text-xs font-medium` | `rounded-[6px] px-3 py-1.5 text-xs font-medium` |
-| **Active chip** | `bg-primary text-primary-foreground` | Same |
-| **Inactive chip** | `bg-muted text-muted-foreground` | Same |
-| Card image | 150px `object-cover` | 120px RN Image |
-| Title | `text-foreground text-sm font-bold line-clamp-2` | `text-foreground text-sm font-bold` + `numberOfLines={2}` |
-| Card container | `bg-card border-border rounded-card shadow-sm` | `bg-card border-border rounded-xl shadow-sm` |
-| Actions row | border-t, 4 icon buttons | Same |
-| List | 3-col grid | Single column FlatList |
-| Infinite scroll | IntersectionObserver | `onEndReached` |
-| Skeleton | `bg-cream animate-pulse` | `bg-muted animate-pulse` |
+- Issue: `DangerConfirmModal` is 90 lines and is a reusable component.
+- Fix: Move `DangerConfirmModal` and `DangerConfirmModalProps` to `apps/web/src/app/_components/groups/danger-confirm-modal.tsx`. Import in `group-danger-zone.tsx`.
 
-### Design Decisions — Thoughts Tab (for mobile agent)
+#### 2c. Move delete-drop logic to a hook
 
-| Aspect | Web | Mobile |
-|---|---|---|
-| **View toggle** | "View all chats" / "View buckets" text button, right-aligned, `text-xs underline text-ink/50` | Same — Pressable text, right-aligned |
-| **Bucket card** | Full-width button, `rounded-xl px-4 py-3`, bg from `var(--bucket-*)` CSS vars | Full-width Pressable, `rounded-xl px-4 py-3`, bg from `BUCKET_META[bucket].colorVar` — need to map CSS vars to actual hex values |
-| **Bucket card layout** | Left: label (text-sm font-semibold) + latest text (text-xs truncate). Right: time (text-[10px]) + unread badge (small rounded-full with BUCKET_BADGE_COLOR) + chevron | Same layout |
-| **Bucket colors** | CSS variables: `--bucket-media`, `--bucket-tasks`, `--bucket-learning`, `--bucket-notes` | Must define actual colors since CSS vars don't work in RN. Use a `BUCKET_COLORS` map in the component. |
-| **Unread badge** | `rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white` with `BUCKET_BADGE_COLOR[bucket]` | Same |
-| **Bucket card skeleton** | 4 rows, `bg-accent/40 rounded-xl px-4 py-3` with Skeleton blocks | 4 rows, `bg-accent rounded-xl` with `bg-muted animate-pulse` blocks |
-| **Thought bubble** | `rounded-2xl rounded-br-sm px-3 py-2 text-sm` colored bg, right-aligned (max-w-[75%]), time + pending/failed indicators | Same layout — View with rounded corners, right-aligned |
-| **Bubble text** | `leading-snug whitespace-pre-wrap` | Same |
-| **Bubble time** | `text-ink/40 text-[9px]` | `text-foreground/40 text-[9px]` |
-| **Pending indicator** | ⏱ emoji | Same |
-| **Failed indicator** | ! in `text-red-400` | Same |
-| **Bubble actions** | Hover: edit (PencilIcon) + delete (TrashIcon) appear left of bubble | Long-press: show edit/delete action menu (since no hover on mobile) |
-| **Bucket chat** | Slides in from right (`x: 100%`), absolute inset-0, Virtuoso list | Full-screen View that slides in (react-native-reanimated), FlatList inverted |
-| **Back button** | Floating `bg-background/80 backdrop-blur`, ChevronLeft | Same — absolute positioned Pressable with ChevronLeft |
-| **All view** | Virtuoso with startReached for older messages, each bubble shows bucket label | FlatList inverted, each bubble shows bucket label |
-| **Empty thoughts** | Centered: "No thoughts yet" + "Start typing..." (text-ink/50, text-ink/30) | Same pattern: VStack centered |
-| **Search in thoughts** | Uses same search bar, filters thoughts client-side by text | Same — filter `displayMessages` by `text.includes(query)` |
+File: `apps/web/src/app/_components/groups/feed-tab-view.tsx` (lines 86-89)
 
-### Design Decisions — ChatComposer (for mobile agent)
+- Issue: Direct `supabase.from("group_posts").delete()` call inside component.
+- Fix: Add a `deleteDrop` mutation to `useGroupFeed.ts` or create a small `useDeleteDrop` hook. Call it from `feed-tab-view.tsx`.
 
-| Aspect | Web (ChatInput) | Mobile (ChatComposer) |
-|---|---|---|
-| **Position** | Pinned to bottom of VaultTabView, shrink-0 | Pinned to bottom inside KeyboardAvoidingView |
-| **Container** | `bg-card rounded-full p-2 shadow-lg border-0` | Same: `bg-card rounded-full p-2 shadow-lg` |
-| **Left icon** | LinkIcon size 15, `text-muted-foreground ml-1` | Link from lucide, size 15, same tokens |
-| **Input** | shadcn Input, borderless, `flex-1 px-2 py-1.5 text-sm` | RN TextInput, `flex-1 px-2 py-1.5 text-sm bg-transparent` |
-| **Placeholder** | `t('vault.input_placeholder')` = "Drop a thought, task, link or something you overheard." | Same |
-| **Send button** | Animated circle `bg-primary h-8 w-8 rounded-full` + PlusIcon size 3.5, appears when hasText | Same layout, no animation (or simple opacity) |
-| **URL detection** | `URL_REGEX` from useSubmitContent, 150ms debounce, strips URL from text, calls `onUrlChange` | Same logic |
-| **Submit** | Enter key → handleSubmit | `returnKeyType="send"` + `onSubmitEditing` |
-| **Collapsible** | When `collapsible=true` + not focused + empty → `h-8` instead of `h-10` | Same behavior |
-| **Keyboard** | N/A (desktop) | `KeyboardAvoidingView` behavior="padding" (iOS) / "height" (Android) |
-| **Visibility** | Always visible at bottom of vault tab (both Links and Thoughts) | Same — always visible, both sub-tabs |
+#### 2d. Deduplicate ProfileRow type and toProfile helper
 
-### Suggested order:
+Files: `apps/web/src/app/_libs/hooks/useGroupFeed.ts`, `apps/web/src/app/_libs/utils/mapGroupDrop.ts`
 
-1. Move `useVault` to `/libs` (web agent)
-2. Build mobile Links tab components (mobile agent — steps 1-14)
-3. Build mobile Thoughts tab components (mobile agent — steps 15-25)
+- Issue: `ProfileRow` type defined in both files. `toProfile()` function duplicated.
+- Fix: Keep canonical versions in `mapGroupDrop.ts` (already exports them). Import in `useGroupFeed.ts`. Remove duplicates.
+
+#### 2e. Deduplicate feed mapping logic
+
+Files: `apps/web/src/app/_libs/hooks/useGroupFeed.ts` (lines 69-134), `apps/web/src/app/_libs/utils/mapGroupDrop.ts`
+
+- Issue: `fetchGroupFeedPage` contains inline mapping that duplicates `mapRowToGroupDrop`.
+- Fix: Use `mapRowToGroupDrop` from `mapGroupDrop.ts` inside `fetchGroupFeedPage`. Adapt input shape if needed.
+
+#### 2f. Fix sequential awaits in useUnreadCounts
+
+File: `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` (lines 47-62)
+
+- Issue: Group unread queries run sequentially in a for loop (`for...of` + `await`).
+- Fix: Use `Promise.all(groupIdArr.map(...))` to parallelize.
+
+#### 2g. Replace inline SVGs with icon components
+
+Files: `apps/web/src/app/_components/groups/feed-header.tsx` (lines 35-42, 88-99), `apps/web/src/app/(app)/groups/page.tsx` (lines 90-100)
+
+- Issue: Inline `<svg>` elements instead of components from `@/components/icons`.
+- Fix: Use `ChevronLeftIcon`, `ChevronRightIcon` from `@/components/icons`. If missing, add them.
+
+---
+
+### Step 3: Move to /libs
+
+> **Critical prerequisite:** Hooks currently import `createClient` from `@/app/_libs/supabase/client`. To share across web/mobile, either:
+> (A) Accept a Supabase client as parameter in each hook, or
+> (B) Create a shared client wrapper in `libs/` that each platform configures.
+>
+> **Recommendation:** Option A is simpler — each hook factory takes `supabase` as arg. Web passes its client, mobile passes its client. This is a pattern change that applies to ALL hooks being moved.
+
+#### 3a. Move ProfileRow + toProfile to libs/types and libs/utils
+
+- `ProfileRow` type → add to `libs/types/src/groups.ts`
+- `toProfile()` → add to `libs/utils/src/profile.ts` (new file)
+- Update imports in: `useGroupFeed.ts`, `mapGroupDrop.ts`, `useGroupMembers.ts`
+
+#### 3b. Move mapGroupDrop.ts to libs/utils
+
+- Move: `apps/web/src/app/_libs/utils/mapGroupDrop.ts` → `libs/utils/src/mapGroupDrop.ts`
+- Export from `libs/utils/src/index.ts`
+- Update imports in: `useGroupFeed.ts`, any other consumers
+
+#### 3c. Move fetchGroupDetail.ts to libs/utils
+
+- Move: `apps/web/src/app/_libs/utils/fetchGroupDetail.ts` → `libs/utils/src/fetchGroupDetail.ts`
+- Change to accept `supabase` client as parameter
+- Update imports in: `useGroupDetail.ts`
+
+#### 3d. Move fetchUserGroups.ts to libs/hooks
+
+- Move: `apps/web/src/app/_libs/utils/fetchUserGroups.ts` → `libs/hooks/src/useUserGroups.ts`
+- Wrap as a hook (useUserGroups) that accepts supabase client
+- Update imports in: `groups/page.tsx`, `sidebar-groups-section.tsx`
+
+#### 3e. Move useGroupDetail.ts to libs/hooks
+
+- Move: `apps/web/src/app/_libs/hooks/useGroupDetail.ts` → `libs/hooks/src/useGroupDetail.ts`
+- Change `fetchGroupDetail`/`fetchGroupRole` to accept supabase client
+- Update imports in: `GroupPageClient.tsx`
+
+#### 3f. Move useGroupMembers.ts to libs/hooks
+
+- Move: `apps/web/src/app/_libs/hooks/useGroupMembers.ts` → `libs/hooks/src/useGroupMembers.ts`
+- Change to accept supabase client
+- Update imports in: `feed-tab-view.tsx`, `group-info-page.tsx`
+
+#### 3g. Move useGroupInvites.ts to libs/hooks
+
+- Move: `apps/web/src/app/_libs/hooks/useGroupInvites.ts` → `libs/hooks/src/useGroupInvites.ts`
+- Change to accept supabase client
+- Update imports in: `group-info-page.tsx`
+
+#### 3h. Move useDropEngagement.ts to libs/hooks
+
+- Move: `apps/web/src/app/_libs/hooks/useDropEngagement.ts` → `libs/hooks/src/useDropEngagement.ts`
+- Change to accept supabase client
+- Update imports in: `engagement-bar.tsx`
+
+#### 3i. Move useComments.ts to libs/hooks
+
+- Move: `apps/web/src/app/_libs/hooks/useComments.ts` → `libs/hooks/src/useComments.ts`
+- Change to accept supabase client
+- Update imports in: `comment-thread.tsx`, `feed-tab-view.tsx`
+
+#### 3j. Move useShareToGroups.ts to libs/hooks (consolidate)
+
+- Web: `apps/web/src/app/_libs/hooks/useShareToGroups.ts`
+- Mobile: `apps/mobile-app/hooks/useShareToGroups.ts`
+- Both are near-identical. Consolidate into `libs/hooks/src/useShareToGroups.ts`
+- Accept supabase client + userId as params
+- Delete both app-local versions, update imports
+
+---
+
+## Mobile — Step by Step
+
+> **Design philosophy:** Same visual language as web, adapted for native. Same color tokens, proportional spacing. Bottom sheets replace modals/dropdowns. Single column. Press states replace hover.
+>
+> **Shared libs used:** `@kurate/types`, `@kurate/query`, `@kurate/hooks` (after Step 3), `@kurate/utils`, `@kurate/locales`
+
+### Step M1: Tab navigation — add Groups tab
+
+New file: `apps/mobile-app/app/(tabs)/groups.tsx`
+Read for reference:
+
+- `apps/web/src/app/(app)/groups/page.tsx` — list layout, role badges, empty state
+- `libs/types/src/groups.ts` — GroupRow, GroupRole types
+  Read existing mobile:
+- `apps/mobile-app/app/(tabs)/_layout.tsx` — current tab setup
+  Key design decisions from web:
+- Groups list: avatar (40px circle) + name + role badge + description + chevron
+- Empty state: centered text + "Create a Group" button
+- Create button: top-right, pill shape, `bg-primary`
+  Build instructions:
+- Add "Groups" tab to `_layout.tsx` with `Users` icon from lucide
+- Create `groups.tsx` screen using `useUserGroups` from `@kurate/hooks`
+- FlatList with group rows (avatar, name, role badge, description)
+- Empty state with create button
+- FAB or header button for "Create Group"
+
+### Step M2: Create group bottom sheet
+
+New file: `apps/mobile-app/components/groups/create-group-sheet.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/create-group-dialog.tsx` — fields, validation, submit flow
+  Key design decisions from web:
+- Two fields: name (required), description (optional)
+- Submit creates conversation + owner membership
+- Navigates to group after creation
+  Build instructions:
+- Bottom sheet with name Input + description Textarea
+- Submit → Supabase insert → invalidate groups list → navigate to group
+- Loading + error states
+
+### Step M3: Group detail screen (shell + feed/library/info routing)
+
+New file: `apps/mobile-app/app/(tabs)/groups/[id].tsx`
+New file: `apps/mobile-app/components/groups/group-header.tsx`
+Read for reference:
+
+- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx` — view routing, realtime redirect
+- `apps/web/src/app/_components/groups/feed-header.tsx` — header layout
+- `apps/web/src/app/_components/groups/group-view.ts` — GroupView enum
+  Key design decisions from web:
+- Header: back button + avatar + group name + library toggle + info button
+- Three views: Feed (default), Library, Info
+- Realtime: redirect on membership DELETE
+  Build instructions:
+- Dynamic route `[id].tsx`
+- Use `useGroupDetail` + `useGroupRole` from `@kurate/hooks`
+- State for `view` (Feed/Library/Info)
+- Header component with back, avatar, name, toggle buttons
+- Render appropriate view based on state
+
+### Step M4: Group feed view + drop cards
+
+New file: `apps/mobile-app/components/groups/feed-view.tsx`
+New file: `apps/mobile-app/components/groups/feed-drop-card.tsx`
+New file: `apps/mobile-app/components/groups/drop-item-preview.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/feed-tab-view.tsx` — feed layout, infinite scroll, empty/loading states
+- `apps/web/src/app/_components/groups/feed-share-card.tsx` — card structure, seen tracking, comment toggle
+- `apps/web/src/app/_components/groups/drop-item-preview.tsx` — link preview image, title, metadata
+  Key design decisions from web:
+- Card: sharer header (avatar 32px + name + "dropped . time"), optional note (italic), link preview (220px image), text-only content, reaction pills, engagement bar, latest comment preview, expandable comment thread
+- Must-read cards: `border-warning-foreground/30 bg-warning-bg/40`
+- New comments: green dot on comment icon
+- Latest comment preview: avatar + author + "+N more" + text + chevron
+  Build instructions:
+- FlatList with `useGroupFeed` from `@kurate/hooks`
+- `onEndReached` for infinite scroll
+- `FeedDropCard` component with all sub-sections
+- Press on comment preview → expand thread (see Step M6)
+- Seen tracking via `markPostSeen`
+
+### Step M5: Drop composer
+
+New file: `apps/mobile-app/components/groups/drop-composer.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/drop-composer.tsx` — URL detection, metadata extraction, text-only, preview card
+- `apps/web/src/app/_components/home/chat-input.tsx` — input behavior
+  Key design decisions from web:
+- Single input: detects URLs automatically, shows preview below
+- Link post: URL + optional note
+- Text-only post: plain text content
+- After link share: toast with "Save to vault?" action
+  Build instructions:
+- TextInput with URL regex detection
+- `useExtractMetadata` from `@kurate/hooks` for preview
+- Preview card component (image, title, source, close button)
+- Submit: upsert logged_item → insert group_post → optional vault save toast
+- Reset input after submit
+
+### Step M6: Comment thread (bottom sheet or inline)
+
+New file: `apps/mobile-app/components/groups/comment-thread.tsx`
+New file: `apps/mobile-app/components/groups/comment-bubble.tsx`
+New file: `apps/mobile-app/components/groups/reply-input.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/comment-thread.tsx` — DM-style bubbles, reply-to, edit, delete, unread divider
+- `apps/web/src/app/_components/groups/reply-input.tsx` — input with send button
+  Key design decisions from web:
+- Own comments: right-aligned, `bg-primary text-primary-foreground`, rounded-tr-sm
+- Others: left-aligned, `bg-surface border`, avatar + name, rounded-tl-sm
+- Reply-to: quoted block with accent bar, author name, truncated text
+- Unread divider: "N new messages" with primary-colored lines
+- Continuation: same author grouped, no repeated name/avatar
+- Timestamp: inline at end of bubble, mono text
+  Build instructions:
+- FlatList (inverted for bottom-anchored scroll) with `useComments` from `@kurate/hooks`
+- `CommentBubble` component handling own/other styling
+- Reply-to context banner above input
+- Edit mode: pre-fills input, banner shows "Editing"
+- Delete: long-press action sheet or swipe
+- `ReplyInput` with TextInput + send button
+
+### Step M7: Engagement bar
+
+New file: `apps/mobile-app/components/groups/engagement-bar.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/engagement-bar.tsx` — like, must-read, bookmark, comment toggle
+  Key design decisions from web:
+- Row of icon buttons: Heart (like), Star (must-read), Bookmark (vault), MessageCircle (comments)
+- Active states: red for like, warning for must-read, primary for bookmark
+- Count shown next to icon, mono font
+- Comment icon: green fill when new comments
+  Build instructions:
+- HStack of Pressable buttons
+- `useDropEngagement` from `@kurate/hooks` for like/must-read
+- `useVaultToggle` for bookmark (from web hook, needs lib move)
+- Optimistic UI — count changes immediately
+
+### Step M8: Library view
+
+New file: `apps/mobile-app/components/groups/library-view.tsx`
+New file: `apps/mobile-app/components/groups/library-card.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/library-view.tsx` — must-read section, all-shared grid
+- `apps/web/src/app/_components/groups/library-card.tsx` — card with image, title, metadata, engagement
+  Key design decisions from web:
+- Two sections: "MUST READ" at top, "ALL SHARED" below
+- Cards: preview image (aspect-video), title, source + read time, engagement bar
+- Card click → navigate to feed with scroll-to-drop
+  Build instructions:
+- SectionList with must-read + all-shared sections
+- `LibraryCard` component: Image + title + metadata + EngagementBar
+- Single column on mobile (2 columns on tablet if needed)
+- Press → navigate to feed view with drop ID param
+
+### Step M9: Group info screen
+
+New file: `apps/mobile-app/components/groups/group-info-view.tsx`
+New file: `apps/mobile-app/components/groups/group-members-list.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/group-info-page.tsx` — layout
+- `apps/web/src/app/_components/groups/group-info-header.tsx` — avatar, name, description, edit button
+- `apps/web/src/app/_components/groups/group-info-members-list.tsx` — member rows
+  Key design decisions from web:
+- Header: large avatar (80px), name, description, edit pencil (owner only)
+- "Add member" button (dashed border, plus icon) — admin/owner only
+- Members list: avatar 40px + name + handle + role badge + chevron (owner only)
+- Pending invites section (admin/owner)
+- Danger zone at bottom: leave + delete (owner)
+  Build instructions:
+- ScrollView with header, add-member button, FlatList of members
+- `useGroupMembers` + `useGroupInvites` from `@kurate/hooks`
+- Tap member → action sheet (owner only): promote/demote, remove
+- Danger zone: leave + delete buttons at bottom
+
+### Step M10: Edit group info sheet
+
+New file: `apps/mobile-app/components/groups/edit-group-info-sheet.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/edit-group-info-modal.tsx` — avatar upload, name, description
+  Key design decisions from web:
+- Avatar upload: tap avatar → image picker → upload to Supabase storage → update media_metadata → update conversation
+- Name + description fields
+  Build instructions:
+- Bottom sheet with avatar (pressable → expo-image-picker), name Input, description Textarea
+- Upload flow: pick image → upload to storage → upsert media_metadata → update conversations.group_avatar_id
+- Save + cancel buttons
+
+### Step M11: Invite member sheet
+
+New file: `apps/mobile-app/components/groups/invite-member-sheet.tsx`
+Read for reference:
+
+- `apps/web/src/app/_components/groups/group-invite-modal.tsx` — search, email detection, batch add, role selector
+  Key design decisions from web:
+- Search input: debounced, searches profiles by name/handle
+- Email detection: if email typed, check platform user or offer email invite
+- Multi-select with chips
+- Role selector: member/admin toggle
+- Batch add button
+  Build instructions:
+- Bottom sheet with search Input
+- FlatList of search results with checkboxes
+- Email branch: "Invite by email" + "Copy invite link" buttons
+- Selected chips row + role picker
+- "Add N members" submit button
+- `useGroupInvites` for pending invites management
+
+### Step M12: Join group deep link handler
+
+New file: `apps/mobile-app/app/groups/join/[invite_code].tsx`
+Read for reference:
+
+- `apps/web/src/app/(app)/groups/join/[invite_code]/page.tsx` — auth check, email validation, capacity check, join flow
+  Key design decisions from web:
+- Server-side on web; on mobile this is a screen triggered by deep link
+- Check auth → check onboarding → validate email (if present) → check capacity → join → redirect
+  Build instructions:
+- Screen that handles deep link `/groups/join/:invite_code`
+- On mount: check auth, validate, join group via Supabase insert
+- Error states: wrong account, revoked, invalid, full
+- Success: navigate to group detail
+
+### Step M13: Sidebar/tab unread badges
+
+Read for reference:
+
+- `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` — localStorage tracking, realtime subscription
+- `apps/web/src/app/_components/sidebar/sidebar-groups-section.tsx` — unread badge
+  Key design decisions from web:
+- Unread count per group: new posts since last visit (by others)
+- Realtime: increment on new post INSERT
+- Mark read on group visit (localStorage on web → AsyncStorage on mobile)
+  Build instructions:
+- `useGroupUnreadCounts` hook: AsyncStorage for last-seen, Supabase realtime for increments
+- Badge component on groups tab icon + individual group rows
+- Mark read when navigating to a group
 
 ---
 
 ## Next Commands
 
-**Web agent** (move to /libs):
-"Read `memory/CODEBASE_MAP.md` and `memory/plans/vault-plan.md` first, then read ONLY these files:
+**Web agent (fix bugs — Step 1):**
+"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
 
-Files to move:
-- `apps/web/src/app/_libs/hooks/useVault.ts` → `libs/hooks/src/useVault.ts`
+Files to fix:
 
-Files that import it (update these imports):
-- `apps/web/src/app/_components/vault/VaultLibrary.tsx` (line 14)
-
-Context files (read for understanding only):
-- `libs/hooks/src/index.ts` — barrel to update
-- `libs/hooks/src/useSaveItem.ts` — example of existing shared hook pattern
-- `libs/query/src/keys.ts` — queryKeys used by useVault
-- `apps/web/src/app/_libs/supabase/client.ts` — web supabase client creation
+- `apps/web/src/app/(app)/groups/page.tsx`
+- `apps/web/src/app/api/groups/invite/route.ts`
+- `apps/web/src/app/_components/groups/library-view.tsx`
+- `apps/web/src/app/_components/groups/feed-share-card.tsx`
+- `apps/web/src/app/_components/groups/library-card.tsx`
 
 Fix these specific issues:
-1. Create `libs/hooks/src/useVault.ts` — copy from web's version, but refactor the module-level `const supabase = createClient()` out. Instead, accept `supabase` as a 3rd parameter: `useVault(filters: VaultFilters, userId: string, supabase: SupabaseClient<Database>)`. Also pass supabase into `fetchVaultPage` instead of using the module-level const.
-2. Export `useVault` from `libs/hooks/src/index.ts`
-3. In `apps/web/src/app/_components/vault/VaultLibrary.tsx` — change `import { useVault } from '@/app/_libs/hooks/useVault'` to `import { useVault } from '@kurate/hooks'` and pass `createClient()` as the 3rd argument to `useVault(filters, user?.id ?? '', supabase)`
-4. Delete `apps/web/src/app/_libs/hooks/useVault.ts` (or replace with `export { useVault } from '@kurate/hooks'` if other files import it)
-5. Run `cd apps/web && pnpm type:check && pnpm lint`
 
-If something is missing from the map → explore that specific folder only, update the map, then proceed."
+1. `groups/page.tsx` — extract client logic to `GroupsPageClient.tsx`, make page.tsx a Server Component
+2. `invite/route.ts:157-164` — remove `as any` cast, use supabase directly, remove unnecessary try/catch
+3. `library-view.tsx:29-30` — wrap `fetchNextPage()` in useEffect with `[hasNextPage, isFetchingNextPage]` guards
+4. `feed-share-card.tsx:136` — add `drop.id` and `markPostSeen` to useEffect dep array
+5. `library-card.tsx:46` — fix `overflow-hiddrop.cden` → `overflow-hidden`
 
----
+Run `pnpm lint` and `pnpm type:check` when done."
 
-**Mobile agent** (build vault home screen — Links + Thoughts):
-"Read `memory/CODEBASE_MAP.md` and `memory/plans/vault-plan.md` first, then read ONLY these files:
+**Web agent (code quality — Step 2):**
+"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
 
-Shared libs:
-- `libs/types/src/vault.ts` — VaultItem, VaultFilters, filter option constants
-- `libs/types/src/thoughts.ts` — ThoughtMessage type
-- `libs/types/src/navigation.ts` — HomeTab, VaultTab enums
-- `libs/query/src/keys.ts` — queryKeys.vault.* and queryKeys.thoughts.*
-- `libs/hooks/src/useVault.ts` — shared vault hook (accepts supabase param)
-- `libs/utils/src/constants/thoughts.ts` — ThoughtBucket, BUCKET_META, BUCKET_BADGE_COLOR, THOUGHT_BUCKETS, classifyThought
+Files to refactor:
 
-Web reference (design + logic only, do NOT copy JSX):
-- `apps/web/src/app/_components/home/home-tab-header.tsx` — header layout
-- `apps/web/src/app/_components/home/vault-tab-view.tsx` — vault tab container (see how ChatInput is positioned at bottom)
-- `apps/web/src/app/_components/home/vault-tab-sub-header.tsx` — Links/Thoughts tabs + search + filter
-- `apps/web/src/app/_components/home/chat-input.tsx` — ChatInput component (URL detection, submit, collapsible)
-- `apps/web/src/app/_components/home/thoughts-tab-view.tsx` — thoughts container logic
-- `apps/web/src/app/_components/home/thoughts-bucket-chat.tsx` — bucket chat with ThoughtBubble
-- `apps/web/src/app/_components/home/thoughts/bucket-card.tsx` — bucket card design
-- `apps/web/src/app/_components/home/thoughts/bucket-card-skeleton.tsx` — bucket skeleton
-- `apps/web/src/app/_components/home/thoughts/thoughts-all-view.tsx` — all thoughts view
-- `apps/web/src/app/_components/home/thoughts/utils.ts` — DisplayMessage type, formatTime
-- `apps/web/src/app/_components/vault/VaultSearch.tsx` — search input
-- `apps/web/src/app/_components/vault/VaultFilters.tsx` — filter chips
-- `apps/web/src/app/_components/vault/VaultFilterSheet.tsx` — filter bottom sheet
-- `apps/web/src/app/_components/vault/VaultCard.tsx` — card layout
-- `apps/web/src/app/_components/vault/VaultLibrary.tsx` — list container
-- `apps/web/src/app/_components/vault/VaultCardSkeleton.tsx` — skeleton
-- `apps/web/src/app/_components/vault/VaultEmptyState.tsx` — empty state
-- `apps/web/src/app/_components/vault/VaultErrorState.tsx` — error state
-- `apps/web/src/app/_libs/hooks/useBucketSummaries.ts` — bucket summaries hook (API pattern)
-- `apps/web/src/app/_libs/hooks/useBucketLastRead.ts` — bucket last-read hook (Supabase pattern)
-- `apps/web/src/app/_libs/hooks/useDeleteThought.ts` — delete thought hook
-- `apps/web/src/app/_libs/hooks/useEditThought.ts` — edit thought hook
+- `apps/web/src/app/_components/groups/comment-thread.tsx` — extract CommentItem + renderTextWithLinks to `comment-item.tsx`
+- `apps/web/src/app/_components/groups/group-danger-zone.tsx` — extract DangerConfirmModal to `danger-confirm-modal.tsx`
+- `apps/web/src/app/_components/groups/feed-tab-view.tsx` — move delete-drop Supabase call to useGroupFeed hook
+- `apps/web/src/app/_libs/hooks/useGroupFeed.ts` — import ProfileRow/toProfile from mapGroupDrop.ts, use mapRowToGroupDrop for mapping
+- `apps/web/src/app/_libs/utils/mapGroupDrop.ts` — canonical source for ProfileRow, toProfile, mapRowToGroupDrop
+- `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` — parallelize group queries with Promise.all
+- `apps/web/src/app/_components/groups/feed-header.tsx` — replace inline SVGs with ChevronLeftIcon/ChevronRightIcon
+- `apps/web/src/app/(app)/groups/page.tsx` — replace inline SVG chevron with icon component
+
+Run `pnpm lint` and `pnpm type:check` when done."
+
+**Web agent (move to /libs — Step 3):**
+"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
+
+Files to move (change to accept supabase client as parameter):
+
+- `apps/web/src/app/_libs/utils/mapGroupDrop.ts` → `libs/utils/src/mapGroupDrop.ts`
+- `apps/web/src/app/_libs/utils/fetchGroupDetail.ts` → `libs/utils/src/fetchGroupDetail.ts`
+- `apps/web/src/app/_libs/utils/fetchUserGroups.ts` → `libs/hooks/src/useUserGroups.ts`
+- `apps/web/src/app/_libs/hooks/useGroupDetail.ts` → `libs/hooks/src/useGroupDetail.ts`
+- `apps/web/src/app/_libs/hooks/useGroupMembers.ts` → `libs/hooks/src/useGroupMembers.ts`
+- `apps/web/src/app/_libs/hooks/useGroupInvites.ts` → `libs/hooks/src/useGroupInvites.ts`
+- `apps/web/src/app/_libs/hooks/useDropEngagement.ts` → `libs/hooks/src/useDropEngagement.ts`
+- `apps/web/src/app/_libs/hooks/useComments.ts` → `libs/hooks/src/useComments.ts`
+- `apps/web/src/app/_libs/hooks/useShareToGroups.ts` + `apps/mobile-app/hooks/useShareToGroups.ts` → `libs/hooks/src/useShareToGroups.ts`
+
+Files that import them (update these imports after move):
+
+- `apps/web/src/app/(app)/groups/page.tsx` (or GroupsPageClient.tsx after bug fix)
+- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx`
+- `apps/web/src/app/_components/groups/feed-tab-view.tsx`
+- `apps/web/src/app/_components/groups/feed-share-card.tsx`
+- `apps/web/src/app/_components/groups/engagement-bar.tsx`
+- `apps/web/src/app/_components/groups/comment-thread.tsx`
+- `apps/web/src/app/_components/groups/group-info-page.tsx`
+- `apps/web/src/app/_components/groups/group-info-header.tsx`
+- `apps/web/src/app/_components/sidebar/sidebar-groups-section.tsx`
+- `apps/web/src/app/_libs/hooks/useGroupFeed.ts`
+
+Pattern: Each moved hook should accept `supabase: SupabaseClient` as first parameter. Web callers pass `createClient()`, mobile callers pass their own client.
+
+Update barrel exports in `libs/hooks/src/index.ts`, `libs/utils/src/index.ts`, `libs/types/src/index.ts`.
+
+Run `pnpm lint` and `pnpm type:check` when done."
+
+- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx`
+- `apps/web/src/app/_components/groups/` (all files listed per step)
 
 Existing mobile files:
-- `apps/mobile-app/app/(tabs)/index.tsx` — current placeholder to replace
-- `apps/mobile-app/app/(tabs)/_layout.tsx` — update tab title/icon
-- `apps/mobile-app/hooks/index.ts` — barrel to update
-- `apps/mobile-app/libs/supabase/client.ts` — mobile supabase client (`supabase` export)
-- `apps/mobile-app/store/useAuthStore.ts` — get userId
-- `apps/mobile-app/context/LocalizationContext.tsx` — useLocalization hook
-- `apps/mobile-app/components/brand/brand-logo.tsx` — BrandLogo (already exists)
-- `apps/mobile-app/components/ui/` — Gluestack: View, Text, HStack, VStack, SafeAreaView, Pressable, Button/ButtonText, Input, Spinner, Alert, Icon
 
-Build these files in this exact order:
+- `apps/mobile-app/app/(tabs)/_layout.tsx`
+- `apps/mobile-app/components/ui/` (all Gluestack components)
+- `apps/mobile-app/hooks/index.ts`
+- `apps/mobile-app/libs/supabase/client.ts`
+- `apps/mobile-app/context/`
 
---- PART 1: Shared hooks & utilities ---
-
-**Step 1.** `apps/mobile-app/hooks/useVault.ts` — thin wrapper: import useVault from @kurate/hooks, import supabase from @/libs/supabase/client, export useVault(filters, userId) that calls shared hook with mobile supabase. Export from hooks/index.ts.
-
-**Step 2.** `apps/mobile-app/hooks/useDebouncedValue.ts` — useDebouncedValue(initialValue, onChange, delay=300) returns [localValue, setLocalValue]. On change, debounce then call onChange. Export from hooks/index.ts.
-
-**Step 3.** `apps/mobile-app/hooks/useThoughts.ts` — infinite query on `thoughts` table via mobile supabase. Params: bucket (optional), searchQuery. Uses queryKeys.thoughts.list(bucket) and queryKeys.thoughts.search(q). Returns { messages: ThoughtMessage[], isLoading, hasNextPage, fetchNextPage, isFetchingNextPage }. Fetch via supabase.from('thoughts').select('*').eq('user_id', userId).order('created_at', desc).limit(100). Search: .ilike('text', `%${q}%`). Export from hooks/index.ts.
-
-**Step 4.** `apps/mobile-app/hooks/useBucketSummaries.ts` — calls supabase.rpc('get_thought_bucket_summaries'). Returns BucketSummary[] (same shape as web: { bucket, latestText, latestCreatedAt, totalCount, unreadCount }). Uses queryKeys.thoughts.bucketSummaries(). Export from hooks/index.ts.
-
-**Step 5.** `apps/mobile-app/hooks/useDeleteThought.ts` — mutation: supabase.from('thoughts').delete().eq('id', id). Optimistic update on queryKeys.thoughts.list(null). Invalidate queryKeys.thoughts.all on settled. Export from hooks/index.ts.
-
-**Step 6.** `apps/mobile-app/hooks/useBucketLastRead.ts` — query bucket_last_read table for userId. Returns { lastReadAt(bucket), markBucketRead(bucket) }. markBucketRead: optimistic cache update + supabase.from('bucket_last_read').upsert(). Export from hooks/index.ts.
-
---- PART 2: Header & navigation ---
-
-**Step 7.** `apps/mobile-app/components/home/HomeHeader.tsx` (~50 lines) — HStack px-4 py-3 bg-background:
-   - Left: BrandLogo with size={20} and name={activeLabel} (e.g. "Vault")
-   - Right: Pressable ⋮ icon (EllipsisVertical from lucide, size 20, text-muted-foreground)
-   - When pressed: toggle a small absolute dropdown with "Vault" and "Discover" items
-   - Props: activeTab: HomeTab, onTabChange: (tab: HomeTab) => void
-   - Use useLocalization for t('chat.tab_vault') and t('chat.tab_discovering')
-
-**Step 8.** `apps/mobile-app/components/home/VaultSubHeader.tsx` (~80 lines) — HStack px-5 border-b border-border:
-   - Left: Links / Thoughts Pressable tabs. Active: text-foreground font-semibold + 2px bottom border bg-foreground. Inactive: text-foreground/40. Both text-sm capitalize, mr-5.
-   - Right (ml-auto): Search icon (Search from lucide, size 16) + Filter icon (SlidersHorizontal, size 16, text-primary when active). Filter only shows when vaultTab === LINKS.
-   - Props: vaultTab, onTabChange, searchOpen, onSearchToggle, onFilterPress, hasActiveFilter
-
---- PART 3: Links tab components ---
-
-**Step 9.** `apps/mobile-app/components/vault/VaultSearchBar.tsx` (~50 lines) — HStack bg-card rounded-full px-3 py-1.5 shadow-sm mx-4 my-2:
-   - ArrowLeft Pressable → close + clear
-   - TextInput flex-1 text-sm, autoFocus, placeholder t('vault.search_placeholder')
-   - Uses useDebouncedValue, calls onSearch on change
-   - Props: value, onSearch, onClose
-
-**Step 10.** `apps/mobile-app/components/vault/VaultFilterSheet.tsx` (~120 lines) — RN Modal transparent slide:
-   - Backdrop → onClose
-   - Sheet at bottom: bg-background rounded-t-2xl border-t border-border
-   - Drag handle + "Filters" header + "Clear all" if active
-   - 3 sections (Time/Type/ReadStatus) using filter constants from @kurate/types
-   - Chips: rounded-[6px] px-3 py-1.5. Active: bg-primary text-primary-foreground. Inactive: bg-muted text-muted-foreground.
-   - Done button
-   - Props: open, filters, onChange, onClose
-
-**Step 11.** `apps/mobile-app/components/vault/VaultCardSkeleton.tsx` (~30 lines)
-
-**Step 12.** `apps/mobile-app/components/vault/VaultEmptyState.tsx` (~40 lines) — default + filtered variants
-
-**Step 13.** `apps/mobile-app/components/vault/VaultErrorState.tsx` (~30 lines) — AlertCircle + title + subtitle + retry
-
-**Step 14.** `apps/mobile-app/components/vault/VaultCard.tsx` (~120 lines) — see Links design table
-
-**Step 15.** `apps/mobile-app/components/vault/VaultList.tsx` (~80 lines) — FlatList of VaultCard with infinite scroll, loading/error/empty
-
---- PART 4: Thoughts tab components ---
-
-**Step 16.** `apps/mobile-app/components/thoughts/BucketCard.tsx` (~60 lines) — Pressable full-width rounded-xl px-4 py-3:
-   - Background: bucket color (define BUCKET_COLORS map: media=#FDE8EF, tasks=#E8F5E9, learning=#E3F2FD, notes=#FFF8E1 — or extract from web CSS vars)
-   - Left: VStack — label (text-sm font-semibold text-foreground) + latest text (text-xs text-foreground/45 numberOfLines=1)
-   - Right: VStack items-end — time (text-[10px] text-foreground/30) + unread badge (rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white, bg from BUCKET_BADGE_COLOR) + chevron (ChevronRight from lucide, size 16, text-foreground/30)
-   - Props: bucket: ThoughtBucket, latestText, latestCreatedAt, unreadCount, onPress
-
-**Step 17.** `apps/mobile-app/components/thoughts/BucketCardSkeleton.tsx` (~25 lines) — 4 rows: rounded-xl bg-accent px-4 py-3 with animate-pulse blocks
-
-**Step 18.** `apps/mobile-app/components/thoughts/ThoughtBubble.tsx` (~60 lines) — View right-aligned, max-w-[75%]:
-   - Bubble: rounded-2xl rounded-br-sm px-3 py-2, bg from bucket color
-   - Text: text-sm leading-snug (text-foreground)
-   - Footer row: bucket label (text-foreground/40 text-[9px]) when showBucketLabel + time (text-foreground/40 text-[9px]) + pending (⏱) / failed (! text-red-400)
-   - Long-press → call onLongPress for edit/delete menu
-   - Props: message: ThoughtMessage & { _pending?, _failed? }, bucketColor: string, showBucketLabel?: boolean, onLongPress?: (id, text) => void
-
-**Step 19.** `apps/mobile-app/components/thoughts/ThoughtsEmptyState.tsx` (~25 lines) — VStack centered:
-   - Title: t('thoughts.empty_no_thoughts') or t('thoughts.empty_no_match') when searching
-   - Subtitle: t('thoughts.empty_start_typing') or t('thoughts.empty_try_keywords')
-   - Props: isSearching: boolean
-
-**Step 20.** `apps/mobile-app/components/thoughts/ThoughtsBucketChat.tsx` (~80 lines) — Full-screen View absolute inset-0 bg-background z-10:
-   - Animated slide-in from right (react-native-reanimated translateX)
-   - Back button: absolute top-4 left-4, rounded-full bg-background/80, ChevronLeft icon
-   - FlatList inverted of ThoughtBubble (bucket-filtered messages)
-   - Empty: centered "No thoughts yet" text
-   - Props: bucket: ThoughtBucket, messages: DisplayMessage[], searchQuery, onBack, onDelete, onEditStart
-
-**Step 21.** `apps/mobile-app/components/thoughts/ThoughtsAllView.tsx` (~50 lines) — FlatList inverted:
-   - Each item: ThoughtBubble with showBucketLabel=true
-   - onEndReached → fetchNextPage (load older)
-   - Props: messages, hasNextPage, isFetchingNextPage, onFetchMore, onDelete, onEditStart
-
-**Step 22.** `apps/mobile-app/components/thoughts/ThoughtsTabView.tsx` (~100 lines) — Container:
-   - Top-right toggle: "View all chats" / "View buckets" text Pressable (text-xs underline text-foreground/50)
-   - Bucket view (default): loading → BucketCardSkeleton, empty → ThoughtsEmptyState, data → BucketCard list (space-y-2 px-5)
-   - All view: loading → skeleton, empty → ThoughtsEmptyState, data → ThoughtsAllView
-   - When bucket tapped: set activeBucket state → render ThoughtsBucketChat overlay
-   - Uses: useBucketSummaries, useThoughts, useDeleteThought, useBucketLastRead
-   - Props: userId, searchQuery, activeBucket, onActiveBucketChange
-
---- PART 5: Composer ---
-
-**Step 23.** `apps/mobile-app/components/home/ChatComposer.tsx` (~80 lines) — Shared input for links + thoughts, pinned to bottom:
-   - Container: HStack `bg-card rounded-full p-2 shadow-lg` (pill shape, same as web ChatInput)
-   - Left: Link icon (Link from lucide, size 15, `text-muted-foreground ml-1`)
-   - Center: RN TextInput `flex-1 px-2 py-1.5 text-sm bg-transparent`. Placeholder: `t('vault.input_placeholder')` ("Drop a thought, task, link or something you overheard."). `returnKeyType="send"`, `onSubmitEditing` → handleSubmit
-   - Right: when hasText or lockedUrl → Pressable circle `bg-primary h-8 w-8 rounded-full items-center justify-center` with Plus icon (size 14, `text-primary-foreground`). Hidden when empty.
-   - URL detection: import `URL_REGEX` from `@kurate/hooks` (re-exported from `useSubmitContent`). On text change (150ms debounce): match URL → call `onUrlChange(url)`, strip URL from value, keep remainder. If no URL and previously had one → `onUrlChange(null)`.
-   - State: `value`, `focused`, `lockedUrl` (same pattern as web ChatInput)
-   - When `collapsible=true` and not focused and empty: shrink height slightly
-   - Props: `onSend: (text: string) => void | Promise<void>, onUrlChange?: (url: string | null) => void, placeholder?: string, collapsible?: boolean, initialValue?: string, autoFocus?: boolean, disabled?: boolean`
-   - Use `useLocalization` for placeholder fallback: `t('chat.placeholder')`
-
---- PART 6: Screen assembly ---
-
-**Step 24.** Rewrite `apps/mobile-app/app/(tabs)/index.tsx` (~140 lines) — Full vault home screen:
-   - State: activeHomeTab (HomeTab, default VAULT), vaultTab (VaultTab, default LINKS), searchOpen, searchQuery, filterSheetOpen, vaultFilters, activeBucket (ThoughtBucket | null), editingThought (null | {id, text})
-   - Wire useSubmitContent from `@kurate/hooks`:
-     ```
-     const { onSend } = useSubmitContent({
-       supabase,
-       queryClient,
-       apiBaseUrl: EXPO_PUBLIC_API_URL,  // env var pointing to web server
-       onRouted: (dest) => setVaultTab(dest === 'links' ? VaultTab.LINKS : VaultTab.THOUGHTS),
-       activeBucket,
-     })
-     ```
-   - Layout (exact UI stacking order):
-     ```
-     SafeAreaView flex-1 bg-background
-     │
-     ├── HomeHeader                          ← fixed top
-     │   (activeTab, onTabChange)
-     │
-     ├── VaultSubHeader                      ← fixed below header
-     │   (vaultTab, onTabChange, searchOpen,
-     │    onSearchToggle, onFilterPress, hasActiveFilter)
-     │
-     ├── VaultSearchBar (if searchOpen)      ← conditional, mx-4 my-2
-     │
-     ├── View flex-1                         ← SCROLLABLE CONTENT AREA
-     │   ├── When LINKS sub-tab:
-     │   │   └── VaultList (filters, searchQuery)
-     │   └── When THOUGHTS sub-tab:
-     │       └── ThoughtsTabView (userId, searchQuery,
-     │           activeBucket, onActiveBucketChange)
-     │
-     ├── KeyboardAvoidingView                ← pinned to bottom, rises with keyboard
-     │   behavior="padding" (iOS) / "height" (Android)
-     │   └── ChatComposer                    ← mx-4 mb-2
-     │       (onSend, onUrlChange,
-     │        collapsible={vaultTab === THOUGHTS && !editingThought},
-     │        placeholder depends on vaultTab)
-     │
-     ├── VaultFilterSheet (Modal)            ← overlay, over everything
-     │
-     └── ThoughtsBucketChat                  ← absolute overlay when activeBucket set
-         (slides in from right, z-10, covers content + composer)
-     ```
-   - ChatComposer is ALWAYS visible at the bottom (both Links and Thoughts tabs)
-   - Content area (View flex-1) scrolls independently above ChatComposer
-   - ThoughtsBucketChat overlays everything including ChatComposer when a bucket is open
-   - VaultFilterSheet is a Modal so it overlays everything
-
-**Step 25.** Update `apps/mobile-app/app/(tabs)/_layout.tsx` — change home tab title to 'Vault', icon to bookmark.
-
-**Step 26.** Run `cd apps/mobile-app && pnpm lint && pnpm format`
-
-IMPORTANT NOTES:
-
-1. For bucket colors in React Native, CSS variables don't work. Define a color map:
-```ts
-const BUCKET_COLORS: Record<ThoughtBucket, string> = {
-  media: '#FDE8EF',
-  tasks: '#E8F5E9',
-  learning: '#E3F2FD',
-  notes: '#FFF8E1',
-};
-```
-Check the web CSS for actual --bucket-* values and use those hex values.
-
-2. `useSubmitContent` calls `/api/thoughts` and `/api/extract` — these are web API routes. Mobile must pass `apiBaseUrl` from env (`EXPO_PUBLIC_API_URL`) so requests go to the web server. The `useSaveItem` part (link saving) already uses Supabase directly.
-
-3. KeyboardAvoidingView is critical — without it, the keyboard covers ChatComposer on iOS.
-
-If something is missing from the map → explore that specific folder only, update the map, then proceed.
-
----
-
---- PART 7: Link Preview + Share to Groups/DMs (steps 27-33) ---
-
-These features are triggered from two places:
-1. **ChatComposer** → user pastes a URL → LinkPreviewCard floats above composer (Loading → Loaded → Share phase)
-2. **VaultCard action row** → user taps Share → ShareSheet opens with groups/DMs grid
-
-**Additional web files to read (design only):**
-- `apps/web/src/app/_components/home/LinkPreviewCard.tsx` — 3-phase preview card
-- `apps/web/src/app/_components/shared/url-extract-preview.tsx` — URL metadata display
-- `apps/web/src/app/_components/shared/share-target-grid.tsx` — grid of group/DM avatars with search + selection
-- `apps/web/src/app/_components/vault/VaultShareModal.tsx` — modal wrapping ShareTargetGrid
-- `apps/web/src/app/_libs/hooks/useShareToGroups.ts` — mutation: insert into group_posts / messages
-- `apps/web/src/app/_libs/utils/fetchShareableConversations.ts` — fetches groups + DMs
-- `apps/web/src/app/_libs/hooks/useVaultPreview.ts` — manages preview phases
-
-**Localization keys:**
-- `link_preview.saved_heading`, `link_preview.share_prompt`, `link_preview.skip`, `link_preview.share_btn_send`
-- `link_preview.search_placeholder`, `link_preview.no_groups`, `link_preview.no_results`, `link_preview.close_aria`
-- `link_preview.reading`, `link_preview.extracting`
-- `vault.share_modal_title`, `vault.share_modal_search_placeholder`, `vault.share_modal_share_selected`
-- `vault.share_modal_already_shared`, `vault.share_modal_no_targets`, `vault.share_modal_no_results`
-
-**Step 27.** `apps/mobile-app/hooks/useShareableConversations.ts` — fetches groups + DMs the user can share to, via direct Supabase:
-   - Query `conversation_members` joined with `conversations` for userId
-   - Split into groups (is_group=true) and DMs (is_group=false)
-   - For DMs: fetch other user's profile (name, avatar)
-   - Returns `ShareableConversation[] { id, name, type: 'group'|'dm', avatar_url, updated_at }`
-   - Uses `queryKeys.vault.shareConversations()`, staleTime 5 min
-   - Export from hooks/index.ts
-
-**Step 28.** `apps/mobile-app/hooks/useShareToGroups.ts` — mutation to share a vault item:
-   - For groups: `supabase.from('group_posts').insert({ convo_id, logged_item_id, shared_by })`
-   - For DMs: `supabase.from('messages').insert({ convo_id, sender_id, message_text: '', message_type: 'logged_item', logged_item_id })`
-   - Invalidate `queryKeys.vault.all` on success
-   - Export from hooks/index.ts
-
-**Step 29.** `apps/mobile-app/components/shared/ShareTargetGrid.tsx` (~100 lines) — Reusable grid of shareable groups/DMs:
-   - Search: TextInput with SearchIcon, filters conversations by name
-   - Grid: FlatList numColumns={4}, each item = Pressable column:
-     - Avatar (rounded-full, 48px, fallback = first letter in bg-muted)
-     - Name (text-xs, truncate, max-w-[80px])
-     - Selected: green check badge bottom-right of avatar
-     - Already shared: gray check badge, disabled, opacity-60
-   - Loading: 8 skeleton circles
-   - Empty: text message
-   - Props: `selectedIds: Set<string>, onSelectionChange: (ids: string[]) => void, alreadySharedIds: Set<string>, enabled: boolean`
-
-**Step 30.** `apps/mobile-app/components/shared/UrlExtractPreview.tsx` (~60 lines) — URL metadata display:
-   - Loading: domain text + "Reading about the page..." + animated subtitle
-   - Loaded: HStack — preview image (56x56 rounded-lg) or domain text + VStack (title text-sm font-medium numberOfLines=2, description text-xs numberOfLines=2, source · type · readTime text-xs text-muted-foreground)
-   - Props: `url: string, isLoading: boolean, metadata?: { title, source, previewImage, contentType, readTime, description }`
-
-**Step 31.** `apps/mobile-app/components/home/LinkPreviewCard.tsx` (~100 lines) — Floats ABOVE ChatComposer:
-   - Position: absolute, bottom of content area, above KeyboardAvoidingView (mx-4 mb-2)
-   - Container: `bg-card border border-border rounded-2xl overflow-hidden shadow-lg`
-   - 3 phases (from `PreviewPhase` in `@kurate/types`):
-     - **Loading**: UrlExtractPreview isLoading=true
-     - **Loaded**: UrlExtractPreview with metadata + close (X) Pressable top-right
-     - **Share**: "✓ Saved!" (text-primary text-sm font-semibold) + "Share to a group?" (text-muted-foreground text-sm) + border-t + ShareTargetGrid + "Skip" text button + "Send" primary Button (when selection > 0)
-   - Props: `phase: PreviewPhase, url: string, metadata?, savedItemGroups?: string[], onClose, onShare: (groupIds: string[]) => void, onSkip`
-
-**Step 32.** `apps/mobile-app/components/vault/VaultShareSheet.tsx` (~60 lines) — Bottom sheet for sharing from VaultCard action row:
-   - RN Modal transparent animationType slide (same pattern as VaultFilterSheet)
-   - Backdrop + Sheet at bottom: bg-background rounded-t-2xl
-   - Header: "Share to your people" — `t('vault.share_modal_title')`
-   - Body: ShareTargetGrid (enabled when open)
-   - Footer: "Share" Button (disabled when no selection)
-   - Uses useShareToGroups for the mutation
-   - Props: `open: boolean, item: VaultItem | null, onClose: () => void`
-
-**Step 33.** Wire into existing components (modifications, not new files):
-   - **VaultCard** (from Step 14): add Share icon (Share2 from lucide, size 16, text-muted-foreground) to action row between read-toggle and delete. On press → call `onShare(item)`.
-   - **VaultList** (from Step 15): add `shareItem` state. Pass `onShare={setShareItem}` to each VaultCard. Render `<VaultShareSheet open={!!shareItem} item={shareItem} onClose={() => setShareItem(null)} />`.
-   - **index.tsx** (from Step 24): manage preview state (previewPhase, previewUrl, previewMeta). When ChatComposer calls `onUrlChange(url)` → set phase to Loading, fetch metadata via `${apiBaseUrl}/api/extract`, set phase to Loaded → then Share after save. Render LinkPreviewCard:
-     ```
-     ├── View flex-1 (content area)
-     │
-     ├── LinkPreviewCard (when previewPhase !== Idle)  ← positioned above composer
-     │   (absolute bottom, mx-4, z-20)
-     │
-     ├── KeyboardAvoidingView
-     │   └── ChatComposer
-     ```
-
-### Design Decisions — Link Preview + Share (for mobile agent)
-
-| Aspect | Web | Mobile |
-|---|---|---|
-| **LinkPreviewCard position** | `absolute bottom-full` above ChatInput, max-w-2xl | Above ChatComposer, mx-4, z-20 |
-| **Preview card** | `bg-card border rounded-2xl`, animated entry/exit | `bg-card border border-border rounded-2xl shadow-lg` |
-| **Loading state** | DomainIcon + Typewriter + CyclingText | Domain text + static loading text |
-| **Loaded state** | Image 56x56 + title + description + source | Same with RN Image |
-| **Close button** | X icon absolute top-3 right-3 | Same |
-| **Share phase** | "✓ Saved!" + ShareTargetGrid + Skip/Send | Same layout |
-| **ShareTargetGrid** | flex-wrap, Avatar 48-56px, check badge | FlatList numColumns=4, same avatar + badge |
-| **VaultShareModal** | shadcn Dialog | RN Modal bottom sheet |
-| **Share mutation** | groups → group_posts, DMs → messages | Same via mobile supabase |
-| **Already shared** | Gray check badge, disabled, opacity-60 | Same |"
+Build each step as written + NativeWind + lucide-react-native.
+If something is missing from the map → explore that specific folder only, update the map, then proceed."

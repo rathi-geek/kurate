@@ -54,6 +54,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { conversations } = useDMConversations(userId);
   const notif = useNotifications(userId);
 
+  // Show unread notification count in browser tab title
+  useEffect(() => {
+    const base = document.title.replace(/^\(\d+\)\s*/, "");
+    document.title = notif.unreadCount > 0 ? `(${notif.unreadCount}) ${base}` : base;
+  }, [notif.unreadCount]);
+
   // Groups list — SidebarGroupsSection already fetches this; no extra network call
   const { data: userGroups = [] } = useQuery({
     queryKey: queryKeys.groups.list(),

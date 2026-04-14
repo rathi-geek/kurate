@@ -5,13 +5,21 @@ import { supabase } from '@/libs/supabase/client';
 
 export type HandleStatus = 'idle' | 'checking' | 'available' | 'taken';
 
-export function useUsernameAvailability(username: string) {
+export function useUsernameAvailability(
+  username: string,
+  currentHandle?: string,
+) {
   const [status, setStatus] = useState<HandleStatus>('idle');
 
   useEffect(() => {
     const trimmed = username.trim();
     if (!trimmed || validateUsername(trimmed) !== null) {
       setStatus('idle');
+      return;
+    }
+
+    if (currentHandle && trimmed === currentHandle) {
+      setStatus('available');
       return;
     }
 
@@ -26,7 +34,7 @@ export function useUsernameAvailability(username: string) {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [username]);
+  }, [username, currentHandle]);
 
   return { status, setStatus };
 }

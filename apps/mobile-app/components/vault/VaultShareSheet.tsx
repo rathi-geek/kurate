@@ -5,7 +5,9 @@ import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
 import { Button, ButtonText } from '@/components/ui/button';
 import { useLocalization } from '@/context';
-import { useShareToGroups } from '@/hooks/useShareToGroups';
+import { useShareToGroups } from '@kurate/hooks';
+import { supabase } from '@/libs/supabase/client';
+import { useAuthStore } from '@/store';
 import type { VaultItem } from '@kurate/types';
 import { ShareTargetGrid } from '@/components/shared/ShareTargetGrid';
 
@@ -17,8 +19,9 @@ interface VaultShareSheetProps {
 
 export function VaultShareSheet({ open, item, onClose }: VaultShareSheetProps) {
   const { t } = useLocalization();
+  const userId = useAuthStore(state => state.userId) ?? '';
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const shareMutation = useShareToGroups();
+  const shareMutation = useShareToGroups(supabase);
 
   const handleSelectionChange = useCallback((ids: string[]) => {
     setSelectedIds(new Set(ids));
@@ -28,11 +31,12 @@ export function VaultShareSheet({ open, item, onClose }: VaultShareSheetProps) {
     if (!item || selectedIds.size === 0) return;
     await shareMutation.mutateAsync({
       loggedItemId: item.logged_item_id,
-      conversationIds: Array.from(selectedIds),
+      groupIds: Array.from(selectedIds),
+      userId,
     });
     setSelectedIds(new Set());
     onClose();
-  }, [item, selectedIds, shareMutation, onClose]);
+  }, [item, selectedIds, userId, shareMutation, onClose]);
 
   const handleClose = useCallback(() => {
     setSelectedIds(new Set());

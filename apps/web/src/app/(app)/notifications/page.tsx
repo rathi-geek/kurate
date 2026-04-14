@@ -1,43 +1,32 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
 import { useAuth } from "@/app/_libs/auth-context";
 import { useNotifications } from "@/app/_libs/hooks/useNotifications";
+import { useAutoMarkRead } from "@/app/_libs/hooks/useAutoMarkRead";
 import { NotificationItem } from "@/app/_components/notifications/notification-item";
+import { useTranslations } from "@/i18n/use-translations";
 
 export default function NotificationsPage() {
+  const t = useTranslations("notifications");
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
   const { notifications, unreadCount, isLoading, markAllRead, markRead } =
     useNotifications(userId);
 
-  // Auto-mark all read 1.5s after page mounts (mirrors panel behavior)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (unreadCount > 0) {
-      timerRef.current = setTimeout(() => {
-        void markAllRead();
-      }, 1500);
-    }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useAutoMarkRead(true, unreadCount, markAllRead);
 
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-ink/8 px-4 py-3">
-        <h1 className="font-sans text-base font-bold text-ink">Notifications</h1>
+        <h1 className="font-sans text-base font-bold text-ink">{t("title")}</h1>
         {unreadCount > 0 && (
           <button
             type="button"
             onClick={() => void markAllRead()}
             className="font-sans text-xs text-ink/40 transition-colors hover:text-ink/70">
-            Mark all read
+            {t("mark_all_read")}
           </button>
         )}
       </div>
@@ -60,9 +49,9 @@ export default function NotificationsPage() {
 
         {!isLoading && notifications.length === 0 && (
           <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-            <p className="font-sans text-sm font-medium text-ink/50">No notifications yet</p>
+            <p className="font-sans text-sm font-medium text-ink/50">{t("empty_title")}</p>
             <p className="mt-1 font-mono text-xs text-ink/30">
-              You&apos;ll see activity from your groups here
+              {t("empty_subtitle")}
             </p>
           </div>
         )}

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "@/i18n/use-translations";
 
 import type { GroupMember, GroupRole } from "@kurate/types";
+import { avatarUrl } from "@/app/_libs/utils/getMediaUrl";
 import { MemberActionModal } from "./member-action-modal";
 
 export interface GroupInfoMembersListProps {
@@ -75,10 +76,10 @@ export function GroupInfoMembersList({
                 tappable ? "cursor-pointer transition-colors hover:bg-surface" : ""
               }`}
             >
-              {m.profile.avatar_url ? (
+              {avatarUrl(m.profile_avatar_path) ? (
                 <Image
-                  src={m.profile.avatar_url}
-                  alt={m.profile.display_name ?? ""}
+                  src={avatarUrl(m.profile_avatar_path)!}
+                  alt={m.profile_display_name ?? ""}
                   width={40}
                   height={40}
                   className="border-border size-10 shrink-0 rounded-full border object-cover"
@@ -86,17 +87,17 @@ export function GroupInfoMembersList({
               ) : (
                 <div className="bg-primary/10 border-border/50 flex size-10 shrink-0 items-center justify-center rounded-full border">
                   <span className="text-primary text-sm font-bold">
-                    {(m.profile.display_name?.[0] ?? "?").toUpperCase()}
+                    {(m.profile_display_name?.[0] ?? "?").toUpperCase()}
                   </span>
                 </div>
               )}
               <div className="flex min-w-0 flex-1 flex-col items-start">
                 <p className="text-foreground truncate text-sm font-medium">
-                  {m.profile.display_name ?? t("anonymous")}
+                  {m.profile_display_name ?? t("anonymous")}
                 </p>
-                {m.profile.handle && (
+                {m.profile_handle && (
                   <p className="text-muted-foreground truncate text-xs">
-                    @{m.profile.handle}
+                    @{m.profile_handle}
                   </p>
                 )}
               </div>

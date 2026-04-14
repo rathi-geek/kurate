@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import { type ComponentProps, useRef, useState } from "react";
 
 import Link from "next/link";
 
@@ -42,13 +42,10 @@ const FEATURE_KEYS = [
   { icon: "sunburst", bg: "bg-accent", titleKey: "feature_3_title", descKey: "feature_3_desc" },
 ] as const;
 
-const STATS_PEOPLE = [
-  { person: "Naman Lahoti", role: "Founder & Builder" },
-  { person: "Arshia Mal", role: "Product Designer" },
-];
-
 export default function LandingPage() {
   const prefersReducedMotion = useSafeReducedMotion();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
   const t = useTranslations("landing");
   const tNav = useTranslations("nav");
   const tApp = useTranslations("app");
@@ -132,6 +129,68 @@ export default function LandingPage() {
               <Button asChild size="lg">
                 <Link href={ROUTES.AUTH.LOGIN}>{t("get_started")}</Link>
               </Button>
+            </motion.div>
+            <motion.div
+              initial={prefersReducedMotion ? false : undefined}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={fadeUp}
+              transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.45 }}
+              role="button"
+              tabIndex={0}
+              aria-label={isPlaying ? "Pause video" : "Play video"}
+              onClick={() => {
+                if (videoRef.current) {
+                  if (isPlaying) {
+                    videoRef.current.pause();
+                  } else {
+                    videoRef.current.play();
+                  }
+                  setIsPlaying(!isPlaying);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault();
+                  if (videoRef.current) {
+                    if (isPlaying) {
+                      videoRef.current.pause();
+                    } else {
+                      videoRef.current.play();
+                    }
+                    setIsPlaying(!isPlaying);
+                  }
+                }
+              }}
+              className="group rounded-card relative mx-auto mt-12 w-full max-w-4xl cursor-pointer overflow-hidden bg-black shadow-2xl">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="block w-full">
+                <source
+                  src="https://eavlskuuyzzttyqsfsqc.supabase.co/storage/v1/object/public/assets/WhatsApp%20Video%202026-04-09%20at%2020.09.04.mp4"
+                  type="video/mp4"
+                />
+              </video>
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">
+                  {isPlaying ? (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                      <rect x="3" y="2" width="4" height="12" rx="1" />
+                      <rect x="9" y="2" width="4" height="12" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M4 2.5v11l9-5.5L4 2.5z" />
+                    </svg>
+                  )}
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         </section>
@@ -244,44 +303,7 @@ export default function LandingPage() {
             ))}
           </div>
         </section>
-        ={/* Stats */}
-        <section className="bg-muted px-6 pb-20">
-          <div className="container-page flex flex-col justify-center gap-5 md:flex-row">
-            {(
-              [
-                { statKey: "stat_1", descKey: "stat_1_desc" },
-                { statKey: "stat_2", descKey: "stat_2_desc" },
-              ] as const
-            ).map((card, i) => (
-              <motion.div
-                key={i}
-                initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
-                whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.15 }}
-                viewport={{ once: true }}
-                whileHover={prefersReducedMotion ? undefined : { y: -4 }}
-                className="bg-teal rounded-card flex max-w-md flex-1 flex-col p-8">
-                <h3 className="mb-2 min-h-[80px] font-serif text-2xl font-normal text-white italic md:text-3xl">
-                  {t(card.statKey)}
-                </h3>
-                <p className="mb-6 flex-1 font-sans text-sm leading-relaxed text-white/70">
-                  {t(card.descKey)}
-                </p>
-                <div className="mt-auto flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 font-sans text-xs font-bold text-white">
-                    {STATS_PEOPLE[i].person.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="font-sans text-sm font-semibold text-white">
-                      {STATS_PEOPLE[i].person}
-                    </div>
-                    <div className="font-sans text-xs text-white/50">{STATS_PEOPLE[i].role}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+
         {/* CTA */}
         <section aria-labelledby="cta-heading" className="bg-cream px-6 py-20">
           <motion.div

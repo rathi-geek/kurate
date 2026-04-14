@@ -4,11 +4,10 @@ import { useState } from "react";
 
 import Link from "next/link";
 
-import { ROUTES } from "@kurate/utils";
 import type { DMConversation } from "@kurate/types";
+import { ROUTES, formatRelativeTime } from "@kurate/utils";
 
 import { FindUserSheet } from "@/app/_components/people/find-user-sheet";
-import { formatRelativeTime } from "@/app/_libs/utils/formatRelativeTime";
 import { PlusIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 
@@ -58,7 +57,7 @@ export function PeoplePanel({ userId, conversations, isLoading }: PeoplePanelPro
             <Link
               key={convo.id}
               href={ROUTES.APP.PERSON(convo.id)}
-              className="flex items-center gap-3 rounded-xl border border-ink/6 bg-white px-3 py-3 transition-colors hover:bg-surface">
+              className="border-ink/6 hover:bg-surface flex items-center gap-3 rounded-xl border bg-white px-3 py-3 transition-colors">
               <div className="bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-full">
                 <span className="text-primary text-sm font-bold">
                   {(

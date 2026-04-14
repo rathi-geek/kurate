@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { useTranslations } from "@/i18n/use-translations";
 
 import { useGroupFeed } from "@/app/_libs/hooks/useGroupFeed";
@@ -20,15 +22,17 @@ export function LibraryView({
 }: LibraryViewProps) {
   const t = useTranslations("groups");
   // Fetch all pages (no cursor — just keep fetching until no more)
-  const { drops, isLoading, fetchNextPage, hasNextPage } = useGroupFeed(
+  const { drops, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useGroupFeed(
     groupId,
     currentUserId,
   );
 
   // Eagerly load all pages
-  if (hasNextPage) {
-    fetchNextPage();
-  }
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const mustReadDrops = drops.filter(
     (d: GroupDrop) => d.engagement.mustRead.count > 0,

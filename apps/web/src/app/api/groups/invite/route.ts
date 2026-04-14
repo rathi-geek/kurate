@@ -152,17 +152,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Store invite record — best-effort, table may not exist yet
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    await db.from("group_invites").insert({
-      group_id: groupId,
-      invited_by: user.id,
-      invited_email: normalizedEmail,
-    });
-  } catch {
-    // group_invites table not created yet — ignore
+  // Store invite record
+  const { error: inviteError } = await supabase.from("group_invites").insert({
+    group_id: groupId,
+    invited_by: user.id,
+    invited_email: normalizedEmail,
+  });
+
+  if (inviteError) {
+    console.error("[invite-record]", inviteError.message);
   }
 
   return NextResponse.json({ success: true });

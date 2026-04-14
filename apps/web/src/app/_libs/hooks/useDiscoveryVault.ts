@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { subDays } from "date-fns";
+import { subDays } from "@kurate/utils";
 
 import { createClient } from "@/app/_libs/supabase/client";
 

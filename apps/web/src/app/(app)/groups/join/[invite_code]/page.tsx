@@ -2,6 +2,7 @@ import { type Metadata ,type  Route } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/_libs/supabase/server";
 import { createAdminClient } from "@/app/_libs/supabase/admin";
+import { getT } from "@/i18n/server";
 import { ROUTES } from "@kurate/utils";
 
 import { JoinErrorView } from "./JoinErrorView";
@@ -43,6 +44,7 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
   const { invite_code } = await params;
   const { e: encodedEmail } = await searchParams;
   const supabase = await createClient();
+  const t = getT("groups");
 
   const {
     data: { user },
@@ -78,8 +80,11 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
     if (user.email !== invitedEmail) {
       return (
         <JoinErrorView
-          title="Wrong account"
-          description={`This invite was sent to ${invitedEmail}. You're signed in as ${user.email ?? "a different account"}. Please sign in with the correct email to join.`}
+          title={t("join_wrong_account_title")}
+          description={t("join_wrong_account_desc", {
+            invitedEmail,
+            currentEmail: user.email ?? "a different account",
+          })}
         />
       );
     }
@@ -97,8 +102,8 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
     if (!inviteRow) {
       return (
         <JoinErrorView
-          title="Invite no longer valid"
-          description="This invite link has been revoked. Ask the group owner to send you a new invite."
+          title={t("join_revoked_title")}
+          description={t("join_revoked_desc")}
         />
       );
     }
@@ -114,8 +119,8 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
   if (!group) {
     return (
       <JoinErrorView
-        title="Invalid invite link"
-        description="This invite link is invalid or the group no longer exists."
+        title={t("join_invalid_title")}
+        description={t("join_invalid_desc")}
       />
     );
   }
@@ -141,8 +146,10 @@ export default async function JoinGroupPage({ params, searchParams }: Props) {
   if ((count ?? 0) >= (group.group_max_members ?? 50)) {
     return (
       <JoinErrorView
-        title={`${group.group_name} is full`}
-        description={`This group has reached its maximum of ${group.group_max_members ?? 50} members.`}
+        title={t("join_full_title", { groupName: group.group_name ?? "" })}
+        description={t("join_full_desc", {
+          max: group.group_max_members ?? 50,
+        })}
       />
     );
   }

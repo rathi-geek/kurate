@@ -9,6 +9,17 @@ interface VaultEmptyStateProps {
   filters?: VaultFilters;
 }
 
+const CONTENT_TYPE_KEY: Record<string, string> = {
+  all: 'all',
+  article: 'articles',
+  video: 'videos',
+  podcast: 'podcasts',
+  tweet: 'tweets',
+  substack: 'substack',
+  spotify: 'spotify',
+  link: 'links',
+};
+
 function useFilteredMessage(
   t: (key: string, opts?: Record<string, string>) => string,
   filters?: VaultFilters,
@@ -16,7 +27,7 @@ function useFilteredMessage(
   if (!filters) return t('vault.empty_state_title');
 
   const itemLabel = t(
-    `vault.empty_state_filtered_items_${filters.contentType === 'all' ? 'all' : filters.contentType}`,
+    `vault.empty_state_filtered_items_${CONTENT_TYPE_KEY[filters.contentType] ?? 'all'}`,
   );
   const timeLabel =
     filters.time !== 'all'

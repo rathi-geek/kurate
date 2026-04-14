@@ -1530,6 +1530,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _avatar_path: { Args: { p_media_id: string }; Returns: string }
+      _display_name: {
+        Args: { p_first_name: string; p_handle: string; p_last_name: string }
+        Returns: string
+      }
       get_all_post_engagers: {
         Args: { p_exclude_users: string[]; p_post_id: string }
         Returns: {
@@ -1554,6 +1559,79 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_feed_comment_previews: {
+        Args: { p_post_ids: string[] }
+        Returns: {
+          author_avatar_path: string
+          author_display_name: string
+          comment_text: string
+          created_at: string
+          group_post_id: string
+        }[]
+      }
+      get_group_feed_page: {
+        Args: {
+          p_cursor?: string
+          p_group_id: string
+          p_limit?: number
+          p_user_id: string
+        }
+        Returns: {
+          comment_count: number
+          content: string
+          convo_id: string
+          did_like: boolean
+          did_must_read: boolean
+          id: string
+          item_content_type: string
+          item_description: string
+          item_preview_image: string
+          item_raw_metadata: Json
+          item_title: string
+          item_url: string
+          like_count: number
+          logged_item_id: string
+          must_read_count: number
+          note: string
+          seen_at: string
+          shared_at: string
+          shared_by: string
+          sharer_avatar_path: string
+          sharer_display_name: string
+          sharer_handle: string
+          sharer_id: string
+        }[]
+      }
+      get_group_members: {
+        Args: { p_group_id: string }
+        Returns: {
+          convo_id: string
+          id: string
+          joined_at: string
+          profile_avatar_path: string
+          profile_display_name: string
+          profile_handle: string
+          profile_id: string
+          role: Database["public"]["Enums"]["role_enum"]
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_group_post_comments: {
+        Args: { p_cursor?: string; p_limit?: number; p_post_id: string }
+        Returns: {
+          author_avatar_path: string
+          author_display_name: string
+          author_handle: string
+          author_id: string
+          comment_text: string
+          created_at: string
+          group_post_id: string
+          id: string
+          parent_comment_id: string
+          user_id: string
+        }[]
+      }
       get_thought_bucket_summaries: {
         Args: never
         Returns: {
@@ -1562,6 +1640,17 @@ export type Database = {
           latest_text: string
           total_count: number
           unread_count: number
+        }[]
+      }
+      get_user_groups: {
+        Args: never
+        Returns: {
+          avatar_path: string
+          group_description: string
+          group_name: string
+          id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["role_enum"]
         }[]
       }
       text_array_to_string: {
