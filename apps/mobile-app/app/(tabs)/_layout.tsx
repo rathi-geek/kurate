@@ -9,6 +9,7 @@ import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { useLocalization } from '@/context';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useGroupUnreadCounts } from '@/hooks/useGroupUnreadCounts';
 import { useProfile } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/store';
@@ -73,6 +74,7 @@ export default function TabLayout() {
   const { t } = useLocalization();
   const userId = useAuthStore(state => state.userId);
   const { unreadCount } = useNotifications(userId);
+  const { totalUnread: groupsUnread } = useGroupUnreadCounts(userId ?? '');
 
   return (
     <Tabs
@@ -101,7 +103,10 @@ export default function TabLayout() {
           title: t('groups.my_groups_title'),
           headerShown: false,
           tabBarIcon: ({ color }: { color: string }) => (
-            <Users size={18} color={color} />
+            <View>
+              <Users size={18} color={color} />
+              <NotificationBadge count={groupsUnread} />
+            </View>
           ),
         }}
       />

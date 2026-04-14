@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -12,6 +12,7 @@ import { supabase } from '@/libs/supabase/client';
 import { useAuthStore } from '@/store';
 import { useGroupDetail, useGroupMembers, type GroupRow } from '@kurate/hooks';
 import { queryKeys } from '@kurate/query';
+import { useGroupUnreadCounts } from '@/hooks/useGroupUnreadCounts';
 import { GroupHeader, type GroupView } from '@/components/groups/group-header';
 import { FeedView } from '@/components/groups/feed-view';
 import { LibraryView } from '@/components/groups/library-view';
@@ -33,6 +34,12 @@ export default function GroupDetailScreen() {
 
   const { data: group, isLoading, error } = useGroupDetail(supabase, groupId);
   const { currentRole } = useGroupMembers(supabase, groupId, userId);
+  const { markRead } = useGroupUnreadCounts(userId);
+
+  // Mark as read whenever this group screen mounts (or groupId changes).
+  useEffect(() => {
+    if (groupId) void markRead(groupId);
+  }, [groupId, markRead]);
 
   const name = group?.group_name ?? cachedRow?.name ?? '';
   const avatarUrl = cachedRow?.avatarUrl ?? null;

@@ -13,8 +13,10 @@ import { Icon } from '@/components/ui/icon';
 import { Alert, AlertText } from '@/components/ui/alert';
 import { useLocalization } from '@/context';
 import { supabase, supabaseUrl } from '@/libs/supabase/client';
+import { useAuthStore } from '@/store';
 import { fetchUserGroups, type GroupRow as GroupRowType } from '@kurate/hooks';
 import { queryKeys } from '@kurate/query';
+import { useGroupUnreadCounts } from '@/hooks/useGroupUnreadCounts';
 import { GroupRow } from '@/components/groups/group-row';
 import { GroupsEmptyState } from '@/components/groups/groups-empty-state';
 import { CreateGroupSheet } from '@/components/groups/create-group-sheet';
@@ -22,6 +24,7 @@ import { CreateGroupSheet } from '@/components/groups/create-group-sheet';
 export default function GroupsScreen() {
   const { t } = useLocalization();
   const router = useRouter();
+  const userId = useAuthStore(state => state.userId) ?? '';
   const [createOpen, setCreateOpen] = useState(false);
 
   const {
@@ -34,6 +37,8 @@ export default function GroupsScreen() {
     queryFn: () => fetchUserGroups(supabase, supabaseUrl),
   });
 
+  const { getCount } = useGroupUnreadCounts(userId);
+
   const handlePressRow = useCallback(
     (id: string) => {
       router.push(`/groups/${id}` as never);
@@ -43,9 +48,13 @@ export default function GroupsScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: GroupRowType }) => (
-      <GroupRow group={item} onPress={handlePressRow} />
+      <GroupRow
+        group={item}
+        onPress={handlePressRow}
+        unreadCount={getCount(item.id)}
+      />
     ),
-    [handlePressRow],
+    [handlePressRow, getCount],
   );
 
   return (
