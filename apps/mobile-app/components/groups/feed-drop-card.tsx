@@ -44,6 +44,7 @@ export function FeedDropCard({
   const sharerAvatar = avatarUrlFromPath(drop.sharer.avatar_path);
   const canDelete = drop.shared_by === currentUserId || currentRole === 'owner';
   const canShare = !!drop.logged_item_id;
+  const hasMustRead = drop.engagement.mustRead.count > 0;
 
   const handleDelete = useCallback(() => {
     RNAlert.alert(t('groups.delete_drop_confirm'), undefined, [
@@ -59,8 +60,9 @@ export function FeedDropCard({
   }, [drop.id, onDelete, t]);
 
   return (
-    <View className="mx-4 my-2 gap-3 overflow-hidden  shadow-sm">
-      <HStack className="items-start gap-2">
+    <View>
+      {/* Header — inside bg-card, p-4 matches web */}
+      <HStack className="items-start gap-2 py-2">
         <Avatar
           uri={sharerAvatar}
           name={drop.sharer.display_name ?? drop.sharer.handle}
@@ -69,11 +71,11 @@ export function FeedDropCard({
         <VStack className="min-w-0 flex-1 gap-0.5">
           <Text
             numberOfLines={1}
-            className="font-sans text-sm font-medium text-foreground"
+            className="font-sans text-xs font-medium text-foreground"
           >
             {drop.sharer.display_name ?? drop.sharer.handle ?? ''}
           </Text>
-          <Text className="font-mono text-xs text-muted-foreground">
+          <Text className="font-mono text-[10px] text-muted-foreground">
             {formatRelativeTime(drop.shared_at)}
           </Text>
         </VStack>
@@ -100,28 +102,39 @@ export function FeedDropCard({
         </HStack>
       </HStack>
 
-      {drop.note ? (
-        <Text className="font-sans text-sm italic text-muted-foreground">
-          {drop.note}
-        </Text>
-      ) : null}
+      <View
+        className={`overflow-hidden rounded-xl border shadow-sm ${
+          hasMustRead
+            ? 'border-amber-400/30 bg-amber-50/40'
+            : 'border-border bg-card'
+        }`}
+      >
+        {/* Content — note + preview/text, padded */}
+        <View className="gap-3">
+          {drop.note ? (
+            <Text className="px-3 pt-2  font-sans text-xs italic text-muted-foreground">
+              {drop.note}
+            </Text>
+          ) : null}
 
-      {drop.item ? (
-        <VStack className="rounded-xl border border-border">
-          <DropItemPreview item={drop.item} />
-          <EngagementBar
-            drop={drop}
-            currentUserId={currentUserId}
-            onCommentsPress={() => setCommentsOpen(true)}
-          />
-        </VStack>
-      ) : drop.content ? (
-        <View className="rounded-xl bg-secondary p-3">
-          <Text className="font-sans text-sm text-foreground">
-            {drop.content}
-          </Text>
+          {drop.item ? (
+            <DropItemPreview item={drop.item} />
+          ) : drop.content ? (
+            <View className="rounded-xl bg-secondary p-3">
+              <Text className="font-sans text-sm text-foreground">
+                {drop.content}
+              </Text>
+            </View>
+          ) : null}
         </View>
-      ) : null}
+
+        {/* Engagement — border-t separator, same bg-card, matches web */}
+        <EngagementBar
+          drop={drop}
+          currentUserId={currentUserId}
+          onCommentsPress={() => setCommentsOpen(true)}
+        />
+      </View>
 
       <DropShareSheet
         open={shareOpen}

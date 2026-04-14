@@ -33,6 +33,7 @@ cssInterop(IconImpl, {
       height: 'size',
       width: 'size',
       color: true,
+      fill: true,
     },
   },
 });

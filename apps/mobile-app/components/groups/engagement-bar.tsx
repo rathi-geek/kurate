@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { Heart, Star, Bookmark, MessageCircle } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
+import { View } from '@/components/ui/view';
 import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
 import { Pressable } from '@/components/ui/pressable';
@@ -10,7 +11,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { useLocalization } from '@/context';
 import { supabase, supabaseUrl } from '@/libs/supabase/client';
 import { useDropEngagement, useVaultToggle } from '@kurate/hooks';
-import type { GroupDrop } from '@kurate/types';
+import type { GroupDrop, GroupProfile } from '@kurate/types';
 
 interface EngagementBarProps {
   drop: GroupDrop;
@@ -22,6 +23,38 @@ interface EngagementBarProps {
 const STORAGE_BASE = supabaseUrl
   ? `${supabaseUrl}/storage/v1/object/public/`
   : '';
+
+const toAvatarUrl = (path: string | null): string | null =>
+  path ? `${STORAGE_BASE}${path}` : null;
+
+function ReactorPill({
+  reactors,
+  label,
+}: {
+  reactors: GroupProfile[];
+  label: string;
+}) {
+  if (reactors.length === 0) return null;
+  const shown = reactors.slice(0, 3);
+  return (
+    <HStack className="items-center gap-1.5 rounded-full border border-border/50 bg-secondary px-2 py-0.5">
+      <HStack style={{ flexDirection: 'row' }}>
+        {shown.map((r, i) => (
+          <View key={r.id ?? i} style={{ marginLeft: i > 0 ? -4 : 0 }}>
+            <Avatar
+              uri={toAvatarUrl(r.avatar_path)}
+              name={r.display_name}
+              size={16}
+            />
+          </View>
+        ))}
+      </HStack>
+      <Text className="font-sans text-[11px] text-muted-foreground">
+        {label}
+      </Text>
+    </HStack>
+  );
+}
 
 export function EngagementBar({
   drop,
@@ -47,6 +80,7 @@ export function EngagementBar({
 
   const liked = drop.engagement.like.didReact;
   const mustRead = drop.engagement.mustRead.didReact;
+  const hasComments = drop.commentCount > 0;
 
   const handleToggleLike = useCallback(() => {
     toggleReaction({
@@ -84,25 +118,39 @@ export function EngagementBar({
     }
   }, [drop.item, isSaved, toggleVault, t]);
 
-  const latestComment = drop.latestComment;
-  const latestCommentAvatar = latestComment?.authorAvatarPath
-    ? `${STORAGE_BASE}${latestComment.authorAvatarPath}`
-    : null;
-
   return (
-    <VStack className="gap-2 px-2">
+    <VStack className="gap-2 border-t border-border/50 px-4 py-3">
+      {/* Reactor pills — stacked avatars + "liked" / "recommended" */}
+      {(drop.engagement.like.reactors.length > 0 ||
+        drop.engagement.mustRead.reactors.length > 0) && (
+        <HStack className="items-center gap-3">
+          <ReactorPill
+            reactors={drop.engagement.like.reactors}
+            label={t('groups.reaction_like_aria').toLowerCase()}
+          />
+          <ReactorPill
+            reactors={drop.engagement.mustRead.reactors}
+            label={t('groups.reaction_must_read_aria').toLowerCase()}
+          />
+        </HStack>
+      )}
+
+      {/* Engagement buttons — px-2 py-1 per button like web */}
       <HStack className="items-center justify-between">
         <HStack className="items-center gap-4">
           <Pressable
             onPress={handleToggleLike}
-            className="flex-row items-center gap-1 active:opacity-60"
+            className="flex-row items-center gap-1 rounded-[6px]  active:bg-accent/40"
             accessibilityLabel={t('groups.reaction_like_aria')}
           >
             <Icon
               as={Heart}
-              size="xs"
-              className={liked ? 'text-destructive' : 'text-muted-foreground'}
-              fill={liked ? 'currentColor' : 'none'}
+              size="2xs"
+              className={
+                liked
+                  ? 'fill-current text-destructive'
+                  : 'text-muted-foreground'
+              }
             />
             {drop.engagement.like.count > 0 ? (
               <Text className="font-mono text-xs text-muted-foreground">
@@ -113,14 +161,15 @@ export function EngagementBar({
 
           <Pressable
             onPress={handleToggleMustRead}
-            className="flex-row items-center gap-1 active:opacity-60"
+            className="flex-row items-center gap-1 rounded-[6px] py-1 active:bg-accent/40"
             accessibilityLabel={t('groups.reaction_must_read_aria')}
           >
             <Icon
               as={Star}
-              size="xs"
-              className={mustRead ? 'text-primary' : 'text-muted-foreground'}
-              fill={mustRead ? 'currentColor' : 'none'}
+              size="2xs"
+              className={
+                mustRead ? 'fill-current text-primary' : 'text-muted-foreground'
+              }
             />
             {drop.engagement.mustRead.count > 0 ? (
               <Text className="font-mono text-xs text-muted-foreground">
@@ -132,7 +181,7 @@ export function EngagementBar({
           {drop.item ? (
             <Pressable
               onPress={handleToggleBookmark}
-              className="flex-row items-center gap-1 active:opacity-60"
+              className="flex-row items-center gap-1 rounded-[6px] border-t border-border/50 py-1 active:bg-accent/40"
               accessibilityLabel={
                 isSaved
                   ? t('groups.bookmark_remove_aria')
@@ -141,9 +190,12 @@ export function EngagementBar({
             >
               <Icon
                 as={Bookmark}
-                size="xs"
-                className={isSaved ? 'text-primary' : 'text-muted-foreground'}
-                fill={isSaved ? 'currentColor' : 'none'}
+                size="2xs"
+                className={
+                  isSaved
+                    ? 'fill-current text-primary'
+                    : 'text-muted-foreground'
+                }
               />
             </Pressable>
           ) : null}
@@ -153,15 +205,19 @@ export function EngagementBar({
           <Pressable
             onPress={onCommentsPress}
             disabled={!onCommentsPress}
-            className="flex-row items-center gap-1 active:opacity-60"
+            className="flex-row items-center gap-1 rounded-[6px] px-2 active:bg-accent/40"
             accessibilityLabel={t('groups.comment_aria')}
           >
             <Icon
               as={MessageCircle}
-              size="xs"
-              className="text-muted-foreground"
+              size="2xs"
+              className={
+                hasComments
+                  ? 'fill-current text-green-600'
+                  : 'text-muted-foreground'
+              }
             />
-            {drop.commentCount > 0 ? (
+            {hasComments ? (
               <Text className="font-mono text-xs text-muted-foreground">
                 {drop.commentCount}
               </Text>
@@ -169,33 +225,6 @@ export function EngagementBar({
           </Pressable>
         ) : null}
       </HStack>
-
-      {showComments && latestComment ? (
-        <Pressable
-          onPress={onCommentsPress}
-          disabled={!onCommentsPress}
-          className="flex-row items-center gap-2 active:opacity-60"
-          accessibilityLabel={t('groups.comment_aria')}
-        >
-          <Avatar
-            uri={latestCommentAvatar}
-            name={latestComment.authorName ?? ''}
-            size={20}
-          />
-          <Text
-            numberOfLines={1}
-            className="min-w-0 flex-1 font-sans text-xs text-muted-foreground"
-          >
-            {latestComment.authorName ? (
-              <Text className="font-sans text-xs font-medium text-foreground">
-                {latestComment.authorName}
-                {': '}
-              </Text>
-            ) : null}
-            {latestComment.text}
-          </Text>
-        </Pressable>
-      ) : null}
     </VStack>
   );
 }

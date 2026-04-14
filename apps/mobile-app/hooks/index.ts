@@ -23,3 +23,5 @@ export * from './useUserInterestsQuery';
 export * from './useAvatarUpload';
 export * from './useNotifications';
 export * from './useGroupUnreadCounts';
+export * from './useNavigationLock';
+export * from './useRecommendedDrops';

@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { FlashList } from '@shopify/flash-list';
 import { Plus } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
@@ -23,7 +23,7 @@ import { CreateGroupSheet } from '@/components/groups/create-group-sheet';
 
 export default function GroupsScreen() {
   const { t } = useLocalization();
-  const router = useRouter();
+  const { push } = useNavigationLock();
   const userId = useAuthStore(state => state.userId) ?? '';
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -41,9 +41,9 @@ export default function GroupsScreen() {
 
   const handlePressRow = useCallback(
     (id: string) => {
-      router.push(`/groups/${id}` as never);
+      push(`/groups/${id}`);
     },
-    [router],
+    [push],
   );
 
   const renderItem = useCallback(

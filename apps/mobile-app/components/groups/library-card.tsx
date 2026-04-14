@@ -43,7 +43,7 @@ export function LibraryCard({
   return (
     <Pressable
       onPress={handlePress}
-      className="mx-4 my-2 gap-3 overflow-hidden rounded-xl border border-border bg-card shadow-sm active:opacity-80"
+      className="m-1 flex-1 gap-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm active:opacity-80"
       accessibilityLabel={fallbackText || t('groups.drop_aria_fallback')}
     >
       {previewUrl ? (

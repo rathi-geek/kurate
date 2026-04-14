@@ -100,6 +100,9 @@ export function FeedView({ groupId, currentRole }: FeedViewProps) {
       data={drops}
       keyExtractor={d => d.id}
       renderItem={renderItem}
+      style={{ padding: 16 }}
+      showsVerticalScrollIndicator={false}
+      ItemSeparatorComponent={() => <View className="h-3" />}
       ListFooterComponent={renderFooter}
       ListEmptyComponent={
         <View className="items-center p-8">
