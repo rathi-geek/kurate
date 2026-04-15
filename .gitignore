@@ -42,3 +42,7 @@ Thumbs.db
 
 .nx/cache
 .nx/workspace-data
+
+# Local caches (scaffolding/tools)
+.cache
+.pnpm-store

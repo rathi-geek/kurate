@@ -101,12 +101,24 @@ export async function proxy(request: NextRequest) {
 
   // Auth pages: redirect logged-in users to the right destination
   // Landing page (/) is intentionally NOT in this list — authenticated users can still visit it
+  // /auth/extension-callback is excluded — it must run while the user IS logged in to send the session to the extension
   const isAuthRoute =
     pathname.startsWith(ROUTES.AUTH.BASE) &&
-    pathname !== ROUTES.AUTH.CALLBACK;
+    pathname !== ROUTES.AUTH.CALLBACK &&
+    pathname !== "/auth/extension-callback";
 
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
+
+    // Extension login: if extId is present the user came from the extension popup.
+    // Redirect to extension-callback so the session is forwarded to the extension.
+    const extId = request.nextUrl.searchParams.get("extId");
+    if (extId) {
+      url.pathname = "/auth/extension-callback";
+      url.search = `?extId=${encodeURIComponent(extId)}`;
+      return NextResponse.redirect(url);
+    }
+
     if (isAdmin) {
       url.pathname = ROUTES.ADMIN.DASHBOARD;
     } else if (user.user_metadata?.is_onboarded === true) {

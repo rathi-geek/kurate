@@ -6,6 +6,34 @@ import {
 } from "@/app/_libs/metadata/extractor";
 import { createClient } from "@/app/_libs/supabase/server";
 
+// ─── Extension CORS ───────────────────────────────────────────────────────────
+// The extension calls this endpoint with a Bearer token (no cookie session).
+// We need CORS headers + an OPTIONS preflight handler so Chrome allows the fetch.
+
+function isAllowedExtensionOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  const extId = process.env.EXTENSION_ID;
+  if (extId && origin === `chrome-extension://${extId}`) return true;
+  if (process.env.NODE_ENV === "development" && origin.startsWith("chrome-extension://")) return true;
+  return false;
+}
+
+function extensionCorsHeaders(origin: string) {
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!isAllowedExtensionOrigin(origin)) {
+    return new NextResponse(null, { status: 403 });
+  }
+  return new NextResponse(null, { status: 204, headers: extensionCorsHeaders(origin!) });
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function cleanSource(url: string): string {
@@ -34,14 +62,18 @@ function formatIsoDuration(iso: string): string | undefined {
 // ─── Route Handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  const isExtension = isAllowedExtensionOrigin(origin);
+  const extraHeaders = isExtension ? extensionCorsHeaders(origin!) : {};
+
   try {
-    // Support both cookie auth (web) and Bearer token auth (mobile)
+    // Support cookie auth (web), Bearer token auth (mobile + extension)
     const authHeader = req.headers.get("authorization");
     const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     let user;
     if (bearerToken) {
-      // Mobile: use Bearer token to get user
+      // Mobile / Extension: use Bearer token to get user
       const { createClient: createServiceClient } = await import("@supabase/supabase-js");
       const supabaseWithToken = createServiceClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,7 +92,7 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "UNAUTHORIZED", message: "Authentication required." },
-        { status: 401 },
+        { status: 401, headers: extraHeaders },
       );
     }
 
@@ -68,7 +100,7 @@ export async function POST(req: NextRequest) {
     if (!url || typeof url !== "string") {
       return NextResponse.json(
         { error: "INVALID_URL", message: "Please provide a valid URL." },
-        { status: 400 },
+        { status: 400, headers: extraHeaders },
       );
     }
     try {
@@ -76,16 +108,14 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json(
         { error: "INVALID_URL", message: "Please provide a valid URL." },
-        { status: 400 },
+        { status: 400, headers: extraHeaders },
       );
     }
 
-    // ── Extract metadata using the full extractor ──
     const meta = await extractMetadataFull(url);
     const contentType = meta.contentType;
     const source = cleanSource(url);
 
-    // ── Compute supplementary fields from HTML when available ──
     let author: string | undefined;
     let readTime: string | undefined;
     let duration: string | undefined;
@@ -126,21 +156,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      url,
-      title: meta.title,
-      source,
-      author,
-      previewImage: meta.thumbnail,
-      contentType,
-      readTime,
-      duration,
-      description: meta.description,
-    });
+    return NextResponse.json(
+      {
+        url,
+        title: meta.title,
+        source,
+        author,
+        previewImage: meta.thumbnail,
+        contentType,
+        readTime,
+        duration,
+        description: meta.description,
+      },
+      { headers: extraHeaders },
+    );
   } catch {
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Something went wrong." },
-      { status: 500 },
+      { status: 500, headers: extraHeaders },
     );
   }
 }
