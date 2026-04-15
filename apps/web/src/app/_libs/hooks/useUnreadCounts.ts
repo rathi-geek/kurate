@@ -8,7 +8,6 @@ const supabase = createClient();
 
 export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
   const [counts, setCounts] = useState<Map<string, number>>(new Map());
-  const [resubscribeKey, setResubscribeKey] = useState(0);
 
   const fetchCounts = useCallback(async () => {
     if (!userId) return;
@@ -49,7 +48,7 @@ export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
       const results = await Promise.all(
         groupIdArr.map(async (gid) => {
           const lastSeen = localStorage.getItem(`group_last_seen:${gid}`);
-          if (!lastSeen) return { gid, count: 0 };
+          if (!lastSeen) return { gid, count: null }; // null = no lastSeen, preserve existing
           const { count } = await supabase
             .from("group_posts")
             .select("id", { count: "exact", head: true })
@@ -60,11 +59,23 @@ export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
         }),
       );
       for (const { gid, count } of results) {
-        if (count) map.set(gid, count);
+        if (count !== null && count > 0) map.set(gid, count);
       }
     }
 
-    setCounts(map);
+    // Merge with existing counts: preserve realtime-accumulated group counts
+    // for groups that have no localStorage lastSeen entry
+    setCounts((prev) => {
+      const merged = new Map(map);
+      if (groupIds) {
+        for (const gid of groupIds) {
+          if (!merged.has(gid) && prev.has(gid)) {
+            merged.set(gid, prev.get(gid)!);
+          }
+        }
+      }
+      return merged;
+    });
   }, [userId, groupIds]);
 
   useEffect(() => {
@@ -114,14 +125,14 @@ export function useUnreadCounts(userId: string | null, groupIds?: Set<string>) {
       void supabase.removeChannel(channel);
       void supabase.removeChannel(groupChannel);
     };
-  }, [userId, fetchCounts, groupIds, resubscribeKey]);
+  }, [userId, fetchCounts, groupIds]);
 
-  // Re-fetch + re-subscribe when tab becomes visible again
+  // Re-fetch counts when tab becomes visible again.
+  // Channels reconnect automatically via Supabase — no teardown needed.
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         void fetchCounts();
-        setResubscribeKey((k) => k + 1);
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);

@@ -130,6 +130,7 @@ export type Database = {
           group_name: string | null
           id: string
           is_group: boolean | null
+          last_activity_at: string | null
           updated_at: string
         }
         Insert: {
@@ -140,6 +141,7 @@ export type Database = {
           group_name?: string | null
           id?: string
           is_group?: boolean | null
+          last_activity_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -150,6 +152,7 @@ export type Database = {
           group_name?: string | null
           id?: string
           is_group?: boolean | null
+          last_activity_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1650,6 +1653,7 @@ export type Database = {
           group_name: string
           id: string
           joined_at: string
+          last_activity_at: string
           role: Database["public"]["Enums"]["role_enum"]
         }[]
       }

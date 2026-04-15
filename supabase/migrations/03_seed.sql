@@ -66,3 +66,22 @@ INSERT INTO public.events (type, description) VALUES
   ('profile_view',        'User viewed another user''s profile'),
   ('external_link_click', 'User opened an external link from a logged item')
 ON CONFLICT (type) DO NOTHING;
+
+
+-- ── Backfill last_activity_at ────────────────────────────────────
+
+-- Groups: latest group post, fallback to created_at
+UPDATE public.conversations c
+SET last_activity_at = COALESCE(
+  (SELECT MAX(gp.shared_at) FROM public.group_posts gp WHERE gp.convo_id = c.id),
+  c.created_at
+)
+WHERE c.is_group = true;
+
+-- DMs: latest message, fallback to created_at
+UPDATE public.conversations c
+SET last_activity_at = COALESCE(
+  (SELECT MAX(m.created_at) FROM public.messages m WHERE m.convo_id = c.id),
+  c.created_at
+)
+WHERE c.is_group = false;

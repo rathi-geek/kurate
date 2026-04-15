@@ -32,10 +32,10 @@ async function fetchDMConversations(userId: string): Promise<DMConversation[]> {
   // Step 2: Filter to DM conversations only (is_group=false)
   const { data: dmConvos } = await supabase
     .from("conversations")
-    .select("id, updated_at")
+    .select("id, last_activity_at")
     .in("id", convoIds)
     .eq("is_group", false)
-    .order("updated_at", { ascending: false })
+    .order("last_activity_at", { ascending: false })
     .limit(20);
 
   const dmConvoIds = (dmConvos ?? []).map((c) => c.id);

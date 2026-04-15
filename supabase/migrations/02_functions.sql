@@ -944,3 +944,39 @@ AS $$
   ) counts ON true
   ORDER BY latest.created_at DESC NULLS LAST;
 $$;
+
+
+-- ── Bump last_activity_at on new group post ──────────────────────
+
+CREATE OR REPLACE FUNCTION public.bump_activity_on_group_post()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.conversations
+  SET last_activity_at = NEW.shared_at
+  WHERE id = NEW.convo_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_bump_activity_group_post
+  AFTER INSERT ON public.group_posts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.bump_activity_on_group_post();
+
+
+-- ── Bump last_activity_at on new DM message ──────────────────────
+
+CREATE OR REPLACE FUNCTION public.bump_activity_on_message()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.conversations
+  SET last_activity_at = NEW.created_at
+  WHERE id = NEW.convo_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_bump_activity_message
+  AFTER INSERT ON public.messages
+  FOR EACH ROW
+  EXECUTE FUNCTION public.bump_activity_on_message();

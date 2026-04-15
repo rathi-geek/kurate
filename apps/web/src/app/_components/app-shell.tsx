@@ -126,11 +126,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "group_posts" },
+        (payload) => {
+          const post = payload.new as { convo_id: string };
+          // Reorder groups list when any group gets a new post (trigger bumps last_activity_at)
+          if (groupIds.has(post.convo_id)) {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() });
+          }
+        },
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [userId, queryClient]);
+  }, [userId, queryClient, groupIds]);
 
   const handleLogout = useCallback(async () => {
     const supabase = createClient();

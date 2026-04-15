@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useInfiniteQuery, useQuery, useQueryClient ,type  InfiniteData } from "@tanstack/react-query";
 
@@ -140,18 +140,6 @@ export async function fetchFeedCommentPreviews(
 
 export function useGroupFeed(groupId: string, currentUserId: string) {
   const queryClient = useQueryClient();
-  const [resubscribeKey, setResubscribeKey] = useState(0);
-
-  // Re-subscribe when tab becomes visible again (Supabase channels can go stale)
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        setResubscribeKey((k) => k + 1);
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
 
   const query = useInfiniteQuery({
     queryKey: queryKeys.groups.feed(groupId),
@@ -202,8 +190,11 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "group_posts" },
         (payload) => {
-          const post = payload.new as { convo_id: string };
+          const post = payload.new as { convo_id: string; shared_by: string };
           if (post.convo_id !== groupId) return;
+          // Skip for own posts — the composer's refetch() already handles the update.
+          // Invalidating here too causes a double-refetch and visible flickering.
+          if (post.shared_by === currentUserId) return;
           void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
         },
       )
@@ -318,7 +309,7 @@ export function useGroupFeed(groupId: string, currentUserId: string) {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [groupId, queryClient, resubscribeKey, currentUserId]);
+  }, [groupId, queryClient, currentUserId]);
 
   const markPostSeen = useCallback(
     (postId: string, seenAt: string) => {

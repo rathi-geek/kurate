@@ -10,6 +10,7 @@ export interface GroupRow {
   description: string | null;
   role: string;
   joined_at: string;
+  last_activity_at: string;
 }
 
 export async function fetchUserGroups(
@@ -29,5 +30,6 @@ export async function fetchUserGroups(
     description: row.group_description ?? null,
     role: row.role as string,
     joined_at: row.joined_at,
+    last_activity_at: row.last_activity_at,
   }));
 }

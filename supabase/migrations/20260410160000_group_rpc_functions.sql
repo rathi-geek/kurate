@@ -271,6 +271,8 @@ $$;
 -- 5. get_user_groups
 -- ═══════════════════════════════════════════════════════════════════
 
+DROP FUNCTION IF EXISTS public.get_user_groups();
+
 CREATE OR REPLACE FUNCTION public.get_user_groups()
 RETURNS TABLE (
   id                UUID,
@@ -278,7 +280,8 @@ RETURNS TABLE (
   group_description VARCHAR(200),
   avatar_path       TEXT,
   role              role_enum,
-  joined_at         TIMESTAMPTZ
+  joined_at         TIMESTAMPTZ,
+  last_activity_at  TIMESTAMPTZ
 )
 LANGUAGE sql STABLE
 AS $$
@@ -288,11 +291,12 @@ AS $$
     conv.group_description,
     public._avatar_path(conv.group_avatar_id) AS avatar_path,
     cm.role,
-    cm.joined_at
+    cm.joined_at,
+    conv.last_activity_at
   FROM public.conversation_members cm
   INNER JOIN public.conversations conv
     ON conv.id = cm.convo_id AND conv.is_group = TRUE
   WHERE cm.user_id = auth.uid()
     AND conv.group_name IS NOT NULL
-  ORDER BY cm.joined_at DESC
+  ORDER BY conv.last_activity_at DESC
 $$;
