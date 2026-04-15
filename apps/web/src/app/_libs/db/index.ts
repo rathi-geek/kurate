@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 
+import type { PendingGroupPostRow } from "@kurate/hooks";
 import type { ThoughtBucket } from "@kurate/utils";
 
 export interface PendingThought {
@@ -31,6 +32,7 @@ export interface PendingLink {
 class KurateDB extends Dexie {
   pending_thoughts!: EntityTable<PendingThought, "tempId">;
   pending_links!: EntityTable<PendingLink, "tempId">;
+  pending_group_posts!: EntityTable<PendingGroupPostRow, "tempId">;
 
   constructor() {
     super("kurate");
@@ -41,6 +43,11 @@ class KurateDB extends Dexie {
     this.version(2).stores({
       pending_thoughts: "tempId, status, createdAt",
       pending_links: "tempId, url, status, createdAt",
+    });
+    this.version(3).stores({
+      pending_thoughts: "tempId, status, createdAt",
+      pending_links: "tempId, url, status, createdAt",
+      pending_group_posts: "tempId, convo_id, status, createdAt",
     });
   }
 }

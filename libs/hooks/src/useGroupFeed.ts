@@ -13,9 +13,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { queryKeys } from "@kurate/query";
 import type { Database, GroupDrop, GroupProfile } from "@kurate/types";
 
+import type { PendingGroupPostRow } from "./types/pending-db";
+
 type ContentType = Database["public"]["Enums"]["content_type_enum"];
 
 const PAGE_SIZE = 20;
+
+/** Discriminated entry for the merged feed (pending + server). */
+export type GroupFeedEntry =
+  | { kind: "confirmed"; data: GroupDrop }
+  | { kind: "pending"; data: PendingGroupPostRow };
 
 export async function fetchGroupFeedPage(
   supabase: SupabaseClient<Database>,
@@ -149,6 +156,7 @@ export function useGroupFeed(
   supabase: SupabaseClient<Database>,
   groupId: string,
   currentUserId: string,
+  pendingPosts?: PendingGroupPostRow[],
 ) {
   const queryClient = useQueryClient();
   const [resubscribeKey, setResubscribeKey] = useState(0);
@@ -193,7 +201,7 @@ export function useGroupFeed(
     refetchOnMount: "always",
   });
 
-  const drops = useMemo(() => {
+  const dropsWithPreview = useMemo(() => {
     if (!previewQuery.data) return rawDrops;
     return rawDrops.map((drop) => {
       const preview = previewQuery.data.get(drop.id);
@@ -205,6 +213,36 @@ export function useGroupFeed(
     });
   }, [rawDrops, previewQuery.data]);
 
+  /** Server-row ids that already have a matching pending entry — drop them so the
+   * pending card lingers (with its ✓/spinner state) without a duplicate behind it. */
+  const pendingServerIds = useMemo(
+    () => new Set(
+      (pendingPosts ?? [])
+        .map((p) => p.serverId)
+        .filter((id): id is string => !!id),
+    ),
+    [pendingPosts],
+  );
+
+  const drops = useMemo(
+    () => dropsWithPreview.filter((d) => !pendingServerIds.has(d.id)),
+    [dropsWithPreview, pendingServerIds],
+  );
+
+  /** Merged feed for the optimistic UI. Pending entries first (newest first),
+   * then server entries in their existing chronological order. */
+  const entries = useMemo<GroupFeedEntry[]>(() => {
+    const pending = (pendingPosts ?? [])
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map<GroupFeedEntry>((data) => ({ kind: "pending", data }));
+    const confirmed = drops.map<GroupFeedEntry>((data) => ({
+      kind: "confirmed",
+      data,
+    }));
+    return [...pending, ...confirmed];
+  }, [pendingPosts, drops]);
+
   // Realtime subscription: invalidate on new group post
   useEffect(() => {
     if (!groupId) return;
@@ -215,8 +253,11 @@ export function useGroupFeed(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "group_posts" },
         (payload) => {
-          const post = payload.new as { convo_id: string };
+          const post = payload.new as { convo_id: string; shared_by: string };
           if (post.convo_id !== groupId) return;
+          // Skip for own posts — the optimistic pending row already shows it.
+          // Invalidating here would cause a redundant refetch + flicker.
+          if (post.shared_by === currentUserId) return;
           void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
         },
       )
@@ -374,6 +415,7 @@ export function useGroupFeed(
 
   return {
     drops,
+    entries,
     markPostSeen,
     deleteDrop,
     fetchNextPage: query.fetchNextPage,

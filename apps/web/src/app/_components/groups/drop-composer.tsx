@@ -3,13 +3,14 @@
 import { useCallback, useRef, useState } from "react";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { toast } from "sonner";
 
 import { ChatInput } from "@/app/_components/home/chat-input";
 import { UrlExtractPreview } from "@/app/_components/shared/url-extract-preview";
-import { useExtractMetadata } from "@kurate/hooks";
+import { useExtractMetadata, useBumpGroupsList, useGroupComposer } from "@kurate/hooks";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { upsertLoggedItem, useSaveItem } from "@/app/_libs/hooks/useSaveItem";
+import { webPendingDb } from "@/app/_libs/db/pending-db";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
 import {
@@ -26,23 +27,47 @@ const supabase = createClient();
 interface DropComposerProps {
   groupId: string;
   currentUserId: string;
-  onDropPosted: () => void;
+  /** Used to seed the feed cache on confirm with the sender's own avatar/name. */
+  currentUserProfile?: {
+    id: string;
+    display_name: string | null;
+    avatar_path: string | null;
+    handle: string | null;
+  };
 }
 
-export function DropComposer({ groupId, currentUserId, onDropPosted }: DropComposerProps) {
+export function DropComposer({
+  groupId,
+  currentUserId,
+  currentUserProfile,
+}: DropComposerProps) {
   const t = useTranslations("groups");
   const prefersReducedMotion = useSafeReducedMotion();
   const saveItem = useSaveItem();
   const pendingVaultSave = useRef<Parameters<typeof saveItem.mutate>[0] | null>(null);
 
   const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
-  const [isPosting, setIsPosting] = useState(false);
   const [inputKey, setInputKey] = useState(0);
 
   const { isExtracting, metadata, extractionFailed, extract, reset } = useExtractMetadata();
 
-  const boxShadow = metadata && !isExtracting ? successGlowBoxShadow : shadowFloating;
+  const bumpGroupsList = useBumpGroupsList();
 
+  const composer = useGroupComposer({
+    groupId,
+    currentUserId,
+    supabase,
+    upsertLoggedItem,
+    currentUserProfile: currentUserProfile ?? null,
+    platform: {
+      pendingDb: webPendingDb,
+      onToast: (msg, opts) => toast(msg, opts),
+      onTrack: track,
+    },
+    onPosted: bumpGroupsList,
+  });
+
+  const boxShadow = metadata && !isExtracting ? successGlowBoxShadow : shadowFloating;
   const showPreview = !!detectedUrl || isExtracting || (extractionFailed && !!detectedUrl);
 
   const handleUrlChange = useCallback(
@@ -63,99 +88,75 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     setInputKey((k) => k + 1);
   }, [reset]);
 
-  // Handles both text-only posts and link posts (note comes from ChatInput)
+  // Handles both text-only posts and link posts (note comes from ChatInput).
+  // The actual API call happens fire-and-forget inside `composer.handleSend`;
+  // the optimistic pending row + sidebar bump are synchronous.
   const handleSend = useCallback(
     async (text: string) => {
       if (!currentUserId) return;
 
-      if (detectedUrl) {
-        // Link post — text from ChatInput is the optional note
-        setIsPosting(true);
-        try {
-          const loggedItemId = await upsertLoggedItem({
-            url: detectedUrl,
-            title: metadata?.title,
-            description: metadata?.description,
-            content_type: metadata?.content_type,
-            preview_image_url: metadata?.preview_image ?? null,
-            source: metadata?.source,
-            read_time: metadata?.read_time ? String(metadata.read_time) : null,
-          });
+      const url = detectedUrl;
+      const linkMeta = url
+        ? {
+            title: metadata?.title ?? null,
+            description: metadata?.description ?? null,
+            content_type: metadata?.content_type ?? null,
+            preview_image: metadata?.preview_image ?? null,
+            source: metadata?.source ?? null,
+            read_time: metadata?.read_time ?? null,
+          }
+        : null;
 
-          const { error } = await supabase.from("group_posts").insert({
-            convo_id: groupId,
-            logged_item_id: loggedItemId,
-            shared_by: currentUserId,
-            note: text.trim() || null,
-          });
+      // Snapshot enough to wire the "Save to vault?" toast for link shares.
+      if (url) {
+        pendingVaultSave.current = {
+          url,
+          title: metadata?.title,
+          source: metadata?.source,
+          preview_image: metadata?.preview_image,
+          content_type: metadata?.content_type ?? "article",
+          read_time: metadata?.read_time,
+          save_source: "shares",
+          saved_from_group: groupId,
+        };
+      }
 
-          if (error) throw new Error(error.message);
-          track("group_post_created", { content_type: metadata?.content_type ?? "article" });
+      // Synchronously: optimistic pending row + sidebar bump.
+      void composer.handleSend(text, { url, meta: linkMeta });
 
-          pendingVaultSave.current = {
-            url: detectedUrl,
-            title: metadata?.title,
-            source: metadata?.source,
-            preview_image: metadata?.preview_image,
-            content_type: metadata?.content_type ?? "article",
-            read_time: metadata?.read_time,
-            save_source: "shares",
-            saved_from_group: groupId,
-          };
-
-          toast("Shared to group · Save to vault?", {
-            action: {
-              label: "Yes",
-              onClick: () => {
-                if (pendingVaultSave.current) {
-                  saveItem.mutate(pendingVaultSave.current, {
-                    onError: () => toast.error("Failed to save to vault"),
-                  });
-                  pendingVaultSave.current = null;
-                }
-              },
-            },
-            cancel: {
-              label: "No",
-              onClick: () => {
+      // Reset composer UI immediately — the post is fire-and-forget.
+      if (url) {
+        toast("Shared to group · Save to vault?", {
+          action: {
+            label: "Yes",
+            onClick: () => {
+              if (pendingVaultSave.current) {
+                saveItem.mutate(pendingVaultSave.current, {
+                  onError: () => toast.error("Failed to save to vault"),
+                });
                 pendingVaultSave.current = null;
-              },
+              }
             },
-            duration: 6000,
-            actionButtonStyle: {
-              backgroundColor: "var(--color-primary)",
-              color: "var(--color-primary-foreground)",
+          },
+          cancel: {
+            label: "No",
+            onClick: () => {
+              pendingVaultSave.current = null;
             },
-          });
-
-          setDetectedUrl(null);
-          reset();
-          setInputKey((k) => k + 1);
-          onDropPosted();
-        } finally {
-          setIsPosting(false);
-        }
-        return;
-      }
-
-      // Text-only post
-      if (!text.trim()) return;
-      setIsPosting(true);
-      try {
-        const { error } = await supabase.from("group_posts").insert({
-          convo_id: groupId,
-          shared_by: currentUserId,
-          content: text.trim(),
+          },
+          duration: 6000,
+          actionButtonStyle: {
+            backgroundColor: "var(--color-primary)",
+            color: "var(--color-primary-foreground)",
+          },
         });
-        if (error) throw new Error(error.message);
-        track("group_text_post_created", {});
-        setInputKey((k) => k + 1);
-        onDropPosted();
-      } finally {
-        setIsPosting(false);
+
+        setDetectedUrl(null);
+        reset();
       }
+      setInputKey((k) => k + 1);
     },
-    [detectedUrl, metadata, currentUserId, groupId, onDropPosted, reset, saveItem],
+    [currentUserId, detectedUrl, metadata, groupId, composer, reset, saveItem],
   );
 
   return (
@@ -166,7 +167,6 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
         onSend={handleSend}
         onUrlChange={handleUrlChange}
         placeholder={t("composer_placeholder")}
-        disabled={isPosting}
       />
 
       {/* Preview card — appears below ChatInput when URL is detected */}
@@ -205,7 +205,6 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
             <button
               type="button"
               onClick={handleCancel}
-              disabled={isPosting}
               aria-label={t("cancel")}
               className="text-muted-foreground hover:text-foreground absolute top-2 right-2 p-1 transition-colors">
               <CloseIcon className="size-4" />
@@ -216,3 +215,5 @@ export function DropComposer({ groupId, currentUserId, onDropPosted }: DropCompo
     </div>
   );
 }
+
+export type { DropComposerProps };

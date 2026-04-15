@@ -1,513 +1,384 @@
-# Feature Plan: Groups
+# Feature Plan: Instant Group Posting (vault-pattern for groups)
 
-Last updated: 2026-04-09
+Last updated: 2026-04-15
+
+## Context
+
+After posting in a group on **both web and mobile** two regressions are visible:
+
+1. **Sidebar doesn't reorder** — sender's group should bubble to the top, but `groups.list()` is not optimistically updated. Web invalidates via realtime in `apps/web/src/app/_components/app-shell.tsx:131-138`, but `useUserGroups` has `staleTime: 1000 * 60` so the UI waits. Mobile has no equivalent logic at all.
+2. **Feed flickers** — the composer awaits the API then fires `refetch()` (web: `feed-tab-view.tsx:28-29` → `drop-composer.tsx:134`) or `invalidateQueries()` (mobile: `drop-composer.tsx:133-135`). Both replace every cached post reference, re-rendering every `FeedShareCard` / `FeedDropCard`. Mobile is worse because `libs/hooks/useGroupFeed.ts:208-221` *also* invalidates on realtime INSERT → double refetch.
+
+**Goal:** replicate the **vault instant-card pattern** for groups so posts appear optimistically, the sidebar reorders immediately, and no refetch/invalidation happens on the sender's client.
+
+---
 
 ## Order of execution (always follow this sequence)
 
-1. Web — fix bugs (5 items)
-2. Web — code quality (7 items)
-3. Web — move to /libs (10 items)
-4. Mobile — build feature (13 screens/components)
+1. **Web — move shared logic to /libs** (new shared hooks: `useGroupComposer`, `useBumpGroupsList`, extend `PendingDB`, extend `useGroupFeed`)
+2. **Web — fix bugs** (Dexie `pending_group_posts` table; refactor `drop-composer.tsx`, `feed-tab-view.tsx`, `feed-share-card.tsx`; new `PendingGroupPostCard.tsx`)
+3. **Mobile — migrate persistence** (swap Zustand persist backend from `expo-secure-store` to `react-native-mmkv`; flag user that `expo prebuild` + dev client rebuild is required)
+4. **Mobile — build feature** (extend `usePendingStore` + `mobilePendingDb`, new `useGroupComposer` wrapper, refactor `drop-composer.tsx` + `feed-view.tsx` + `feed-drop-card.tsx`)
+
+---
+
+## Reference architecture (already built for vault — clone it)
+
+- `libs/hooks/src/types/pending-db.ts` — `PendingDB` interface (currently `PendingLinkRow` + `PendingThoughtRow`)
+- `libs/hooks/src/useVaultComposer.ts` — shared composer accepting `platform.pendingDb`
+- **Web adapter:** `apps/web/src/app/_libs/db/index.ts` (Dexie tables) + `apps/web/src/app/_libs/hooks/useVaultComposer.ts` (wrapper)
+- **Mobile adapter:** `apps/mobile-app/store/usePendingStore.ts` (Zustand+secure-store, MIGRATING TO MMKV) + `apps/mobile-app/libs/pending-db.ts` (adapter) + `apps/mobile-app/hooks/useVaultComposer.ts` (wrapper)
+- **Merge UI (web):** `apps/web/src/app/_components/vault/VaultLibrary.tsx` (uses `useLiveQuery`); `VaultGrid.tsx:62-102` (`<LayoutGroup>` + `<AnimatePresence mode="popLayout">` + `layoutId={`vault-${url}`}` for seamless morph)
+- **Pending card visuals:** `apps/web/src/app/_components/vault/PendingLinkCard.tsx` (sending spinner, failed banner with retry/dismiss)
+- **Lifecycle:** mark `confirmed` when matching server row appears → 2s linger → delete
 
 ---
 
 ## Web — Step by Step
 
-### Step 1: Fix bugs
+### Step 1: Extend `PendingDB` interface
 
-#### 1a. Extract GroupsPageClient from page.tsx
+File: `libs/hooks/src/types/pending-db.ts`
 
-File: `apps/web/src/app/(app)/groups/page.tsx`
+- Add new row type:
+  ```ts
+  export interface PendingGroupPostRow {
+    tempId: string;
+    convo_id: string;
+    shared_by: string;
+    content: string | null;
+    logged_item_id: string | null;
+    note: string | null;
+    url: string | null;
+    title: string | null;
+    previewImage: string | null;
+    source: string | null;
+    contentType: string | null;
+    serverId: string | null;       // populated when status flips to confirmed
+    createdAt: string;
+    status: "sending" | "confirmed" | "failed";
+  }
+  ```
+- Add to `PendingDB` interface:
+  ```ts
+  addPendingGroupPost(row: PendingGroupPostRow): Promise<void>;
+  updatePendingGroupPostStatus(tempId: string, status: string, serverId?: string): Promise<void>;
+  deletePendingGroupPost(tempId: string): Promise<void>;
+  getAllPendingGroupPosts(): Promise<PendingGroupPostRow[]>;
+  getPendingGroupPostsForGroup(groupId: string): Promise<PendingGroupPostRow[]>;
+  ```
+- Re-export `PendingGroupPostRow` from `libs/hooks/src/index.ts`.
 
-- Issue: `"use client"` on a page.tsx violates codebase rule (pages must be Server Components)
-- Fix: Create `apps/web/src/app/(app)/groups/GroupsPageClient.tsx` with all the current client logic. Make `page.tsx` a thin Server Component that renders `<GroupsPageClient />`.
+### Step 2: Build `useGroupComposer` shared hook
 
-#### 1b. Fix unsafe `as any` cast in invite API
+New file: `libs/hooks/src/useGroupComposer.ts`
 
-File: `apps/web/src/app/api/groups/invite/route.ts` (lines 157-164)
+Mirror the pattern in `libs/hooks/src/useVaultComposer.ts`. Accepts:
+```ts
+interface UseGroupComposerConfig {
+  groupId: string;
+  currentUserId: string;
+  supabase: SupabaseClient;
+  platform?: {
+    pendingDb?: PendingDB;
+    onToast?: (msg: string, opts?: { description?: string }) => void;
+    onTrack?: (event: string, data?: Record<string, unknown>) => void;
+    generateTempId?: () => string;
+  };
+  onPosted?: (row: PendingGroupPostRow) => void;
+}
+```
 
-- Issue: `const db = supabase as any` bypasses TypeScript, try/catch silently swallows errors. The `group_invites` table exists and is used elsewhere.
-- Fix: Remove `as any` cast, use `supabase` directly. Remove try/catch — let errors propagate or handle explicitly.
+Submit flow (text or link):
+1. Dedup: if link, check `getPendingGroupPostsForGroup(groupId)` — skip if same URL already pending.
+2. Generate `tempId`; call `addPendingGroupPost({ …, status: "sending" })`.
+3. Call `onPosted(row)` synchronously — consumer bumps sidebar.
+4. Reset preview / clear input.
+5. Fire-and-forget supabase insert (lift the existing logic from `apps/web/src/app/_components/groups/drop-composer.tsx:67-156`):
+   - For link: `upsertLoggedItem(...)` then `supabase.from('group_posts').insert({ convo_id, logged_item_id, shared_by, note })`
+   - For text: `supabase.from('group_posts').insert({ convo_id, shared_by, content })`
+6. On resolve: `updatePendingGroupPostStatus(tempId, "confirmed", serverInsertId)`. On reject: `updatePendingGroupPostStatus(tempId, "failed")`.
 
-#### 1c. Fix infinite fetch loop in LibraryView
+Expose a `retry(tempId)` function for failed-state UI — re-runs step 5 using the stored row data.
 
-File: `apps/web/src/app/_components/groups/library-view.tsx` (lines 29-30)
+Re-export from `libs/hooks/src/index.ts`.
 
-- Issue: `if (hasNextPage) { fetchNextPage(); }` runs on every render, causing an infinite loop.
-- Fix: Wrap in `useEffect` with `[hasNextPage, isFetchingNextPage]` deps, guard with `!isFetchingNextPage`.
+### Step 3: Build `useBumpGroupsList` shared hook
 
-#### 1d. Fix missing useEffect deps in FeedShareCard
+New file: `libs/hooks/src/useBumpGroupsList.ts`
 
-File: `apps/web/src/app/_components/groups/feed-share-card.tsx` (line 136)
+```ts
+export function useBumpGroupsList() {
+  const queryClient = useQueryClient();
+  return useCallback((row: PendingGroupPostRow) => {
+    queryClient.setQueryData<UserGroupRow[]>(queryKeys.groups.list(), (old) => {
+      if (!old) return old;
+      const idx = old.findIndex(g => g.id === row.convo_id);
+      if (idx < 0) return old;
+      const copy = old.slice();
+      const [bumped] = copy.splice(idx, 1);
+      return [
+        { ...bumped, last_activity_at: row.createdAt, last_message_preview: row.content ?? row.title ?? "" },
+        ...copy,
+      ];
+    });
+  }, [queryClient]);
+}
+```
 
-- Issue: `useEffect` uses `drop.id`, `markPostSeen`, `latestCommentAtRef` but only has `[showComments]` in deps.
-- Fix: Add `drop.id` and `markPostSeen` to dep array. `latestCommentAtRef` is a ref (stable) so OK to omit.
+Pure cache mutation — no invalidation. Re-export from `libs/hooks/src/index.ts`. Read the actual `UserGroupRow` shape from `libs/hooks/src/useUserGroups.ts` and match field names exactly (`last_activity_at`, `last_message_preview`).
 
-#### 1e. Fix typo in LibraryCard className
+### Step 4: Extend `useGroupFeed` shared hook
 
-File: `apps/web/src/app/_components/groups/library-card.tsx` (line 46)
+File: `libs/hooks/src/useGroupFeed.ts`
 
-- Issue: `overflow-hiddrop.cden` should be `overflow-hidden`
-- Fix: Replace `overflow-hiddrop.cden` with `overflow-hidden`.
+- Accept optional `pendingPosts: PendingGroupPostRow[]` param (live array, passed in by platform wrapper).
+- Inside the hook, prepend pending rows (mapped to feed item shape) to the first page of the infinite query result. Dedupe by `serverId` once confirmed (server row wins; pending row stays only until 2s linger expires).
+- Add `useEffect` to mark pending rows `confirmed` when a server row with matching `id === pending.serverId` appears.
+- Add `useEffect` with 2s `setTimeout` to delete confirmed pending rows.
+- **Fix realtime self-skip**: at lines 208-221, add `if (post.shared_by === currentUserId) return;` (mirror `apps/web/src/app/_libs/hooks/useGroupFeed.ts:195-197`). Requires `currentUserId` param if not already present.
 
----
+### Step 5: Web Dexie — add `pending_group_posts` table
 
-### Step 2: Code quality
+File: `apps/web/src/app/_libs/db/index.ts`
 
-#### 2a. Extract CommentItem to its own file
+- Add `pending_group_posts!: EntityTable<PendingGroupPostRow, "tempId">;` field on `KurateDB` class.
+- Bump to `version(3)` adding new store: `pending_group_posts: "tempId, convo_id, status, createdAt"`.
 
-File: `apps/web/src/app/_components/groups/comment-thread.tsx` (lines 31-207)
+New file: `apps/web/src/app/_libs/db/pending-db.ts`
 
-- Issue: File is 411 lines. `CommentItem` is 175 lines and is a standalone component.
-- Fix: Move `CommentItem`, `CommentItemProps`, and `renderTextWithLinks` to `apps/web/src/app/_components/groups/comment-item.tsx`. Import in `comment-thread.tsx`.
+- Implement `PendingDB` for groups by delegating to `db.pending_group_posts.add/update/delete/where(...)`. Mirror `apps/mobile-app/libs/pending-db.ts` shape but using Dexie calls.
+- If a web `PendingDB` already exists for vault (check `apps/web/src/app/_libs/hooks/useVaultComposer.ts` for how Dexie is invoked there — it may currently call Dexie directly without an adapter), extend that pattern. Otherwise create the adapter as the first web `PendingDB` instance and have it cover links/thoughts too (lift from existing direct Dexie calls).
 
-#### 2b. Extract DangerConfirmModal to its own file
+### Step 6: New `PendingGroupPostCard` component
 
-File: `apps/web/src/app/_components/groups/group-danger-zone.tsx` (lines 28-117)
+New file: `apps/web/src/app/_components/groups/PendingGroupPostCard.tsx`
 
-- Issue: `DangerConfirmModal` is 90 lines and is a reusable component.
-- Fix: Move `DangerConfirmModal` and `DangerConfirmModalProps` to `apps/web/src/app/_components/groups/danger-confirm-modal.tsx`. Import in `group-danger-zone.tsx`.
+Mirror `apps/web/src/app/_components/vault/PendingLinkCard.tsx` design decisions:
+- `status === "sending"` → small spinner badge in card corner; rest of card looks normal
+- `status === "failed"` → red banner overlay or footer with "Failed to post" + Retry + Dismiss buttons
+- Use design tokens only (`bg-card`, `text-muted-foreground`, `text-destructive`, `rounded-card`, `shadow-sm`)
+- Spring physics from `apps/web/src/app/_libs/utils/motion.ts`
 
-#### 2c. Move delete-drop logic to a hook
+Read for reference:
+- `apps/web/src/app/_components/vault/PendingLinkCard.tsx` — copy status visual treatment
+- `apps/web/src/app/_components/groups/feed-share-card.tsx` — match overall card geometry / padding / image ratio so the morph is seamless
 
-File: `apps/web/src/app/_components/groups/feed-tab-view.tsx` (lines 86-89)
+### Step 7: Refactor web `drop-composer.tsx`
 
-- Issue: Direct `supabase.from("group_posts").delete()` call inside component.
-- Fix: Add a `deleteDrop` mutation to `useGroupFeed.ts` or create a small `useDeleteDrop` hook. Call it from `feed-tab-view.tsx`.
+File: `apps/web/src/app/_components/groups/drop-composer.tsx`
 
-#### 2d. Deduplicate ProfileRow type and toProfile helper
+- Remove direct `supabase.from('group_posts').insert(...)` calls (lines 85-92, 145-150).
+- Remove `onDropPosted` prop — caller no longer needs to pass `refetch`.
+- Call `useGroupComposer({ groupId, currentUserId, supabase, platform: { pendingDb: webPendingDb, onToast, onTrack: track }, onPosted: useBumpGroupsList() })`.
+- Pass `composer.handleSend` to `<ChatInput onSend={...}>`.
+- Keep the URL preview UI / "Save to vault?" toast logic — that's local UI concern and unrelated to optimistic posting.
 
-Files: `apps/web/src/app/_libs/hooks/useGroupFeed.ts`, `apps/web/src/app/_libs/utils/mapGroupDrop.ts`
+### Step 8: Refactor web `feed-tab-view.tsx` + `feed-share-card.tsx`
 
-- Issue: `ProfileRow` type defined in both files. `toProfile()` function duplicated.
-- Fix: Keep canonical versions in `mapGroupDrop.ts` (already exports them). Import in `useGroupFeed.ts`. Remove duplicates.
+File: `apps/web/src/app/_components/groups/feed-tab-view.tsx`
 
-#### 2e. Deduplicate feed mapping logic
+- Drop the `refetch` coupling — no longer pass it to composer.
+- Wrap the feed list in `<LayoutGroup>` and `<AnimatePresence mode="popLayout">` (mirror `apps/web/src/app/_components/vault/VaultGrid.tsx:62-102`).
+- The drops array now comes pre-merged from web's `useGroupFeed` wrapper (which reads pending rows via `useLiveQuery(() => db.pending_group_posts.where('convo_id').equals(groupId).toArray())`).
 
-Files: `apps/web/src/app/_libs/hooks/useGroupFeed.ts` (lines 69-134), `apps/web/src/app/_libs/utils/mapGroupDrop.ts`
+File: `apps/web/src/app/_components/groups/feed-share-card.tsx` (and the text post card, whatever it's called)
 
-- Issue: `fetchGroupFeedPage` contains inline mapping that duplicates `mapRowToGroupDrop`.
-- Fix: Use `mapRowToGroupDrop` from `mapGroupDrop.ts` inside `fetchGroupFeedPage`. Adapt input shape if needed.
+- Wrap in `<motion.div layoutId={drop.id ? `group-post-${drop.id}` : `group-post-pending-${drop.tempId}` /* OR use tempId-then-server-id stable scheme */} layout>`.
+- Critical: `layoutId` must remain stable when a row morphs from pending→confirmed. Use `serverId ?? tempId` once `serverId` is populated, or use the eventual server `id` for both pending (when known via `serverId` field) and confirmed.
+- `key` prop differs (`pending-${tempId}` vs `${id}`) but `layoutId` stays the same — that's what enables Framer's morph.
+- Reference: `apps/web/src/app/_components/vault/VaultGrid.tsx:62-102`.
 
-#### 2f. Fix sequential awaits in useUnreadCounts
+### Step 9: Web `useGroupFeed` wrapper
 
-File: `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` (lines 47-62)
+File: `apps/web/src/app/_libs/hooks/useGroupFeed.ts`
 
-- Issue: Group unread queries run sequentially in a for loop (`for...of` + `await`).
-- Fix: Use `Promise.all(groupIdArr.map(...))` to parallelize.
+- Refactor to thin wrapper over the now-extended shared `libs/hooks/src/useGroupFeed.ts`.
+- Reads pending rows: `const pendingPosts = useLiveQuery(() => db.pending_group_posts.where('convo_id').equals(groupId).toArray(), [groupId])`.
+- Passes `pendingPosts` and `currentUserId` into shared hook.
+- Keeps any web-specific SSR / supabase client wiring.
 
-#### 2g. Replace inline SVGs with icon components
+### Step 10: Lint + typecheck web
 
-Files: `apps/web/src/app/_components/groups/feed-header.tsx` (lines 35-42, 88-99), `apps/web/src/app/(app)/groups/page.tsx` (lines 90-100)
-
-- Issue: Inline `<svg>` elements instead of components from `@/components/icons`.
-- Fix: Use `ChevronLeftIcon`, `ChevronRightIcon` from `@/components/icons`. If missing, add them.
-
----
-
-### Step 3: Move to /libs
-
-> **Critical prerequisite:** Hooks currently import `createClient` from `@/app/_libs/supabase/client`. To share across web/mobile, either:
-> (A) Accept a Supabase client as parameter in each hook, or
-> (B) Create a shared client wrapper in `libs/` that each platform configures.
->
-> **Recommendation:** Option A is simpler — each hook factory takes `supabase` as arg. Web passes its client, mobile passes its client. This is a pattern change that applies to ALL hooks being moved.
-
-#### 3a. Move ProfileRow + toProfile to libs/types and libs/utils
-
-- `ProfileRow` type → add to `libs/types/src/groups.ts`
-- `toProfile()` → add to `libs/utils/src/profile.ts` (new file)
-- Update imports in: `useGroupFeed.ts`, `mapGroupDrop.ts`, `useGroupMembers.ts`
-
-#### 3b. Move mapGroupDrop.ts to libs/utils
-
-- Move: `apps/web/src/app/_libs/utils/mapGroupDrop.ts` → `libs/utils/src/mapGroupDrop.ts`
-- Export from `libs/utils/src/index.ts`
-- Update imports in: `useGroupFeed.ts`, any other consumers
-
-#### 3c. Move fetchGroupDetail.ts to libs/utils
-
-- Move: `apps/web/src/app/_libs/utils/fetchGroupDetail.ts` → `libs/utils/src/fetchGroupDetail.ts`
-- Change to accept `supabase` client as parameter
-- Update imports in: `useGroupDetail.ts`
-
-#### 3d. Move fetchUserGroups.ts to libs/hooks
-
-- Move: `apps/web/src/app/_libs/utils/fetchUserGroups.ts` → `libs/hooks/src/useUserGroups.ts`
-- Wrap as a hook (useUserGroups) that accepts supabase client
-- Update imports in: `groups/page.tsx`, `sidebar-groups-section.tsx`
-
-#### 3e. Move useGroupDetail.ts to libs/hooks
-
-- Move: `apps/web/src/app/_libs/hooks/useGroupDetail.ts` → `libs/hooks/src/useGroupDetail.ts`
-- Change `fetchGroupDetail`/`fetchGroupRole` to accept supabase client
-- Update imports in: `GroupPageClient.tsx`
-
-#### 3f. Move useGroupMembers.ts to libs/hooks
-
-- Move: `apps/web/src/app/_libs/hooks/useGroupMembers.ts` → `libs/hooks/src/useGroupMembers.ts`
-- Change to accept supabase client
-- Update imports in: `feed-tab-view.tsx`, `group-info-page.tsx`
-
-#### 3g. Move useGroupInvites.ts to libs/hooks
-
-- Move: `apps/web/src/app/_libs/hooks/useGroupInvites.ts` → `libs/hooks/src/useGroupInvites.ts`
-- Change to accept supabase client
-- Update imports in: `group-info-page.tsx`
-
-#### 3h. Move useDropEngagement.ts to libs/hooks
-
-- Move: `apps/web/src/app/_libs/hooks/useDropEngagement.ts` → `libs/hooks/src/useDropEngagement.ts`
-- Change to accept supabase client
-- Update imports in: `engagement-bar.tsx`
-
-#### 3i. Move useComments.ts to libs/hooks
-
-- Move: `apps/web/src/app/_libs/hooks/useComments.ts` → `libs/hooks/src/useComments.ts`
-- Change to accept supabase client
-- Update imports in: `comment-thread.tsx`, `feed-tab-view.tsx`
-
-#### 3j. Move useShareToGroups.ts to libs/hooks (consolidate)
-
-- Web: `apps/web/src/app/_libs/hooks/useShareToGroups.ts`
-- Mobile: `apps/mobile-app/hooks/useShareToGroups.ts`
-- Both are near-identical. Consolidate into `libs/hooks/src/useShareToGroups.ts`
-- Accept supabase client + userId as params
-- Delete both app-local versions, update imports
+- `pnpm --filter web lint`
+- `pnpm --filter web type:check`
+- Smoke test: post a text → instant card; post a link → pending card morphs to confirmed; sender's group jumps to top; other cards do not flicker.
 
 ---
 
 ## Mobile — Step by Step
 
-> **Design philosophy:** Same visual language as web, adapted for native. Same color tokens, proportional spacing. Bottom sheets replace modals/dropdowns. Single column. Press states replace hover.
->
-> **Shared libs used:** `@kurate/types`, `@kurate/query`, `@kurate/hooks` (after Step 3), `@kurate/utils`, `@kurate/locales`
+### Step 1: Migrate `usePendingStore` persistence to MMKV
 
-### Step M1: Tab navigation — add Groups tab
-
-New file: `apps/mobile-app/app/(tabs)/groups.tsx`
-Read for reference:
-
-- `apps/web/src/app/(app)/groups/page.tsx` — list layout, role badges, empty state
-- `libs/types/src/groups.ts` — GroupRow, GroupRole types
-  Read existing mobile:
-- `apps/mobile-app/app/(tabs)/_layout.tsx` — current tab setup
-  Key design decisions from web:
-- Groups list: avatar (40px circle) + name + role badge + description + chevron
-- Empty state: centered text + "Create a Group" button
-- Create button: top-right, pill shape, `bg-primary`
-  Build instructions:
-- Add "Groups" tab to `_layout.tsx` with `Users` icon from lucide
-- Create `groups.tsx` screen using `useUserGroups` from `@kurate/hooks`
-- FlatList with group rows (avatar, name, role badge, description)
-- Empty state with create button
-- FAB or header button for "Create Group"
-
-### Step M2: Create group bottom sheet
-
-New file: `apps/mobile-app/components/groups/create-group-sheet.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/create-group-dialog.tsx` — fields, validation, submit flow
-  Key design decisions from web:
-- Two fields: name (required), description (optional)
-- Submit creates conversation + owner membership
-- Navigates to group after creation
-  Build instructions:
-- Bottom sheet with name Input + description Textarea
-- Submit → Supabase insert → invalidate groups list → navigate to group
-- Loading + error states
-
-### Step M3: Group detail screen (shell + feed/library/info routing)
-
-New file: `apps/mobile-app/app/(tabs)/groups/[id].tsx`
-New file: `apps/mobile-app/components/groups/group-header.tsx`
-Read for reference:
-
-- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx` — view routing, realtime redirect
-- `apps/web/src/app/_components/groups/feed-header.tsx` — header layout
-- `apps/web/src/app/_components/groups/group-view.ts` — GroupView enum
-  Key design decisions from web:
-- Header: back button + avatar + group name + library toggle + info button
-- Three views: Feed (default), Library, Info
-- Realtime: redirect on membership DELETE
-  Build instructions:
-- Dynamic route `[id].tsx`
-- Use `useGroupDetail` + `useGroupRole` from `@kurate/hooks`
-- State for `view` (Feed/Library/Info)
-- Header component with back, avatar, name, toggle buttons
-- Render appropriate view based on state
-
-### Step M4: Group feed view + drop cards
-
-New file: `apps/mobile-app/components/groups/feed-view.tsx`
-New file: `apps/mobile-app/components/groups/feed-drop-card.tsx`
-New file: `apps/mobile-app/components/groups/drop-item-preview.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/feed-tab-view.tsx` — feed layout, infinite scroll, empty/loading states
-- `apps/web/src/app/_components/groups/feed-share-card.tsx` — card structure, seen tracking, comment toggle
-- `apps/web/src/app/_components/groups/drop-item-preview.tsx` — link preview image, title, metadata
-  Key design decisions from web:
-- Card: sharer header (avatar 32px + name + "dropped . time"), optional note (italic), link preview (220px image), text-only content, reaction pills, engagement bar, latest comment preview, expandable comment thread
-- Must-read cards: `border-warning-foreground/30 bg-warning-bg/40`
-- New comments: green dot on comment icon
-- Latest comment preview: avatar + author + "+N more" + text + chevron
-  Build instructions:
-- FlatList with `useGroupFeed` from `@kurate/hooks`
-- `onEndReached` for infinite scroll
-- `FeedDropCard` component with all sub-sections
-- Press on comment preview → expand thread (see Step M6)
-- Seen tracking via `markPostSeen`
-
-### Step M5: Drop composer
-
-New file: `apps/mobile-app/components/groups/drop-composer.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/drop-composer.tsx` — URL detection, metadata extraction, text-only, preview card
-- `apps/web/src/app/_components/home/chat-input.tsx` — input behavior
-  Key design decisions from web:
-- Single input: detects URLs automatically, shows preview below
-- Link post: URL + optional note
-- Text-only post: plain text content
-- After link share: toast with "Save to vault?" action
-  Build instructions:
-- TextInput with URL regex detection
-- `useExtractMetadata` from `@kurate/hooks` for preview
-- Preview card component (image, title, source, close button)
-- Submit: upsert logged_item → insert group_post → optional vault save toast
-- Reset input after submit
-
-### Step M6: Comment thread (bottom sheet or inline)
-
-New file: `apps/mobile-app/components/groups/comment-thread.tsx`
-New file: `apps/mobile-app/components/groups/comment-bubble.tsx`
-New file: `apps/mobile-app/components/groups/reply-input.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/comment-thread.tsx` — DM-style bubbles, reply-to, edit, delete, unread divider
-- `apps/web/src/app/_components/groups/reply-input.tsx` — input with send button
-  Key design decisions from web:
-- Own comments: right-aligned, `bg-primary text-primary-foreground`, rounded-tr-sm
-- Others: left-aligned, `bg-surface border`, avatar + name, rounded-tl-sm
-- Reply-to: quoted block with accent bar, author name, truncated text
-- Unread divider: "N new messages" with primary-colored lines
-- Continuation: same author grouped, no repeated name/avatar
-- Timestamp: inline at end of bubble, mono text
-  Build instructions:
-- FlatList (inverted for bottom-anchored scroll) with `useComments` from `@kurate/hooks`
-- `CommentBubble` component handling own/other styling
-- Reply-to context banner above input
-- Edit mode: pre-fills input, banner shows "Editing"
-- Delete: long-press action sheet or swipe
-- `ReplyInput` with TextInput + send button
-
-### Step M7: Engagement bar
-
-New file: `apps/mobile-app/components/groups/engagement-bar.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/engagement-bar.tsx` — like, must-read, bookmark, comment toggle
-  Key design decisions from web:
-- Row of icon buttons: Heart (like), Star (must-read), Bookmark (vault), MessageCircle (comments)
-- Active states: red for like, warning for must-read, primary for bookmark
-- Count shown next to icon, mono font
-- Comment icon: green fill when new comments
-  Build instructions:
-- HStack of Pressable buttons
-- `useDropEngagement` from `@kurate/hooks` for like/must-read
-- `useVaultToggle` for bookmark (from web hook, needs lib move)
-- Optimistic UI — count changes immediately
-
-### Step M8: Library view
-
-New file: `apps/mobile-app/components/groups/library-view.tsx`
-New file: `apps/mobile-app/components/groups/library-card.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/library-view.tsx` — must-read section, all-shared grid
-- `apps/web/src/app/_components/groups/library-card.tsx` — card with image, title, metadata, engagement
-  Key design decisions from web:
-- Two sections: "MUST READ" at top, "ALL SHARED" below
-- Cards: preview image (aspect-video), title, source + read time, engagement bar
-- Card click → navigate to feed with scroll-to-drop
-  Build instructions:
-- SectionList with must-read + all-shared sections
-- `LibraryCard` component: Image + title + metadata + EngagementBar
-- Single column on mobile (2 columns on tablet if needed)
-- Press → navigate to feed view with drop ID param
-
-### Step M9: Group info screen
-
-New file: `apps/mobile-app/components/groups/group-info-view.tsx`
-New file: `apps/mobile-app/components/groups/group-members-list.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/group-info-page.tsx` — layout
-- `apps/web/src/app/_components/groups/group-info-header.tsx` — avatar, name, description, edit button
-- `apps/web/src/app/_components/groups/group-info-members-list.tsx` — member rows
-  Key design decisions from web:
-- Header: large avatar (80px), name, description, edit pencil (owner only)
-- "Add member" button (dashed border, plus icon) — admin/owner only
-- Members list: avatar 40px + name + handle + role badge + chevron (owner only)
-- Pending invites section (admin/owner)
-- Danger zone at bottom: leave + delete (owner)
-  Build instructions:
-- ScrollView with header, add-member button, FlatList of members
-- `useGroupMembers` + `useGroupInvites` from `@kurate/hooks`
-- Tap member → action sheet (owner only): promote/demote, remove
-- Danger zone: leave + delete buttons at bottom
-
-### Step M10: Edit group info sheet
-
-New file: `apps/mobile-app/components/groups/edit-group-info-sheet.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/edit-group-info-modal.tsx` — avatar upload, name, description
-  Key design decisions from web:
-- Avatar upload: tap avatar → image picker → upload to Supabase storage → update media_metadata → update conversation
-- Name + description fields
-  Build instructions:
-- Bottom sheet with avatar (pressable → expo-image-picker), name Input, description Textarea
-- Upload flow: pick image → upload to storage → upsert media_metadata → update conversations.group_avatar_id
-- Save + cancel buttons
-
-### Step M11: Invite member sheet
-
-New file: `apps/mobile-app/components/groups/invite-member-sheet.tsx`
-Read for reference:
-
-- `apps/web/src/app/_components/groups/group-invite-modal.tsx` — search, email detection, batch add, role selector
-  Key design decisions from web:
-- Search input: debounced, searches profiles by name/handle
-- Email detection: if email typed, check platform user or offer email invite
-- Multi-select with chips
-- Role selector: member/admin toggle
-- Batch add button
-  Build instructions:
-- Bottom sheet with search Input
-- FlatList of search results with checkboxes
-- Email branch: "Invite by email" + "Copy invite link" buttons
-- Selected chips row + role picker
-- "Add N members" submit button
-- `useGroupInvites` for pending invites management
-
-### Step M12: Join group deep link handler
-
-New file: `apps/mobile-app/app/groups/join/[invite_code].tsx`
-Read for reference:
-
-- `apps/web/src/app/(app)/groups/join/[invite_code]/page.tsx` — auth check, email validation, capacity check, join flow
-  Key design decisions from web:
-- Server-side on web; on mobile this is a screen triggered by deep link
-- Check auth → check onboarding → validate email (if present) → check capacity → join → redirect
-  Build instructions:
-- Screen that handles deep link `/groups/join/:invite_code`
-- On mount: check auth, validate, join group via Supabase insert
-- Error states: wrong account, revoked, invalid, full
-- Success: navigate to group detail
-
-### Step M13: Sidebar/tab unread badges
+File: `apps/mobile-app/store/usePendingStore.ts`
 
 Read for reference:
+- Current file shows `expo-secure-store` adapter wired via `createJSONStorage`. That's wrong for app state — see the MMKV memory at `~/.claude/projects/-Users-ankurrathi-Desktop-kurate-wtf-platform/memory/project_mobile_storage_mmkv.md`.
 
-- `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` — localStorage tracking, realtime subscription
-- `apps/web/src/app/_components/sidebar/sidebar-groups-section.tsx` — unread badge
-  Key design decisions from web:
-- Unread count per group: new posts since last visit (by others)
-- Realtime: increment on new post INSERT
-- Mark read on group visit (localStorage on web → AsyncStorage on mobile)
-  Build instructions:
-- `useGroupUnreadCounts` hook: AsyncStorage for last-seen, Supabase realtime for increments
-- Badge component on groups tab icon + individual group rows
-- Mark read when navigating to a group
+Build instructions:
+- Add dependency: `pnpm --filter mobile-app add react-native-mmkv`
+- Replace imports: remove `expo-secure-store` `getItemAsync/setItemAsync/deleteItemAsync`, add `import { MMKV } from 'react-native-mmkv'`.
+- New storage:
+  ```ts
+  const mmkv = new MMKV({ id: 'kurate-pending-queue' });
+  // ...
+  storage: createJSONStorage(() => ({
+    getItem: (k) => mmkv.getString(k) ?? null,
+    setItem: (k, v) => { mmkv.set(k, v); },
+    removeItem: (k) => { mmkv.delete(k); },
+  })),
+  ```
+- **Tell the user**: `npx expo prebuild` (or `eas build --profile development`) is required before next test run, and they need to install the new dev client build. Existing pending rows will be lost on first launch — acceptable since they're short-lived.
+
+### Step 2: Add `pendingGroupPosts` slice + adapter
+
+File: `apps/mobile-app/store/usePendingStore.ts`
+
+- Add to state shape:
+  ```ts
+  pendingGroupPosts: PendingGroupPostRow[];
+  addPendingGroupPost: (row: PendingGroupPostRow) => void;
+  updatePendingGroupPostStatus: (tempId: string, status: string, serverId?: string) => void;
+  deletePendingGroupPost: (tempId: string) => void;
+  getPendingGroupPostsForGroup: (groupId: string) => PendingGroupPostRow[];
+  ```
+- Implement with the same array-map/filter pattern as existing `pendingLinks` methods.
+
+File: `apps/mobile-app/libs/pending-db.ts`
+
+- Add to `mobilePendingDb` object:
+  ```ts
+  addPendingGroupPost: async row => { usePendingStore.getState().addPendingGroupPost(row); },
+  updatePendingGroupPostStatus: async (tempId, status, serverId) => { usePendingStore.getState().updatePendingGroupPostStatus(tempId, status, serverId); },
+  deletePendingGroupPost: async tempId => { usePendingStore.getState().deletePendingGroupPost(tempId); },
+  getAllPendingGroupPosts: async () => usePendingStore.getState().pendingGroupPosts,
+  getPendingGroupPostsForGroup: async groupId => usePendingStore.getState().getPendingGroupPostsForGroup(groupId),
+  ```
+
+### Step 3: Build mobile `useGroupComposer` wrapper
+
+New file: `apps/mobile-app/hooks/useGroupComposer.ts`
+
+Read for reference:
+- `apps/mobile-app/hooks/useVaultComposer.ts` — copy the wrapper pattern exactly
+- `libs/hooks/src/useGroupComposer.ts` — the shared hook to wrap
+
+Build instructions:
+- Thin wrapper that injects `mobilePendingDb` + Toast adapter + analytics adapter into shared hook.
+- Re-exports the result.
+
+### Step 4: Refactor mobile `drop-composer.tsx`
+
+File: `apps/mobile-app/components/groups/drop-composer.tsx`
+
+Read for reference:
+- `apps/web/src/app/_components/groups/drop-composer.tsx` (post-refactor) — same pattern, NativeWind instead of Tailwind
+- Existing mobile composer (current file) — reuse the URL detection + extraction UI
+
+Build instructions:
+- Remove direct `supabase.from(...).upsert/insert(...)` calls and `queryClient.invalidateQueries(...)` (lines 84-141).
+- Call `const composer = useGroupComposer({ groupId, currentUserId: userId, supabase, onPosted: useBumpGroupsList() })`.
+- Wire the existing send button to `composer.handleSend`.
+- Keep the URL preview card UI as-is — only the submission internals change.
+
+### Step 5: Refactor mobile `feed-view.tsx`
+
+File: `apps/mobile-app/components/groups/feed-view.tsx`
+
+- Remove any local `invalidateQueries` calls coupled to posting.
+- Read pending rows: `const pendingPosts = usePendingStore(s => s.pendingGroupPosts.filter(p => p.convo_id === groupId))` (use a stable selector).
+- Pass `pendingPosts` and `userId` into the mobile `useGroupFeed` wrapper, which passes them through to the shared hook.
+
+### Step 6: Update mobile `feed-drop-card.tsx`
+
+File: `apps/mobile-app/components/groups/feed-drop-card.tsx`
+
+Read for reference:
+- `apps/web/src/app/_components/groups/PendingGroupPostCard.tsx` — extract status visual treatment
+- Existing mobile card — keep all current confirmed-state visuals
+
+Build instructions:
+- Add a `kind: "pending" | "confirmed"` discriminator on the prop (or check `drop.status`).
+- `status === "sending"` → render a small NativeWind spinner badge in a corner (use `Spinner` from `components/ui/spinner`).
+- `status === "failed"` → render a red banner footer (`bg-destructive text-destructive-foreground`) with two `Pressable` buttons: Retry (calls `composer.retry(tempId)` — pass `retry` down via context or props) and Dismiss (calls `mobilePendingDb.deletePendingGroupPost(tempId)`).
+- All strings via `useLocalization` — add new keys to `libs/locales/src/en.json` (`groups.failed_to_post`, `groups.retry`, `groups.dismiss`).
+- FlashList `keyExtractor` stays stable — use `drop.serverId ?? drop.tempId ?? drop.id`.
+
+### Step 7: Lint + format mobile
+
+- `pnpm --filter mobile-app lint`
+- `pnpm --filter mobile-app format`
+- Test on a fresh dev client build with MMKV. Walk verification checklist (see plan file).
+
+---
+
+## Verification (both platforms)
+
+- [ ] Post a text message — card appears instantly; input clears; no other cards flicker.
+- [ ] Post a link — pending card with metadata appears instantly; morphs to confirmed card smoothly on web (layoutId) once server responds; no flicker on other cards.
+- [ ] Sender's group jumps to top of sidebar / groups list immediately.
+- [ ] Kill network → post → pending card shows `failed` state with Retry + Dismiss.
+- [ ] Re-open app → pending "failed" rows still present.
+- [ ] Two clients of same user: poster shows optimistic card; other tab/device receives server row via realtime insert (the `shared_by === self` guard only skips the *poster's* refetch).
+- [ ] `pnpm lint` + `pnpm type:check` (web), `pnpm lint` + `pnpm format` (mobile).
 
 ---
 
 ## Next Commands
 
-**Web agent (fix bugs — Step 1):**
-"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
+**Web agent:**
 
-Files to fix:
+"Read `memory/CODEBASE_MAP.md` and `memory/FEATURE_PLAN.md`.
 
-- `apps/web/src/app/(app)/groups/page.tsx`
-- `apps/web/src/app/api/groups/invite/route.ts`
-- `apps/web/src/app/_components/groups/library-view.tsx`
-- `apps/web/src/app/_components/groups/feed-share-card.tsx`
-- `apps/web/src/app/_components/groups/library-card.tsx`
+Implement Web Steps 1–10 in order from FEATURE_PLAN.md. This includes:
+- Steps 1–4: extend shared `libs/hooks` (PendingDB types, new `useGroupComposer`, new `useBumpGroupsList`, extend `useGroupFeed` with pending-merge + self-skip)
+- Steps 5–9: web Dexie table + adapter, new `PendingGroupPostCard`, refactor `drop-composer.tsx` / `feed-tab-view.tsx` / `feed-share-card.tsx` to use shared hooks + `layoutId`, refactor `useGroupFeed` web wrapper
+- Step 10: lint + type:check
 
-Fix these specific issues:
+Reference architecture to clone (read these only):
+- `libs/hooks/src/types/pending-db.ts` (extend it)
+- `libs/hooks/src/useVaultComposer.ts` (mirror its shape for `useGroupComposer`)
+- `libs/hooks/src/useGroupFeed.ts` (extend with pending merge + self-skip at lines 208-221)
+- `apps/web/src/app/_libs/db/index.ts` (extend with `pending_group_posts` table)
+- `apps/web/src/app/_components/vault/VaultLibrary.tsx` (live-query merge pattern)
+- `apps/web/src/app/_components/vault/VaultGrid.tsx` lines 62-102 (`<LayoutGroup>` + `<AnimatePresence>` + `layoutId`)
+- `apps/web/src/app/_components/vault/PendingLinkCard.tsx` (status visuals to mirror in `PendingGroupPostCard`)
+- `apps/web/src/app/_components/groups/drop-composer.tsx` (current file, refactor target)
+- `apps/web/src/app/_components/groups/feed-tab-view.tsx` (current file, refactor target)
+- `apps/web/src/app/_components/groups/feed-share-card.tsx` (current file, refactor target)
+- `apps/web/src/app/_libs/hooks/useGroupFeed.ts` (current file — lines 195-197 has the self-skip pattern to copy into the shared hook)
+- `libs/hooks/src/useUserGroups.ts` (for the `UserGroupRow` shape used by `useBumpGroupsList`)
+- `libs/query/src/keys.ts` (for `queryKeys.groups.list()`)
 
-1. `groups/page.tsx` — extract client logic to `GroupsPageClient.tsx`, make page.tsx a Server Component
-2. `invite/route.ts:157-164` — remove `as any` cast, use supabase directly, remove unnecessary try/catch
-3. `library-view.tsx:29-30` — wrap `fetchNextPage()` in useEffect with `[hasNextPage, isFetchingNextPage]` guards
-4. `feed-share-card.tsx:136` — add `drop.id` and `markPostSeen` to useEffect dep array
-5. `library-card.tsx:46` — fix `overflow-hiddrop.cden` → `overflow-hidden`
+If anything is missing from the map, explore that specific folder only, update the map, and proceed."
 
-Run `pnpm lint` and `pnpm type:check` when done."
+**Mobile agent:**
 
-**Web agent (code quality — Step 2):**
-"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
+"Read `memory/CODEBASE_MAP.md` and `memory/FEATURE_PLAN.md`. Also read `~/.claude/projects/-Users-ankurrathi-Desktop-kurate-wtf-platform/memory/project_mobile_storage_mmkv.md` and `project_pending_db_pattern.md` for the architectural decisions.
 
-Files to refactor:
+Wait until the Web agent has finished Steps 1–4 (the shared `libs/hooks` changes) before you start — your work depends on those types and hooks existing.
 
-- `apps/web/src/app/_components/groups/comment-thread.tsx` — extract CommentItem + renderTextWithLinks to `comment-item.tsx`
-- `apps/web/src/app/_components/groups/group-danger-zone.tsx` — extract DangerConfirmModal to `danger-confirm-modal.tsx`
-- `apps/web/src/app/_components/groups/feed-tab-view.tsx` — move delete-drop Supabase call to useGroupFeed hook
-- `apps/web/src/app/_libs/hooks/useGroupFeed.ts` — import ProfileRow/toProfile from mapGroupDrop.ts, use mapRowToGroupDrop for mapping
-- `apps/web/src/app/_libs/utils/mapGroupDrop.ts` — canonical source for ProfileRow, toProfile, mapRowToGroupDrop
-- `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` — parallelize group queries with Promise.all
-- `apps/web/src/app/_components/groups/feed-header.tsx` — replace inline SVGs with ChevronLeftIcon/ChevronRightIcon
-- `apps/web/src/app/(app)/groups/page.tsx` — replace inline SVG chevron with icon component
+Implement Mobile Steps 1–7 in order from FEATURE_PLAN.md. This includes:
+- Step 1: install `react-native-mmkv`, swap `usePendingStore` persist backend from `expo-secure-store` to MMKV, FLAG USER to run `npx expo prebuild` and install fresh dev client
+- Step 2: extend `usePendingStore` + `mobilePendingDb` with `pendingGroupPosts` slice
+- Step 3: new `apps/mobile-app/hooks/useGroupComposer.ts` wrapper
+- Step 4: refactor `apps/mobile-app/components/groups/drop-composer.tsx` to use shared composer + `useBumpGroupsList`
+- Step 5: refactor `apps/mobile-app/components/groups/feed-view.tsx` to read pending rows and pass into shared `useGroupFeed`
+- Step 6: update `apps/mobile-app/components/groups/feed-drop-card.tsx` with sending/failed status UI (Spinner badge, red banner with Retry+Dismiss)
+- Step 7: lint + format
 
-Run `pnpm lint` and `pnpm type:check` when done."
+Reference files (read these only):
+- `apps/mobile-app/store/usePendingStore.ts` (current file, refactor target — current `expo-secure-store` wiring)
+- `apps/mobile-app/libs/pending-db.ts` (current file, extend with group post methods)
+- `apps/mobile-app/hooks/useVaultComposer.ts` (mirror this exact wrapper pattern for `useGroupComposer`)
+- `apps/mobile-app/components/groups/drop-composer.tsx` (current file, refactor target)
+- `apps/mobile-app/components/groups/feed-view.tsx` (current file, refactor target)
+- `apps/mobile-app/components/groups/feed-drop-card.tsx` (current file, refactor target)
+- `libs/hooks/src/useGroupComposer.ts` (created by Web agent — wrap it)
+- `libs/hooks/src/useBumpGroupsList.ts` (created by Web agent — call from composer wrapper)
+- `libs/hooks/src/types/pending-db.ts` (extended by Web agent — implement new methods)
+- `libs/locales/src/en.json` (add `groups.failed_to_post`, `groups.retry`, `groups.dismiss`)
 
-**Web agent (move to /libs — Step 3):**
-"Read memory/CODEBASE_MAP.md first, then read ONLY these files:
+Lists must use `@shopify/flash-list`. Images must use `react-native-fast-image`. NativeWind only — no Gluestack. All strings via `useLocalization`.
 
-Files to move (change to accept supabase client as parameter):
-
-- `apps/web/src/app/_libs/utils/mapGroupDrop.ts` → `libs/utils/src/mapGroupDrop.ts`
-- `apps/web/src/app/_libs/utils/fetchGroupDetail.ts` → `libs/utils/src/fetchGroupDetail.ts`
-- `apps/web/src/app/_libs/utils/fetchUserGroups.ts` → `libs/hooks/src/useUserGroups.ts`
-- `apps/web/src/app/_libs/hooks/useGroupDetail.ts` → `libs/hooks/src/useGroupDetail.ts`
-- `apps/web/src/app/_libs/hooks/useGroupMembers.ts` → `libs/hooks/src/useGroupMembers.ts`
-- `apps/web/src/app/_libs/hooks/useGroupInvites.ts` → `libs/hooks/src/useGroupInvites.ts`
-- `apps/web/src/app/_libs/hooks/useDropEngagement.ts` → `libs/hooks/src/useDropEngagement.ts`
-- `apps/web/src/app/_libs/hooks/useComments.ts` → `libs/hooks/src/useComments.ts`
-- `apps/web/src/app/_libs/hooks/useShareToGroups.ts` + `apps/mobile-app/hooks/useShareToGroups.ts` → `libs/hooks/src/useShareToGroups.ts`
-
-Files that import them (update these imports after move):
-
-- `apps/web/src/app/(app)/groups/page.tsx` (or GroupsPageClient.tsx after bug fix)
-- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx`
-- `apps/web/src/app/_components/groups/feed-tab-view.tsx`
-- `apps/web/src/app/_components/groups/feed-share-card.tsx`
-- `apps/web/src/app/_components/groups/engagement-bar.tsx`
-- `apps/web/src/app/_components/groups/comment-thread.tsx`
-- `apps/web/src/app/_components/groups/group-info-page.tsx`
-- `apps/web/src/app/_components/groups/group-info-header.tsx`
-- `apps/web/src/app/_components/sidebar/sidebar-groups-section.tsx`
-- `apps/web/src/app/_libs/hooks/useGroupFeed.ts`
-
-Pattern: Each moved hook should accept `supabase: SupabaseClient` as first parameter. Web callers pass `createClient()`, mobile callers pass their own client.
-
-Update barrel exports in `libs/hooks/src/index.ts`, `libs/utils/src/index.ts`, `libs/types/src/index.ts`.
-
-Run `pnpm lint` and `pnpm type:check` when done."
-
-- `apps/web/src/app/(app)/groups/[id]/GroupPageClient.tsx`
-- `apps/web/src/app/_components/groups/` (all files listed per step)
-
-Existing mobile files:
-
-- `apps/mobile-app/app/(tabs)/_layout.tsx`
-- `apps/mobile-app/components/ui/` (all Gluestack components)
-- `apps/mobile-app/hooks/index.ts`
-- `apps/mobile-app/libs/supabase/client.ts`
-- `apps/mobile-app/context/`
-
-Build each step as written + NativeWind + lucide-react-native.
-If something is missing from the map → explore that specific folder only, update the map, then proceed."
+If anything is missing from the map, explore that specific folder only, update the map, and proceed."

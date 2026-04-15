@@ -130,7 +130,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "group_posts" },
         (payload) => {
-          const post = payload.new as { convo_id: string };
+          const post = payload.new as { convo_id: string; shared_by: string };
+          // Skip self — `useBumpGroupsList` already bumped this group optimistically
+          // when the composer fired. Invalidating here would force a redundant
+          // RPC + re-render across the sidebar.
+          if (post.shared_by === userId) return;
           // Reorder groups list when any group gets a new post (trigger bumps last_activity_at)
           if (groupIds.has(post.convo_id)) {
             void queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() });

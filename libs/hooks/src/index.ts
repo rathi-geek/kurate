@@ -9,7 +9,20 @@ export { useVaultPreview } from "./useVaultPreview";
 export type { UseVaultPreviewConfig, UseVaultPreviewReturn } from "./useVaultPreview";
 export { useVaultComposer } from "./useVaultComposer";
 export type { UseVaultComposerConfig } from "./useVaultComposer";
-export type { PendingDB, PendingLinkRow, PendingThoughtRow } from "./types/pending-db";
+export { useGroupComposer } from "./useGroupComposer";
+export type {
+  UseGroupComposerConfig,
+  UseGroupComposerReturn,
+  ComposerSendOptions,
+  ComposerLinkMeta,
+  UpsertLoggedItemInput,
+} from "./useGroupComposer";
+export type {
+  PendingDB,
+  PendingLinkRow,
+  PendingThoughtRow,
+  PendingGroupPostRow,
+} from "./types/pending-db";
 export {
   AVATARS_BUCKET,
   cleanupOldAvatar,
@@ -27,6 +40,7 @@ export {
   fetchGroupFeedPage,
   fetchFeedCommentPreviews,
 } from "./useGroupFeed";
+export type { GroupFeedEntry } from "./useGroupFeed";
 export { useGroupInvites } from "./useGroupInvites";
 export type { GroupInvite } from "./useGroupInvites";
 export { useDropEngagement } from "./useDropEngagement";
@@ -35,3 +49,4 @@ export { useShareToGroups } from "./useShareToGroups";
 export { useVaultToggle } from "./useVaultToggle";
 export { fetchUserGroups } from "./useUserGroups";
 export type { GroupRow } from "./useUserGroups";
+export { useBumpGroupsList } from "./useBumpGroupsList";
