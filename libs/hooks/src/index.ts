@@ -50,3 +50,5 @@ export { useVaultToggle } from "./useVaultToggle";
 export { fetchUserGroups } from "./useUserGroups";
 export type { GroupRow } from "./useUserGroups";
 export { useBumpGroupsList } from "./useBumpGroupsList";
+export { useRefreshLoggedItem } from "./useRefreshLoggedItem";
+export type { RefreshableItem } from "./useRefreshLoggedItem";

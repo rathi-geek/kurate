@@ -37,4 +37,26 @@ export const mobilePendingDb: PendingDB = {
   getAllPendingThoughts: async () => {
     return usePendingStore.getState().pendingThoughts;
   },
+
+  addPendingGroupPost: async row => {
+    usePendingStore.getState().addPendingGroupPost(row);
+  },
+
+  updatePendingGroupPostStatus: async (tempId, status, serverId) => {
+    usePendingStore
+      .getState()
+      .updatePendingGroupPostStatus(tempId, status, serverId);
+  },
+
+  deletePendingGroupPost: async tempId => {
+    usePendingStore.getState().deletePendingGroupPost(tempId);
+  },
+
+  getAllPendingGroupPosts: async () => {
+    return usePendingStore.getState().pendingGroupPosts;
+  },
+
+  getPendingGroupPostsForGroup: async groupId => {
+    return usePendingStore.getState().getPendingGroupPostsForGroup(groupId);
+  },
 };

@@ -6,6 +6,7 @@ import { VStack } from '@/components/ui/vstack';
 import { Link2 } from 'lucide-react-native';
 import { useLocalization } from '@/context';
 import type { ExtractedMeta } from '@kurate/types';
+import { decodeHtmlEntities } from '@kurate/utils';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -120,7 +121,7 @@ export function UrlExtractPreview({
       )}
       <VStack className="flex-1 gap-0.5">
         <Text className="text-sm font-medium text-foreground" numberOfLines={2}>
-          {metadata.title ?? domain}
+          {decodeHtmlEntities(metadata.title) ?? domain}
         </Text>
         {metadata.description ? (
           <Text className="text-xs text-muted-foreground" numberOfLines={2}>

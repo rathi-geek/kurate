@@ -1,5 +1,7 @@
 "use client";
 
+import { decodeHtmlEntities } from "@kurate/utils";
+
 interface SharedItem {
   id: string;
   title: string;
@@ -25,7 +27,7 @@ export default function SharedPage() {
       <div className="space-y-3">
         {MOCK_SHARED_ITEMS.map((item) => (
           <div key={item.id} className="p-4 bg-card border rounded-xl hover:bg-accent/50 transition-colors cursor-pointer">
-            <h3 className="font-medium mb-1">{item.title}</h3>
+            <h3 className="font-medium mb-1">{decodeHtmlEntities(item.title)}</h3>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>{item.source}</span>
               <span>·</span>

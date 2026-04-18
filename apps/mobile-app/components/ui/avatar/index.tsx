@@ -29,7 +29,7 @@ const Avatar = React.forwardRef<React.ComponentRef<typeof View>, IAvatarProps>(
         ref={ref}
         style={dims}
         className={cn(
-          'items-center justify-center overflow-hidden bg-accent',
+          'items-center justify-center overflow-hidden bg-primary',
           className,
         )}
       >
@@ -41,7 +41,7 @@ const Avatar = React.forwardRef<React.ComponentRef<typeof View>, IAvatarProps>(
           />
         ) : (
           <Text
-            className="font-sans font-semibold text-foreground"
+            className="font-sans font-semibold text-white"
             style={{ fontSize: Math.max(10, size * 0.38) }}
           >
             {initialsOf(name)}

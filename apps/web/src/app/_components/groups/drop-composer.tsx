@@ -98,11 +98,11 @@ export function DropComposer({
       const url = detectedUrl;
       const linkMeta = url
         ? {
-            title: metadata?.title ?? null,
+            title: metadata?.title ?? url,
             description: metadata?.description ?? null,
             content_type: metadata?.content_type ?? null,
             preview_image: metadata?.preview_image ?? null,
-            source: metadata?.source ?? null,
+            source: metadata?.source ?? new URL(url).host.replace(/^www\./, ""),
             read_time: metadata?.read_time ?? null,
           }
         : null;

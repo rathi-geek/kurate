@@ -3,15 +3,21 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { VStack } from '@/components/ui/vstack';
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
-import { Spinner } from '@/components/ui/spinner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertText } from '@/components/ui/alert';
 import { useLocalization } from '@/context';
 import { supabase } from '@/libs/supabase/client';
+import { mobilePendingDb } from '@/libs/pending-db';
 import { useAuthStore } from '@/store';
-import { useGroupFeed } from '@kurate/hooks';
-import type { GroupDrop } from '@kurate/types';
-import { FeedDropCard } from '@/components/groups/feed-drop-card';
+import { useProfile } from '@/hooks/useProfile';
+import { useGroupFeed } from '@/hooks/useGroupFeed';
+import { useGroupComposer } from '@/hooks/useGroupComposer';
+import type { GroupFeedEntry } from '@kurate/hooks';
+import {
+  FeedEntryItem,
+  ItemSeparator,
+  LoadingFooter,
+} from '@/components/groups/feed-list-parts';
 
 interface FeedViewProps {
   groupId: string;
@@ -21,9 +27,22 @@ interface FeedViewProps {
 export function FeedView({ groupId, currentRole }: FeedViewProps) {
   const { t } = useLocalization();
   const userId = useAuthStore(state => state.userId) ?? '';
+  const { data: profile } = useProfile(userId || undefined);
+
+  const currentUserProfile = profile
+    ? {
+        id: profile.id,
+        display_name:
+          [profile.firstName, profile.lastName].filter(Boolean).join(' ') ||
+          null,
+        avatar_path: profile.avatarPath,
+        handle: profile.handle,
+      }
+    : null;
 
   const {
     drops,
+    entries,
     deleteDrop,
     fetchNextPage,
     hasNextPage,
@@ -33,9 +52,27 @@ export function FeedView({ groupId, currentRole }: FeedViewProps) {
     refetch,
   } = useGroupFeed(supabase, groupId, userId);
 
-  // Avoids scroll-jacking when other users post — we only react to drops authored by `userId`.
-  const listRef = useRef<FlashListRef<GroupDrop>>(null);
+  const composer = useGroupComposer({
+    groupId,
+    currentUserId: userId,
+    supabase,
+    currentUserProfile,
+  });
+
+  const handleRetry = useCallback(
+    (tempId: string) => {
+      void composer.retry(tempId);
+    },
+    [composer],
+  );
+
+  const handleDismiss = useCallback((tempId: string) => {
+    void mobilePendingDb.deletePendingGroupPost(tempId);
+  }, []);
+
+  const listRef = useRef<FlashListRef<GroupFeedEntry>>(null);
   const prevTopIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     const top = drops[0];
     if (!top) {
@@ -54,27 +91,28 @@ export function FeedView({ groupId, currentRole }: FeedViewProps) {
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const pendingCount = entries.filter(e => e.kind === 'pending').length;
+
   const renderItem = useCallback(
-    ({ item }: { item: GroupDrop }) => (
-      <FeedDropCard
-        drop={item}
-        currentUserId={userId}
+    ({ item }: { item: GroupFeedEntry }) => (
+      <FeedEntryItem
+        entry={item}
         currentRole={currentRole}
         onDelete={deleteDrop}
+        onRetry={handleRetry}
+        onDismiss={handleDismiss}
       />
     ),
-    [userId, currentRole, deleteDrop],
+    [currentRole, deleteDrop, handleRetry, handleDismiss],
   );
 
-  const renderFooter = useCallback(
-    () =>
-      isFetchingNextPage ? (
-        <View className="items-center py-4">
-          <Spinner />
-        </View>
-      ) : null,
-    [isFetchingNextPage],
+  const keyExtractor = useCallback(
+    (entry: GroupFeedEntry) =>
+      entry.kind === 'pending' ? `pending-${entry.data.tempId}` : entry.data.id,
+    [],
   );
+
+  const getItemType = useCallback((item: GroupFeedEntry) => item.kind, []);
 
   if (isLoading && drops.length === 0) {
     return (
@@ -94,23 +132,27 @@ export function FeedView({ groupId, currentRole }: FeedViewProps) {
     );
   }
 
+  const emptyComponent = (
+    <View className="items-center p-8">
+      <Text className="text-center font-sans text-sm text-muted-foreground">
+        {t('groups.feed_empty')}
+      </Text>
+    </View>
+  );
+
   return (
     <FlashList
+      key={`feed-${pendingCount}`}
       ref={listRef}
-      data={drops}
-      keyExtractor={d => d.id}
+      data={entries}
+      keyExtractor={keyExtractor}
       renderItem={renderItem}
-      style={{ padding: 16 }}
+      getItemType={getItemType}
+      style={{ padding: 16, paddingTop: 0 }}
       showsVerticalScrollIndicator={false}
-      ItemSeparatorComponent={() => <View className="h-3" />}
-      ListFooterComponent={renderFooter}
-      ListEmptyComponent={
-        <View className="items-center p-8">
-          <Text className="text-center font-sans text-sm text-muted-foreground">
-            {t('groups.feed_empty')}
-          </Text>
-        </View>
-      }
+      ItemSeparatorComponent={ItemSeparator}
+      ListFooterComponent={isFetchingNextPage ? LoadingFooter : null}
+      ListEmptyComponent={emptyComponent}
       onEndReached={handleEndReached}
       onEndReachedThreshold={0.5}
       onRefresh={refetch}

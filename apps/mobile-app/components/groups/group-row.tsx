@@ -17,7 +17,7 @@ export function GroupRow({ group, onPress, unreadCount = 0 }: GroupRowProps) {
       onPress={() => onPress(group.id)}
       className="flex-row items-center gap-3 px-3 py-1 active:bg-accent/40"
     >
-      <Avatar uri={group.avatarUrl} name={group.name} size={48} />
+      <Avatar uri={group.avatarUrl} name={group.name} size={42} />
       <Text
         numberOfLines={1}
         className="min-w-0 flex-1 font-sans text-base font-medium text-foreground"

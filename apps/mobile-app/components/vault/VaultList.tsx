@@ -9,6 +9,7 @@ import { VaultCardSkeleton } from './VaultCardSkeleton';
 import { VaultEmptyState } from './VaultEmptyState';
 import { VaultErrorState } from './VaultErrorState';
 import { VaultShareSheet } from './VaultShareSheet';
+import { VaultRemarkSheet } from './VaultRemarkSheet';
 
 interface VaultListProps {
   filters: VaultFilters;
@@ -45,9 +46,11 @@ export function VaultList({ filters }: VaultListProps) {
     refetch,
     deleteItem,
     toggleRead,
+    updateRemarks,
   } = useMobileVault(filters);
 
   const [shareItem, setShareItem] = useState<VaultItem | null>(null);
+  const [remarkItem, setRemarkItem] = useState<VaultItem | null>(null);
 
   const handleEndReached = useCallback(() => {
     if (hasMore) loadMore();
@@ -60,6 +63,7 @@ export function VaultList({ filters }: VaultListProps) {
         onToggleRead={toggleRead}
         onDelete={deleteItem}
         onShare={setShareItem}
+        onEditRemark={setRemarkItem}
       />
     ),
     [toggleRead, deleteItem],
@@ -120,6 +124,11 @@ export function VaultList({ filters }: VaultListProps) {
         open={!!shareItem}
         item={shareItem}
         onClose={() => setShareItem(null)}
+      />
+      <VaultRemarkSheet
+        item={remarkItem}
+        onSave={updateRemarks}
+        onClose={() => setRemarkItem(null)}
       />
     </>
   );

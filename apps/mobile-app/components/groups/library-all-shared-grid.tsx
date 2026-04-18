@@ -7,7 +7,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertText } from '@/components/ui/alert';
 import { useLocalization } from '@/context';
 import { supabase } from '@/libs/supabase/client';
-import { useGroupFeed } from '@kurate/hooks';
+import { useGroupFeed } from '@/hooks/useGroupFeed';
 import type { GroupDrop } from '@kurate/types';
 import { LibraryCard } from '@/components/groups/library-card';
 import { LibraryGridSkeleton } from '@/components/groups/library-grid-skeleton';

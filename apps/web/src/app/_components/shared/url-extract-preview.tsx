@@ -7,6 +7,7 @@ import { useTranslations } from "@/i18n/use-translations";
 import { CyclingText } from "@/components/ui/cycling-text";
 import { Typewriter } from "@/components/ui/typewriter";
 
+import { decodeHtmlEntities } from "@kurate/utils";
 import { getLinkCopy } from "@/app/_libs/utils/getLinkCopy";
 import { DomainIcon } from "@/components/icons";
 
@@ -90,11 +91,11 @@ export function UrlExtractPreview({
         )}
         <div className="min-w-0 flex-1">
           <p className="text-foreground line-clamp-2 text-sm font-medium">
-            {metadata.title ?? url}
+            {decodeHtmlEntities(metadata.title) ?? url}
           </p>
           {metadata.description && (
             <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
-              {metadata.description}
+              {decodeHtmlEntities(metadata.description)}
             </p>
           )}
           {metaRow && <p className="text-muted-foreground mt-1 text-xs">{metaRow}</p>}

@@ -9,7 +9,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { cn } from '@/lib/utils';
 
-type ISkeletonProps = React.ComponentProps<typeof View> & { className?: string };
+type ISkeletonProps = React.ComponentProps<typeof View> & {
+  className?: string;
+};
 
 const Skeleton = React.forwardRef<
   React.ComponentRef<typeof View>,

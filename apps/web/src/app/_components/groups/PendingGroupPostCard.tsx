@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 
 import type { PendingGroupPostRow } from "@kurate/hooks";
+import { decodeHtmlEntities } from "@kurate/utils";
 
 import { ContentTypePill } from "@/components/ui/content-type-pill";
 import { DomainIcon } from "@/components/icons";
@@ -150,7 +151,7 @@ export function PendingGroupPostCard({
 
               <div className="mb-2">
                 <span className="text-foreground line-clamp-2 text-base font-bold">
-                  {row.title ?? row.url}
+                  {decodeHtmlEntities(row.title) ?? row.url}
                 </span>
                 {row.source && (
                   <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 font-mono text-[11px]">

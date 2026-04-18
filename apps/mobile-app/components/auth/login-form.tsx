@@ -6,6 +6,7 @@ import { VStack } from '@/components/ui/vstack';
 import { View } from '@/components/ui/view';
 import { useLocalization } from '@/context';
 import GoogleIcon from '@kurate/icons/platform/google.svg';
+import AppleIcon from '@kurate/icons/platform/apple.svg';
 import { BrandLogo } from '@/components/brand/brand-logo';
 
 import { useLoginAuth } from '@/hooks/useLoginAuth';
@@ -16,6 +17,9 @@ export function LoginForm() {
   const {
     googleLoading,
     handleGoogle,
+    appleLoading,
+    appleAvailable,
+    handleApple,
     magicEmail,
     setMagicEmail,
     magicStep,
@@ -26,7 +30,7 @@ export function LoginForm() {
   } = useLoginAuth();
 
   return (
-    <VStack className="gap-6">
+    <VStack className="gap-4">
       <VStack className="mb-4 gap-2">
         <BrandLogo />
       </VStack>
@@ -37,20 +41,46 @@ export function LoginForm() {
         </Text>
       </VStack>
 
-      <Button variant="outline" onPress={handleGoogle} disabled={googleLoading}>
-        {googleLoading ? (
-          <Spinner size="small" className="text-foreground" />
-        ) : (
-          <HStack className="items-center gap-2">
-            <GoogleIcon width={18} height={18} />
-            <ButtonText className="text-foreground">
-              {t('auth.login.google')}
-            </ButtonText>
-          </HStack>
-        )}
-      </Button>
+      <HStack className="gap-3">
+        <Button
+          variant="outline"
+          onPress={handleGoogle}
+          disabled={googleLoading}
+          className="flex-1 p-1"
+        >
+          {googleLoading ? (
+            <Spinner size="small" className="text-foreground" />
+          ) : (
+            <HStack className="items-center gap-2 ">
+              <GoogleIcon width={24} height={24} />
+              <ButtonText className="text-md text-foreground">
+                {t('auth.login.google')}
+              </ButtonText>
+            </HStack>
+          )}
+        </Button>
+        {appleAvailable ? (
+          <Button
+            variant="outline"
+            onPress={handleApple}
+            disabled={appleLoading}
+            className="flex-1"
+          >
+            {appleLoading ? (
+              <Spinner size="small" className="text-foreground" />
+            ) : (
+              <HStack className="items-center gap-2 ">
+                <AppleIcon width={24} height={24} />
+                <ButtonText className="text-md text-foreground">
+                  {t('auth.login.apple')}
+                </ButtonText>
+              </HStack>
+            )}
+          </Button>
+        ) : null}
+      </HStack>
 
-      <HStack className="my-2 items-center gap-3">
+      <HStack className=" items-center gap-2">
         <View className="h-px flex-1 bg-border" />
         <Text className="font-sans text-xs text-muted-foreground">
           {t('auth.login.or_divider')}

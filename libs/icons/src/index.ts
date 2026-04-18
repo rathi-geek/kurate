@@ -19,7 +19,7 @@ export const ICON_CATEGORIES = {
     'cross',
     'arrow',
   ],
-  platform: ['google', 'spotify', 'youtube', 'vimeo', 'apple-podcasts'],
+  platform: ['google', 'apple', 'spotify', 'youtube', 'vimeo', 'apple-podcasts'],
   ui: [
     'bell',
     'bookmark',

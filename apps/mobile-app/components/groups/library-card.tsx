@@ -7,6 +7,7 @@ import { Text } from '@/components/ui/text';
 import { Image, resizeMode } from '@/components/ui/fast-image';
 import { useLocalization } from '@/context';
 import type { GroupDrop } from '@kurate/types';
+import { decodeHtmlEntities } from '@kurate/utils';
 import { EngagementBar } from '@/components/groups/engagement-bar';
 
 interface LibraryCardProps {
@@ -38,7 +39,7 @@ export function LibraryCard({
   }, [drop.id, onPress]);
 
   const previewUrl = drop.item?.preview_image_url;
-  const fallbackText = drop.item?.title ?? drop.content ?? drop.note ?? '';
+  const fallbackText = decodeHtmlEntities(drop.item?.title) ?? drop.content ?? drop.note ?? '';
 
   return (
     <Pressable
@@ -66,7 +67,7 @@ export function LibraryCard({
               numberOfLines={2}
               className="font-sans text-sm font-medium text-foreground"
             >
-              {drop.item.title ?? drop.item.url ?? ''}
+              {decodeHtmlEntities(drop.item.title) ?? drop.item.url ?? ''}
             </Text>
             {meta.source || meta.readTime ? (
               <HStack className="items-center gap-1">

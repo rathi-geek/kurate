@@ -15,6 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/app/_libs/utils/cn";
 import type { VaultItem } from "@kurate/types";
+import { decodeHtmlEntities } from "@kurate/utils";
 
 export interface VaultRemarkModalProps {
   open: boolean;
@@ -52,7 +53,7 @@ export function VaultRemarkModal({
           <DialogTitle>{t("remark_modal_title")}</DialogTitle>
           {item && (
             <DialogDescription className="line-clamp-2 font-sans text-sm">
-              {item.title || item.url}
+              {decodeHtmlEntities(item.title) || item.url}
             </DialogDescription>
           )}
         </DialogHeader>

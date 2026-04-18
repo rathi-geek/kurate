@@ -9,6 +9,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { useLocalization } from '@/context';
+import { useAuthStore } from '@/store';
 import { formatRelativeTime } from '@kurate/utils';
 import type { GroupDrop } from '@kurate/types';
 import { supabaseUrl } from '@/libs/supabase/client';
@@ -16,10 +17,10 @@ import { DropItemPreview } from '@/components/groups/drop-item-preview';
 import { DropShareSheet } from '@/components/groups/drop-share-sheet';
 import { EngagementBar } from '@/components/groups/engagement-bar';
 import { CommentThreadSheet } from '@/components/groups/comment-thread-sheet';
+import { useRefreshLoggedItem } from '@/hooks/useRefreshLoggedItem';
 
 interface FeedDropCardProps {
   drop: GroupDrop;
-  currentUserId: string;
   currentRole?: string;
   onDelete: (dropId: string) => Promise<void> | void;
 }
@@ -33,13 +34,24 @@ const avatarUrlFromPath = (path: string | null): string | null =>
 
 export function FeedDropCard({
   drop,
-  currentUserId,
   currentRole,
   onDelete,
 }: FeedDropCardProps) {
   const { t } = useLocalization();
+  const currentUserId = useAuthStore(s => s.userId) ?? '';
   const [shareOpen, setShareOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+
+  useRefreshLoggedItem(
+    drop.item
+      ? {
+          id: drop.logged_item_id ?? '',
+          url: drop.item.url,
+          title: drop.item.title ?? null,
+          preview_image_url: drop.item.preview_image_url ?? null,
+        }
+      : null,
+  );
 
   const sharerAvatar = avatarUrlFromPath(drop.sharer.avatar_path);
   const canDelete = drop.shared_by === currentUserId || currentRole === 'owner';
@@ -131,7 +143,6 @@ export function FeedDropCard({
         {/* Engagement — border-t separator, same bg-card, matches web */}
         <EngagementBar
           drop={drop}
-          currentUserId={currentUserId}
           onCommentsPress={() => setCommentsOpen(true)}
         />
       </View>

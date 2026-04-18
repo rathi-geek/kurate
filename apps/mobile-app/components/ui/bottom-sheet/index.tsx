@@ -23,7 +23,10 @@ const renderBackdrop = (props: BottomSheetBackdropProps) => (
 );
 
 const BottomSheet = React.forwardRef<BottomSheetModal, IBottomSheetProps>(
-  function BottomSheet({ children, backgroundStyle, handleIndicatorStyle, ...props }, ref) {
+  function BottomSheet(
+    { children, backgroundStyle, handleIndicatorStyle, ...props },
+    ref,
+  ) {
     return (
       <BottomSheetModal
         ref={ref}

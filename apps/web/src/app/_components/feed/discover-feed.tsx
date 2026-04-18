@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { BrandSunburst } from "@/components/brand";
+import { decodeHtmlEntities } from "@kurate/utils";
 import { MOCK_FEED_ITEMS, type FeedItem } from "@/app/_mocks/mock-data";
 
 const CARD_STAGGER_MS = 80;
@@ -99,7 +100,7 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
               </div>
               <div className="p-3">
                 <p className="font-sans text-sm font-semibold text-foreground line-clamp-2">
-                  {item.title}
+                  {decodeHtmlEntities(item.title)}
                 </p>
                 <p className="font-mono text-xs text-muted-foreground mt-1">
                   {item.hostname}
@@ -168,11 +169,11 @@ export function DiscoverFeed({ onItemClick, onSave }: DiscoverFeedProps) {
                       className="text-left mt-1.5 block w-full group"
                     >
                       <p className="font-sans text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                        {item.title}
+                        {decodeHtmlEntities(item.title)}
                       </p>
                       {item.description && (
                         <p className="font-sans text-sm text-muted-foreground mt-0.5 line-clamp-2">
-                          {item.description}
+                          {decodeHtmlEntities(item.description)}
                         </p>
                       )}
                     </button>

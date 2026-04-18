@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 import Constants from 'expo-constants';
-import { Link, Plus, X } from 'lucide-react-native';
-import { useQueryClient } from '@tanstack/react-query';
-import Toast from 'react-native-toast-message';
+import { AlertCircle, Link, Plus, X } from 'lucide-react-native';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { HStack } from '@/components/ui/hstack';
@@ -15,8 +13,15 @@ import { Spinner } from '@/components/ui/spinner';
 import { useLocalization } from '@/context';
 import { supabase } from '@/libs/supabase/client';
 import { useAuthStore } from '@/store';
-import { useExtractMetadata, generateUrlHash, URL_REGEX } from '@kurate/hooks';
-import { queryKeys } from '@kurate/query';
+import { decodeHtmlEntities } from '@kurate/utils';
+import { useProfile } from '@/hooks/useProfile';
+import { useGroupComposer } from '@/hooks/useGroupComposer';
+import {
+  useExtractMetadata,
+  useBumpGroupsList,
+  URL_REGEX,
+} from '@kurate/hooks';
+import type { GroupProfile } from '@kurate/types';
 import { lightTheme } from '@kurate/theme';
 
 interface DropComposerProps {
@@ -36,19 +41,36 @@ const hostOf = (url: string): string => {
 
 export function DropComposer({ groupId }: DropComposerProps) {
   const { t } = useLocalization();
-  const queryClient = useQueryClient();
-  const userId = useAuthStore(state => state.userId) ?? '';
-  const accessToken = useAuthStore(state => state.accessToken);
+  const userId = useAuthStore(s => s.userId) ?? '';
+  const accessToken = useAuthStore(s => s.accessToken);
+  const { data: profile } = useProfile(userId || undefined);
+
+  const currentUserProfile: GroupProfile | null = profile
+    ? {
+        id: profile.id,
+        display_name:
+          [profile.firstName, profile.lastName].filter(Boolean).join(' ') ||
+          null,
+        avatar_path: profile.avatarPath,
+        handle: profile.handle,
+      }
+    : null;
 
   const [value, setValue] = useState('');
   const [lockedUrl, setLockedUrl] = useState<string | null>(null);
-  const [isPosting, setIsPosting] = useState(false);
   const urlTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { isExtracting, metadata, extract, reset } = useExtractMetadata(
-    apiBaseUrl,
-    accessToken,
-  );
+  const { isExtracting, metadata, extractionFailed, extract, reset } =
+    useExtractMetadata(apiBaseUrl, accessToken);
+
+  const bumpGroupsList = useBumpGroupsList();
+  const composer = useGroupComposer({
+    groupId,
+    currentUserId: userId,
+    supabase,
+    currentUserProfile,
+    onPosted: bumpGroupsList,
+  });
 
   // URL detection — 150ms debounce; on lock, strip URL out of input and run extraction.
   useEffect(() => {
@@ -79,84 +101,47 @@ export function DropComposer({ groupId }: DropComposerProps) {
   }, [reset]);
 
   const hasText = value.trim().length > 0;
-  const showSend = !isPosting && !isExtracting && (hasText || !!lockedUrl);
+  const showSend = hasText || !!lockedUrl;
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(() => {
     if (!userId || !showSend) return;
-    setIsPosting(true);
-    try {
-      if (lockedUrl) {
-        const url_hash = await generateUrlHash(lockedUrl);
-        const { data: logged, error: liError } = await supabase
-          .from('logged_items')
-          .upsert(
-            {
-              url: lockedUrl,
-              url_hash,
-              title: metadata?.title ?? lockedUrl,
-              content_type: metadata?.content_type ?? 'article',
-              preview_image_url: metadata?.preview_image ?? null,
-              description: metadata?.description ?? null,
-              raw_metadata: {
-                source: metadata?.source ?? null,
-                read_time: metadata?.read_time ?? null,
-              },
-            },
-            { onConflict: 'url_hash' },
-          )
-          .select('id')
-          .single();
-        if (liError || !logged) throw new Error(liError?.message);
 
-        const note = value.trim();
-        const { error: postError } = await supabase.from('group_posts').insert({
-          convo_id: groupId,
-          logged_item_id: logged.id,
-          shared_by: userId,
-          note: note || null,
-        });
-        if (postError) throw new Error(postError.message);
-      } else {
-        const content = value.trim();
-        if (!content) return;
-        const { error } = await supabase.from('group_posts').insert({
-          convo_id: groupId,
-          shared_by: userId,
-          content,
-        });
-        if (error) throw new Error(error.message);
-      }
+    void composer.handleSend(value.trim(), {
+      url: lockedUrl,
+      meta: lockedUrl
+        ? {
+            title: metadata?.title ?? lockedUrl,
+            description: metadata?.description ?? null,
+            content_type: metadata?.content_type ?? null,
+            preview_image: metadata?.preview_image ?? null,
+            source: metadata?.source ?? hostOf(lockedUrl),
+            read_time: metadata?.read_time ?? null,
+          }
+        : null,
+    });
 
-      setValue('');
-      setLockedUrl(null);
-      reset();
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.groups.feed(groupId),
-      });
-      Toast.show({ type: 'success', text1: t('groups.toast_shared') });
-    } catch {
-      Toast.show({ type: 'error', text1: t('groups.error_generic') });
-    } finally {
-      setIsPosting(false);
-    }
-  }, [
-    showSend,
-    lockedUrl,
-    groupId,
-    metadata,
-    queryClient,
-    reset,
-    t,
-    value,
-    userId,
-  ]);
+    setValue('');
+    setLockedUrl(null);
+    reset();
+  }, [userId, showSend, composer, value, lockedUrl, metadata, reset]);
+
+  const showPreview =
+    !!lockedUrl || isExtracting || (extractionFailed && !!lockedUrl);
 
   return (
     <VStack className="gap-2">
-      {lockedUrl ? (
+      {showPreview && lockedUrl ? (
         <View className="mx-4 overflow-hidden rounded-xl border border-border bg-card">
-          <HStack className="gap-3 p-3">
-            {metadata?.preview_image ? (
+          <HStack className="items-start gap-3 p-3">
+            {/* Thumbnail / loading / failed icon */}
+            {isExtracting ? (
+              <View
+                style={{ width: 48, height: 48 }}
+                className="items-center justify-center rounded-md bg-accent"
+              >
+                <Spinner size="small" />
+              </View>
+            ) : metadata?.preview_image ? (
               <View
                 style={{ width: 48, height: 48 }}
                 className="overflow-hidden rounded-md bg-accent"
@@ -167,28 +152,72 @@ export function DropComposer({ groupId }: DropComposerProps) {
                   resizeMode={resizeMode.cover}
                 />
               </View>
-            ) : null}
+            ) : (
+              <View
+                style={{ width: 48, height: 48 }}
+                className="items-center justify-center rounded-md bg-accent"
+              >
+                <Icon
+                  as={extractionFailed ? AlertCircle : Link}
+                  size="xs"
+                  className="text-muted-foreground"
+                />
+              </View>
+            )}
+
+            {/* Text content */}
             <VStack className="min-w-0 flex-1 gap-0.5">
               {isExtracting ? (
-                <Text className="font-sans text-xs text-muted-foreground">
-                  {t('groups.extracting')}
-                </Text>
-              ) : (
                 <>
-                  {metadata?.title ? (
-                    <Text
-                      numberOfLines={2}
-                      className="font-sans text-sm font-medium text-foreground"
-                    >
-                      {metadata.title}
-                    </Text>
-                  ) : null}
+                  <Text className="font-sans text-sm font-medium text-foreground">
+                    {t('groups.extracting')}
+                  </Text>
                   <Text className="font-mono text-xs text-muted-foreground">
                     {hostOf(lockedUrl)}
                   </Text>
                 </>
+              ) : extractionFailed && !metadata ? (
+                <>
+                  <Text
+                    numberOfLines={1}
+                    className="font-mono text-sm text-muted-foreground"
+                  >
+                    {lockedUrl}
+                  </Text>
+                  <Text className="font-sans text-xs text-muted-foreground">
+                    {t('groups.extraction_failed')}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text
+                    numberOfLines={2}
+                    className="font-sans text-sm font-medium text-foreground"
+                  >
+                    {decodeHtmlEntities(metadata?.title) ?? lockedUrl}
+                  </Text>
+                  {metadata?.description ? (
+                    <Text
+                      numberOfLines={2}
+                      className="font-sans text-xs text-muted-foreground"
+                    >
+                      {metadata.description}
+                    </Text>
+                  ) : null}
+                  <Text className="font-mono text-xs text-muted-foreground">
+                    {[
+                      metadata?.source ?? hostOf(lockedUrl),
+                      metadata?.content_type,
+                      metadata?.read_time,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </Text>
+                </>
               )}
             </VStack>
+
+            {/* Close button */}
             <Pressable
               onPress={dismissPreview}
               className="h-6 w-6 items-center justify-center rounded-full active:bg-accent"
@@ -214,7 +243,6 @@ export function DropComposer({ groupId }: DropComposerProps) {
           onChangeText={setValue}
           onSubmitEditing={handleSubmit}
           returnKeyType="send"
-          editable={!isPosting}
           multiline={false}
         />
         {showSend ? (
@@ -222,11 +250,7 @@ export function DropComposer({ groupId }: DropComposerProps) {
             onPress={handleSubmit}
             className="h-8 w-8 items-center justify-center rounded-full bg-primary"
           >
-            {isPosting ? (
-              <Spinner className="text-primary-foreground" />
-            ) : (
-              <Icon as={Plus} size="2xs" className="text-primary-foreground" />
-            )}
+            <Icon as={Plus} size="2xs" className="text-primary-foreground" />
           </Pressable>
         ) : null}
       </HStack>

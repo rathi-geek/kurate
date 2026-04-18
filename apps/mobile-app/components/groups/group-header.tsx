@@ -17,6 +17,7 @@ interface GroupHeaderProps {
   view: GroupView;
   onViewChange: (view: GroupView) => void;
   onOpenInfo?: () => void;
+  currentView: GroupView;
 }
 
 export function GroupHeader({
@@ -25,17 +26,20 @@ export function GroupHeader({
   onBack,
   view,
   onViewChange,
+  currentView,
   onOpenInfo,
 }: GroupHeaderProps) {
   const { t } = useLocalization();
 
   return (
-    <View className="border-b border-border bg-background px-2 py-2">
+    <View
+      className={`${currentView === 'feed' ? 'shadow-md' : ''} bg-background px-2 py-2`}
+    >
       <HStack className="items-center gap-2">
         <Pressable
           onPress={onBack}
           className="h-9 w-9 items-center justify-center rounded-full active:bg-accent"
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
         >
           <Icon as={ChevronLeft} size="lg" className="text-foreground" />
         </Pressable>

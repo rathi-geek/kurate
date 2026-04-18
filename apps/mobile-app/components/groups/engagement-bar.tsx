@@ -10,12 +10,12 @@ import { Icon } from '@/components/ui/icon';
 import { Avatar } from '@/components/ui/avatar';
 import { useLocalization } from '@/context';
 import { supabase, supabaseUrl } from '@/libs/supabase/client';
+import { useAuthStore } from '@/store';
 import { useDropEngagement, useVaultToggle } from '@kurate/hooks';
 import type { GroupDrop, GroupProfile } from '@kurate/types';
 
 interface EngagementBarProps {
   drop: GroupDrop;
-  currentUserId: string;
   onCommentsPress?: () => void;
   showComments?: boolean;
 }
@@ -58,11 +58,11 @@ function ReactorPill({
 
 export function EngagementBar({
   drop,
-  currentUserId,
   onCommentsPress,
   showComments = true,
 }: EngagementBarProps) {
   const { t } = useLocalization();
+  const currentUserId = useAuthStore(s => s.userId) ?? '';
 
   const handleEngagementError = useCallback(
     (message: string) => Toast.show({ type: 'error', text1: message }),
@@ -181,7 +181,7 @@ export function EngagementBar({
           {drop.item ? (
             <Pressable
               onPress={handleToggleBookmark}
-              className="flex-row items-center gap-1 rounded-[6px] border-t border-border/50 py-1 active:bg-accent/40"
+              className="flex-row items-center gap-1 rounded-[6px] py-1 active:bg-accent/40"
               accessibilityLabel={
                 isSaved
                   ? t('groups.bookmark_remove_aria')
@@ -213,7 +213,7 @@ export function EngagementBar({
               size="2xs"
               className={
                 hasComments
-                  ? 'fill-current text-green-600'
+                  ? 'fill-current text-primary'
                   : 'text-muted-foreground'
               }
             />

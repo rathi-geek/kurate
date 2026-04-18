@@ -32,9 +32,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     10,
   );
 
-  const iosBundleId =
-    process.env.IOS_BUNDLE_IDENTIFIER || 'com.example.mobileapp';
-  const androidPackage = process.env.ANDROID_PACKAGE || 'com.example.mobileapp';
+  const iosBundleId = process.env.IOS_BUNDLE_IDENTIFIER || 'in.co.kurate.app';
+  const androidPackage = process.env.ANDROID_PACKAGE || 'in.co.kurate.app';
   const scheme = 'kurate';
 
   const extra: AppExtra = { appEnv };
@@ -116,6 +115,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       'expo-updates',
       'expo-web-browser',
       'expo-background-task',
+      'expo-apple-authentication',
     ],
     experiments: {
       typedRoutes: true,

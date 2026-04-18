@@ -48,7 +48,7 @@ export function MagicLinkForm({
   }
 
   return (
-    <VStack className="gap-4">
+    <VStack className="gap-2">
       <Text className="font-sans text-sm font-medium text-foreground">
         {t('auth.login.magic_link_email_label')}
       </Text>

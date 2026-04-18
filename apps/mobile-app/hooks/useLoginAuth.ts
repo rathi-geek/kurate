@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 
@@ -22,10 +24,19 @@ function extractTokensFromUrl(url: string) {
 
 export function useLoginAuth() {
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
   const [magicEmail, setMagicEmail] = useState('');
   const [magicStep, setMagicStep] = useState<MagicStep>('form');
   const [magicError, setMagicError] = useState('');
   const [magicLoading, setMagicLoading] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleAvailable)
+      .catch(() => setAppleAvailable(false));
+  }, []);
 
   async function handleGoogle() {
     setGoogleLoading(true);
@@ -64,6 +75,39 @@ export function useLoginAuth() {
     }
   }
 
+  async function handleApple() {
+    setAppleLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        console.error('[auth] Apple sign-in returned no identity token');
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+
+      if (error) {
+        console.error('[auth] Apple signInWithIdToken failed:', error.message);
+      }
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code !== 'ERR_REQUEST_CANCELED') {
+        console.error('[auth] Apple sign-in error:', err);
+      }
+    } finally {
+      setAppleLoading(false);
+    }
+  }
+
   async function handleMagicLink() {
     setMagicError('');
     setMagicLoading(true);
@@ -92,6 +136,9 @@ export function useLoginAuth() {
   return {
     googleLoading,
     handleGoogle,
+    appleLoading,
+    appleAvailable,
+    handleApple,
     magicEmail,
     setMagicEmail,
     magicStep,

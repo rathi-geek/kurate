@@ -11,6 +11,7 @@ import { Icon } from '@/components/ui/icon';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useLocalization } from '@/context';
 import { supabase } from '@/libs/supabase/client';
+import { useAuthStore } from '@/store';
 import { useGroupMembers, useGroupInvites } from '@kurate/hooks';
 import type { GroupRole, Tables } from '@kurate/types';
 import { GroupMembersList } from '@/components/groups/group-members-list';
@@ -22,7 +23,6 @@ interface GroupInfoViewProps {
   group: Tables<'conversations'>;
   groupId: string;
   groupAvatarUrl: string | null;
-  currentUserId: string;
   userRole: GroupRole;
   onBack: () => void;
 }
@@ -31,11 +31,11 @@ export function GroupInfoView({
   group,
   groupId,
   groupAvatarUrl,
-  currentUserId,
   userRole,
   onBack,
 }: GroupInfoViewProps) {
   const { t } = useLocalization();
+  const currentUserId = useAuthStore(s => s.userId) ?? '';
 
   const { members, isLoading: membersLoading } = useGroupMembers(
     supabase,
@@ -70,7 +70,7 @@ export function GroupInfoView({
       className="flex-1 bg-background"
       edges={['top', 'left', 'right']}
     >
-      <View className="border-b border-border bg-background px-2 py-2">
+      <View className="bg-background px-2 py-2 shadow-md">
         <HStack className="items-center gap-2">
           <Pressable
             onPress={onBack}

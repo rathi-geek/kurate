@@ -4,23 +4,29 @@ import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
-import { Check, CheckCheck, Share2, Trash2, Link2 } from 'lucide-react-native';
+import { Check, CheckCheck, Pencil, Share2, Trash2 } from 'lucide-react-native';
 import type { VaultItem } from '@kurate/types';
+import { decodeHtmlEntities } from '@kurate/utils';
 import { lightTheme } from '@kurate/theme';
+import { DomainFavicon } from '@/components/ui/domain-favicon';
+import { useRefreshLoggedItem } from '@/hooks/useRefreshLoggedItem';
 
 interface VaultCardProps {
   item: VaultItem;
   onToggleRead: (item: VaultItem) => void;
   onDelete: (id: string) => void;
   onShare?: (item: VaultItem) => void;
+  onEditRemark?: (item: VaultItem) => void;
 }
 
 function VaultCardImage({
   uri,
   fallbackText,
+  itemUrl,
 }: {
   uri: string | null;
   fallbackText: string | null;
+  itemUrl: string;
 }) {
   const [imgError, setImgError] = useState(false);
 
@@ -50,7 +56,7 @@ function VaultCardImage({
 
   return (
     <View className="h-[120px] w-full items-center justify-center bg-muted">
-      <Link2 size={32} className="text-muted-foreground" />
+      <DomainFavicon url={itemUrl} size={48} />
     </View>
   );
 }
@@ -60,7 +66,15 @@ export const VaultCard = React.memo(function VaultCard({
   onToggleRead,
   onDelete,
   onShare,
+  onEditRemark,
 }: VaultCardProps) {
+  useRefreshLoggedItem({
+    id: item.id,
+    url: item.url,
+    title: item.title ?? null,
+    preview_image_url: item.preview_image_url ?? null,
+  });
+
   const [showActions, setShowActions] = useState(false);
 
   const handlePress = useCallback(() => {
@@ -88,6 +102,7 @@ export const VaultCard = React.memo(function VaultCard({
         <VaultCardImage
           uri={item.preview_image_url}
           fallbackText={item.description}
+          itemUrl={item.url}
         />
         {showActions && (
           <Pressable
@@ -103,6 +118,17 @@ export const VaultCard = React.memo(function VaultCard({
             >
               <ReadIcon size={16} color={lightTheme.brandWhite} />
             </Pressable>
+            {onEditRemark && (
+              <Pressable
+                onPress={() => {
+                  onEditRemark(item);
+                  setShowActions(false);
+                }}
+                className="h-9 w-9 items-center justify-center rounded-full bg-white/20"
+              >
+                <Pencil size={16} color={lightTheme.brandWhite} />
+              </Pressable>
+            )}
             {onShare && (
               <Pressable
                 onPress={() => {
@@ -131,7 +157,7 @@ export const VaultCard = React.memo(function VaultCard({
           className="font-sans text-sm font-bold text-foreground"
           numberOfLines={2}
         >
-          {item.title || item.url}
+          {decodeHtmlEntities(item.title) || item.url}
         </Text>
         {item.tags && item.tags.length > 0 && (
           <HStack className="mt-1 flex-wrap gap-1">

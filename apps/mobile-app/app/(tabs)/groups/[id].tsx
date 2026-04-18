@@ -76,7 +76,6 @@ export default function GroupDetailScreen() {
         group={group}
         groupId={groupId}
         groupAvatarUrl={avatarUrl}
-        currentUserId={userId}
         userRole={(currentRole as 'owner' | 'admin' | 'member') ?? 'member'}
         onBack={handleCloseInfo}
       />
@@ -96,8 +95,9 @@ export default function GroupDetailScreen() {
           view={view}
           onViewChange={setView}
           onOpenInfo={handleOpenInfo}
+          currentView={view}
         />
-        <View className="flex-1">
+        <View className="flex-1 ">
           {isLoading && !cachedRow ? (
             <VStack className="flex-1 items-center justify-center">
               <Spinner />

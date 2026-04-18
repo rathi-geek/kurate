@@ -1,11 +1,16 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { getItemAsync, setItemAsync, deleteItemAsync } from 'expo-secure-store';
-import type { PendingLinkRow, PendingThoughtRow } from '@kurate/hooks';
+import { persist } from 'zustand/middleware';
+import type {
+  PendingLinkRow,
+  PendingThoughtRow,
+  PendingGroupPostRow,
+} from '@kurate/hooks';
+import { mmkvStorage } from '@/libs/mmkv-storage';
 
 interface PendingState {
   pendingLinks: PendingLinkRow[];
   pendingThoughts: PendingThoughtRow[];
+  pendingGroupPosts: PendingGroupPostRow[];
 
   addPendingLink: (row: PendingLinkRow) => void;
   getPendingLinkByUrl: (url: string) => PendingLinkRow | undefined;
@@ -15,6 +20,15 @@ interface PendingState {
   addPendingThought: (row: PendingThoughtRow) => void;
   updatePendingThoughtStatus: (tempId: string, status: string) => void;
   deletePendingThought: (tempId: string) => void;
+
+  addPendingGroupPost: (row: PendingGroupPostRow) => void;
+  updatePendingGroupPostStatus: (
+    tempId: string,
+    status: string,
+    serverId?: string,
+  ) => void;
+  deletePendingGroupPost: (tempId: string) => void;
+  getPendingGroupPostsForGroup: (groupId: string) => PendingGroupPostRow[];
 }
 
 export const usePendingStore = create<PendingState>()(
@@ -22,6 +36,7 @@ export const usePendingStore = create<PendingState>()(
     (set, get) => ({
       pendingLinks: [],
       pendingThoughts: [],
+      pendingGroupPosts: [],
 
       addPendingLink: (row: PendingLinkRow) =>
         set(s => ({ pendingLinks: [...s.pendingLinks, row] })),
@@ -59,14 +74,40 @@ export const usePendingStore = create<PendingState>()(
         set(s => ({
           pendingThoughts: s.pendingThoughts.filter(r => r.tempId !== tempId),
         })),
+
+      addPendingGroupPost: (row: PendingGroupPostRow) =>
+        set(s => ({ pendingGroupPosts: [...s.pendingGroupPosts, row] })),
+
+      updatePendingGroupPostStatus: (
+        tempId: string,
+        status: string,
+        serverId?: string,
+      ) =>
+        set(s => ({
+          pendingGroupPosts: s.pendingGroupPosts.map(r =>
+            r.tempId === tempId
+              ? {
+                  ...r,
+                  status: status as PendingGroupPostRow['status'],
+                  ...(serverId !== undefined ? { serverId } : {}),
+                }
+              : r,
+          ),
+        })),
+
+      deletePendingGroupPost: (tempId: string) =>
+        set(s => ({
+          pendingGroupPosts: s.pendingGroupPosts.filter(
+            r => r.tempId !== tempId,
+          ),
+        })),
+
+      getPendingGroupPostsForGroup: (groupId: string) =>
+        get().pendingGroupPosts.filter(r => r.convo_id === groupId),
     }),
     {
       name: 'kurate-pending-queue',
-      storage: createJSONStorage(() => ({
-        getItem: getItemAsync,
-        setItem: setItemAsync,
-        removeItem: deleteItemAsync,
-      })),
+      storage: mmkvStorage,
     },
   ),
 );

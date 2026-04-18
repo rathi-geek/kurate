@@ -5,6 +5,7 @@ import React, { useCallback, useState } from "react";
 import Image from "next/image";
 
 import type { VaultItem } from "@kurate/types";
+import { decodeHtmlEntities } from "@kurate/utils";
 
 import { Button } from "@/components/ui/button";
 import { ContentTypePill } from "@/components/ui/content-type-pill";
@@ -193,7 +194,7 @@ function VaultCardInner({ item, deleteItem, updateRemarks, onToggleRead }: Vault
 
           <div className="flex min-h-0 flex-1 flex-col p-3">
             <h3 className="text-foreground line-clamp-2 shrink-0 font-sans text-sm leading-snug font-bold">
-              {item.title || item.url}
+              {decodeHtmlEntities(item.title) || item.url}
             </h3>
 
             {(item.tags ?? []).length > 0 && (

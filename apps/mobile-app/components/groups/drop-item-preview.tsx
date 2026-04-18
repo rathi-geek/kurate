@@ -5,7 +5,9 @@ import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { Text } from '@/components/ui/text';
 import { Image, resizeMode } from '@/components/ui/fast-image';
+import { DomainFavicon } from '@/components/ui/domain-favicon';
 import type { GroupDrop } from '@kurate/types';
+import { decodeHtmlEntities } from '@kurate/utils';
 
 interface DropItemPreviewProps {
   item: NonNullable<GroupDrop['item']>;
@@ -41,6 +43,13 @@ export function DropItemPreview({ item }: DropItemPreviewProps) {
             resizeMode={resizeMode.cover}
           />
         </View>
+      ) : url ? (
+        <View
+          style={{ width: '100%', height: 140 }}
+          className="items-center justify-center bg-accent/40"
+        >
+          <DomainFavicon url={url} size={56} />
+        </View>
       ) : null}
       <VStack className="gap-1 p-3">
         {item.title ? (
@@ -48,7 +57,7 @@ export function DropItemPreview({ item }: DropItemPreviewProps) {
             numberOfLines={2}
             className="font-sans text-sm font-medium text-foreground"
           >
-            {item.title}
+            {decodeHtmlEntities(item.title)}
           </Text>
         ) : null}
         {host ? (

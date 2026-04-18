@@ -62,7 +62,7 @@ export default function GroupsScreen() {
       className="flex-1 bg-background"
       edges={['top', 'left', 'right']}
     >
-      <HStack className="items-center justify-between px-4 py-3">
+      <HStack className="items-center justify-between px-4 py-3 shadow-lg">
         <Text className="font-sans text-xl font-bold text-foreground">
           {t('groups.my_groups_title')}
         </Text>

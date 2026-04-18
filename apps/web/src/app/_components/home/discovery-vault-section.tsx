@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 
+import { decodeHtmlEntities } from "@kurate/utils";
 import { VaultDiscoveryCard } from "@/app/_components/home/vault-discovery-card";
 import { useDiscoveryVault } from "@/app/_libs/hooks/useDiscoveryVault";
 import { staggerContainer, staggerItem } from "@/app/_libs/utils/motion";
@@ -49,7 +50,7 @@ export function DiscoveryVaultSection({ userId }: DiscoveryVaultSectionProps) {
         variants={staggerContainer}>
         {items!.map((item) => (
           <motion.div key={item.id} variants={staggerItem} className="shrink-0">
-            <VaultDiscoveryCard title={item.title} url={item.url} createdAt={item.created_at} />
+            <VaultDiscoveryCard title={decodeHtmlEntities(item.title) ?? null} url={item.url} createdAt={item.created_at} />
           </motion.div>
         ))}
       </motion.div>

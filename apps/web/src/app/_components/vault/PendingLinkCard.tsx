@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 import { ContentTypePill } from "@/components/ui/content-type-pill";
 import { CloseIcon } from "@/components/icons";
+import { decodeHtmlEntities } from "@kurate/utils";
 import type { PendingLink } from "@/app/_libs/db";
 
 interface PendingLinkCardProps {
@@ -82,7 +83,7 @@ export function PendingLinkCard({ link, onDismiss }: PendingLinkCardProps) {
             <ContentTypePill contentType={link.contentType} />
             {link.description && (
               <p className="text-muted-foreground line-clamp-3 text-center text-xs leading-relaxed">
-                {link.description}
+                {decodeHtmlEntities(link.description)}
               </p>
             )}
             {link.status === "sending" && (
@@ -115,7 +116,7 @@ export function PendingLinkCard({ link, onDismiss }: PendingLinkCardProps) {
 
       <div className="flex min-h-0 flex-1 flex-col p-3">
         <h3 className="text-foreground line-clamp-2 shrink-0 font-sans text-sm leading-snug font-bold">
-          {link.title || link.url}
+          {decodeHtmlEntities(link.title) || link.url}
         </h3>
 
         <div className="min-h-0 flex-1" />

@@ -8,12 +8,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/use-translations";
 
 import { queryKeys } from "@kurate/query";
+import { decodeHtmlEntities, EMOJI_ROWS } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { DMMessage } from "@kurate/types";
 import { PencilIcon, ReplyIcon, SmileIcon, TrashIcon } from "@/components/icons";
 import Link from "next/link";
 import { track } from "@/app/_libs/utils/analytics";
-import { EMOJI_ROWS } from "@kurate/utils";
 
 const supabase = createClient();
 
@@ -201,7 +201,7 @@ export function MessageBubble({
                   {parentMessage.sender.display_name ?? `@${parentMessage.sender.handle}`}
                 </p>
                 <p className={`line-clamp-2 ${isOwn ? "text-white/60" : "text-muted-foreground"}`}>
-                  {parentMessage.message_text || parentMessage.item?.title || t("link_fallback")}
+                  {parentMessage.message_text || decodeHtmlEntities(parentMessage.item?.title) || t("link_fallback")}
                 </p>
               </div>
             )}
@@ -236,13 +236,13 @@ export function MessageBubble({
                   {message.item.title && (
                     <p
                       className={`line-clamp-2 text-xs font-medium ${isOwn ? "text-white" : "text-foreground"}`}>
-                      {message.item.title}
+                      {decodeHtmlEntities(message.item.title)}
                     </p>
                   )}
                   {message.item.description && (
                     <p
                       className={`mt-0.5 line-clamp-2 text-[10px] ${isOwn ? "text-white/70" : "text-muted-foreground"}`}>
-                      {message.item.description}
+                      {decodeHtmlEntities(message.item.description)}
                     </p>
                   )}
                   <p

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
+import { Icon } from '@/components/ui/icon';
 import { Link, Plus } from 'lucide-react-native';
 import { useLocalization } from '@/context';
 import { URL_REGEX } from '@kurate/hooks';
@@ -95,7 +96,11 @@ export function ChatComposer({
     <HStack
       className={`mx-4 items-center rounded-full bg-card p-2 shadow-lg ${isCollapsed ? 'h-10' : 'h-12'}`}
     >
-      <Link size={15} className="ml-1 shrink-0 text-muted-foreground" />
+      <Icon
+        as={Link}
+        size="2xs"
+        className="ml-1 shrink-0 text-muted-foreground"
+      />
       <TextInput
         className="flex-1 bg-transparent px-2 py-1.5 font-sans text-sm text-foreground"
         placeholder={displayPlaceholder}
@@ -114,7 +119,7 @@ export function ChatComposer({
           onPress={handleSubmit}
           className="h-8 w-8 items-center justify-center rounded-full bg-primary"
         >
-          <Plus size={14} className="text-primary-foreground" />
+          <Icon as={Plus} size="2xs" className="text-primary-foreground" />
         </Pressable>
       )}
     </HStack>

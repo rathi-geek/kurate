@@ -259,7 +259,8 @@
       "title": "Welcome to Kurate",
 
       "or_divider": "or",
-      "google": "Continue with Google",
+      "google": "Google",
+      "apple": "Apple",
       "error_invalid": "Something went wrong. Please try again.",
       "magic_link_email_label": "Email",
       "magic_link_email_placeholder": "you@example.com",
@@ -475,6 +476,7 @@
     "loading_more": "Loading more...",
     "composer_placeholder": "Paste a link to share with the group...",
     "extracting": "Extracting...",
+    "extraction_failed": "Could not load preview",
     "note_placeholder": "Add a note (optional)...",
     "post": "Post",
     "posting": "Posting...",

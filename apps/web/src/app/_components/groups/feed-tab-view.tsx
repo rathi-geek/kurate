@@ -223,7 +223,9 @@ function FeedBody({
                 : entry.data.id;
             const layoutId =
               entry.kind === "pending"
-                ? `group-post-${entry.data.serverId ?? entry.data.tempId}`
+                ? entry.data.serverId
+                  ? `group-post-${entry.data.serverId}`
+                  : `group-post-pending-${entry.data.tempId}`
                 : `group-post-${entry.data.id}`;
 
             return (

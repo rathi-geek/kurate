@@ -303,7 +303,7 @@ shadcn/ui: accordion, alert-dialog, alert, aspect-ratio, avatar, badge, breadcru
 ### Icons — apps/web/src/components/icons/
 - `index.ts` — barrel export
 - `types.ts` — icon prop types
-- Individual icons: apple-podcasts, bell, bookmark, camera, check, chevron-down, chevron-left, close, copy, domain, dots-horizontal, double-check, exclamation-circle, external-link, eye, eye-off, google, heart, link, log-out, message-circle, pen-line, pencil, plus, reply, search, send, share, sliders, smile, spotify, star, trash, user-plus, user-x, users, vimeo, youtube
+- Individual icons: apple, apple-podcasts, bell, bookmark, camera, check, chevron-down, chevron-left, close, copy, domain, dots-horizontal, double-check, exclamation-circle, external-link, eye, eye-off, google, heart, link, log-out, message-circle, pen-line, pencil, plus, reply, search, send, share, sliders, smile, spotify, star, trash, user-plus, user-x, users, vimeo, youtube
 
 ### i18n — apps/web/src/i18n/
 - `index.ts`, `client.ts`, `server.ts` — i18n setup

@@ -23,7 +23,7 @@ export function LibraryView({ groupId, onNavigateToFeed }: LibraryViewProps) {
 
   return (
     <VStack className="flex-1">
-      <HStack className="border-b border-border">
+      <HStack className="m-2 mt-0 border-b border-border">
         <Pressable
           onPress={() => setTab('recommended')}
           className="relative flex-1 items-center py-3"

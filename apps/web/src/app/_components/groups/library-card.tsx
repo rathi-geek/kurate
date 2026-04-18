@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import type { GroupDrop } from "@kurate/types";
+import { decodeHtmlEntities } from "@kurate/utils";
 
 import { ContentTypePill } from "@/components/ui/content-type-pill";
 
@@ -40,7 +41,7 @@ export const LibraryCard = memo(function LibraryCard({
       className="rounded-card bg-card hover:bg-surface flex h-full cursor-pointer flex-col overflow-hidden border transition-colors"
       onClick={handleClick}
       role="article"
-      aria-label={drop.item?.title ?? drop.content ?? drop.note ?? t("drop_aria_fallback")}>
+      aria-label={decodeHtmlEntities(drop.item?.title) ?? drop.content ?? drop.note ?? t("drop_aria_fallback")}>
       {/* Preview image (link drops only) */}
       {drop.item?.preview_image_url && !imgError ? (
         <div className="bg-surface overflow-hidden relative aspect-video w-full shrink-0">
@@ -64,7 +65,7 @@ export const LibraryCard = memo(function LibraryCard({
         {drop.item && (
           <>
             <p className="text-foreground mb-1 line-clamp-2 text-sm font-medium">
-              {drop.item.title ?? drop.item.url}
+              {decodeHtmlEntities(drop.item.title) ?? drop.item.url}
             </p>
             <div className="text-muted-foreground mb-2 flex flex-wrap items-center gap-1 font-mono text-[11px]">
               {(drop.item.raw_metadata as Record<string, string> | null)?.source && (

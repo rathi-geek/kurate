@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type { GroupDrop } from "@kurate/types";
+import { decodeHtmlEntities } from "@kurate/utils";
 
 import { DomainIcon } from "@/components/icons";
 import { ContentTypePill } from "@/components/ui/content-type-pill";
@@ -66,12 +67,12 @@ export function DropItemPreview({
           rel="noopener noreferrer"
           onClick={onLinkOpen}
           className="text-foreground hover:text-primary line-clamp-2 text-base font-bold transition-colors">
-          {item.title ?? item.url}
+          {decodeHtmlEntities(item.title) ?? item.url}
         </Link>
 
         {item.description && (
           <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
-            {item.description}
+            {decodeHtmlEntities(item.description)}
           </p>
         )}
 

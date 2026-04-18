@@ -179,7 +179,7 @@ import { FlashList } from '@shopify/flash-list';
   keyExtractor={i => i.id}
   estimatedItemSize={72}
   renderItem={({ item }) => <Row item={item} />}
-/>
+/>;
 // ❌ FlatList, SectionList
 // ❌ ScrollView + map — ok only for < 10 static items
 ```
@@ -197,7 +197,7 @@ import FastImage from 'react-native-fast-image';
   source={{ uri: url }}
   resizeMode={FastImage.resizeMode.cover}
   style={{ width: 40, height: 40, borderRadius: 9999 }}
-/>
+/>;
 // ❌ import { Image } from 'react-native';
 // ❌ import { Image } from 'expo-image';
 ```

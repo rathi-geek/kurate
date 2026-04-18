@@ -8,7 +8,7 @@ import { useTranslations } from "@/i18n/use-translations";
 import { useMessages } from "@/app/_libs/hooks/useMessages";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { DMConversation, DMMessage } from "@kurate/types";
-import { ROUTES } from "@kurate/utils";
+import { decodeHtmlEntities, ROUTES } from "@kurate/utils";
 import { queryKeys } from "@kurate/query";
 import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
 import { useAuth } from "@/app/_libs/auth-context";
@@ -129,7 +129,7 @@ export function DmChatView({ convoId }: DmChatViewProps) {
     setReplyingTo({
       messageId: msg.id,
       senderName: msg.sender.display_name ?? `@${msg.sender.handle}`,
-      text: msg.message_text || msg.item?.title || "Link",
+      text: msg.message_text || decodeHtmlEntities(msg.item?.title) || "Link",
     });
   };
 
