@@ -14,13 +14,11 @@ import { LibraryGridSkeleton } from '@/components/groups/library-grid-skeleton';
 
 interface LibraryRecommendedGridProps {
   groupId: string;
-  userId: string;
   onPress?: (dropId: string) => void;
 }
 
 export function LibraryRecommendedGrid({
   groupId,
-  userId,
   onPress,
 }: LibraryRecommendedGridProps) {
   const { t } = useLocalization();
@@ -40,9 +38,9 @@ export function LibraryRecommendedGrid({
 
   const renderItem = useCallback(
     ({ item }: { item: GroupDrop }) => (
-      <LibraryCard drop={item} currentUserId={userId} onPress={onPress} />
+      <LibraryCard drop={item} onPress={onPress} />
     ),
-    [userId, onPress],
+    [onPress],
   );
 
   const renderFooter = useCallback(

@@ -37,6 +37,8 @@ export const lightTheme: ThemeTokens = {
   brandForeground: '#2b5b7e',
   brandMutedForeground: '#5b7d99',
   brandWhite: '#ffffff',
+  brandDestructive: '#b91c1c',
+  brandWarningForeground: '#78350f',
 
   // Bucket colors
   bucketMedia: '#FDF2F8',
@@ -71,6 +73,8 @@ export const darkTheme: ThemeTokens = {
   brandForeground: '#fafafa',
   brandMutedForeground: '#a1a1a1',
   brandWhite: '#ffffff',
+  brandDestructive: '#b91c1c',
+  brandWarningForeground: '#78350f',
 
   bucketMedia: '#FDF2F8',
   bucketTasks: '#ECFDF5',

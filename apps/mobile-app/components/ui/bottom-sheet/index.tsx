@@ -7,6 +7,7 @@ import {
   type BottomSheetBackdropProps,
   type BottomSheetModalProps,
 } from '@gorhom/bottom-sheet';
+import { lightTheme } from '@kurate/theme';
 
 type IBottomSheetProps = Omit<BottomSheetModalProps, 'children'> & {
   children: React.ReactNode;
@@ -34,14 +35,14 @@ const BottomSheet = React.forwardRef<BottomSheetModal, IBottomSheetProps>(
         enableDynamicSizing
         backgroundStyle={[
           {
-            backgroundColor: '#ffffff',
+            backgroundColor: lightTheme.brandWhite,
             borderTopLeftRadius: 16,
             borderTopRightRadius: 16,
           },
           backgroundStyle,
         ]}
         handleIndicatorStyle={[
-          { backgroundColor: '#dce3ea', width: 36 },
+          { backgroundColor: lightTheme.brandMutedForeground, width: 36 },
           handleIndicatorStyle,
         ]}
         {...props}

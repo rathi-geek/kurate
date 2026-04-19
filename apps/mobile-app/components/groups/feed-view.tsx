@@ -18,13 +18,21 @@ import {
   ItemSeparator,
   LoadingFooter,
 } from '@/components/groups/feed-list-parts';
+import { DropComposer } from '@/components/groups/drop-composer';
 
 interface FeedViewProps {
   groupId: string;
   currentRole?: string;
+  scrollToDropId?: string | null;
+  onScrollComplete?: () => void;
 }
 
-export function FeedView({ groupId, currentRole }: FeedViewProps) {
+export function FeedView({
+  groupId,
+  currentRole,
+  scrollToDropId,
+  onScrollComplete,
+}: FeedViewProps) {
   const { t } = useLocalization();
   const userId = useAuthStore(state => state.userId) ?? '';
   const { data: profile } = useProfile(userId || undefined);
@@ -87,6 +95,23 @@ export function FeedView({ groupId, currentRole }: FeedViewProps) {
     }
   }, [drops, userId]);
 
+  // Scroll to a specific drop (triggered from library card tap)
+  useEffect(() => {
+    if (!scrollToDropId || !entries.length) return;
+    const index = entries.findIndex(
+      e => e.kind === 'confirmed' && e.data.id === scrollToDropId,
+    );
+    if (index >= 0) {
+      // Small delay to let FlashList finish layout after tab switch
+      setTimeout(() => {
+        listRef.current?.scrollToIndex({ index, animated: true });
+        onScrollComplete?.();
+      }, 100);
+    } else {
+      onScrollComplete?.();
+    }
+  }, [scrollToDropId, entries, onScrollComplete]);
+
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
@@ -141,22 +166,27 @@ export function FeedView({ groupId, currentRole }: FeedViewProps) {
   );
 
   return (
-    <FlashList
-      key={`feed-${pendingCount}`}
-      ref={listRef}
-      data={entries}
-      keyExtractor={keyExtractor}
-      renderItem={renderItem}
-      getItemType={getItemType}
-      style={{ padding: 16, paddingTop: 0 }}
-      showsVerticalScrollIndicator={false}
-      ItemSeparatorComponent={ItemSeparator}
-      ListFooterComponent={isFetchingNextPage ? LoadingFooter : null}
-      ListEmptyComponent={emptyComponent}
-      onEndReached={handleEndReached}
-      onEndReachedThreshold={0.5}
-      onRefresh={refetch}
-      refreshing={isLoading}
-    />
+    <View className="flex-1">
+      <FlashList
+        key={`feed-${pendingCount}`}
+        ref={listRef}
+        data={entries}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        getItemType={getItemType}
+        style={{ paddingHorizontal: 16, paddingTop: 0 }}
+        showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={ItemSeparator}
+        ListFooterComponent={isFetchingNextPage ? LoadingFooter : null}
+        ListEmptyComponent={emptyComponent}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        onRefresh={refetch}
+        refreshing={isLoading}
+      />
+      <View className="bg-background py-2">
+        <DropComposer groupId={groupId} />
+      </View>
+    </View>
   );
 }

@@ -1,16 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
-import { X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BottomSheet,
   type BottomSheetHandle,
 } from '@/components/ui/bottom-sheet';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
-import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
-import { Pressable } from '@/components/ui/pressable';
-import { Icon } from '@/components/ui/icon';
 import { Spinner } from '@/components/ui/spinner';
 import { useLocalization } from '@/context';
 import { supabase } from '@/libs/supabase/client';
@@ -25,7 +22,6 @@ interface CommentThreadSheetProps {
   open: boolean;
   groupPostId: string;
   groupId: string;
-  /** Group owner can delete any comment; otherwise only the author can delete. */
   currentRole?: string;
   onClose: () => void;
 }
@@ -39,9 +35,9 @@ export function CommentThreadSheet({
 }: CommentThreadSheetProps) {
   const { t } = useLocalization();
   const userId = useAuthStore(state => state.userId) ?? '';
+  const { top: topInset, bottom: bottomInset } = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetHandle>(null);
   const listRef = useRef<FlashListRef<DropComment>>(null);
-  const snapPoints = useMemo(() => ['75%'], []);
 
   const { data: profile } = useProfile(userId);
   const currentUserProfile = useMemo(
@@ -71,23 +67,40 @@ export function CommentThreadSheet({
     isFetchingNextPage,
   } = useComments(supabase, groupPostId, groupId, currentUserProfile);
 
-  // Newest at the bottom of the visual list (chat-style):
-  // hook returns comments oldest→newest. Inverted FlashList wants newest→oldest in data.
   const inverted = useMemo(() => [...comments].reverse(), [comments]);
+  const shouldScrollRef = useRef(false);
+  const hasScrolledToBottom = useRef(false);
 
   useEffect(() => {
-    if (open) sheetRef.current?.present();
-    else sheetRef.current?.dismiss();
+    if (open) {
+      sheetRef.current?.present();
+      hasScrolledToBottom.current = false;
+    } else {
+      sheetRef.current?.dismiss();
+    }
   }, [open]);
+
+  // Snap to bottom on initial load
+  useEffect(() => {
+    if (inverted.length > 0 && !hasScrolledToBottom.current) {
+      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+      hasScrolledToBottom.current = true;
+    }
+  }, [inverted]);
+
+  // Scroll to newest after own comment lands in the list
+  useEffect(() => {
+    if (shouldScrollRef.current && inverted.length > 0) {
+      shouldScrollRef.current = false;
+      listRef.current?.scrollToIndex({ index: 0, animated: true });
+    }
+  }, [inverted]);
 
   const handleSubmit = useCallback(
     (text: string) => {
       if (!userId) return;
+      shouldScrollRef.current = true;
       addComment(text, userId);
-      // After insert, scroll to the newest (offset 0 in inverted list).
-      requestAnimationFrame(() => {
-        listRef.current?.scrollToOffset({ offset: 0, animated: true });
-      });
     },
     [addComment, userId],
   );
@@ -107,7 +120,6 @@ export function CommentThreadSheet({
   const renderItem = useCallback(
     ({ item, index }: { item: DropComment; index: number }) => {
       const isOwn = item.user_id === userId;
-      // In the inverted array, the "previous" bubble visually-above is at index+1.
       const above = inverted[index + 1];
       const isContinuation =
         !!above &&
@@ -130,7 +142,7 @@ export function CommentThreadSheet({
     [inverted, userId, currentRole, handleDelete],
   );
 
-  const renderFooter = useCallback(
+  const renderListFooter = useCallback(
     () =>
       isFetchingNextPage ? (
         <View className="items-center py-3">
@@ -143,28 +155,19 @@ export function CommentThreadSheet({
   return (
     <BottomSheet
       ref={sheetRef}
-      snapPoints={snapPoints}
+      snapPoints={['75%']}
       enableDynamicSizing={false}
       onDismiss={onClose}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
+      topInset={topInset}
+      bottomInset={bottomInset}
+      android_keyboardInputMode="adjustResize"
     >
-      <View className="flex-1">
-        <HStack className="items-center justify-between border-b border-border px-4 py-3">
-          <Text className="font-sans text-base font-semibold text-foreground">
-            {t('groups.comment_aria')}
-            {comments.length > 0 ? ` · ${comments.length}` : ''}
-          </Text>
-          <Pressable
-            onPress={onClose}
-            className="h-8 w-8 items-center justify-center rounded-full active:bg-accent"
-            accessibilityLabel={t('groups.cancel')}
-          >
-            <Icon as={X} size="xs" className="text-muted-foreground" />
-          </Pressable>
-        </HStack>
+      <VStack className="flex-1 gap-1">
+        <Text className=" border-b border-border pb-2 text-center font-sans text-base font-semibold text-foreground">
+          {t('groups.comment_aria')}
+        </Text>
 
-        <View className="flex-1">
+        <View className="flex-1 ">
           {isLoading && comments.length === 0 ? (
             <VStack className="flex-1 items-center justify-center">
               <Spinner />
@@ -181,17 +184,19 @@ export function CommentThreadSheet({
               data={inverted}
               keyExtractor={c => c.id}
               renderItem={renderItem}
-              ListFooterComponent={renderFooter}
+              ListFooterComponent={renderListFooter}
               inverted
               onEndReached={handleEndReached}
               onEndReachedThreshold={0.5}
-              contentContainerStyle={{ paddingVertical: 8 }}
+              maintainVisibleContentPosition={{
+                autoscrollToTopThreshold: 10, // handles new messages (visual bottom in inverted)
+                animateAutoScrollToBottom: true,
+              }}
             />
           )}
         </View>
-
         <ReplyInput onSubmit={handleSubmit} isSubmitting={isAdding} />
-      </View>
+      </VStack>
     </BottomSheet>
   );
 }

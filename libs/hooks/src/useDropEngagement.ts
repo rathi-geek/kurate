@@ -62,37 +62,39 @@ export function useDropEngagement(
       didReact,
     }: ToggleReactionInput) => {
       const feedKey = queryKeys.groups.feed(groupId);
+      // Cancel all queries that share the feed prefix (feed + recommended)
       await queryClient.cancelQueries({ queryKey: feedKey });
 
       const previous = queryClient.getQueryData(feedKey);
       const engagementKey = reactionType === "like" ? "like" : "mustRead";
 
-      queryClient.setQueryData(
-        feedKey,
-        (old: InfiniteData<GroupDrop[]> | undefined) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) =>
-              page.map((drop) => {
-                if (drop.id !== groupPostId) return drop;
-                const delta = didReact ? -1 : 1;
-                return {
-                  ...drop,
-                  engagement: {
-                    ...drop.engagement,
-                    [engagementKey]: {
-                      ...drop.engagement[engagementKey],
-                      count: drop.engagement[engagementKey].count + delta,
-                      didReact: !didReact,
-                    },
+      const updater = (old: InfiniteData<GroupDrop[]> | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) =>
+            page.map((drop) => {
+              if (drop.id !== groupPostId) return drop;
+              const delta = didReact ? -1 : 1;
+              return {
+                ...drop,
+                engagement: {
+                  ...drop.engagement,
+                  [engagementKey]: {
+                    ...drop.engagement[engagementKey],
+                    count: drop.engagement[engagementKey].count + delta,
+                    didReact: !didReact,
                   },
-                };
-              }),
-            ),
-          };
-        },
-      );
+                },
+              };
+            }),
+          ),
+        };
+      };
+
+      // Update both the main feed and any sub-queries (e.g. recommended)
+      queryClient.setQueryData(feedKey, updater);
+      queryClient.setQueryData([...feedKey, "recommended"], updater);
 
       return { previous };
     },
@@ -103,6 +105,7 @@ export function useDropEngagement(
       onError?.("Could not update — check your connection and try again");
     },
     onSettled: (_data, _err, vars) => {
+      // Invalidate with prefix match so both feed and recommended refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(vars.groupId) });
     },
   });

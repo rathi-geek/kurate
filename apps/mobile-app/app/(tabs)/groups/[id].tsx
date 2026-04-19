@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
-import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertText } from '@/components/ui/alert';
@@ -16,7 +15,6 @@ import { useGroupUnreadCounts } from '@/hooks/useGroupUnreadCounts';
 import { GroupHeader, type GroupView } from '@/components/groups/group-header';
 import { FeedView } from '@/components/groups/feed-view';
 import { LibraryView } from '@/components/groups/library-view';
-import { DropComposer } from '@/components/groups/drop-composer';
 import { GroupInfoView } from '@/components/groups/group-info-view';
 
 export default function GroupDetailScreen() {
@@ -46,11 +44,12 @@ export default function GroupDetailScreen() {
 
   const [view, setView] = useState<GroupView>('feed');
   const [infoOpen, setInfoOpen] = useState(false);
+  const [scrollToDropId, setScrollToDropId] = useState<string | null>(null);
 
   const handleBack = () => router.back();
 
-  const handleNavigateToFeed = useCallback(() => {
-    // TODO: scroll to specific drop once we add per-drop scroll-to support.
+  const handleNavigateToFeed = useCallback((dropId: string) => {
+    setScrollToDropId(dropId);
     setView('feed');
   }, []);
 
@@ -97,29 +96,27 @@ export default function GroupDetailScreen() {
           onOpenInfo={handleOpenInfo}
           currentView={view}
         />
-        <View className="flex-1 ">
-          {isLoading && !cachedRow ? (
-            <VStack className="flex-1 items-center justify-center">
-              <Spinner />
-            </VStack>
-          ) : error ? (
-            <Alert variant="destructive" className="mx-4 my-2">
-              <AlertText>{t('groups.error_generic')}</AlertText>
-            </Alert>
-          ) : view === 'feed' ? (
-            <FeedView groupId={groupId} currentRole={currentRole} />
-          ) : (
-            <LibraryView
-              groupId={groupId}
-              onNavigateToFeed={handleNavigateToFeed}
-            />
-          )}
-        </View>
-        {view === 'feed' ? (
-          <View className="bg-background py-2">
-            <DropComposer groupId={groupId} />
-          </View>
-        ) : null}
+        {isLoading && !cachedRow ? (
+          <VStack className="flex-1 items-center justify-center">
+            <Spinner />
+          </VStack>
+        ) : error ? (
+          <Alert variant="destructive" className="mx-4 my-2">
+            <AlertText>{t('groups.error_generic')}</AlertText>
+          </Alert>
+        ) : view === 'feed' ? (
+          <FeedView
+            groupId={groupId}
+            currentRole={currentRole}
+            scrollToDropId={scrollToDropId}
+            onScrollComplete={() => setScrollToDropId(null)}
+          />
+        ) : (
+          <LibraryView
+            groupId={groupId}
+            onNavigateToFeed={handleNavigateToFeed}
+          />
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

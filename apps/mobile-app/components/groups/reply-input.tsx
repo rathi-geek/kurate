@@ -4,7 +4,6 @@ import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Icon } from '@/components/ui/icon';
-import { Spinner } from '@/components/ui/spinner';
 import { useLocalization } from '@/context';
 import { lightTheme } from '@kurate/theme';
 
@@ -50,17 +49,13 @@ export function ReplyInput({
           color: lightTheme.brandForeground,
         }}
       />
-      {canSend || isSubmitting ? (
+      {canSend ? (
         <Pressable
           onPress={handleSubmit}
           disabled={!canSend}
           className="h-8 w-8 items-center justify-center rounded-full bg-primary"
         >
-          {isSubmitting ? (
-            <Spinner className="text-primary-foreground" />
-          ) : (
-            <Icon as={Send} size="2xs" className="text-primary-foreground" />
-          )}
+          <Icon as={Send} size="2xs" className="text-primary-foreground" />
         </Pressable>
       ) : null}
     </HStack>

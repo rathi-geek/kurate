@@ -12,7 +12,6 @@ import { EngagementBar } from '@/components/groups/engagement-bar';
 
 interface LibraryCardProps {
   drop: GroupDrop;
-  currentUserId: string;
   /** Press handler — typically switches the group view to Feed (and ideally scrolls to the drop). */
   onPress?: (dropId: string) => void;
 }
@@ -26,11 +25,7 @@ const metaOf = (raw: unknown): { source?: string; readTime?: string } => {
   };
 };
 
-export function LibraryCard({
-  drop,
-  currentUserId,
-  onPress,
-}: LibraryCardProps) {
+export function LibraryCard({ drop, onPress }: LibraryCardProps) {
   const { t } = useLocalization();
   const meta = metaOf(drop.item?.raw_metadata);
 
@@ -39,7 +34,8 @@ export function LibraryCard({
   }, [drop.id, onPress]);
 
   const previewUrl = drop.item?.preview_image_url;
-  const fallbackText = decodeHtmlEntities(drop.item?.title) ?? drop.content ?? drop.note ?? '';
+  const fallbackText =
+    decodeHtmlEntities(drop.item?.title) ?? drop.content ?? drop.note ?? '';
 
   return (
     <Pressable
@@ -60,9 +56,9 @@ export function LibraryCard({
         </View>
       ) : null}
 
-      <VStack className="gap-2 p-3">
+      <VStack className="flex-1 gap-2">
         {drop.item ? (
-          <>
+          <VStack className="gap-2 px-3">
             <Text
               numberOfLines={2}
               className="font-sans text-sm font-medium text-foreground"
@@ -88,20 +84,17 @@ export function LibraryCard({
                 ) : null}
               </HStack>
             ) : null}
-          </>
+          </VStack>
         ) : drop.content || drop.note ? (
-          <Text numberOfLines={3} className="font-sans text-sm text-foreground">
+          <Text
+            numberOfLines={3}
+            className="px-3 font-sans text-sm text-foreground"
+          >
             {drop.content ?? drop.note}
           </Text>
         ) : null}
 
-        <View className="border-t border-border/50 pt-2">
-          <EngagementBar
-            drop={drop}
-            currentUserId={currentUserId}
-            showComments={false}
-          />
-        </View>
+        <EngagementBar drop={drop} showComments={false} compact />
       </VStack>
     </Pressable>
   );

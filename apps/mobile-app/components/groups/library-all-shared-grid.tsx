@@ -11,19 +11,19 @@ import { useGroupFeed } from '@/hooks/useGroupFeed';
 import type { GroupDrop } from '@kurate/types';
 import { LibraryCard } from '@/components/groups/library-card';
 import { LibraryGridSkeleton } from '@/components/groups/library-grid-skeleton';
+import { useAuthStore } from '@/store';
 
 interface LibraryAllSharedGridProps {
   groupId: string;
-  userId: string;
   onPress?: (dropId: string) => void;
 }
 
 export function LibraryAllSharedGrid({
   groupId,
-  userId,
   onPress,
 }: LibraryAllSharedGridProps) {
   const { t } = useLocalization();
+  const userId = useAuthStore(state => state.userId) ?? '';
   const {
     drops,
     fetchNextPage,
@@ -40,9 +40,9 @@ export function LibraryAllSharedGrid({
 
   const renderItem = useCallback(
     ({ item }: { item: GroupDrop }) => (
-      <LibraryCard drop={item} currentUserId={userId} onPress={onPress} />
+      <LibraryCard drop={item} onPress={onPress} />
     ),
-    [userId, onPress],
+    [onPress],
   );
 
   const renderFooter = useCallback(

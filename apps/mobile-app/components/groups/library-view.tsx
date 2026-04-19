@@ -5,7 +5,6 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
 import { useLocalization } from '@/context';
-import { useAuthStore } from '@/store';
 import { LibraryRecommendedGrid } from '@/components/groups/library-recommended-grid';
 import { LibraryAllSharedGrid } from '@/components/groups/library-all-shared-grid';
 
@@ -18,7 +17,6 @@ interface LibraryViewProps {
 
 export function LibraryView({ groupId, onNavigateToFeed }: LibraryViewProps) {
   const { t } = useLocalization();
-  const userId = useAuthStore(state => state.userId) ?? '';
   const [tab, setTab] = useState<LibraryTab>('recommended');
 
   return (
@@ -61,17 +59,9 @@ export function LibraryView({ groupId, onNavigateToFeed }: LibraryViewProps) {
       </HStack>
 
       {tab === 'recommended' ? (
-        <LibraryRecommendedGrid
-          groupId={groupId}
-          userId={userId}
-          onPress={onNavigateToFeed}
-        />
+        <LibraryRecommendedGrid groupId={groupId} onPress={onNavigateToFeed} />
       ) : (
-        <LibraryAllSharedGrid
-          groupId={groupId}
-          userId={userId}
-          onPress={onNavigateToFeed}
-        />
+        <LibraryAllSharedGrid groupId={groupId} onPress={onNavigateToFeed} />
       )}
     </VStack>
   );

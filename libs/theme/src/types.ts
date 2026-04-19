@@ -26,6 +26,8 @@ export interface ThemeTokens {
   brandForeground: string;
   brandMutedForeground: string;
   brandWhite: string;
+  brandDestructive: string;
+  brandWarningForeground: string;
 
   // Bucket colors
   bucketMedia: string;
@@ -41,6 +43,8 @@ export type SemanticToken = keyof Omit<
   | 'brandForeground'
   | 'brandMutedForeground'
   | 'brandWhite'
+  | 'brandDestructive'
+  | 'brandWarningForeground'
   | 'bucketMedia'
   | 'bucketTasks'
   | 'bucketLearning'

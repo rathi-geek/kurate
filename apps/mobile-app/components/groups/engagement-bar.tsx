@@ -6,18 +6,19 @@ import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
-import { Icon } from '@/components/ui/icon';
 import { Avatar } from '@/components/ui/avatar';
 import { useLocalization } from '@/context';
 import { supabase, supabaseUrl } from '@/libs/supabase/client';
 import { useAuthStore } from '@/store';
 import { useDropEngagement, useVaultToggle } from '@kurate/hooks';
 import type { GroupDrop, GroupProfile } from '@kurate/types';
+import { lightTheme } from '@kurate/theme';
 
 interface EngagementBarProps {
   drop: GroupDrop;
   onCommentsPress?: () => void;
   showComments?: boolean;
+  compact?: boolean;
 }
 
 const STORAGE_BASE = supabaseUrl
@@ -60,6 +61,7 @@ export function EngagementBar({
   drop,
   onCommentsPress,
   showComments = true,
+  compact = false,
 }: EngagementBarProps) {
   const { t } = useLocalization();
   const currentUserId = useAuthStore(s => s.userId) ?? '';
@@ -119,38 +121,42 @@ export function EngagementBar({
   }, [drop.item, isSaved, toggleVault, t]);
 
   return (
-    <VStack className="gap-2 border-t border-border/50 px-4 py-3">
+    <VStack
+      className={`gap-2 border-t border-border/50 ${compact ? 'px-3 py-2' : ' px-4 py-3'}`}
+    >
       {/* Reactor pills — stacked avatars + "liked" / "recommended" */}
-      {(drop.engagement.like.reactors.length > 0 ||
-        drop.engagement.mustRead.reactors.length > 0) && (
-        <HStack className="items-center gap-3">
-          <ReactorPill
-            reactors={drop.engagement.like.reactors}
-            label={t('groups.reaction_like_aria').toLowerCase()}
-          />
-          <ReactorPill
-            reactors={drop.engagement.mustRead.reactors}
-            label={t('groups.reaction_must_read_aria').toLowerCase()}
-          />
-        </HStack>
-      )}
+      {!compact &&
+        (drop.engagement.like.reactors.length > 0 ||
+          drop.engagement.mustRead.reactors.length > 0) && (
+          <HStack className="items-center gap-3">
+            <ReactorPill
+              reactors={drop.engagement.like.reactors}
+              label={t('groups.reaction_like_aria').toLowerCase()}
+            />
+            <ReactorPill
+              reactors={drop.engagement.mustRead.reactors}
+              label={t('groups.reaction_must_read_aria').toLowerCase()}
+            />
+          </HStack>
+        )}
 
-      {/* Engagement buttons — px-2 py-1 per button like web */}
+      {/* Engagement buttons */}
       <HStack className="items-center justify-between">
         <HStack className="items-center gap-4">
           <Pressable
             onPress={handleToggleLike}
-            className="flex-row items-center gap-1 rounded-[6px]  active:bg-accent/40"
+            hitSlop={12}
+            className="flex-row items-center gap-1 rounded-[6px] py-1 active:bg-accent/40"
             accessibilityLabel={t('groups.reaction_like_aria')}
           >
-            <Icon
-              as={Heart}
-              size="2xs"
-              className={
+            <Heart
+              size={12}
+              color={
                 liked
-                  ? 'fill-current text-destructive'
-                  : 'text-muted-foreground'
+                  ? lightTheme.brandDestructive
+                  : lightTheme.brandMutedForeground
               }
+              fill={liked ? lightTheme.brandDestructive : 'none'}
             />
             {drop.engagement.like.count > 0 ? (
               <Text className="font-mono text-xs text-muted-foreground">
@@ -161,15 +167,18 @@ export function EngagementBar({
 
           <Pressable
             onPress={handleToggleMustRead}
+            hitSlop={12}
             className="flex-row items-center gap-1 rounded-[6px] py-1 active:bg-accent/40"
             accessibilityLabel={t('groups.reaction_must_read_aria')}
           >
-            <Icon
-              as={Star}
-              size="2xs"
-              className={
-                mustRead ? 'fill-current text-primary' : 'text-muted-foreground'
+            <Star
+              size={12}
+              color={
+                mustRead
+                  ? lightTheme.brandWarningForeground
+                  : lightTheme.brandMutedForeground
               }
+              fill={mustRead ? lightTheme.brandWarningForeground : 'none'}
             />
             {drop.engagement.mustRead.count > 0 ? (
               <Text className="font-mono text-xs text-muted-foreground">
@@ -181,6 +190,7 @@ export function EngagementBar({
           {drop.item ? (
             <Pressable
               onPress={handleToggleBookmark}
+              hitSlop={12}
               className="flex-row items-center gap-1 rounded-[6px] py-1 active:bg-accent/40"
               accessibilityLabel={
                 isSaved
@@ -188,14 +198,14 @@ export function EngagementBar({
                   : t('groups.bookmark_save_aria')
               }
             >
-              <Icon
-                as={Bookmark}
-                size="2xs"
-                className={
+              <Bookmark
+                size={12}
+                color={
                   isSaved
-                    ? 'fill-current text-primary'
-                    : 'text-muted-foreground'
+                    ? lightTheme.brandPrimary
+                    : lightTheme.brandMutedForeground
                 }
+                fill={isSaved ? lightTheme.brandPrimary : 'none'}
               />
             </Pressable>
           ) : null}
@@ -205,17 +215,18 @@ export function EngagementBar({
           <Pressable
             onPress={onCommentsPress}
             disabled={!onCommentsPress}
+            hitSlop={12}
             className="flex-row items-center gap-1 rounded-[6px] px-2 active:bg-accent/40"
             accessibilityLabel={t('groups.comment_aria')}
           >
-            <Icon
-              as={MessageCircle}
-              size="2xs"
-              className={
+            <MessageCircle
+              size={12}
+              color={
                 hasComments
-                  ? 'fill-current text-primary'
-                  : 'text-muted-foreground'
+                  ? lightTheme.brandPrimary
+                  : lightTheme.brandMutedForeground
               }
+              fill={hasComments ? lightTheme.brandPrimary : 'none'}
             />
             {hasComments ? (
               <Text className="font-mono text-xs text-muted-foreground">
