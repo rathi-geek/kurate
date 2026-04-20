@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ROUTES } from "@kurate/utils";
 
-const CONTACT_EMAIL = "privacy@kurate.co.in";
+const CONTACT_EMAIL = "noreply@kurate.co.in";
 
 const TOC_SECTIONS = [
   { id: "overview", label: "Overview" },
