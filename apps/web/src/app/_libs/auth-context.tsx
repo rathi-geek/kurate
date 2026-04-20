@@ -2,9 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/app/_libs/supabase/client";
-import { queryKeys } from "@kurate/query";
 import type { Tables } from "@kurate/types";
 import { getMediaPublicUrl } from "@/app/_libs/utils/getMediaUrl";
 import { track } from "@/app/_libs/utils/analytics";
@@ -63,8 +61,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const queryClient = useQueryClient();
-
   async function loadProfile(userId: string) {
     const supabase = createClient();
     const { data } = await supabase
@@ -81,10 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           about: data.about,
           is_onboarded: data.is_onboarded,
           avatar_url: (data.avatar as { file_path: string; bucket_name: string } | null)?.file_path
-            ? `${getMediaPublicUrl(
+            ? getMediaPublicUrl(
                 (data.avatar as { file_path: string; bucket_name: string }).bucket_name,
                 (data.avatar as { file_path: string; bucket_name: string }).file_path,
-              )}?t=${Date.now()}`
+              )
             : null,
         }
       : null;
@@ -94,25 +90,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (profileData) {
       writeCachedProfile(userId, profileData);
-      queryClient.setQueryData(queryKeys.user.profile(userId), profileData);
     }
   }
 
   useEffect(() => {
     const supabase = createClient();
+    let profileLoaded = false;
 
-    // Immediately initialize from stored session (reads from cookie, no network call).
-    // This eliminates the avatar "?" flash while onAuthStateChange resolves async.
+    // Page load: read session from cookie (no network call), serve cached profile
+    // instantly, then sync once from backend to catch changes from other devices.
     void supabase.auth.getSession().then(({ data: { session } }) => {
       const authUser = session?.user ?? null;
+      setUser(authUser);
       if (authUser) {
-        setUser(authUser);
         const cached = readCachedProfile(authUser.id);
-        if (cached) {
-          setProfile(cached);
-          queryClient.setQueryData(queryKeys.user.profile(authUser.id), cached);
-          setLoading(false);
-        }
+        if (cached) setProfile(cached);
+        void loadProfile(authUser.id).then(() => { profileLoaded = true; });
       } else {
         setLoading(false);
       }
@@ -121,32 +114,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
+    // Profile is loaded once above. onAuthStateChange only handles:
+    // - SIGNED_IN when profile hasn't loaded yet (fresh login after redirect)
+    // - SIGNED_OUT to clear state
+    // Supabase fires SIGNED_IN / TOKEN_REFRESHED on every tab focus — the
+    // profileLoaded flag ensures we never re-fetch profile from those events.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       const authUser = session?.user ?? null;
       setUser(authUser);
 
-      if (authUser) {
-        // Serve cached profile immediately — eliminates loading flash on return visits
+      if (event === "SIGNED_IN" && authUser && !profileLoaded) {
         const cached = readCachedProfile(authUser.id);
-        if (cached) {
-          setProfile(cached);
-          queryClient.setQueryData(queryKeys.user.profile(authUser.id), cached);
-          setLoading(false);
-        }
-
-        // Always re-validate in background (updates state + cache if anything changed)
-        void loadProfile(authUser.id);
-
-        if (event === "SIGNED_IN") {
-          track("user_logged_in", { method: "google" });
-        }
-      } else {
-        // Signed out — clear cached profile for the previous user
-        if (user?.id) {
-          clearCachedProfile(user.id);
-        }
+        if (cached) setProfile(cached);
+        void loadProfile(authUser.id).then(() => { profileLoaded = true; });
+        track("user_logged_in", { method: "google" });
+      } else if (event === "SIGNED_OUT") {
+        profileLoaded = false;
+        if (user?.id) clearCachedProfile(user.id);
         setProfile(null);
         setLoading(false);
       }

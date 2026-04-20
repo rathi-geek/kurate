@@ -62,20 +62,37 @@ export function useRefreshLoggedItem(
         });
         if (!res.ok) return;
         const meta = await res.json();
-        await supabase
+        const updated = {
+          title: meta.title ?? item.url,
+          content_type: meta.contentType ?? "article",
+          preview_image_url: meta.previewImage ?? null,
+          raw_metadata: {
+            source: meta.source ?? null,
+            read_time: meta.readTime ?? null,
+          },
+        };
+
+        // 1. Update card instantly from extracted metadata — no refetch needed.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const patchItem = (entry: any) => {
+          if (entry.logged_item_id === item.id) return { ...entry, ...updated };
+          if (entry.id === item.id) return { ...entry, ...updated };
+          return entry;
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const patchPages = (old: any) => {
+          if (!old?.pages) return old;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return { ...old, pages: old.pages.map((page: any[]) => page.map(patchItem)) };
+        };
+        queryClient.setQueriesData({ queryKey: queryKeys.vault.all }, patchPages);
+        queryClient.setQueriesData({ queryKey: queryKeys.groups.all }, patchPages);
+
+        // 2. Persist to DB in background — fire-and-forget, card already updated.
+        void supabase
           .from("logged_items")
-          .update({
-            title: meta.title ?? item.url,
-            content_type: meta.contentType ?? "article",
-            preview_image_url: meta.previewImage ?? null,
-            raw_metadata: {
-              source: meta.source ?? null,
-              read_time: meta.readTime ?? null,
-            },
-          })
+          .update(updated)
           .eq("id", item.id);
-        queryClient.invalidateQueries({ queryKey: queryKeys.vault.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
       } catch {
         // Silent — best-effort refresh
       }

@@ -4,17 +4,18 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { HomeTab } from "@kurate/types";
 import { motion } from "framer-motion";
-import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
+
 import { DiscoveringTabView } from "@/app/_components/home/discovering-tab-view";
 import { HomeTabHeader } from "@/app/_components/home/home-tab-header";
 import { VaultTabView } from "@/app/_components/home/vault-tab-view";
-import { HomeTab } from "@kurate/types";
 import { MediaPlayerProvider } from "@/app/_libs/context/MediaPlayerContext";
+import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useSidebarOverrides } from "@/app/_libs/sidebar-overrides-context";
 import { ThreadProvider, useThread } from "@/app/_libs/threadContext";
-import { springGentle } from "@/app/_libs/utils/motion";
 import { track } from "@/app/_libs/utils/analytics";
+import { springGentle } from "@/app/_libs/utils/motion";
 
 export function HomePageClient() {
   return (

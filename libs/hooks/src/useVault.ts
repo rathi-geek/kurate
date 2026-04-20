@@ -6,7 +6,7 @@ import {
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { startOfDay, subDays } from "@kurate/utils";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -263,6 +263,16 @@ export function useVault(filters: VaultFilters, userId: string, supabase: Supaba
     },
   });
 
+  const updateRemarks = useCallback(
+    (id: string, remarks: string) => remarksMutation.mutate({ id, remarks }),
+    [remarksMutation.mutate],
+  );
+
+  const toggleRead = useCallback(
+    (item: VaultItem) => toggleReadMutation.mutate({ id: item.id, is_read: !item.is_read }),
+    [toggleReadMutation.mutate],
+  );
+
   return {
     items,
     isLoading: query.isLoading,
@@ -274,9 +284,7 @@ export function useVault(filters: VaultFilters, userId: string, supabase: Supaba
     loadMore: query.fetchNextPage,
     refetch: query.refetch,
     deleteItem: deleteMutation.mutate,
-    updateRemarks: (id: string, remarks: string) =>
-      remarksMutation.mutate({ id, remarks }),
-    toggleRead: (item: VaultItem) =>
-      toggleReadMutation.mutate({ id: item.id, is_read: !item.is_read }),
+    updateRemarks,
+    toggleRead,
   };
 }

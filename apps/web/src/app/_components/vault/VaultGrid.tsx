@@ -71,19 +71,16 @@ export const VaultGrid = memo(function VaultGrid({
         >
           <AnimatePresence mode="popLayout">
             {entries.map((entry) => {
-              const url = entry.data.url;
               const key = entry.kind === "pending" ? `pending-${entry.data.tempId}` : entry.data.id;
 
               return (
                 <motion.div
                   key={key}
-                  layoutId={prefersReducedMotion ? undefined : `vault-${url}`}
                   className="h-full min-h-0"
                   variants={staggerItem as Variants}
                   initial={prefersReducedMotion ? false : "hidden"}
                   animate="visible"
                   exit="hidden"
-                  layout={!prefersReducedMotion}
                 >
                   {entry.kind === "pending" ? (
                     <PendingLinkCard link={entry.data} onDismiss={onDismissPending} />

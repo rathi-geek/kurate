@@ -21,7 +21,7 @@ type AvatarJoin = { file_path: string; bucket_name: string } | null;
 
 function resolveAvatarUrl(avatar: AvatarJoin): string | null {
   if (!avatar?.file_path) return null;
-  return `${supabaseUrl}/storage/v1/object/public/${avatar.bucket_name}/${avatar.file_path}?t=${Date.now()}`;
+  return `${supabaseUrl}/storage/v1/object/public/${avatar.bucket_name}/${avatar.file_path}`;
 }
 
 function resolveAvatarPath(avatar: AvatarJoin): string | null {

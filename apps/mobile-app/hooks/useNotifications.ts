@@ -14,7 +14,7 @@ function buildAvatarUrl(media: {
   bucket_name: string;
   file_path: string;
 }): string {
-  return `${supabaseUrl}/storage/v1/object/public/${media.bucket_name}/${media.file_path}?t=${Date.now()}`;
+  return `${supabaseUrl}/storage/v1/object/public/${media.bucket_name}/${media.file_path}`;
 }
 
 async function fetchNotifications(userId: string): Promise<Notification[]> {
