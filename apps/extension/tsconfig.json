@@ -1,0 +1,14 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "types": ["chrome"],
+    "paths": {
+      "@": ["."],
+      "@/*": ["./*"],
+      "@kurate/types": ["../../libs/types/src/index.ts"],
+      "@kurate/utils": ["../../libs/utils/src/index.ts"]
+    }
+  }
+}

@@ -28,9 +28,15 @@ export function useLoginAuth() {
   const searchParams = useSearchParams();
 
   const nextUrl = searchParams.get("next") ?? "";
-  const callbackUrl = nextUrl
-    ? `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(nextUrl)}`
-    : `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}`;
+  const extId = searchParams.get("extId") ?? "";
+
+  const isExtensionLogin = Boolean(extId);
+  // Extension callback never uses `next` — the page closes after syncing the session.
+  const callbackUrl = isExtensionLogin
+    ? `${env.NEXT_PUBLIC_APP_URL}/auth/extension-callback?extId=${encodeURIComponent(extId)}`
+    : nextUrl
+      ? `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(nextUrl)}`
+      : `${env.NEXT_PUBLIC_APP_URL}${ROUTES.AUTH.CALLBACK}`;
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");

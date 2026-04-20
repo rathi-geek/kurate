@@ -712,6 +712,7 @@ CREATE TABLE IF NOT EXISTS public.user_logged_items (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_user_logged_items_user_item ON public.user_logged_items (user_id, logged_item_id);
 CREATE INDEX IF NOT EXISTS idx_user_logged_items_user_id ON public.user_logged_items (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_logged_items_created ON public.user_logged_items (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_logged_items_logged_item ON public.user_logged_items (logged_item_id);

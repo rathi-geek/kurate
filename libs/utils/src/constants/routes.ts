@@ -8,6 +8,7 @@ export const ROUTES = {
   DEMO: "/demo",
   /** Public brand guidelines for design and video partners */
   BRAND: "/brand",
+  PRIVACY: "/privacy",
 
   AUTH: {
     BASE: "/auth",

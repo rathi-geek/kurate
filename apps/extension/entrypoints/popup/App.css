@@ -1,0 +1,168 @@
+.popup {
+  padding: 20px 20px 22px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.brandTitle {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.brandSub {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.pill {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.pillAuth {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.pillError {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/* Flat — no box, no shadow */
+.card {
+  padding: 0;
+}
+
+.pageRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.favicon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  flex: 0 0 auto;
+  overflow: hidden;
+  margin-top: 1px;
+}
+
+.faviconImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pageText {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #0f172a;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.url {
+  font-size: 11px;
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.btn {
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnPrimary {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnGhost {
+  background: transparent;
+  border-color: #e2e8f0;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.btnGhost:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.msg {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.msgError {
+  color: #dc2626;
+}
+
+.msgSuccess {
+  color: #16a34a;
+}
+
+.muted {
+  color: #94a3b8;
+}

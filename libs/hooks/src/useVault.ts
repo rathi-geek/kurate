@@ -128,7 +128,8 @@ export function useVault(filters: VaultFilters, userId: string, supabase: Supaba
       lastPage.length === PAGE_SIZE
         ? lastPage[lastPage.length - 1].created_at
         : undefined,
-    staleTime: 1000 * 60,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
     enabled: !!userId,
   });
 
