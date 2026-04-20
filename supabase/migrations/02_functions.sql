@@ -616,30 +616,99 @@ CREATE TRIGGER trg_comment_notification
   FOR EACH ROW EXECUTE FUNCTION public.handle_comment_insert();
 
 
--- -- ── Discovery Feed: single RPC for both Today and New sections ─
+-- ── Discovery Feed: flat-column RPC matching get_group_feed_page pattern ──
 -- Returns deduplicated unread posts from others in user's groups.
 -- Client splits the result: today's posts → top 10 by engagement (Today),
 -- remaining posts → New section. No overlap possible.
 
-CREATE OR REPLACE FUNCTION public.get_discovery_feed(
-  p_user_id UUID
+CREATE OR REPLACE FUNCTION public.get_discovery_feed_page(
+  p_user_id  UUID,
+  p_limit    INT DEFAULT 60
 )
-RETURNS SETOF public.group_posts
-LANGUAGE SQL STABLE SECURITY DEFINER
+RETURNS TABLE (
+  id              UUID,
+  convo_id        UUID,
+  logged_item_id  UUID,
+  shared_by       UUID,
+  note            VARCHAR(500),
+  content         TEXT,
+  shared_at       TIMESTAMPTZ,
+  sharer_id            UUID,
+  sharer_display_name  TEXT,
+  sharer_avatar_path   TEXT,
+  sharer_handle        TEXT,
+  item_url              TEXT,
+  item_title            TEXT,
+  item_preview_image    TEXT,
+  item_content_type     TEXT,
+  item_raw_metadata     JSONB,
+  item_description      TEXT,
+  like_count       BIGINT,
+  did_like         BOOLEAN,
+  must_read_count  BIGINT,
+  did_must_read    BOOLEAN,
+  comment_count    BIGINT,
+  seen_at          TIMESTAMPTZ
+)
+LANGUAGE sql STABLE
 AS $$
-  SELECT DISTINCT ON (COALESCE(gp.logged_item_id::text, gp.id::text)) gp.*
-  FROM public.group_posts gp
-  WHERE gp.convo_id IN (
-    SELECT convo_id FROM public.conversation_members WHERE user_id = p_user_id
-  )
-    AND gp.shared_by != p_user_id
-    AND NOT EXISTS (
-      SELECT 1
-      FROM public.group_post_reads r
-      WHERE r.group_post_id = gp.id
-        AND r.user_id = p_user_id
+  SELECT
+    dgp.id,
+    dgp.convo_id,
+    dgp.logged_item_id,
+    dgp.shared_by,
+    dgp.note,
+    dgp.content,
+    dgp.shared_at,
+    sp.id              AS sharer_id,
+    public._display_name(sp.first_name, sp.last_name, sp.handle) AS sharer_display_name,
+    public._avatar_path(sp.avatar_id)                             AS sharer_avatar_path,
+    sp.handle          AS sharer_handle,
+    li.url              AS item_url,
+    li.title            AS item_title,
+    li.preview_image_url AS item_preview_image,
+    li.content_type::TEXT AS item_content_type,
+    li.raw_metadata     AS item_raw_metadata,
+    li.description      AS item_description,
+    COALESCE(likes.cnt, 0)       AS like_count,
+    COALESCE(likes.did, FALSE)   AS did_like,
+    COALESCE(mr.cnt, 0)          AS must_read_count,
+    COALESCE(mr.did, FALSE)      AS did_must_read,
+    COALESCE(cc.cnt, 0)          AS comment_count,
+    ls.seen_at
+  FROM (
+    SELECT DISTINCT ON (COALESCE(gp.logged_item_id::text, gp.id::text)) gp.*
+    FROM public.group_posts gp
+    WHERE gp.convo_id IN (
+      SELECT convo_id FROM public.conversation_members WHERE user_id = p_user_id
     )
-  ORDER BY COALESCE(gp.logged_item_id::text, gp.id::text), gp.shared_at DESC
+      AND gp.shared_by != p_user_id
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.group_post_reads r
+        WHERE r.group_post_id = gp.id
+          AND r.user_id = p_user_id
+      )
+    ORDER BY COALESCE(gp.logged_item_id::text, gp.id::text), gp.shared_at DESC
+  ) dgp
+  LEFT JOIN public.profiles sp ON sp.id = dgp.shared_by
+  LEFT JOIN public.logged_items li ON li.id = dgp.logged_item_id
+  LEFT JOIN public.group_post_last_seen ls
+    ON ls.group_post_id = dgp.id AND ls.user_id = p_user_id
+  LEFT JOIN LATERAL (
+    SELECT COUNT(*)::BIGINT AS cnt, BOOL_OR(gl.user_id = p_user_id) AS did
+    FROM public.group_posts_likes gl WHERE gl.group_post_id = dgp.id
+  ) likes ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT COUNT(*)::BIGINT AS cnt, BOOL_OR(gm.user_id = p_user_id) AS did
+    FROM public.group_posts_must_reads gm WHERE gm.group_post_id = dgp.id
+  ) mr ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT COUNT(*)::BIGINT AS cnt
+    FROM public.group_posts_comments gc WHERE gc.group_post_id = dgp.id
+  ) cc ON TRUE
+  ORDER BY dgp.shared_at DESC
+  LIMIT p_limit
 $$;
 
 

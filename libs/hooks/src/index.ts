@@ -52,3 +52,8 @@ export type { GroupRow } from "./useUserGroups";
 export { useBumpGroupsList } from "./useBumpGroupsList";
 export { useRefreshLoggedItem } from "./useRefreshLoggedItem";
 export type { RefreshableItem } from "./useRefreshLoggedItem";
+export { mapFeedRowToGroupDrop } from "./mapFeedRow";
+export type { FeedRow } from "./mapFeedRow";
+export { useDiscoveryFeed } from "./useDiscoveryFeed";
+export { useDiscoveryVault } from "./useDiscoveryVault";
+export type { VaultDiscoveryItem } from "./useDiscoveryVault";

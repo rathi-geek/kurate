@@ -15,6 +15,7 @@ import {
   hasActiveFilters,
 } from '@/components/vault/VaultFilterSheet';
 import { ThoughtsTabView } from '@/components/thoughts/ThoughtsTabView';
+import { DiscoveringTabView } from '@/components/discovery/DiscoveringTabView';
 import { useVaultPreview } from '@/hooks/useVaultPreview';
 import { useVaultComposer } from '@/hooks/useVaultComposer';
 import { useAuthStore } from '@/store';
@@ -185,6 +186,7 @@ export default function VaultScreen() {
           )}
         </KeyboardAvoidingView>
       )}
+      {activeHomeTab === HomeTab.DISCOVERING && <DiscoveringTabView />}
     </SafeAreaView>
   );
 }

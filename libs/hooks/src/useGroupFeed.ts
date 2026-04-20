@@ -13,9 +13,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { queryKeys } from "@kurate/query";
 import type { Database, GroupDrop, GroupProfile } from "@kurate/types";
 
+import { mapFeedRowToGroupDrop } from "./mapFeedRow";
 import type { PendingGroupPostRow } from "./types/pending-db";
-
-type ContentType = Database["public"]["Enums"]["content_type_enum"];
 
 const PAGE_SIZE = 20;
 
@@ -48,48 +47,9 @@ export async function fetchGroupFeedPage(
       ])
     : [new Map<string, GroupProfile[]>(), new Map<string, GroupProfile[]>()];
 
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    convo_id: row.convo_id,
-    logged_item_id: row.logged_item_id,
-    shared_by: row.shared_by,
-    note: row.note,
-    content: row.content ?? null,
-    shared_at: row.shared_at,
-    sharer: {
-      id: row.sharer_id ?? row.shared_by,
-      display_name: row.sharer_display_name ?? null,
-      avatar_path: row.sharer_avatar_path,
-      handle: row.sharer_handle ?? null,
-    },
-    item: row.item_url != null
-      ? {
-          url: row.item_url ?? "",
-          title: row.item_title ?? null,
-          preview_image_url: row.item_preview_image ?? null,
-          content_type: (row.item_content_type ?? "article") as ContentType,
-          raw_metadata: row.item_raw_metadata ?? null,
-          description: row.item_description ?? null,
-        }
-      : null,
-    engagement: {
-      like: {
-        count: Number(row.like_count),
-        didReact: row.did_like ?? false,
-        reactors: likeReactors.get(row.id) ?? [],
-      },
-      mustRead: {
-        count: Number(row.must_read_count),
-        didReact: row.did_must_read ?? false,
-        reactors: mustReadReactors.get(row.id) ?? [],
-      },
-      readBy: { count: 0, didReact: false, reactors: [] },
-    },
-    commentCount: Number(row.comment_count),
-    seenAt: row.seen_at ?? null,
-    latestCommentAt: null,
-    latestComment: null,
-  } satisfies GroupDrop));
+  return (data ?? []).map((row) =>
+    mapFeedRowToGroupDrop(row, { like: likeReactors, mustRead: mustReadReactors }),
+  );
 }
 
 async function fetchReactors(

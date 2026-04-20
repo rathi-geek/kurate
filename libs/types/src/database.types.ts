@@ -1544,23 +1544,33 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_discovery_feed: {
-        Args: { p_user_id: string }
+      get_discovery_feed_page: {
+        Args: { p_limit?: number; p_user_id: string }
         Returns: {
-          content: string | null
+          comment_count: number
+          content: string
           convo_id: string
+          did_like: boolean
+          did_must_read: boolean
           id: string
-          logged_item_id: string | null
-          note: string | null
+          item_content_type: string
+          item_description: string
+          item_preview_image: string
+          item_raw_metadata: Json
+          item_title: string
+          item_url: string
+          like_count: number
+          logged_item_id: string
+          must_read_count: number
+          note: string
+          seen_at: string
           shared_at: string
           shared_by: string
+          sharer_avatar_path: string
+          sharer_display_name: string
+          sharer_handle: string
+          sharer_id: string
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "group_posts"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_feed_comment_previews: {
         Args: { p_post_ids: string[] }
