@@ -1,11 +1,16 @@
 import { useCallback, useState } from 'react';
 import { ScrollView } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@kurate/query';
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
 import { useLocalization } from '@/context';
 import { useThoughts } from '@/hooks/useThoughts';
-import { useBucketSummaries } from '@/hooks/useBucketSummaries';
+import {
+  useBucketSummaries,
+  type BucketSummary,
+} from '@/hooks/useBucketSummaries';
 import { useDeleteThought } from '@/hooks/useDeleteThought';
 import { useBucketLastRead } from '@/hooks/useBucketLastRead';
 import type { ThoughtBucket } from '@kurate/utils';
@@ -37,13 +42,19 @@ export function ThoughtsTabView({
     useThoughts(activeBucket, searchQuery);
   const deleteMutation = useDeleteThought();
   const { markBucketRead } = useBucketLastRead();
+  const queryClient = useQueryClient();
 
   const handleBucketPress = useCallback(
     (bucket: ThoughtBucket) => {
       markBucketRead(bucket);
+      queryClient.setQueryData<BucketSummary[]>(
+        queryKeys.thoughts.bucketSummaries(),
+        prev =>
+          prev?.map(s => (s.bucket === bucket ? { ...s, unreadCount: 0 } : s)),
+      );
       setActiveBucket(bucket);
     },
-    [markBucketRead],
+    [markBucketRead, queryClient],
   );
 
   const handleDelete = useCallback(

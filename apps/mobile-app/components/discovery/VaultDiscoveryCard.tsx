@@ -46,7 +46,10 @@ export function VaultDiscoveryCard({
         >
           {title ?? domain}
         </Text>
-        <Text numberOfLines={1} className="font-sans text-xs text-muted-foreground">
+        <Text
+          numberOfLines={1}
+          className="font-sans text-xs text-muted-foreground"
+        >
           {domain}
         </Text>
         {showDays ? (

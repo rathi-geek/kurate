@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo } from "react";
 
 import { AnimatePresence } from "framer-motion";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { useTranslations } from "@/i18n/use-translations";
@@ -150,6 +150,19 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({
   );
 
   const { markBucketRead } = useBucketLastRead(userId);
+  const queryClient = useQueryClient();
+
+  const handleOpenBucket = useCallback(
+    (bucket: ThoughtBucket) => {
+      markBucketRead(bucket);
+      queryClient.setQueryData<BucketSummary[]>(
+        queryKeys.thoughts.bucketSummaries(),
+        (prev) => prev?.map((s) => (s.bucket === bucket ? { ...s, unreadCount: 0 } : s)),
+      );
+      onActiveBucketChange(bucket);
+    },
+    [markBucketRead, queryClient, onActiveBucketChange],
+  );
 
   // Filter summaries when searching in bucket view
   const visibleSummaries = isSearching
@@ -214,7 +227,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({
                   latestText={s.latestText}
                   latestCreatedAt={s.latestCreatedAt}
                   unreadCount={s.unreadCount}
-                  onClick={() => onActiveBucketChange(s.bucket as ThoughtBucket)}
+                  onClick={() => handleOpenBucket(s.bucket as ThoughtBucket)}
                 />
               ))
             )}
@@ -227,10 +240,7 @@ export const ThoughtsTabView = memo(function ThoughtsTabView({
           <ThoughtsBucketChat
             key={activeBucket}
             bucket={activeBucket}
-            onBack={() => {
-              if (activeBucket) markBucketRead(activeBucket);
-              onActiveBucketChange(null);
-            }}
+            onBack={() => onActiveBucketChange(null)}
             searchQuery={searchQuery}
             extraMessages={isSearching ? (searchMessages as DisplayMessage[]) : displayMessages}
             onDelete={handleDeleteThought}

@@ -125,9 +125,7 @@ export function DiscoveringTabView() {
       renderItem={({ item }) => {
         switch (item.type) {
           case 'vault-header':
-            return (
-              <SectionDivider label={t('discovery.from_vault')} />
-            );
+            return <SectionDivider label={t('discovery.from_vault')} />;
           case 'vault-carousel':
             return <VaultCarousel items={item.items} />;
           case 'section-header':
@@ -141,10 +139,10 @@ export function DiscoveringTabView() {
           case 'empty':
             return (
               <VStack className="flex-1 items-center justify-center gap-2 px-8 py-16">
-                <Text className="font-sans text-sm font-medium text-foreground text-center">
+                <Text className="text-center font-sans text-sm font-medium text-foreground">
                   {t('discovery.empty_title')}
                 </Text>
-                <Text className="font-sans text-xs text-muted-foreground text-center">
+                <Text className="text-center font-sans text-xs text-muted-foreground">
                   {t('discovery.empty_subtitle')}
                 </Text>
               </VStack>
