@@ -33,6 +33,7 @@ export function UsernameField({
       <Input>
         <InputField
           placeholder={t('auth.onboarding.username_placeholder')}
+          maxLength={20}
           value={username}
           onChangeText={v => {
             const cleaned = v.toLowerCase().replace(/\s/g, '');
@@ -42,7 +43,7 @@ export function UsernameField({
           }}
           onBlur={() => {
             const v = username.trim();
-            onErrorChange(v ? (validateUsername(v) ?? null) : 'Required');
+            onErrorChange(v ? (validateUsername(v) ?? null) : t('validation.username_required'));
           }}
           autoCapitalize="none"
           autoCorrect={false}

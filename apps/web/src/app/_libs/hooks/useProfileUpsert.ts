@@ -7,6 +7,7 @@ import { ROUTES } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 import { saveUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { track } from "@/app/_libs/utils/analytics";
+import { useTranslations } from "@/i18n/use-translations";
 import type { HandleStatus } from "@/app/_libs/hooks/useUsernameAvailability";
 
 interface UseProfileUpsertOptions {
@@ -15,6 +16,7 @@ interface UseProfileUpsertOptions {
 
 export function useProfileUpsert({ onHandleStatusChange }: UseProfileUpsertOptions) {
   const router = useRouter();
+  const tV = useTranslations("validation");
   const [loading, setLoading] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
 
@@ -54,8 +56,10 @@ export function useProfileUpsert({ onHandleStatusChange }: UseProfileUpsertOptio
 
     if (upsertError) {
       if (upsertError.code === "23505") {
-        setUsernameError("This username is already taken");
+        setUsernameError(tV("username_taken"));
         onHandleStatusChange("taken");
+      } else if (upsertError.message?.includes("character varying")) {
+        setUsernameError(tV("profile_field_too_long"));
       } else {
         setUsernameError(upsertError.message);
       }

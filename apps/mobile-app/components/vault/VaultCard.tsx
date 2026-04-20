@@ -1,5 +1,11 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, Linking } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
@@ -77,6 +83,17 @@ export const VaultCard = React.memo(function VaultCard({
 
   const [showActions, setShowActions] = useState(false);
 
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(12);
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.ease) });
+    translateY.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.ease) });
+  }, [opacity, translateY]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
   const handlePress = useCallback(() => {
     if (showActions) {
       setShowActions(false);
@@ -93,6 +110,7 @@ export const VaultCard = React.memo(function VaultCard({
   const ReadIcon = item.is_read ? CheckCheck : Check;
 
   return (
+    <Animated.View style={animatedStyle}>
     <Pressable
       onPress={handlePress}
       onLongPress={handleLongPress}
@@ -190,5 +208,6 @@ export const VaultCard = React.memo(function VaultCard({
         </Text>
       </View>
     </Pressable>
+    </Animated.View>
   );
 });

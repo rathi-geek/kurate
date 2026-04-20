@@ -25,6 +25,7 @@ import { InterestPicker } from "./interest-picker";
 export function OnboardingForm() {
   const t = useTranslations("auth.onboarding");
   const tApp = useTranslations("app");
+  const tV = useTranslations("validation");
   const prefersReducedMotion = useSafeReducedMotion();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next");
@@ -50,11 +51,14 @@ export function OnboardingForm() {
 
     let hasError = false;
     if (!trimmedName) {
-      setNameError("Required");
+      setNameError(tV("name_required"));
+      hasError = true;
+    } else if (trimmedName.length > 50) {
+      setNameError(tV("name_too_long", { max: 50 }));
       hasError = true;
     }
     if (!trimmedUsername) {
-      setLocalUsernameError("Required");
+      setLocalUsernameError(tV("username_required"));
       hasError = true;
     } else {
       const err = validateUsername(trimmedUsername);
@@ -100,8 +104,9 @@ export function OnboardingForm() {
             type="text"
             placeholder={t("name_placeholder")}
             value={name}
+            maxLength={50}
             onChange={(e) => { setName(e.target.value); setNameError(null); }}
-            onBlur={() => { if (!name.trim()) setNameError("Required"); }}
+            onBlur={() => { if (!name.trim()) setNameError(tV("name_required")); }}
           />
           {nameError && <p className="text-destructive text-xs mt-1">{nameError}</p>}
         </FormField>

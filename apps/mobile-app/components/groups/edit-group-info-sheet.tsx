@@ -180,7 +180,12 @@ export function EditGroupInfoSheet({
           group_description: description.trim() || null,
         })
         .eq('id', groupId);
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (error.message?.includes('character varying')) {
+          throw new Error(t('validation.group_name_too_long', { max: 50 }));
+        }
+        throw new Error(error.message);
+      }
       void queryClient.invalidateQueries({
         queryKey: queryKeys.groups.detail(groupId),
       });
@@ -240,6 +245,7 @@ export function EditGroupInfoSheet({
               <InputField
                 value={name}
                 onChangeText={setName}
+                maxLength={50}
                 placeholder={t('groups.create_name_placeholder')}
                 autoCapitalize="words"
                 returnKeyType="done"

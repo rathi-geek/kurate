@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { supabase } from '@/libs/supabase/client';
 import { useAuthStore } from '@/store';
+import { useLocalization } from '@/context';
 import { saveUserInterests } from './useUserInterests';
 
 import type { HandleStatus } from './useUsernameAvailability';
@@ -13,6 +14,7 @@ interface UseProfileUpsertOptions {
 export function useProfileUpsert({
   onHandleStatusChange,
 }: UseProfileUpsertOptions) {
+  const { t } = useLocalization();
   const setOnboardingCompleted = useAuthStore(
     state => state.setOnboardingCompleted,
   );
@@ -52,8 +54,10 @@ export function useProfileUpsert({
 
     if (upsertError) {
       if (upsertError.code === '23505') {
-        setUsernameError('This username is already taken');
+        setUsernameError(t('validation.username_taken'));
         onHandleStatusChange('taken');
+      } else if (upsertError.message?.includes('character varying')) {
+        setUsernameError(t('validation.profile_field_too_long'));
       } else {
         setUsernameError(upsertError.message);
       }

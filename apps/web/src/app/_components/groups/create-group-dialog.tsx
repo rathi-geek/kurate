@@ -26,6 +26,7 @@ interface CreateGroupDialogProps {
 
 export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps) {
   const t = useTranslations("groups");
+  const tV = useTranslations("validation");
   const router = useRouter();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -37,6 +38,10 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
     e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) return;
+    if (trimmedName.length > 50) {
+      setError(tV("group_name_too_long", { max: 50 }));
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -83,7 +88,12 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
 
       router.push(ROUTES.APP.GROUP_INVITE_FLOW(group.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("error_generic"));
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("character varying")) {
+        setError(tV("group_name_too_long", { max: 50 }));
+      } else {
+        setError(msg || t("error_generic"));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -104,7 +114,8 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
             <Input
               id="group-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              maxLength={50}
+              onChange={(e) => { setName(e.target.value); setError(null); }}
               placeholder={t("create_name_placeholder")}
               autoFocus
               required

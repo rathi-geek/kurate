@@ -34,16 +34,14 @@ export function InterestPicker({ interests, onToggle }: InterestPickerProps) {
               key={interest}
               onPress={() => onToggle(interest)}
               className={`rounded-[6px] px-3 py-1.5 ${
-                selected ? 'bg-primary' : 'border border-border bg-card'
+                selected ? 'bg-primary' : 'border-border bg-card'
               }`}
+              style={{
+                borderWidth: 1,
+                borderColor: selected ? 'transparent' : undefined,
+              }}
             >
-              <Text
-                className={`font-sans text-sm ${
-                  selected ? 'text-primary-foreground' : 'text-foreground'
-                }`}
-              >
-                {interest}
-              </Text>
+              <Text className={`font-sans text-sm `}>{interest}</Text>
             </Pressable>
           );
         })}

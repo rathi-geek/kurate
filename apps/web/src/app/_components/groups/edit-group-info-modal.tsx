@@ -146,7 +146,7 @@ export function EditGroupInfoModal({
 
           <div className="space-y-1.5">
             <label className="text-foreground text-sm font-medium">{t("group_name")}</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            <Input value={name} maxLength={50} onChange={(e) => setName(e.target.value)} autoFocus />
           </div>
           <div className="space-y-1.5">
             <label className="text-foreground text-sm font-medium">{t("group_description")}</label>

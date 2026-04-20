@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/app/_components/form-field";
 import { validateUsername } from "@kurate/utils";
+import { useTranslations } from "@/i18n/use-translations";
 import type { HandleStatus } from "@/app/_libs/hooks/useUsernameAvailability";
 
 interface UsernameFieldProps {
@@ -26,12 +27,14 @@ export function UsernameField({
   label,
   placeholder,
 }: UsernameFieldProps) {
+  const tV = useTranslations("validation");
   return (
     <FormField htmlFor="onboarding-username" label={label}>
       <Input
         id="onboarding-username"
         type="text"
         placeholder={placeholder}
+        maxLength={20}
         value={username}
         onChange={(e) => {
           const v = e.target.value.toLowerCase().replace(/\s/g, "");
@@ -41,7 +44,7 @@ export function UsernameField({
         }}
         onBlur={() => {
           const v = username.trim();
-          onErrorChange(v ? (validateUsername(v) ?? null) : "Required");
+          onErrorChange(v ? (validateUsername(v) ?? null) : tV("username_required"));
         }}
       />
       {error && <p className="text-destructive text-xs mt-1">{error}</p>}

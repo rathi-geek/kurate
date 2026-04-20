@@ -254,6 +254,16 @@
     "next": "Next",
     "search": "Search"
   },
+  "validation": {
+    "required": "Required",
+    "name_required": "Name is required",
+    "name_too_long": "Name must be {{max}} characters or less",
+    "username_required": "Username is required",
+    "username_too_long": "Username must be {{max}} characters or less",
+    "username_taken": "This username is already taken",
+    "profile_field_too_long": "Name or username is too long",
+    "group_name_too_long": "Group name must be {{max}} characters or less"
+  },
   "auth": {
     "login": {
       "title": "Welcome to Kurate",

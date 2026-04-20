@@ -96,11 +96,14 @@ export default function ProfileEditScreen() {
 
     let hasError = false;
     if (!trimmedName) {
-      setNameError(t('profile.display_name') + ' required');
+      setNameError(t('validation.name_required'));
+      hasError = true;
+    } else if (trimmedName.length > 50) {
+      setNameError(t('validation.name_too_long', { max: 50 }));
       hasError = true;
     }
     if (!trimmedUsername) {
-      setUsernameError(t('profile.username') + ' required');
+      setUsernameError(t('validation.username_required'));
       hasError = true;
     }
     if (hasError) return;
@@ -118,6 +121,9 @@ export default function ProfileEditScreen() {
       .eq('id', profile!.id);
 
     if (error) {
+      if (error.message?.includes('character varying')) {
+        setNameError(t('validation.name_too_long', { max: 50 }));
+      }
       setSaving(false);
       return;
     }
@@ -175,12 +181,14 @@ export default function ProfileEditScreen() {
               <InputField
                 placeholder={t('profile.display_name_placeholder')}
                 value={name}
+                maxLength={50}
                 onChangeText={v => {
-                  setName(v);
+                  const filtered = v.replace(/[^a-zA-Z\s]/g, '');
+                  setName(filtered);
                   setNameError(null);
                 }}
                 onBlur={() => {
-                  if (!name.trim()) setNameError('Required');
+                  if (!name.trim()) setNameError(t('validation.name_required'));
                 }}
               />
             </Input>

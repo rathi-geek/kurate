@@ -53,6 +53,7 @@ interface ProfileEditModalProps {
 export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   const t = useTranslations("profile");
   const tCommon = useTranslations("common");
+  const tV = useTranslations("validation");
   const { user, profile, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -162,11 +163,14 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
 
     let hasError = false;
     if (!trimmedName) {
-      setNameError("Required");
+      setNameError(tV("name_required"));
+      hasError = true;
+    } else if (trimmedName.length > 50) {
+      setNameError(tV("name_too_long", { max: 50 }));
       hasError = true;
     }
     if (!trimmedUsername) {
-      setUsernameError("Required");
+      setUsernameError(tV("username_required"));
       hasError = true;
     }
     if (hasError || !user) return;
@@ -298,8 +302,9 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
                 </label>
                 <Input
                   value={name}
+                  maxLength={50}
                   onChange={(e) => { setName(e.target.value); setNameError(null); }}
-                  onBlur={() => { if (!name.trim()) setNameError("Required"); }}
+                  onBlur={() => { if (!name.trim()) setNameError(tV("name_required")); }}
                   placeholder={t("display_name_placeholder")}
                 />
                 {nameError && <p className="text-destructive text-xs">{nameError}</p>}
@@ -310,6 +315,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
                 </label>
                 <Input
                   value={username}
+                  maxLength={20}
                   onChange={(e) => {
                     const v = e.target.value.toLowerCase().replace(/\s/g, "");
                     setUsername(v);
@@ -317,7 +323,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
                   }}
                   onBlur={() => {
                     const trimmed = username.trim();
-                    if (!trimmed) setUsernameError("Required");
+                    if (!trimmed) setUsernameError(tV("username_required"));
                     else setUsernameError(validateUsername(trimmed));
                   }}
                   placeholder={t("username_placeholder")}

@@ -47,11 +47,14 @@ export function OnboardingForm() {
 
     let hasError = false;
     if (!trimmedName) {
-      setNameError('Required');
+      setNameError(t('validation.name_required'));
+      hasError = true;
+    } else if (trimmedName.length > 50) {
+      setNameError(t('validation.name_too_long', { max: 50 }));
       hasError = true;
     }
     if (!trimmedUsername) {
-      setLocalUsernameError('Required');
+      setLocalUsernameError(t('validation.username_required'));
       hasError = true;
     } else {
       const err = validateUsername(trimmedUsername);
@@ -96,12 +99,14 @@ export function OnboardingForm() {
           <InputField
             placeholder={t('auth.onboarding.name_placeholder')}
             value={name}
+            maxLength={50}
             onChangeText={v => {
-              setName(v);
+              const filtered = v.replace(/[^a-zA-Z\s]/g, '');
+              setName(filtered);
               setNameError(null);
             }}
             onBlur={() => {
-              if (!name.trim()) setNameError('Required');
+              if (!name.trim()) setNameError(t('validation.name_required'));
             }}
             autoComplete="name"
           />

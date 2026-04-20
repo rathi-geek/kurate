@@ -26,7 +26,7 @@ interface CreateGroupSheetProps {
 }
 
 const schema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(50, 'Group name must be 50 characters or less'),
   description: z.string(),
 });
 type FormValues = z.infer<typeof schema>;
@@ -79,11 +79,13 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
         .single();
 
       if (groupError || !group) {
-        const msg =
-          groupError?.message?.toLowerCase().includes('unique') ||
-          groupError?.message?.toLowerCase().includes('duplicate')
+        const errMsg = groupError?.message ?? '';
+        const msg = errMsg.toLowerCase().includes('unique') ||
+          errMsg.toLowerCase().includes('duplicate')
             ? t('groups.name_taken')
-            : t('groups.error_generic');
+            : errMsg.includes('character varying')
+              ? t('validation.group_name_too_long', { max: 50 })
+              : t('groups.error_generic');
         Toast.show({ type: 'error', text1: msg });
         return;
       }
@@ -140,6 +142,7 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder={t('groups.create_name_placeholder')}
+                    maxLength={50}
                     autoFocus
                     autoCapitalize="words"
                     returnKeyType="next"
