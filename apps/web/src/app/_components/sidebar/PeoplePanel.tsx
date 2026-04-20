@@ -9,6 +9,7 @@ import { ROUTES, formatRelativeTime } from "@kurate/utils";
 
 import { FindUserSheet } from "@/app/_components/people/find-user-sheet";
 import { PlusIcon } from "@/components/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslations } from "@/i18n/use-translations";
 
 interface PeoplePanelProps {
@@ -57,16 +58,15 @@ export function PeoplePanel({ userId, conversations, isLoading }: PeoplePanelPro
             <Link
               key={convo.id}
               href={ROUTES.APP.PERSON(convo.id)}
-              className="border-ink/6 hover:bg-surface flex items-center gap-3 rounded-xl border bg-white px-3 py-3 transition-colors">
-              <div className="bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-full">
-                <span className="text-primary text-sm font-bold">
-                  {(
-                    convo.otherUser.display_name?.[0] ??
-                    convo.otherUser.handle?.[0] ??
-                    "?"
-                  ).toUpperCase()}
-                </span>
-              </div>
+              className="border-ink/6 hover:bg-surface flex items-center gap-3 rounded-xl border bg-card px-3 py-3 transition-colors">
+              <Avatar className="size-10">
+                {convo.otherUser.avatar_url && (
+                  <AvatarImage src={convo.otherUser.avatar_url} alt={convo.otherUser.display_name ?? convo.otherUser.handle ?? ""} />
+                )}
+                <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+                  {(convo.otherUser.display_name?.[0] ?? convo.otherUser.handle?.[0] ?? "?").toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="text-foreground truncate text-sm font-semibold">

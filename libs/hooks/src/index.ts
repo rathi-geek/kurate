@@ -57,3 +57,6 @@ export type { FeedRow } from "./mapFeedRow";
 export { useDiscoveryFeed } from "./useDiscoveryFeed";
 export { useDiscoveryVault } from "./useDiscoveryVault";
 export type { VaultDiscoveryItem } from "./useDiscoveryVault";
+export { useDMConversations, fetchDMConversations } from "./useDMConversations";
+export { useMessages, fetchMessages } from "./useMessages";
+export { useDMUnreadCounts } from "./useDMUnreadCounts";

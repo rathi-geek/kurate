@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -174,11 +175,14 @@ export function FindUserSheet({ open, onOpenChange, currentUserId }: FindUserShe
                   onClick={() => handleSelectUser(profile)}
                   className="hover:bg-surface border-border/50 flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left transition-colors last:border-0 disabled:opacity-60"
                 >
-                  <div className="bg-primary/10 flex size-8 shrink-0 items-center justify-center rounded-full">
-                    <span className="text-primary text-xs font-bold">
+                  <Avatar className="size-8">
+                    {profile.avatar_url && (
+                      <AvatarImage src={profile.avatar_url} alt={profile.display_name ?? profile.handle ?? ""} />
+                    )}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                       {(profile.display_name?.[0] ?? "?").toUpperCase()}
-                    </span>
-                  </div>
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="text-foreground text-sm font-medium">
                       {profile.display_name ?? profile.handle ?? t("unknown")}

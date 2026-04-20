@@ -14,6 +14,7 @@ import { queryKeys } from "@kurate/query";
 import { createClient } from "@/app/_libs/supabase/client";
 import { CloseIcon, SendIcon } from "@/components/icons";
 import { EmojiPicker } from "@/app/_components/shared/emoji-picker";
+import { toast } from "sonner";
 
 const supabase = createClient();
 
@@ -99,11 +100,12 @@ export function DmComposer({
       if (!trimmedText) return;
       setSending(true);
       try {
-        await supabase
+        const { error } = await supabase
           .from("messages")
           .update({ message_text: trimmedText })
           .eq("id", editingMessage.messageId)
           .eq("sender_id", currentUserId);
+        if (error) { toast.error(t("error_edit_message")); return; }
         setText("");
         onCancelEdit?.();
         await queryClient.invalidateQueries({ queryKey: queryKeys.people.messages(convoId) });
@@ -144,9 +146,9 @@ export function DmComposer({
           .select("id")
           .single();
 
-        if (liError) throw new Error(liError.message);
+        if (liError) { toast.error(t("error_send_message")); return; }
 
-        await supabase.from("messages").insert({
+        const { error: msgError } = await supabase.from("messages").insert({
           convo_id: convoId,
           sender_id: currentUserId,
           message_text: trimmedText.replace(URL_REGEX, "").trim() || "",
@@ -154,17 +156,19 @@ export function DmComposer({
           logged_item_id: loggedItem.id,
           ...(replyTo ? { message_parent_id: replyTo.messageId } : {}),
         });
+        if (msgError) { toast.error(t("error_send_message")); return; }
 
         resetMetadata();
         detectedUrlRef.current = null;
       } else {
-        await supabase.from("messages").insert({
+        const { error: msgError } = await supabase.from("messages").insert({
           convo_id: convoId,
           sender_id: currentUserId,
           message_text: trimmedText,
           message_type: "text",
           ...(replyTo ? { message_parent_id: replyTo.messageId } : {}),
         });
+        if (msgError) { toast.error(t("error_send_message")); return; }
       }
 
       setText("");
@@ -188,7 +192,7 @@ export function DmComposer({
   const hasContent = text.trim().length > 0 || !!metadata;
 
   return (
-    <div className="border-border/60 border-t bg-white px-4 py-3">
+    <div className="border-border/60 border-t bg-card px-4 py-3">
       {/* Edit context banner */}
       {editingMessage && (
         <div className="border-border/50 bg-surface mb-2 flex items-center gap-2 rounded-lg border px-3 py-2">
@@ -259,7 +263,7 @@ export function DmComposer({
       )}
 
       {/* Textarea with send button inside */}
-      <div className="border-border/60 bg-surface focus-within:ring-primary/30 flex items-end rounded-2xl border focus-within:ring-2">
+      <div className="border-border/60 bg-surface focus-within:ring-primary/30 flex items-end rounded-pill border focus-within:ring-2">
         <Textarea
           ref={textareaRef}
           value={text}

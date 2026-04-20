@@ -1049,3 +1049,32 @@ CREATE TRIGGER trg_bump_activity_message
   AFTER INSERT ON public.messages
   FOR EACH ROW
   EXECUTE FUNCTION public.bump_activity_on_message();
+
+
+-- ── DM unread counts ─────────────────────────────────────────
+
+-- Get unread DM counts for a user (single efficient query)
+CREATE OR REPLACE FUNCTION public.get_dm_unread_counts(p_user_id UUID)
+RETURNS TABLE(convo_id UUID, unread_count BIGINT)
+LANGUAGE sql STABLE SECURITY DEFINER
+AS $$
+  SELECT cm.convo_id, COUNT(m.id) AS unread_count
+  FROM public.conversation_members cm
+  JOIN public.conversations c ON c.id = cm.convo_id AND c.is_group = false
+  JOIN public.messages m ON m.convo_id = cm.convo_id
+    AND m.sender_id != p_user_id
+    AND m.created_at > COALESCE(cm.last_read_at, '1970-01-01'::timestamptz)
+  WHERE cm.user_id = p_user_id
+  GROUP BY cm.convo_id
+  HAVING COUNT(m.id) > 0;
+$$;
+
+-- Mark a conversation as read
+CREATE OR REPLACE FUNCTION public.mark_conversation_read(p_user_id UUID, p_convo_id UUID)
+RETURNS VOID
+LANGUAGE sql SECURITY DEFINER
+AS $$
+  UPDATE public.conversation_members
+  SET last_read_at = now()
+  WHERE user_id = p_user_id AND convo_id = p_convo_id;
+$$;

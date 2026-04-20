@@ -12,6 +12,7 @@ import { queryKeys } from "@kurate/query";
 import type { DMConversation } from "@kurate/types";
 import { fetchMessages } from "@/app/_libs/hooks/useMessages";
 import { PlusIcon } from "@/components/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FindUserSheet } from "@/app/_components/people/find-user-sheet";
 import Link from "next/link";
 import { UnreadBadge } from "@/app/_components/sidebar/unread-badge";
@@ -101,9 +102,14 @@ export function SidebarPeopleSection({
                 }}
                 className="hover:bg-ink/4 flex w-full cursor-pointer items-center justify-center rounded-md py-1.5 transition-colors">
                 <div className="relative">
-                  <div className="bg-ink text-cream flex h-[26px] w-[26px] items-center justify-center rounded-full font-sans text-xs font-bold">
-                    {initial}
-                  </div>
+                  <Avatar className="h-[26px] w-[26px]">
+                    {convo.otherUser.avatar_url && (
+                      <AvatarImage src={convo.otherUser.avatar_url} alt={displayName} />
+                    )}
+                    <AvatarFallback className="bg-ink text-cream font-sans text-xs font-bold">
+                      {initial}
+                    </AvatarFallback>
+                  </Avatar>
                   <UnreadBadge
                     count={unread}
                     variant="dot"
@@ -129,9 +135,14 @@ export function SidebarPeopleSection({
                   "rounded-badge flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left transition-colors",
                   isActive ? "bg-ink/8" : "hover:bg-ink/4",
                 )}>
-                <div className="bg-ink text-cream flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full font-sans text-xs font-bold">
-                  {initial}
-                </div>
+                <Avatar className="h-[26px] w-[26px] shrink-0">
+                  {convo.otherUser.avatar_url && (
+                    <AvatarImage src={convo.otherUser.avatar_url} alt={displayName} />
+                  )}
+                  <AvatarFallback className="bg-ink text-cream font-sans text-xs font-bold">
+                    {initial}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="text-ink truncate font-sans text-xs font-bold">{displayName}</div>
                   {convo.lastMessage && (

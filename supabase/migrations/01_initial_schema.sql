@@ -281,6 +281,7 @@ CREATE TABLE IF NOT EXISTS public.conversation_members (
   role        role_enum NOT NULL DEFAULT 'member',
   joined_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_read_at TIMESTAMPTZ,
   UNIQUE (convo_id, user_id)
 );
 

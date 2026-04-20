@@ -12,7 +12,19 @@ import { decodeHtmlEntities, EMOJI_ROWS } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { DMMessage } from "@kurate/types";
 import { PencilIcon, ReplyIcon, SmileIcon, TrashIcon } from "@/components/icons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
+import { toast } from "sonner";
 import { track } from "@/app/_libs/utils/analytics";
 
 const supabase = createClient();
@@ -72,23 +84,26 @@ export function MessageBubble({
     setPickerOpen(false);
     const myReaction = groupedReactions[emoji]?.myReaction;
     if (myReaction) {
-      await supabase
+      const { error } = await supabase
         .from("message_reactions")
         .delete()
         .eq("message_id", message.id)
         .eq("user_id", currentUserId)
         .eq("emoji", emoji);
+      if (error) { toast.error(t("error_react")); return; }
     } else {
-      await supabase
+      const { error } = await supabase
         .from("message_reactions")
         .insert({ message_id: message.id, user_id: currentUserId, emoji });
+      if (error) { toast.error(t("error_react")); return; }
     }
     await queryClient.invalidateQueries({ queryKey: queryKeys.people.messages(convoId) });
   };
 
   const handleDelete = async () => {
     if (!isOwn) return;
-    await supabase.from("messages").delete().eq("id", message.id);
+    const { error } = await supabase.from("messages").delete().eq("id", message.id);
+    if (error) { toast.error(t("error_delete")); return; }
     await queryClient.invalidateQueries({ queryKey: queryKeys.people.messages(convoId) });
     await queryClient.invalidateQueries({ queryKey: queryKeys.people.conversations() });
   };
@@ -106,7 +121,7 @@ export function MessageBubble({
         <div className="relative" ref={pickerRef}>
           {/* Floating action pill — beside the bubble */}
           <div
-            className={`border-border/50 absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border bg-white px-2 py-1 opacity-0 shadow-md transition-opacity group-hover/msg:opacity-100 ${
+            className={`border-border/50 absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border bg-card px-2 py-1 opacity-0 shadow-md transition-opacity group-hover/msg:opacity-100 ${
               isOwn ? "right-full mr-1.5" : "left-full ml-1.5"
             }`}>
             {/* React button — opens emoji picker */}
@@ -147,23 +162,34 @@ export function MessageBubble({
 
             {/* Delete button — own messages only */}
             {isOwn && (
-              <>
+              <AlertDialog>
                 <div className="bg-border/60 mx-0.5 h-4 w-px" />
-                <button
-                  type="button"
-                  onClick={() => void handleDelete()}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
-                  aria-label={t("bubble_delete_aria")}>
-                  <TrashIcon className="h-3 w-3" />
-                </button>
-              </>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    aria-label={t("bubble_delete_aria")}>
+                    <TrashIcon className="h-3 w-3" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("delete_confirm_title")}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("delete_confirm_description")}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("delete_confirm_cancel")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => void handleDelete()}>{t("delete_confirm_action")}</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
 
           {/* Emoji picker panel — beside the bubble, top-aligned to avoid clipping near top of chat */}
           {pickerOpen && (
             <div
-              className={`border-border/50 absolute top-0 z-20 rounded-2xl border bg-white p-2 shadow-lg ${
+              className={`border-border/50 absolute top-0 z-20 rounded-card border bg-card p-2 shadow-lg ${
                 isOwn ? "right-full mr-10" : "left-full ml-10"
               }`}>
               {EMOJI_ROWS.map((row, i) => (
@@ -186,7 +212,7 @@ export function MessageBubble({
           )}
 
           <div
-            className={`rounded-2xl px-3 py-2 text-sm ${
+            className={`rounded-bubble px-3 py-2 text-sm ${
               isOwn
                 ? "bg-primary text-primary-foreground rounded-br-sm"
                 : "bg-surface text-foreground border-border rounded-bl-sm border"
@@ -218,7 +244,7 @@ export function MessageBubble({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => track("link_opened", { context: "personal_chat" })}
-                className={`block overflow-hidden rounded-xl border ${
+                className={`block overflow-hidden rounded-card border ${
                   isOwn ? "border-white/20 bg-white/10" : "border-border bg-background"
                 } transition-opacity hover:opacity-80`}>
                 {message.item.preview_image_url && (
@@ -247,7 +273,7 @@ export function MessageBubble({
                   )}
                   <p
                     className={`mt-1 truncate text-[10px] ${isOwn ? "text-white/50" : "text-muted-foreground/70"}`}>
-                    {new URL(message.item.url).hostname.replace("www.", "")}
+                    {(() => { try { return new URL(message.item.url).hostname.replace("www.", ""); } catch { return message.item.url; } })()}
                   </p>
                 </div>
               </Link>

@@ -13,6 +13,7 @@ import { queryKeys } from "@kurate/query";
 import { useSidebarContextOptional } from "@/app/_components/sidebar/sidebar-context";
 import { useAuth } from "@/app/_libs/auth-context";
 import { ChevronLeftIcon } from "@/components/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { MessageBubble } from "./message-bubble";
 import { DmComposer } from "./dm-composer";
@@ -141,7 +142,7 @@ export function DmChatView({ convoId }: DmChatViewProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-border/60 flex shrink-0 items-center gap-3 border-b bg-white px-4 py-3">
+      <div className="border-border/60 flex shrink-0 items-center gap-3 border-b bg-card px-4 py-3">
         <Link
           href={ROUTES.APP.PEOPLE}
           className="text-muted-foreground hover:text-foreground transition-colors"
@@ -149,11 +150,14 @@ export function DmChatView({ convoId }: DmChatViewProps) {
         >
           <ChevronLeftIcon className="h-[18px] w-[18px]" />
         </Link>
-        <div className="bg-primary/10 flex size-8 shrink-0 items-center justify-center rounded-full">
-          <span className="text-primary text-xs font-bold">
+        <Avatar className="size-8">
+          {cachedConvo?.otherUser.avatar_url && (
+            <AvatarImage src={cachedConvo.otherUser.avatar_url} alt={otherUserName} />
+          )}
+          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
             {(otherUserName[0] ?? "?").toUpperCase()}
-          </span>
-        </div>
+          </AvatarFallback>
+        </Avatar>
         <h1 className="text-foreground font-sans text-sm font-semibold">{otherUserName}</h1>
       </div>
 

@@ -54,7 +54,15 @@
     "bubble_react_aria": "React",
     "bubble_reply_aria": "Reply",
     "bubble_delete_aria": "Delete",
-    "link_fallback": "Link"
+    "link_fallback": "Link",
+    "error_send_message": "Failed to send message",
+    "error_edit_message": "Failed to edit message",
+    "error_react": "Failed to react",
+    "error_delete": "Failed to delete message",
+    "delete_confirm_title": "Delete message",
+    "delete_confirm_description": "Are you sure? This can't be undone.",
+    "delete_confirm_cancel": "Cancel",
+    "delete_confirm_action": "Delete"
   },
   "chat": {
     "placeholder": "Ask about anything...",

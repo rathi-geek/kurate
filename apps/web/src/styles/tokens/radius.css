@@ -6,6 +6,7 @@
   --radius-input: 10px;
   --radius-badge: 6px;
   --radius-pill: 999px;
+  --radius-bubble: 16px;
 }
 
 @theme inline {
@@ -19,4 +20,5 @@
   --radius-input: var(--radius-input);
   --radius-badge: var(--radius-badge);
   --radius-pill: var(--radius-pill);
+  --radius-bubble: var(--radius-bubble);
 }

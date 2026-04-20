@@ -1,423 +1,531 @@
-# Feature Audit: Discovery (Home Page)
-
-## 1. What exists in web today
-
-**Files found:**
-- `apps/web/src/app/_components/home/discovering-tab-view.tsx` — main discovery container (3 sections)
-- `apps/web/src/app/_components/home/discovery-vault-section.tsx` — horizontal vault carousel
-- `apps/web/src/app/_components/home/vault-discovery-card.tsx` — individual vault card (176px wide)
-- `apps/web/src/app/_components/home/discovery-today-section.tsx` — today's top 10 drops by engagement
-- `apps/web/src/app/_components/home/discovery-new-section.tsx` — remaining 20 new drops
-- `apps/web/src/app/_libs/hooks/useDiscoveryFeed.ts` — calls `get_discovery_feed` RPC, splits today/new
-- `apps/web/src/app/_libs/hooks/useDiscoveryVault.ts` — unread vault items 3+ days old
-- `apps/web/src/app/_libs/utils/mapGroupDrop.ts` — `GROUP_POST_SELECT` + `mapRowToGroupDrop`
-
-**Flow summary:**
-1. User clicks DISCOVERING tab → `DiscoveringTabView` mounts
-2. Two hooks fetch in parallel: `useDiscoveryFeed(userId)` and `useDiscoveryVault(userId)`
-3. `useDiscoveryFeed` calls `supabase.rpc("get_discovery_feed").select(GROUP_POST_SELECT)` → maps via `mapRowToGroupDrop` → splits into todayDrops (top 10 by engagement) and newDrops (up to 20)
-4. `useDiscoveryVault` queries `user_logged_items` for unread items > 3 days old
-5. Three sections render vertically: vault carousel → today → new
-6. Each section has a centered divider header (e.g., `── From Your Vault ──`)
-7. Drops render via `FeedShareCard` with `context="discovery"`
-8. Empty state shows when no drops exist
-
----
-
-## 2. Bugs & issues to fix before mobile replicates
-
-🔴 **Must fix:**
-- **`get_discovery_feed` RPC returns raw `SETOF group_posts`** (`02_functions.sql:627`). This forces the web hook to bolt on `.select(GROUP_POST_SELECT)` and `mapRowToGroupDrop` for nested join unwrapping. Every other group RPC (`get_group_feed_page`, `get_group_members`, `get_group_post_comments`) returns flat, pre-joined columns using `_avatar_path()` and `_display_name()` helpers. Discovery should follow the same pattern. **Fix: create `get_discovery_feed_page` RPC with flat return type matching `get_group_feed_page`.**
-
-🟡 **Nice to fix:**
-- `useDiscoveryFeed.ts:10` — module-level `supabase = createClient()` outside the hook. Mobile should import singleton from `@/libs/supabase/client`.
-- Once `get_discovery_feed_page` exists, web's `useDiscoveryFeed` can switch to it and drop the `mapGroupDrop.ts` dependency entirely.
-
----
-
-## 3. Code quality issues
-
-🟣 **Should fix:**
-- `mapGroupDrop.ts` — `GROUP_POST_SELECT` + `mapRowToGroupDrop` exist only because `get_discovery_feed` returns raw rows. With a proper flat RPC, this file becomes unnecessary for discovery. Mobile already has a near-duplicate in `hooks/useRecommendedDrops.ts` (lines 9-86) — both can be eliminated.
-- `useDiscoveryVault.ts:12-18` — `VaultDiscoveryItem` type is defined locally in the web hook. Should live in `@kurate/types`.
-
----
-
-## 4. What should move to /libs
-
-| Source | Destination | Reason |
-|---|---|---|
-| `useDiscoveryVault.ts` → `VaultDiscoveryItem` type | `libs/types/src/vault.ts` | Both platforms need this type |
-
-**No longer needed (after RPC fix):**
-- ~~`mapGroupDrop.ts` → `libs/`~~ — With `get_discovery_feed_page` returning flat columns, the mapping is a simple inline field assignment (same as `useGroupFeed` lines 51-92 in `libs/hooks/src/useGroupFeed.ts`). No separate mapping utility needed.
-
----
-
-## 5. What mobile needs to build fresh
-
-### Database (edit `02_functions.sql`, run in Supabase SQL editor)
-- Replace `get_discovery_feed` with `get_discovery_feed_page(p_user_id, p_limit)` — flat return type matching `get_group_feed_page` columns
-- Run `pnpm db:types` after
-
-### Data Layer (hooks — now in libs/)
-- `libs/hooks/src/useDiscoveryFeed.ts` — calls new RPC via `mapFeedRowToGroupDrop`, splits today/new ✅ DONE
-- `libs/hooks/src/useDiscoveryVault.ts` — queries unread vault items 3+ days old ✅ DONE
-- Both exported from `libs/hooks/src/index.ts` ✅ DONE
-- Web and mobile import from `@kurate/hooks`
-
-### UI Components
-- `apps/mobile-app/components/discovery/SectionDivider.tsx` — centered label with border dividers
-- `apps/mobile-app/components/discovery/VaultDiscoveryCard.tsx` — 176px card (title, domain, days ago)
-- `apps/mobile-app/components/discovery/VaultCarousel.tsx` — horizontal FlashList of vault cards
-- `apps/mobile-app/components/discovery/DiscoveringTabView.tsx` — main container with vertical FlashList
-
-### Integration
-- Modify `apps/mobile-app/app/(tabs)/index.tsx` — render `DiscoveringTabView` when `activeHomeTab === HomeTab.DISCOVERING`
-- Modify `apps/mobile-app/hooks/index.ts` — export new hooks
-
----
-
-# Feature Plan: Discovery (Home Page)
+# Feature Plan: Personal DMs (people/:id)
 Last updated: 2026-04-20
 
-## Order of execution
-1. Database — add `get_discovery_feed_page` to `02_functions.sql` (keep old `get_discovery_feed` so web doesn't break)
-2. Web — switch `useDiscoveryFeed.ts` to use new RPC (safe to deploy, then old RPC is dead code)
-3. Mobile — build discovery hooks + UI
-4. Database cleanup — remove old `get_discovery_feed` from `02_functions.sql` (optional, once confirmed dead)
+## Feature Audit: Personal DMs
 
-## Database — Step 1: Add `get_discovery_feed_page` to `02_functions.sql`
+### 1. What exists in web today
 
-File: `supabase/migrations/02_functions.sql` — add after line 643 (after existing `get_discovery_feed`)
-Read for reference:
-- `supabase/migrations/20260410160000_group_rpc_functions.sql` — `get_group_feed_page` (lines 76-161) is the exact pattern for return type + lateral joins
-- `supabase/migrations/02_functions.sql` — `get_discovery_feed` (lines 624-643) has the WHERE filter logic
+Files found:
+- `apps/web/src/app/(app)/people/page.tsx` — conversations list (has `"use client"` — rule violation)
+- `apps/web/src/app/(app)/people/[convoId]/page.tsx` — chat view (server component, correct)
+- `apps/web/src/app/_components/people/dm-chat-view.tsx` — chat container with infinite scroll
+- `apps/web/src/app/_components/people/dm-composer.tsx` — message input with URL detection
+- `apps/web/src/app/_components/people/message-bubble.tsx` — message with reactions/reply/edit/delete
+- `apps/web/src/app/_components/people/find-user-sheet.tsx` — search users to start DM
+- `apps/web/src/app/_components/sidebar/sidebar-people-section.tsx` — sidebar DM list with prefetch
+- `apps/web/src/app/_components/sidebar/PeoplePanel.tsx` — full conversations panel (cleaner duplicate of page.tsx)
+- `apps/web/src/app/_libs/hooks/useDMConversations.ts` — fetch DM list + realtime
+- `apps/web/src/app/_libs/hooks/useMessages.ts` — infinite message pagination + realtime
+- `apps/web/src/app/_libs/hooks/useUnreadCounts.ts` — unread badges (DMs + groups)
+- `apps/web/src/app/api/people/conversation/route.ts` — create/get DM conversation
+- `libs/types/src/people.ts` — DMConversation, DMMessage, AppProfile
 
-**Keep old `get_discovery_feed` intact (web still uses it). Add new function below it:**
+Flow summary: Sidebar shows conversations via `useDMConversations`. Clicking opens `/people/[convoId]` which renders `DmChatView`. Messages use infinite pagination (30/page) with cursor-based loading. Realtime via Supabase postgres_changes channels. `FindUserSheet` searches profiles and creates conversations via API route. `useUnreadCounts` tracks unread for both DMs (via message_read_receipts table) and groups (via localStorage).
 
-```sql
-CREATE OR REPLACE FUNCTION public.get_discovery_feed_page(
-  p_user_id  UUID,
-  p_limit    INT DEFAULT 60
-)
-RETURNS TABLE (
-  id              UUID,
-  convo_id        UUID,
-  logged_item_id  UUID,
-  shared_by       UUID,
-  note            VARCHAR(500),
-  content         TEXT,
-  shared_at       TIMESTAMPTZ,
-  sharer_id            UUID,
-  sharer_display_name  TEXT,
-  sharer_avatar_path   TEXT,
-  sharer_handle        TEXT,
-  item_url              TEXT,
-  item_title            TEXT,
-  item_preview_image    TEXT,
-  item_content_type     TEXT,
-  item_raw_metadata     JSONB,
-  item_description      TEXT,
-  like_count       BIGINT,
-  did_like         BOOLEAN,
-  must_read_count  BIGINT,
-  did_must_read    BOOLEAN,
-  comment_count    BIGINT,
-  seen_at          TIMESTAMPTZ
-)
-LANGUAGE sql STABLE
-AS $$
-  SELECT
-    dgp.id,
-    dgp.convo_id,
-    dgp.logged_item_id,
-    dgp.shared_by,
-    dgp.note,
-    dgp.content,
-    dgp.shared_at,
-    sp.id              AS sharer_id,
-    public._display_name(sp.first_name, sp.last_name, sp.handle) AS sharer_display_name,
-    public._avatar_path(sp.avatar_id)                             AS sharer_avatar_path,
-    sp.handle          AS sharer_handle,
-    li.url              AS item_url,
-    li.title            AS item_title,
-    li.preview_image_url AS item_preview_image,
-    li.content_type::TEXT AS item_content_type,
-    li.raw_metadata     AS item_raw_metadata,
-    li.description      AS item_description,
-    COALESCE(likes.cnt, 0)       AS like_count,
-    COALESCE(likes.did, FALSE)   AS did_like,
-    COALESCE(mr.cnt, 0)          AS must_read_count,
-    COALESCE(mr.did, FALSE)      AS did_must_read,
-    COALESCE(cc.cnt, 0)          AS comment_count,
-    ls.seen_at
-  FROM (
-    SELECT DISTINCT ON (COALESCE(gp.logged_item_id::text, gp.id::text)) gp.*
-    FROM public.group_posts gp
-    WHERE gp.convo_id IN (
-      SELECT convo_id FROM public.conversation_members WHERE user_id = p_user_id
-    )
-      AND gp.shared_by != p_user_id
-      AND NOT EXISTS (
-        SELECT 1
-        FROM public.group_post_reads r
-        WHERE r.group_post_id = gp.id
-          AND r.user_id = p_user_id
-      )
-    ORDER BY COALESCE(gp.logged_item_id::text, gp.id::text), gp.shared_at DESC
-  ) dgp
-  LEFT JOIN public.profiles sp ON sp.id = dgp.shared_by
-  LEFT JOIN public.logged_items li ON li.id = dgp.logged_item_id
-  LEFT JOIN public.group_post_last_seen ls
-    ON ls.group_post_id = dgp.id AND ls.user_id = p_user_id
-  LEFT JOIN LATERAL (
-    SELECT COUNT(*)::BIGINT AS cnt, BOOL_OR(gl.user_id = p_user_id) AS did
-    FROM public.group_posts_likes gl WHERE gl.group_post_id = dgp.id
-  ) likes ON TRUE
-  LEFT JOIN LATERAL (
-    SELECT COUNT(*)::BIGINT AS cnt, BOOL_OR(gm.user_id = p_user_id) AS did
-    FROM public.group_posts_must_reads gm WHERE gm.group_post_id = dgp.id
-  ) mr ON TRUE
-  LEFT JOIN LATERAL (
-    SELECT COUNT(*)::BIGINT AS cnt
-    FROM public.group_posts_comments gc WHERE gc.group_post_id = dgp.id
-  ) cc ON TRUE
-  ORDER BY dgp.shared_at DESC
-  LIMIT p_limit
-$$;
-```
+### 2. Bugs & issues to fix before mobile replicates
 
-**Action for user:** Run this SQL in Supabase SQL editor, then run `pnpm db:types` to regenerate types.
+🔴 Must fix:
+- **B1. `people/page.tsx` is `"use client"`** — CLAUDE.md: page.tsx must be server component. `PeoplePanel.tsx` already exists as a cleaner client component. Fix: make page.tsx a server component, create `people-page-client.tsx` wrapping PeoplePanel with `useAuth()` + `useDMConversations()`.
+- **B2. `message-bubble.tsx:250` — `new URL()` can throw** on malformed URLs, crashing entire message list. Fix: wrap in try-catch, fallback to raw URL.
+- **B3. No error handling on send/react/delete** — `dm-composer.tsx` clears text even if Supabase insert fails silently. `message-bubble.tsx` `handleReact`/`handleDelete` are fire-and-forget. Fix: check `.error` on all Supabase calls, show toast via `sonner`.
+- **B4. Dead mock code** — `person/PersonChatView.tsx` uses `MOCK_CONTACTS`, hardcoded `@vivek`. Entirely superseded by real DM implementation. Fix: delete dead files.
+- **B5. `useUnreadCounts` doesn't scale** — fetches ALL read receipts + ALL messages for ALL conversations on every page load/tab focus. Fix: add `last_read_at` column to `conversation_members` in `01_initial_schema.sql`, add RPC functions in `02_functions.sql`, run SQL in Supabase editor.
+
+🟡 Nice to fix:
+- **B6. `people/page.tsx` duplicates `formatRelativeTime`** — already exported from `@kurate/utils`. `PeoplePanel.tsx` already uses it.
+- **B7. `people/page.tsx` uses `supabase.auth.getUser()` instead of `useAuth()`** — fixed when delegating to PeoplePanel.
+
+### 3. Code quality issues
+
+🟣 Should fix:
+- **Q1. `bg-white` instead of `bg-card`** — `people/page.tsx:79`, `dm-chat-view.tsx:144`, `dm-composer.tsx:191`, `message-bubble.tsx:109,166`, `PeoplePanel.tsx:60`. Leave `bg-white/10`, `bg-white/20` opacity variants on own-message styling.
+- **Q2. `rounded-2xl`/`rounded-xl` instead of radius tokens** — `message-bubble.tsx:189` bubble → add `--radius-bubble: 16px` token. `message-bubble.tsx:166` picker → `rounded-card`. `dm-composer.tsx:262` textarea → `rounded-pill`. `dm-composer.tsx:230`, `message-bubble.tsx:221` link cards → `rounded-card`.
+- **Q3. Avatar images never displayed** — all locations show initials only despite `avatar_url` data being available. Use `Avatar`/`AvatarImage`/`AvatarFallback` from `@/components/ui/avatar`.
+- **Q4. No delete confirmation** — `message-bubble.tsx` deletes immediately. Add `AlertDialog` from `@/components/ui/alert-dialog`.
+- **Q5. `useDMConversations` realtime unfiltered** — listens to ALL message inserts system-wide. Add client-side filter: skip if `sender_id === userId`.
+- **Q6. `next/link` instead of `@/i18n` Link** — `@/i18n` does NOT export Link yet, 22+ files use `next/link`. Skip for now — address codebase-wide later.
+
+### 4. What should move to /libs
+- `hooks/useDMConversations.ts` → `libs/hooks/src/useDMConversations.ts` — add `supabase: SupabaseClient<Database>` param
+- `hooks/useMessages.ts` → `libs/hooks/src/useMessages.ts` — add `supabase` param
+- DM part of `hooks/useUnreadCounts.ts` → `libs/hooks/src/useDMUnreadCounts.ts`
+- Pattern reference: `libs/hooks/src/useComments.ts`, `libs/hooks/src/useGroupFeed.ts`
+
+### 5. What mobile needs to build fresh
+
+New files (exact paths):
+- `apps/mobile-app/app/(tabs)/people.tsx` — People tab screen
+- `apps/mobile-app/app/people/[convoId].tsx` — Chat detail screen (deep link)
+- `apps/mobile-app/components/people/conversations-list.tsx` — FlashList of conversations
+- `apps/mobile-app/components/people/conversation-row.tsx` — Single conversation row
+- `apps/mobile-app/components/people/dm-chat-view.tsx` — Chat container (inverted FlashList + composer)
+- `apps/mobile-app/components/people/message-bubble.tsx` — Message bubble (long-press actions)
+- `apps/mobile-app/components/people/dm-composer.tsx` — Text input + send button
+- `apps/mobile-app/components/people/find-user-sheet.tsx` — BottomSheetModal user search
+- `apps/mobile-app/components/people/dm-avatar.tsx` — FastImage avatar with initials fallback
+- `apps/mobile-app/hooks/useDMConversations.ts` — Thin wrapper passing mobile supabase client
+- `apps/mobile-app/hooks/useMessages.ts` — Thin wrapper passing mobile supabase client
+- `apps/mobile-app/hooks/useDMUnreadCounts.ts` — Thin wrapper passing mobile supabase client
+
+Files to modify:
+- `apps/mobile-app/app/(tabs)/_layout.tsx` — Add People tab
+- `apps/mobile-app/hooks/index.ts` — Export new hooks
+- `libs/locales/src/en.json` — Add `dms.*` i18n keys
+
+All dependencies already installed: `@shopify/flash-list`, `react-native-fast-image`, `@gorhom/bottom-sheet`, `react-native-reanimated`, `react-native-keyboard-controller`, `lucide-react-native`
+
+---
+
+## Order of execution (always follow this sequence)
+1. Web — fix bugs
+2. Web — code quality
+3. Web — move to /libs
+4. Mobile — build feature
+
+---
 
 ## Web — Step by Step
 
-### Step 1.5: Switch `useDiscoveryFeed.ts` to new RPC
+### Step 1: Fix bugs — Convert people/page.tsx to server component (B1 + B6 + B7)
+File: `apps/web/src/app/(app)/people/page.tsx`
+- Issue: `"use client"` on page.tsx violates CLAUDE.md rule
+- Fix:
+  1. Remove `"use client"` and all client imports from `people/page.tsx`
+  2. Create `apps/web/src/app/(app)/people/people-page-client.tsx` — uses `useAuth()` for userId, `useDMConversations(userId)` for data, renders `PeoplePanel`
+  3. Server `page.tsx` becomes: `import { PeoplePageClient } from "./people-page-client"; export default function PeoplePage() { return <PeoplePageClient />; }`
+  4. Delete local `formatRelativeTime` (PeoplePanel already uses `@kurate/utils`)
+  5. Delete `supabase.auth.getUser()` pattern (PeoplePageClient uses `useAuth()`)
+- Pattern reference: `apps/web/src/app/(app)/groups/page.tsx`
 
-File: `apps/web/src/app/_libs/hooks/useDiscoveryFeed.ts`
-Read for reference:
-- `libs/hooks/src/useGroupFeed.ts` — lines 51-92 (`fetchGroupFeedPage`) — flat field → GroupDrop mapping pattern
+### Step 2: Fix bugs — Unsafe URL parsing (B2)
+File: `apps/web/src/app/_components/people/message-bubble.tsx` (line 250)
+- Issue: `new URL(message.item.url)` throws on malformed URLs
+- Fix: wrap in try-catch, fallback to raw URL string
+  ```tsx
+  let hostname = message.item.url;
+  try { hostname = new URL(message.item.url).hostname.replace("www.", ""); } catch { /* use raw url */ }
+  ```
 
-**What changes:**
-- Remove import of `GROUP_POST_SELECT` and `mapRowToGroupDrop` from `mapGroupDrop.ts`
-- Change RPC call from `get_discovery_feed` → `get_discovery_feed_page`
-- Remove `.select(GROUP_POST_SELECT)` chain (RPC now returns flat columns directly)
-- Replace `mapRowToGroupDrop` mapping with simple flat-field assignment (same as `fetchGroupFeedPage` lines 51-92)
-- Keep the `scoreDrops`, today/new splitting logic unchanged
+### Step 3: Fix bugs — Error handling on mutations (B3)
+Files:
+- `apps/web/src/app/_components/people/dm-composer.tsx`
+  - In `handleSend`: check `.error` on both `messages.insert()` calls (text + logged_item paths). If error, show `toast.error(t("send_error"))`, do NOT clear `text` state.
+  - In edit mode: check `.error` on `.update()`. If error, show toast, don't cancel edit.
+- `apps/web/src/app/_components/people/message-bubble.tsx`
+  - In `handleReact`: check `.error` on `.delete()` and `.insert()`. Show toast on failure.
+  - In `handleDelete`: check `.error` on `.delete()`. Show toast on failure.
+- Import `toast` from `sonner` in both files.
 
-**Before:**
-```ts
-const { data, error } = await supabase
-  .rpc("get_discovery_feed", { p_user_id: userId })
-  .select(GROUP_POST_SELECT)
-  .order("shared_at", { ascending: false })
-  .limit(60);
-const all = (data ?? []).map((row) =>
-  mapRowToGroupDrop(row as ..., userId),
-);
+### Step 4: Fix bugs — Delete dead code (B4)
+Delete these files:
+- `apps/web/src/app/_components/person/PersonChatView.tsx`
+- `apps/web/src/app/_components/person/SharedContentStrip.tsx`
+- `apps/web/src/app/_libs/contacts.ts`
+- `apps/web/src/app/_mocks/mock-dm-messages.ts`
+- `apps/web/src/app/_mocks/mock-person-content.ts`
+Do NOT delete `_mocks/mock-thread-data.ts` or `_mocks/mock-data.ts` (have other consumers).
+
+### Step 5: Fix bugs — useUnreadCounts scalability (B5)
+
+**Schema change** — update `supabase/migrations/01_initial_schema.sql`:
+Add `last_read_at TIMESTAMPTZ` column to `conversation_members` table definition (after `updated_at`).
+
+**Functions** — update `supabase/migrations/02_functions.sql`, add these functions:
+
+```sql
+-- Get unread DM counts for a user
+CREATE OR REPLACE FUNCTION public.get_dm_unread_counts(p_user_id UUID)
+RETURNS TABLE(convo_id UUID, unread_count BIGINT)
+LANGUAGE sql STABLE SECURITY DEFINER
+AS $$
+  SELECT cm.convo_id, COUNT(m.id) AS unread_count
+  FROM public.conversation_members cm
+  JOIN public.conversations c ON c.id = cm.convo_id AND c.is_group = false
+  JOIN public.messages m ON m.convo_id = cm.convo_id
+    AND m.sender_id != p_user_id
+    AND m.created_at > COALESCE(cm.last_read_at, '1970-01-01'::timestamptz)
+  WHERE cm.user_id = p_user_id
+  GROUP BY cm.convo_id
+  HAVING COUNT(m.id) > 0;
+$$;
+
+-- Mark a conversation as read
+CREATE OR REPLACE FUNCTION public.mark_conversation_read(p_user_id UUID, p_convo_id UUID)
+RETURNS VOID
+LANGUAGE sql SECURITY DEFINER
+AS $$
+  UPDATE public.conversation_members
+  SET last_read_at = now()
+  WHERE user_id = p_user_id AND convo_id = p_convo_id;
+$$;
 ```
 
-**After:**
-```ts
-const { data, error } = await supabase
-  .rpc("get_discovery_feed_page", { p_user_id: userId, p_limit: 60 });
-const all = (data ?? []).map((row) => ({
-  id: row.id,
-  convo_id: row.convo_id,
-  logged_item_id: row.logged_item_id,
-  shared_by: row.shared_by,
-  note: row.note,
-  content: row.content ?? null,
-  shared_at: row.shared_at,
-  sharer: {
-    id: row.sharer_id ?? row.shared_by,
-    display_name: row.sharer_display_name ?? null,
-    avatar_path: row.sharer_avatar_path,
-    handle: row.sharer_handle ?? null,
-  },
-  item: row.item_url != null ? {
-    url: row.item_url ?? "",
-    title: row.item_title ?? null,
-    preview_image_url: row.item_preview_image ?? null,
-    content_type: (row.item_content_type ?? "article") as ContentType,
-    raw_metadata: row.item_raw_metadata ?? null,
-    description: row.item_description ?? null,
-  } : null,
-  engagement: {
-    like: { count: Number(row.like_count), didReact: row.did_like ?? false, reactors: [] },
-    mustRead: { count: Number(row.must_read_count), didReact: row.did_must_read ?? false, reactors: [] },
-    readBy: { count: 0, didReact: false, reactors: [] },
-  },
-  commentCount: Number(row.comment_count),
-  seenAt: row.seen_at ?? null,
-  latestCommentAt: null,
-  latestComment: null,
-} satisfies GroupDrop));
+**SQL for user to run in Supabase SQL editor:**
+```sql
+-- Add column
+ALTER TABLE public.conversation_members ADD COLUMN IF NOT EXISTS last_read_at TIMESTAMPTZ;
+
+-- Backfill existing members so they don't see all history as unread
+UPDATE public.conversation_members SET last_read_at = now() WHERE last_read_at IS NULL;
+
+-- Create RPC: get unread DM counts
+CREATE OR REPLACE FUNCTION public.get_dm_unread_counts(p_user_id UUID)
+RETURNS TABLE(convo_id UUID, unread_count BIGINT)
+LANGUAGE sql STABLE SECURITY DEFINER
+AS $$
+  SELECT cm.convo_id, COUNT(m.id) AS unread_count
+  FROM public.conversation_members cm
+  JOIN public.conversations c ON c.id = cm.convo_id AND c.is_group = false
+  JOIN public.messages m ON m.convo_id = cm.convo_id
+    AND m.sender_id != p_user_id
+    AND m.created_at > COALESCE(cm.last_read_at, '1970-01-01'::timestamptz)
+  WHERE cm.user_id = p_user_id
+  GROUP BY cm.convo_id
+  HAVING COUNT(m.id) > 0;
+$$;
+
+-- Create RPC: mark conversation as read
+CREATE OR REPLACE FUNCTION public.mark_conversation_read(p_user_id UUID, p_convo_id UUID)
+RETURNS VOID
+LANGUAGE sql SECURITY DEFINER
+AS $$
+  UPDATE public.conversation_members
+  SET last_read_at = now()
+  WHERE user_id = p_user_id AND convo_id = p_convo_id;
+$$;
 ```
 
-**After this change:**
-- `mapGroupDrop.ts` is no longer imported by `useDiscoveryFeed.ts`
-- Check if `mapGroupDrop.ts` is used anywhere else → it's NOT (only consumer was discovery). Can be deleted or left for now.
-- Old `get_discovery_feed` RPC is now dead code in the DB — can be removed from `02_functions.sql` in cleanup step.
+**After running SQL:** run `pnpm db:types`
+
+**Refactor** `apps/web/src/app/_libs/hooks/useUnreadCounts.ts`:
+- Replace `fetchCounts` DM logic: call `supabase.rpc('get_dm_unread_counts', { p_user_id: userId })` → returns `{convo_id, unread_count}[]` directly
+- Replace `markRead` for DMs: call `supabase.rpc('mark_conversation_read', { p_user_id: userId, p_convo_id: convoId })`
+- Keep group post unread logic unchanged (localStorage-based)
+- Keep realtime subscriptions unchanged (they increment local state for live updates)
+
+### Step 6: Code quality — Design tokens (Q1 + Q2)
+Files: `dm-chat-view.tsx`, `dm-composer.tsx`, `message-bubble.tsx`, `PeoplePanel.tsx`
+- Replace `bg-white` → `bg-card` (NOT `bg-white/10`, `bg-white/20` opacity variants in own-message styling)
+- Add `--radius-bubble: 16px;` to `apps/web/src/styles/tokens/radius.css` and corresponding Tailwind utility
+- Replace `rounded-2xl` on message bubbles → `rounded-bubble`
+- Replace `rounded-2xl` on emoji picker → `rounded-card`
+- Replace `rounded-2xl` on composer textarea → `rounded-pill`
+- Replace `rounded-xl` on link cards → `rounded-card`
+
+### Step 7: Code quality — Avatar images (Q3)
+Files: `people-page-client.tsx`, `dm-chat-view.tsx`, `sidebar-people-section.tsx`, `PeoplePanel.tsx`, `find-user-sheet.tsx`
+- Where initials are shown, add conditional avatar image using `Avatar`/`AvatarImage`/`AvatarFallback` from `@/components/ui/avatar`
+- Show image when `avatar_url` is truthy, fallback to initials
+
+### Step 8: Code quality — Delete confirmation (Q4)
+File: `apps/web/src/app/_components/people/message-bubble.tsx`
+- Import `AlertDialog` from `@/components/ui/alert-dialog`
+- Add `deleteConfirmOpen` state
+- Delete button opens dialog instead of calling `handleDelete` directly
+- Dialog confirm calls `handleDelete`
+- Use i18n keys for dialog text
+
+### Step 9: Code quality — Filter realtime (Q5)
+File: `apps/web/src/app/_libs/hooks/useDMConversations.ts`
+- In realtime callback (~line 116): add `const msg = payload.new as { sender_id: string }; if (msg.sender_id === userId) return;` before invalidating
+
+### Step 10: Move to libs — useDMConversations
+- Source: `apps/web/src/app/_libs/hooks/useDMConversations.ts`
+- Dest: `libs/hooks/src/useDMConversations.ts`
+- Change: replace `createClient()` import with `supabase: SupabaseClient<Database>` parameter on both `fetchDMConversations` and `useDMConversations`
+- Export from `libs/hooks/src/index.ts`
+- Update web imports to pass supabase client
+
+### Step 11: Move to libs — useMessages
+- Source: `apps/web/src/app/_libs/hooks/useMessages.ts`
+- Dest: `libs/hooks/src/useMessages.ts`
+- Change: add `supabase: SupabaseClient<Database>` parameter
+- Export from `libs/hooks/src/index.ts`
+- Update web imports in: `dm-chat-view.tsx`, `sidebar-people-section.tsx`
+
+### Step 12: Move to libs — DM unread counts
+- Extract DM-specific logic from `useUnreadCounts.ts` into `libs/hooks/src/useDMUnreadCounts.ts`
+- Accept `supabase` param, use the RPC functions
+- Keep group localStorage logic in web-only hook
+- Web's `useUnreadCounts` becomes composition: `useDMUnreadCounts` (from libs) + local group logic
+- Export from `libs/hooks/src/index.ts`
+- Update all web imports
 
 ## Mobile — Step by Step
 
-### Steps 2-4: Discovery hooks — ✅ DONE (moved to libs)
-- `libs/hooks/src/useDiscoveryFeed.ts` — uses `mapFeedRowToGroupDrop` from `mapFeedRow.ts`, splits today/new
-- `libs/hooks/src/useDiscoveryVault.ts` — exports `VaultDiscoveryItem` type
-- Both exported from `libs/hooks/src/index.ts`
-- Both accept `supabase: SupabaseClient<Database>` as first param (same pattern as `useGroupFeed`)
-- Web and mobile import: `import { useDiscoveryFeed, useDiscoveryVault } from '@kurate/hooks'`
-
-### Step 5: Create SectionDivider component
-New file: `apps/mobile-app/components/discovery/SectionDivider.tsx`
+### Step 13: Add People tab to tab navigator
+File: `apps/mobile-app/app/(tabs)/_layout.tsx`
 Read for reference:
-- `apps/web/src/app/_components/home/discovery-vault-section.tsx` — lines 39-43 (divider pattern)
+- `apps/mobile-app/app/(tabs)/_layout.tsx` — existing tab definitions (groups, notifications, profile)
 Key design decisions from web:
-- Centered text with `h-px bg-border flex-1` dividers on each side
-- Text: `text-xs font-medium text-muted-foreground`
-- Gap: `gap-3`
+- People tab sits between Groups and Notifications in nav order
+- Uses MessageCircle icon from lucide-react-native
+- Shows unread badge (same NotificationBadge pattern as notifications tab)
 Build instructions:
-- Props: `{ label: string }`
-- `HStack` with `items-center gap-3 px-4 py-2`
-- Left `View` with `h-px flex-1 bg-border`
-- Center `Text` with `font-sans text-xs font-medium text-muted-foreground`
-- Right `View` with `h-px flex-1 bg-border`
+- Import `MessageCircle` from `lucide-react-native`
+- Add `<Tabs.Screen name="people" ...>` between groups and notifications tabs
+- Tab options: `title: t("tabs.people")`, tabBarIcon renders MessageCircle with NotificationBadge overlay
+- Badge count from `useDMUnreadCounts(supabase, userId).totalUnread`
 
-### Step 6: Create VaultDiscoveryCard component
-New file: `apps/mobile-app/components/discovery/VaultDiscoveryCard.tsx`
+### Step 14: Create DM avatar component
+New file: `apps/mobile-app/components/people/dm-avatar.tsx`
 Read for reference:
-- `apps/web/src/app/_components/home/vault-discovery-card.tsx` — all 54 lines
+- `apps/mobile-app/components/ui/avatar/index.tsx` — existing Avatar component
+- `apps/web/src/app/_components/people/dm-chat-view.tsx` — avatar initials pattern (line 152-155)
 Key design decisions from web:
-- Card: 176px wide (w-44), rounded-xl, border border-border bg-card p-3, min-h-24
-- Title: numberOfLines={2}, text-sm font-medium text-foreground
-- Domain: truncate, text-xs text-muted-foreground
-- Days ago: text-xs text-muted-foreground/70
+- Circle with bg-primary/10, text-primary initials as fallback
+- Sizes: 40px (conversation list), 32px (chat header), 32px (find user results)
 Build instructions:
-- Props: `{ title: string | null; url: string; createdAt: string }`
-- Domain extraction: `new URL(url).hostname.replace(/^www\./, "")`
-- Days: `Math.floor((Date.now() - Date.parse(createdAt)) / 86400000)`
-- `Pressable` wrapping card, `onPress` → `Linking.openURL(url)`
-- `t('discovery.days_ago', { count: days })`
+- Props: `{ avatarUrl: string | null; displayName: string | null; handle: string; size?: number }`
+- If `avatarUrl` truthy → `FastImage` rounded-full with given size
+- Fallback → `View` with `bg-primary/10 rounded-full items-center justify-center`, `Text` with initial uppercase
+- Extract initial from `displayName?.[0] ?? handle?.[0] ?? "?"`
 
-### Step 7: Create VaultCarousel component
-New file: `apps/mobile-app/components/discovery/VaultCarousel.tsx`
+### Step 15: Create conversation row component
+New file: `apps/mobile-app/components/people/conversation-row.tsx`
 Read for reference:
-- `apps/web/src/app/_components/home/discovery-vault-section.tsx` — horizontal scroll (lines 44-55)
+- `apps/web/src/app/_components/sidebar/PeoplePanel.tsx` — conversation row layout (lines 56-89)
+- `apps/mobile-app/components/groups/feed-view.tsx` — Pressable row pattern
 Key design decisions from web:
-- Horizontal scroll, gap-3 between cards, hidden scrollbar
+- Row: avatar (40px) + name (semibold 14px) + truncated last message (12px muted) + relative timestamp (10px)
+- Unread: bold name + badge dot on right
+- Active state: bg-accent
 Build instructions:
-- Props: `{ items: VaultDiscoveryItem[] }`
-- Horizontal `FlashList`, `estimatedItemSize={176}`
-- `contentContainerStyle` with `paddingHorizontal: 16`
-- `ItemSeparatorComponent` with 12px gap
-- `renderItem` → `<VaultDiscoveryCard />`
-- `showsHorizontalScrollIndicator={false}`
+- Props: `{ conversation: DMConversation; unreadCount: number; onPress: () => void }`
+- `Pressable` with `className="flex-row items-center gap-3 px-4 py-3 active:bg-accent"`
+- Left: `<DmAvatar size={40} ... />`
+- Center: VStack with name (Text semibold, numberOfLines={1}) + lastMessage (Text muted, numberOfLines={1})
+- Right: VStack with relative timestamp (Text 10px muted) + unread badge dot if count > 0
+- Use `formatRelativeTime` from `@kurate/utils` for timestamp
 
-### Step 8: Create DiscoveringTabView (main container)
-New file: `apps/mobile-app/components/discovery/DiscoveringTabView.tsx`
+### Step 16: Create conversations list
+New file: `apps/mobile-app/components/people/conversations-list.tsx`
 Read for reference:
-- `apps/web/src/app/_components/home/discovering-tab-view.tsx` — all 71 lines
-- `apps/web/src/app/_components/home/discovery-today-section.tsx` — section pattern
-- `apps/web/src/app/_components/home/discovery-new-section.tsx` — section pattern
-Read existing mobile:
-- `apps/mobile-app/components/groups/feed-drop-card.tsx` — reuse for drop rendering
-- `apps/mobile-app/components/ui/skeleton/index.tsx` — loading skeletons
+- `apps/web/src/app/_components/sidebar/PeoplePanel.tsx` — list structure, empty state, loading
+- `apps/mobile-app/components/groups/feed-view.tsx` — FlashList pattern with estimatedItemSize
 Key design decisions from web:
-- Three sections: vault → today → new
-- Today header: `"Today · Apr 16"` using `formatDateLabel()` from `@kurate/utils`
-- New header: `"New Since Last Visit"`
-- Vault header: `"From Your Vault"`
-- Empty state: centered title + subtitle
-- Loading: 3 skeleton cards
+- Empty state: centered text + "Start a conversation" CTA button
+- Loading: 3 skeleton rows (h-16 rounded-xl)
+- Header: "Messages" title + "+ New Message" button
 Build instructions:
+- Props: `{ userId: string }`
+- Use `useDMConversations(supabase, userId)` from local wrapper hook
+- Use `useDMUnreadCounts(supabase, userId)` for badge counts
+- `FlashList` with `estimatedItemSize={72}`, `keyExtractor={(item) => item.id}`
+- `renderItem` → `<ConversationRow onPress={() => router.push(\`/people/\${item.id}\`)} />`
+- Header component: HStack with title + new message Pressable
+- New message button opens FindUserSheet (Step 20)
+- `ListEmptyComponent` for empty state
+- Loading: 3 `Skeleton` rects
+
+### Step 17: Create People tab screen
+New file: `apps/mobile-app/app/(tabs)/people.tsx`
+Read for reference:
+- `apps/mobile-app/app/(tabs)/index.tsx` — screen structure pattern (SafeAreaView, auth check)
+Key design decisions from web:
+- Full page with conversations list, no sub-tabs
+Build instructions:
+- `SafeAreaView` wrapper with `className="flex-1 bg-background"`
+- Get `userId` from `useAuthStore(state => state.userId)`
+- Render `<ConversationsList userId={userId} />`
+
+### Step 18: Create message bubble
+New file: `apps/mobile-app/components/people/message-bubble.tsx`
+Read for reference:
+- `apps/web/src/app/_components/people/message-bubble.tsx` — bubble layout, reactions, link card, quote reply
+- `apps/mobile-app/components/groups/comment-bubble.tsx` — own-vs-other bubble pattern, long-press
+Key design decisions from web:
+- Own messages: right-aligned, bg-primary text-primary-foreground, rounded-2xl rounded-br-sm
+- Other messages: left-aligned, bg-surface text-foreground border border-border, rounded-2xl rounded-bl-sm
+- Continuation messages (same sender): reduced top padding (pt-0.5 vs py-1)
+- Quoted parent: border-l-2 with sender name + truncated text
+- Link card: image (h-32) + title + description + hostname, rounded-xl
+- Reactions bar: emoji pills below bubble with count
+- Timestamp: 9px inside bubble bottom-right (HH:MM format)
+Build instructions:
+- Props: `{ message: DMMessage; currentUserId: string; convoId: string; allMessages: DMMessage[]; onReply: (msg) => void; onEdit: (msg) => void; isContinuation: boolean }`
+- Long-press → show action sheet (react, reply, edit if own text, delete if own) using `Alert.alert` with buttons or a custom bottom sheet
+- Reaction toggle: call supabase `.insert()` or `.delete()` on `message_reactions`
+- Delete: show confirmation alert before calling supabase `.delete()` on `messages`
+- Link card: `Pressable` wrapping `FastImage` + text, `onPress` → `Linking.openURL(url)`
+- Hostname: wrap `new URL()` in try-catch (same fix as web Step 2)
+
+### Step 19: Create DM composer
+New file: `apps/mobile-app/components/people/dm-composer.tsx`
+Read for reference:
+- `apps/web/src/app/_components/people/dm-composer.tsx` — send logic, URL detection, reply/edit banners
+- `apps/mobile-app/components/groups/reply-input.tsx` — TextInput + send button pattern
+- `apps/mobile-app/components/groups/drop-composer.tsx` — URL detection + metadata extraction pattern
+Key design decisions from web:
+- Textarea auto-grows up to max-h-32
+- URL detection via regex, auto-extract metadata with preview card
+- Reply banner: primary accent bar + sender name + truncated text + close button
+- Edit banner: similar, prefills text
+- Enter to send (not applicable on mobile — use send button only)
+- Send disabled when empty + no metadata
+Build instructions:
+- Props: `{ convoId: string; currentUserId: string; replyTo?: ReplyContext | null; onCancelReply?: () => void; editingMessage?: EditContext | null; onCancelEdit?: () => void; onMessageSent?: () => void }`
+- `KeyboardAvoidingView` or use `react-native-keyboard-controller` `KeyboardStickyView`
+- HStack: TextInput (flex-1, multiline, maxHeight 128) + send Pressable (rounded-full bg-primary, SendIcon)
+- URL detection: same `URL_REGEX` pattern, debounced 150ms, call `useExtractMetadata` from `@kurate/hooks`
+- Reply/edit banners above input with close button
+- Send: insert message via supabase, check `.error`, invalidate queries
+- After send: clear text, call `onMessageSent`, `onCancelReply`
+
+### Step 20: Create find user bottom sheet
+New file: `apps/mobile-app/components/people/find-user-sheet.tsx`
+Read for reference:
+- `apps/web/src/app/_components/people/find-user-sheet.tsx` — search logic, profile queries, create conversation
+- `apps/mobile-app/components/groups/comment-thread-sheet.tsx` — BottomSheetModal pattern
+Key design decisions from web:
+- Search input with debounced 300ms query
+- Primary query: handle/first_name/last_name ilike
+- Secondary query: multi-word (first word → first_name, last word → last_name)
+- Deduplicate by user id
+- Show avatar + display name + @handle
+- On select: POST /api/people/conversation, navigate to chat
+Build instructions:
+- Props: `{ open: boolean; onClose: () => void; currentUserId: string }`
+- `BottomSheetModal` with `snapPoints={['60%']}`
+- `BottomSheetTextInput` for search (autoFocus)
+- `FlashList` for results with `estimatedItemSize={56}`
+- Each result: `Pressable` → DmAvatar + name + handle
+- On select: fetch or create conversation via supabase (same logic as web API route but client-side), navigate with `router.push(\`/people/\${convoId}\`)`
+- For client-side conversation creation: replicate the 3-step check from `api/people/conversation/route.ts` (check existing shared DM conversations, or create new)
+
+### Step 21: Create chat detail screen
+New file: `apps/mobile-app/app/people/[convoId].tsx`
+Read for reference:
+- `apps/web/src/app/_components/people/dm-chat-view.tsx` — chat container, scroll handling, reply/edit state
+- `apps/mobile-app/app/(tabs)/groups/[id].tsx` — dynamic route pattern, useLocalSearchParams
+- `apps/mobile-app/components/groups/comment-thread-sheet.tsx` — inverted FlashList pattern
+Key design decisions from web:
+- Header: back chevron + avatar + other user name
+- Messages: infinite scroll (load older on top), auto-scroll to bottom on new message
+- Composer at bottom with reply/edit context
+- markRead on mount and on new messages
+Build instructions:
+- Get `convoId` from `useLocalSearchParams<{ convoId: string }>()`
 - Get `userId` from `useAuthStore`
-- Call `useDiscoveryFeed(userId)` and `useDiscoveryVault(userId)`
-- Build flat heterogeneous array for FlashList:
-  ```
-  type DiscoveryListItem =
-    | { type: 'vault-header'; key: string }
-    | { type: 'vault-carousel'; key: string; items: VaultDiscoveryItem[] }
-    | { type: 'section-header'; key: string; label: string }
-    | { type: 'drop'; key: string; drop: GroupDrop }
-    | { type: 'empty'; key: string }
-  ```
-- Conditionally include vault section (only if items exist)
-- Conditionally include today section (only if todayDrops exist)
-- Conditionally include new section (only if newDrops exist)
-- Empty item if both drop arrays are empty and not loading
-- `getItemType={(item) => item.type}` for FlashList recycling
-- `estimatedItemSize={200}`
-- `renderItem` switch: vault-header → SectionDivider, vault-carousel → VaultCarousel, section-header → SectionDivider, drop → FeedDropCard, empty → empty state VStack
-- FeedDropCard: `onDelete` as async no-op (discovery excludes own posts via SQL)
-- Loading: 3 `Skeleton` rectangles (h-48 rounded-xl)
-- Pull-to-refresh: `refreshing` + `onRefresh` calling both refetch functions
-
-### Step 9: Wire into home screen
-File: `apps/mobile-app/app/(tabs)/index.tsx`
-Build instructions:
-- Import `DiscoveringTabView` from `@/components/discovery/DiscoveringTabView`
-- After line 187 (closing `</KeyboardAvoidingView>` of VAULT block), add:
-  ```tsx
-  {activeHomeTab === HomeTab.DISCOVERING && <DiscoveringTabView />}
-  ```
+- Use `useMessages(supabase, convoId)` for messages + pagination
+- Use `useDMConversations(supabase, userId)` cache or fallback query for other user name
+- Use `useDMUnreadCounts(supabase, userId).markRead(convoId)` on mount
+- State: `replyingTo`, `editingMessage`
+- Header: `Stack.Screen options={{ headerTitle: otherUserName }}` or custom header with back + DmAvatar + name
+- `FlashList` with `inverted={true}` for message list (newest at bottom)
+  - Reverse message array so FlashList inverted shows correct order
+  - `onEndReached` → `fetchNextPage()` (loads older messages)
+  - `estimatedItemSize={80}`
+- `renderItem` → `<MessageBubble ... onReply={handleReply} onEdit={handleEdit} />`
+- Bottom: `<DmComposer replyTo={replyingTo} editingMessage={editingMessage} ... />`
 
 ---
 
 ## Next Commands
 
-**Step 1 — User action (run in Supabase SQL editor):**
-The full SQL for `get_discovery_feed_page` is in Database Step 1 above. Run it in Supabase SQL editor, then run `pnpm db:types` locally to regenerate types.
-
-**Step 2 — Web agent:**
+**Web agent (fix bugs — Steps 1-5):**
 "Read memory/CODEBASE_MAP.md and memory/FEATURE_PLAN.md.
+Follow Web Steps 1-5 exactly as written in the plan.
 
-The discovery hooks have been moved to `@kurate/hooks`. Replace web's local `useDiscoveryFeed` with the shared version.
+Files to fix:
+- apps/web/src/app/(app)/people/page.tsx
+- apps/web/src/app/_components/people/dm-composer.tsx
+- apps/web/src/app/_components/people/message-bubble.tsx
+- apps/web/src/app/_libs/hooks/useDMConversations.ts
+- apps/web/src/app/_libs/hooks/useUnreadCounts.ts
+- supabase/migrations/01_initial_schema.sql (add last_read_at column to conversation_members)
+- supabase/migrations/02_functions.sql (add get_dm_unread_counts + mark_conversation_read)
 
-Files to read:
-- `apps/web/src/app/_libs/hooks/useDiscoveryFeed.ts` — file to replace (all 54 lines)
-- `libs/hooks/src/useDiscoveryFeed.ts` — new shared hook
-- `apps/web/src/app/_components/home/discovering-tab-view.tsx` — consumer of the hook
+Context files (read for understanding only):
+- apps/web/src/app/(app)/groups/page.tsx — pattern for server component page
+- apps/web/src/app/_libs/auth-context.tsx — useAuth hook
+- apps/web/src/app/_components/sidebar/PeoplePanel.tsx — reuse as page client content
 
-Changes:
-1. Delete `apps/web/src/app/_libs/hooks/useDiscoveryFeed.ts` (replaced by shared lib)
-2. Delete `apps/web/src/app/_libs/hooks/useDiscoveryVault.ts` (replaced by shared lib)
-3. Update `discovering-tab-view.tsx`: import `useDiscoveryFeed` from `@kurate/hooks` instead of local path, pass supabase client as first arg
-4. Update `discovery-vault-section.tsx`: import `useDiscoveryVault` from `@kurate/hooks` instead of local path, pass supabase client as first arg
-5. Delete `apps/web/src/app/_libs/utils/mapGroupDrop.ts` (no longer imported by anything)
+Files to delete:
+- apps/web/src/app/_components/person/PersonChatView.tsx
+- apps/web/src/app/_components/person/SharedContentStrip.tsx
+- apps/web/src/app/_libs/contacts.ts
+- apps/web/src/app/_mocks/mock-dm-messages.ts
+- apps/web/src/app/_mocks/mock-person-content.ts
 
-After: run `pnpm lint` and `pnpm type:check`."
+After step 5: tell user to run SQL in Supabase editor (provided in plan), then pnpm db:types.
+If missing from map → explore that specific folder only, update map, proceed."
 
-**Step 3 — Mobile agent:**
+**Web agent (code quality — Steps 6-9):**
 "Read memory/CODEBASE_MAP.md and memory/FEATURE_PLAN.md.
-Follow Mobile Steps 5-9 in order as written in the plan (Steps 2-4 are done — hooks are in `@kurate/hooks`).
+Follow Web Steps 6-9 exactly as written in the plan.
 
-Files to read first:
-- Shared libs:
-  - `libs/hooks/src/useDiscoveryFeed.ts` — shared hook, import as `useDiscoveryFeed` from `@kurate/hooks`
-  - `libs/hooks/src/useDiscoveryVault.ts` — shared hook + `VaultDiscoveryItem` type, import from `@kurate/hooks`
-  - `libs/types/src/groups.ts` — GroupDrop type
-  - `libs/utils/src/index.ts` — formatDateLabel export
-  - `libs/locales/src/en.json` — discovery.* strings (lines 581-589)
-- Web reference (design only):
-  - `apps/web/src/app/_components/home/discovering-tab-view.tsx` — container structure
-  - `apps/web/src/app/_components/home/vault-discovery-card.tsx` — card design
-- Existing mobile files:
-  - `apps/mobile-app/components/groups/feed-drop-card.tsx` — reuse for drop rendering
-  - `apps/mobile-app/app/(tabs)/index.tsx` — integration point
-  - `apps/mobile-app/libs/supabase/client.ts` — supabase client (pass to hooks as first arg)
+Files to fix:
+- apps/web/src/app/_components/people/dm-chat-view.tsx
+- apps/web/src/app/_components/people/dm-composer.tsx
+- apps/web/src/app/_components/people/message-bubble.tsx
+- apps/web/src/app/_components/people/find-user-sheet.tsx
+- apps/web/src/app/_components/sidebar/PeoplePanel.tsx
+- apps/web/src/app/_components/sidebar/sidebar-people-section.tsx
+- apps/web/src/styles/tokens/radius.css
+- apps/web/src/app/(app)/people/people-page-client.tsx (created in step 1)
 
-Usage pattern for shared hooks:
-```tsx
-import { useDiscoveryFeed, useDiscoveryVault } from '@kurate/hooks';
-import { supabase } from '@/libs/supabase/client';
-const { todayDrops, newDrops, isLoading, refetch } = useDiscoveryFeed(supabase, userId);
-const { data: vaultItems, isLoading: vaultLoading, refetch: vaultRefetch } = useDiscoveryVault(supabase, userId);
-```
+Context files (read for understanding only):
+- apps/web/src/components/ui/avatar.tsx — Avatar component
+- apps/web/src/components/ui/alert-dialog.tsx — AlertDialog component
+- apps/web/src/app/_libs/hooks/useDMConversations.ts — realtime filter fix
 
-Build discovery UI components (Steps 5-9) using these shared hooks.
-If something is missing from the map → explore that specific folder only, update the map, then proceed."
+If missing from map → explore that specific folder only, update map, proceed."
 
-**Step 4 — Cleanup (optional):**
-- Remove old `get_discovery_feed` function from `02_functions.sql` (lines 620-643)
-- Delete `apps/web/src/app/_libs/utils/mapGroupDrop.ts` if no other file imports it (confirmed: only `useDiscoveryFeed.ts` used it)
+**Web agent (move to libs — Steps 10-12):**
+"Read memory/CODEBASE_MAP.md and memory/FEATURE_PLAN.md.
+Follow Web Steps 10-12 exactly as written in the plan.
+
+Files to move:
+- apps/web/src/app/_libs/hooks/useDMConversations.ts → libs/hooks/src/useDMConversations.ts
+- apps/web/src/app/_libs/hooks/useMessages.ts → libs/hooks/src/useMessages.ts
+- DM logic from apps/web/src/app/_libs/hooks/useUnreadCounts.ts → libs/hooks/src/useDMUnreadCounts.ts
+
+Pattern reference:
+- libs/hooks/src/useComments.ts — shows supabase parameter pattern
+- libs/hooks/src/useGroupFeed.ts — shows supabase parameter pattern
+
+Files that import them (update these imports):
+- apps/web/src/app/(app)/people/people-page-client.tsx
+- apps/web/src/app/_components/people/dm-chat-view.tsx
+- apps/web/src/app/_components/sidebar/sidebar-people-section.tsx
+- apps/web/src/app/_components/sidebar/PeoplePanel.tsx
+
+Update libs/hooks/src/index.ts with new exports.
+If missing from map → explore that specific folder only, update map, proceed."
+
+**Mobile agent (build feature — Steps 13-21):**
+"Read memory/CODEBASE_MAP.md and memory/FEATURE_PLAN.md.
+Follow Mobile Steps 13-21 in order as written in the plan.
+
+Shared libs (import from @kurate/*):
+- libs/hooks/src/useDMConversations.ts — useDMConversations(supabase, userId)
+- libs/hooks/src/useMessages.ts — useMessages(supabase, convoId), fetchMessages(supabase, convoId, before?)
+- libs/hooks/src/useDMUnreadCounts.ts — useDMUnreadCounts(supabase, userId)
+- libs/types/src/people.ts — DMConversation, DMMessage, AppProfile
+- libs/query/src/keys.ts — queryKeys.people.*
+- libs/locales/src/en.json — people.* namespace keys
+
+Web reference (design + logic):
+- apps/web/src/app/_components/people/dm-chat-view.tsx — chat layout, scroll handling, reply/edit state
+- apps/web/src/app/_components/people/dm-composer.tsx — URL detection, send logic, reply/edit banners
+- apps/web/src/app/_components/people/message-bubble.tsx — bubble layout, reactions, link cards, timestamp
+- apps/web/src/app/_components/people/find-user-sheet.tsx — search profiles, create conversation
+- apps/web/src/app/_components/sidebar/PeoplePanel.tsx — conversations list layout
+- apps/web/src/app/api/people/conversation/route.ts — create/get conversation API
+
+Existing mobile files (read for patterns):
+- apps/mobile-app/app/(tabs)/_layout.tsx — tab navigator, add People tab
+- apps/mobile-app/app/(tabs)/groups/[id].tsx — dynamic route pattern with useLocalSearchParams
+- apps/mobile-app/components/groups/feed-view.tsx — FlashList infinite scroll pattern
+- apps/mobile-app/components/groups/comment-bubble.tsx — chat bubble own-vs-other pattern
+- apps/mobile-app/components/groups/comment-thread-sheet.tsx — BottomSheet with inverted FlashList
+- apps/mobile-app/components/groups/reply-input.tsx — BottomSheetTextInput pattern
+- apps/mobile-app/components/groups/drop-composer.tsx — URL detection pattern
+- apps/mobile-app/components/ui/avatar/index.tsx — Avatar component
+- apps/mobile-app/store/useAuthStore.ts — userId selector pattern
+- apps/mobile-app/libs/supabase/client.ts — supabase client to pass to hooks
+- apps/mobile-app/hooks/useGroupUnreadCounts.ts — unread badge pattern
+
+Build People/DMs following Mobile Steps 13-21 exactly.
+If missing from map → explore that specific folder only, update map, proceed."

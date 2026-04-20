@@ -84,6 +84,7 @@ export type Database = {
           convo_id: string
           id: string
           joined_at: string
+          last_read_at: string | null
           role: Database["public"]["Enums"]["role_enum"]
           updated_at: string
           user_id: string
@@ -92,6 +93,7 @@ export type Database = {
           convo_id: string
           id?: string
           joined_at?: string
+          last_read_at?: string | null
           role?: Database["public"]["Enums"]["role_enum"]
           updated_at?: string
           user_id: string
@@ -100,6 +102,7 @@ export type Database = {
           convo_id?: string
           id?: string
           joined_at?: string
+          last_read_at?: string | null
           role?: Database["public"]["Enums"]["role_enum"]
           updated_at?: string
           user_id?: string
@@ -1572,6 +1575,13 @@ export type Database = {
           sharer_id: string
         }[]
       }
+      get_dm_unread_counts: {
+        Args: { p_user_id: string }
+        Returns: {
+          convo_id: string
+          unread_count: number
+        }[]
+      }
       get_feed_comment_previews: {
         Args: { p_post_ids: string[] }
         Returns: {
@@ -1666,6 +1676,10 @@ export type Database = {
           last_activity_at: string
           role: Database["public"]["Enums"]["role_enum"]
         }[]
+      }
+      mark_conversation_read: {
+        Args: { p_convo_id: string; p_user_id: string }
+        Returns: undefined
       }
       text_array_to_string: {
         Args: { arr: string[]; sep: string }
