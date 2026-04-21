@@ -1,3 +1,4 @@
+export { ArrowRightLeftIcon } from "./arrow-right-left-icon";
 export { ApplePodcastsIcon } from "./apple-podcasts-icon";
 export { BellIcon } from "./bell-icon";
 export { CameraIcon } from "./camera-icon";

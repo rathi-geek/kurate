@@ -1,12 +1,10 @@
 import { useCallback, useEffect } from 'react';
-import { FlatList } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { ChevronLeft } from 'lucide-react-native';
-import { BUCKET_META } from '@kurate/utils';
-import type { ThoughtBucket } from '@kurate/utils';
-import { getBucketColors, lightTheme } from '@kurate/theme';
+
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,25 +13,24 @@ import Animated, {
 import { ThoughtBubble, type DisplayMessage } from './ThoughtBubble';
 import { ThoughtsEmptyState } from './ThoughtsEmptyState';
 
-const BUCKET_COLORS = getBucketColors(lightTheme) as Record<
-  ThoughtBucket,
-  string
->;
-
 interface ThoughtsBucketChatProps {
-  bucket: ThoughtBucket;
+  bucket: string;
+  bucketLabel: string;
+  color: string;
   messages: DisplayMessage[];
   searchQuery: string;
   onBack: () => void;
-  onDelete: (id: string) => void;
+  onLongPress: (id: string, text: string) => void;
 }
 
 export function ThoughtsBucketChat({
   bucket,
+  bucketLabel,
+  color,
   messages,
   searchQuery,
   onBack,
-  onDelete,
+  onLongPress,
 }: ThoughtsBucketChatProps) {
   const translateX = useSharedValue(400);
 
@@ -46,17 +43,15 @@ export function ThoughtsBucketChat({
   }));
 
   const bucketMessages = messages.filter(m => m.bucket === bucket);
-  const color = BUCKET_COLORS[bucket];
-
   const renderItem = useCallback(
     ({ item }: { item: DisplayMessage }) => (
       <ThoughtBubble
         message={item}
         bucketColor={color}
-        onLongPress={id => onDelete(id)}
+        onLongPress={(id, text) => onLongPress(id, text)}
       />
     ),
-    [color, onDelete],
+    [color, onLongPress],
   );
 
   return (
@@ -82,19 +77,18 @@ export function ThoughtsBucketChat({
           <ChevronLeft size={20} className="text-foreground" />
         </Pressable>
         <Text className="font-sans text-base font-semibold text-foreground">
-          {BUCKET_META[bucket].label}
+          {bucketLabel}
         </Text>
       </HStack>
       {bucketMessages.length === 0 ? (
         <ThoughtsEmptyState isSearching={searchQuery.length > 0} />
       ) : (
-        <FlatList
+        <FlashList
           data={bucketMessages}
           keyExtractor={item => item.id}
           renderItem={renderItem}
           inverted
           contentContainerStyle={{
-            gap: 8,
             paddingHorizontal: 16,
             paddingBottom: 16,
             paddingTop: 8,

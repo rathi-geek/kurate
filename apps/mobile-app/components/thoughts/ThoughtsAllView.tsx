@@ -1,24 +1,22 @@
 import { useCallback } from 'react';
-import { FlatList } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { View } from '@/components/ui/view';
 import { Spinner } from '@/components/ui/spinner';
-import type { ThoughtBucket } from '@kurate/utils';
-import { getBucketColors, lightTheme } from '@kurate/theme';
+
 import { ThoughtBubble, type DisplayMessage } from './ThoughtBubble';
 import { ThoughtsEmptyState } from './ThoughtsEmptyState';
-
-const BUCKET_COLORS = getBucketColors(lightTheme) as Record<
-  ThoughtBucket,
-  string
->;
 
 interface ThoughtsAllViewProps {
   messages: DisplayMessage[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onFetchMore: () => void;
-  onDelete: (id: string) => void;
+  onLongPress: (id: string, text: string) => void;
   isSearching: boolean;
+  /** slug → hex color map for dynamic bucket colors */
+  bucketColorMap: Record<string, string>;
+  /** slug → label map for bucket labels */
+  bucketLabelMap: Record<string, string>;
 }
 
 export function ThoughtsAllView({
@@ -26,19 +24,22 @@ export function ThoughtsAllView({
   hasNextPage,
   isFetchingNextPage,
   onFetchMore,
-  onDelete,
+  onLongPress,
   isSearching,
+  bucketColorMap,
+  bucketLabelMap,
 }: ThoughtsAllViewProps) {
   const renderItem = useCallback(
     ({ item }: { item: DisplayMessage }) => (
       <ThoughtBubble
         message={item}
-        bucketColor={BUCKET_COLORS[item.bucket]}
+        bucketColor={bucketColorMap[item.bucket] ?? '#D1FAE5'}
+        bucketLabel={bucketLabelMap[item.bucket]}
         showBucketLabel
-        onLongPress={id => onDelete(id)}
+        onLongPress={(id, text) => onLongPress(id, text)}
       />
     ),
-    [onDelete],
+    [onLongPress, bucketColorMap, bucketLabelMap],
   );
 
   if (messages.length === 0) {
@@ -46,13 +47,12 @@ export function ThoughtsAllView({
   }
 
   return (
-    <FlatList
+    <FlashList
       data={messages}
       keyExtractor={item => item.id}
       renderItem={renderItem}
       inverted
       contentContainerStyle={{
-        gap: 8,
         paddingHorizontal: 16,
         paddingBottom: 16,
         paddingTop: 8,

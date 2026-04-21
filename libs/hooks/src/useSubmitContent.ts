@@ -25,7 +25,7 @@ interface ThoughtMessage {
   id: string;
   bucket: ThoughtBucket;
   text: string;
-  createdAt: string;
+  created_at: string;
   media_id?: string | null;
   content_type?: string;
 }
@@ -155,7 +155,7 @@ export function useSubmitContent(config: SubmitContentConfig) {
               id: data.id as string,
               bucket: data.bucket as ThoughtBucket,
               text: (data.text as string) ?? "",
-              createdAt: data.created_at as string,
+              created_at: data.created_at as string,
               media_id: null,
               content_type: "text",
             };

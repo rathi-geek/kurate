@@ -85,3 +85,20 @@ SET last_activity_at = COALESCE(
   c.created_at
 )
 WHERE c.is_group = false;
+
+
+-- ── Backfill default buckets for existing users ─────────────────
+
+INSERT INTO public.buckets (user_id, slug, label, color, is_system)
+SELECT p.id, 'tasks', 'Tasks', '#D1FAE5', true
+FROM public.profiles p
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.buckets b WHERE b.user_id = p.id AND b.slug = 'tasks'
+);
+
+INSERT INTO public.buckets (user_id, slug, label, color, is_system)
+SELECT p.id, 'notes', 'Notes to Self', '#FEF3C7', true
+FROM public.profiles p
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.buckets b WHERE b.user_id = p.id AND b.slug = 'notes'
+);

@@ -2,7 +2,6 @@ import React from 'react';
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
-import { BUCKET_META } from '@kurate/utils';
 import type { ThoughtMessage } from '@kurate/types';
 
 export type DisplayMessage = ThoughtMessage & {
@@ -18,6 +17,7 @@ function formatTime(dateStr: string): string {
 interface ThoughtBubbleProps {
   message: DisplayMessage;
   bucketColor: string;
+  bucketLabel?: string;
   showBucketLabel?: boolean;
   onLongPress?: (id: string, text: string) => void;
 }
@@ -25,6 +25,7 @@ interface ThoughtBubbleProps {
 export const ThoughtBubble = React.memo(function ThoughtBubble({
   message,
   bucketColor,
+  bucketLabel,
   showBucketLabel,
   onLongPress,
 }: ThoughtBubbleProps) {
@@ -42,14 +43,14 @@ export const ThoughtBubble = React.memo(function ThoughtBubble({
           {message.text}
         </Text>
         <View className="mt-0.5 flex-row items-center justify-between gap-3">
-          {showBucketLabel && (
+          {showBucketLabel && bucketLabel && (
             <Text className="text-[9px] text-foreground/40">
-              {BUCKET_META[message.bucket].label}
+              {bucketLabel}
             </Text>
           )}
           <View className="flex-row items-center gap-1">
             <Text className="text-[9px] text-foreground/40">
-              {formatTime(message.createdAt)}
+              {formatTime(message.created_at)}
             </Text>
             {message._pending && (
               <Text className="text-[9px] text-foreground/40">⏱</Text>

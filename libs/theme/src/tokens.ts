@@ -42,9 +42,9 @@ export const lightTheme: ThemeTokens = {
 
   // Bucket colors
   bucketMedia: '#FDF2F8',
-  bucketTasks: '#ECFDF5',
+  bucketTasks: '#D1FAE5',
   bucketLearning: '#EFF6FF',
-  bucketNotes: '#FFFBEB',
+  bucketNotes: '#FEF3C7',
 };
 
 export const darkTheme: ThemeTokens = {
@@ -77,7 +77,7 @@ export const darkTheme: ThemeTokens = {
   brandWarningForeground: '#78350f',
 
   bucketMedia: '#FDF2F8',
-  bucketTasks: '#ECFDF5',
+  bucketTasks: '#D1FAE5',
   bucketLearning: '#EFF6FF',
-  bucketNotes: '#FFFBEB',
+  bucketNotes: '#FEF3C7',
 };

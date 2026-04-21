@@ -1161,16 +1161,47 @@ CREATE TYPE thought_content_type AS ENUM (
   'file'
 );
 
-CREATE TYPE thought_bucket AS ENUM (
-  'tasks',
-  'notes'
-);
-
 CREATE TYPE bucket_source AS ENUM (
   'auto',
   'ai',
   'user'
 );
+
+-- ── Buckets ─────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS public.buckets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  slug TEXT NOT NULL,
+  label VARCHAR(25) NOT NULL,
+  color TEXT NOT NULL DEFAULT '#D1FAE5',
+  is_system BOOLEAN NOT NULL DEFAULT FALSE,
+  is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, slug)
+);
+
+CREATE INDEX IF NOT EXISTS buckets_user_idx ON public.buckets(user_id);
+
+ALTER TABLE public.buckets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "buckets: owner read"
+  ON public.buckets FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "buckets: owner insert"
+  ON public.buckets FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "buckets: owner update"
+  ON public.buckets FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "buckets: owner delete"
+  ON public.buckets FOR DELETE
+  USING (auth.uid() = user_id AND is_system = false);
+
+-- ── Thoughts ────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS public.thoughts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1178,7 +1209,7 @@ CREATE TABLE IF NOT EXISTS public.thoughts (
   content_type thought_content_type NOT NULL DEFAULT 'text',
   text TEXT,
   media_id UUID REFERENCES public.media_metadata(id) ON DELETE SET NULL,
-  bucket thought_bucket NOT NULL DEFAULT 'notes',
+  bucket TEXT NOT NULL DEFAULT 'notes',
   bucket_source bucket_source NOT NULL DEFAULT 'auto',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -1277,7 +1308,7 @@ CREATE INDEX IF NOT EXISTS idx_group_post_last_seen_post_id ON public.group_post
 
 CREATE TABLE IF NOT EXISTS public.bucket_last_read (
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  bucket TEXT NOT NULL CHECK (bucket IN ('tasks', 'notes')),
+  bucket TEXT NOT NULL,
   last_read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (user_id, bucket)
 );

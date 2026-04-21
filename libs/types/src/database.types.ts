@@ -40,6 +40,47 @@ export type Database = {
           },
         ]
       }
+      buckets: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          is_system: boolean
+          label: string
+          slug: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          is_system?: boolean
+          label: string
+          slug: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          is_system?: boolean
+          label?: string
+          slug?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buckets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companions: {
         Row: {
           avatar_id: string
@@ -1180,7 +1221,7 @@ export type Database = {
       }
       thoughts: {
         Row: {
-          bucket: Database["public"]["Enums"]["thought_bucket"]
+          bucket: string
           bucket_source: Database["public"]["Enums"]["bucket_source"]
           content_type: Database["public"]["Enums"]["thought_content_type"]
           created_at: string
@@ -1191,7 +1232,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          bucket?: Database["public"]["Enums"]["thought_bucket"]
+          bucket?: string
           bucket_source?: Database["public"]["Enums"]["bucket_source"]
           content_type?: Database["public"]["Enums"]["thought_content_type"]
           created_at?: string
@@ -1202,7 +1243,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          bucket?: Database["public"]["Enums"]["thought_bucket"]
+          bucket?: string
           bucket_source?: Database["public"]["Enums"]["bucket_source"]
           content_type?: Database["public"]["Enums"]["thought_content_type"]
           created_at?: string
@@ -1659,10 +1700,14 @@ export type Database = {
         Args: never
         Returns: {
           bucket: string
-          latest_created_at: string
-          latest_text: string
-          total_count: number
-          unread_count: number
+          bucketLabel: string
+          color: string
+          isPinned: boolean
+          isSystem: boolean
+          latestCreatedAt: string
+          latestText: string
+          totalCount: number
+          unreadCount: number
         }[]
       }
       get_user_groups: {
@@ -1714,7 +1759,6 @@ export type Database = {
       role_enum: "owner" | "admin" | "member"
       save_source_enum: "external" | "shares" | "web_extension" | "discovered"
       theme_pref_enum: "light" | "dark" | "auto"
-      thought_bucket: "tasks" | "notes"
       thought_content_type: "text" | "image" | "voice_note" | "file"
     }
     CompositeTypes: {
@@ -1872,7 +1916,6 @@ export const Constants = {
       role_enum: ["owner", "admin", "member"],
       save_source_enum: ["external", "shares", "web_extension", "discovered"],
       theme_pref_enum: ["light", "dark", "auto"],
-      thought_bucket: ["tasks", "notes"],
       thought_content_type: ["text", "image", "voice_note", "file"],
     },
   },

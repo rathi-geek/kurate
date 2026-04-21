@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Image from "next/image";
 
-import { useSubmitContent } from "@kurate/hooks";
+import { useEditThought, useSubmitContent } from "@kurate/hooks";
 import { PreviewPhase, type VaultFilters as VaultFiltersType, VaultTab } from "@kurate/types";
 import type { ThoughtBucket } from "@kurate/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,7 +17,6 @@ import { VaultTabSubHeader } from "@/app/_components/home/vault-tab-sub-header";
 import { VaultLibrary } from "@/app/_components/vault/VaultLibrary";
 import { useAuth } from "@/app/_libs/auth-context";
 import { db } from "@/app/_libs/db";
-import { useEditThought } from "@/app/_libs/hooks/useEditThought";
 import { usePendingItemTimeout } from "@/app/_libs/hooks/usePendingItemTimeout";
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
 import { useShareToGroups } from "@/app/_libs/hooks/useShareToGroups";
@@ -47,7 +46,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
   const t = useTranslations("vault");
   const tThoughts = useTranslations("thoughts");
   const shareToGroups = useShareToGroups();
-  const editThought = useEditThought();
+  const editThought = useEditThought({ supabase });
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -198,7 +197,7 @@ export function VaultTabView({ onNavigateToDiscover }: VaultTabViewProps) {
           Use opacity/pointer-events (NOT display:none) so scroll positions are preserved. */}
       <div className="relative min-h-0 flex-1">
         <div
-          className={`absolute inset-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden transition-opacity duration-150 ${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
+          className={`absolute inset-0 overflow-y-auto transition-opacity duration-150 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${vaultTab !== VaultTab.LINKS ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <VaultLibrary
             filters={fullVaultFilters}
             onFiltersChange={handleLibraryFiltersChange}

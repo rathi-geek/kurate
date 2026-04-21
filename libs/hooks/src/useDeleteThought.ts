@@ -1,30 +1,38 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@kurate/query';
-import type { ThoughtMessage } from '@kurate/types';
-import { supabase } from '@/libs/supabase/client';
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { queryKeys } from "@kurate/query";
+import type { ThoughtMessage, Database } from "@kurate/types";
 
 type ThoughtsPage = { items: ThoughtMessage[]; nextCursor: string | null };
 type ThoughtsData = { pages: ThoughtsPage[]; pageParams: unknown[] };
 
-export function useDeleteThought() {
+interface UseDeleteThoughtConfig {
+  supabase: SupabaseClient<Database>;
+}
+
+export function useDeleteThought({ supabase }: UseDeleteThoughtConfig) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('thoughts').delete().eq('id', id);
+      const { error } = await supabase
+        .from("thoughts")
+        .delete()
+        .eq("id", id);
       if (error) throw new Error(error.message);
     },
     onMutate: async (id: string) => {
       const key = queryKeys.thoughts.list(null);
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<ThoughtsData>(key);
-      queryClient.setQueryData<ThoughtsData>(key, old => {
+      queryClient.setQueryData<ThoughtsData>(key, (old) => {
         if (!old) return old;
         return {
           ...old,
-          pages: old.pages.map(page => ({
+          pages: old.pages.map((page) => ({
             ...page,
-            items: page.items.filter(item => item.id !== id),
+            items: page.items.filter((item) => item.id !== id),
           })),
         };
       });

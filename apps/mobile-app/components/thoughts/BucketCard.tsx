@@ -3,15 +3,8 @@ import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
 import { View } from '@/components/ui/view';
 import { Pressable } from '@/components/ui/pressable';
-import { ChevronRight } from 'lucide-react-native';
-import { BUCKET_META, BUCKET_BADGE_COLOR } from '@kurate/utils';
-import type { ThoughtBucket } from '@kurate/utils';
-import { getBucketColors, lightTheme } from '@kurate/theme';
-
-const BUCKET_COLORS = getBucketColors(lightTheme) as Record<
-  ThoughtBucket,
-  string
->;
+import { ChevronRight, Pin } from 'lucide-react-native';
+import { getBucketBadgeColor } from '@kurate/utils';
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return '';
@@ -26,33 +19,46 @@ function formatRelativeTime(dateStr: string | null): string {
 }
 
 interface BucketCardProps {
-  bucket: ThoughtBucket;
+  slug: string;
+  label: string;
+  color: string;
+  isPinned: boolean;
+  isSystem: boolean;
   latestText: string | null;
   latestCreatedAt: string | null;
   unreadCount: number;
   onPress: () => void;
+  onLongPress?: () => void;
 }
 
 export function BucketCard({
-  bucket,
+  label,
+  color,
+  isPinned,
+  isSystem,
   latestText,
   latestCreatedAt,
   unreadCount,
   onPress,
+  onLongPress,
 }: BucketCardProps) {
-  const meta = BUCKET_META[bucket];
-
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={!isSystem ? onLongPress : undefined}
       className="rounded-xl px-4 py-3"
-      style={{ backgroundColor: BUCKET_COLORS[bucket] }}
+      style={{ backgroundColor: color }}
     >
       <HStack className="items-center">
         <VStack className="mr-auto flex-1 gap-0.5">
-          <Text className="font-sans text-sm font-semibold text-foreground">
-            {meta.label}
-          </Text>
+          <HStack className="items-center gap-1">
+            <Text className="font-sans text-sm font-semibold text-foreground">
+              {label}
+            </Text>
+            {isPinned && (
+              <Pin size={10} className="text-foreground/40" />
+            )}
+          </HStack>
           {latestText && (
             <Text className="text-xs text-foreground/45" numberOfLines={1}>
               {latestText}
@@ -69,7 +75,7 @@ export function BucketCard({
             {unreadCount > 0 && (
               <View
                 className="rounded-full px-1.5 py-0.5"
-                style={{ backgroundColor: BUCKET_BADGE_COLOR[bucket] }}
+                style={{ backgroundColor: getBucketBadgeColor(color) }}
               >
                 <Text className="text-[9px] font-bold text-white">
                   {unreadCount}

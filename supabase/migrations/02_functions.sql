@@ -973,28 +973,39 @@ CREATE TRIGGER trg_co_engagement_delete_comment
 
 -- ── Bucket summaries for thoughts ────────────────────────────
 -- Returns one row per bucket with latest text, timestamp, total count, and unread count.
+-- Pulls from the buckets table dynamically. Sorted: pinned first, then by most recent message.
+
+DROP FUNCTION IF EXISTS public.get_thought_bucket_summaries();
 
 CREATE OR REPLACE FUNCTION public.get_thought_bucket_summaries()
 RETURNS TABLE (
   bucket            TEXT,
-  latest_text       TEXT,
-  latest_created_at TIMESTAMPTZ,
-  total_count       BIGINT,
-  unread_count      BIGINT
+  "bucketLabel"     TEXT,
+  color             TEXT,
+  "isSystem"        BOOLEAN,
+  "isPinned"        BOOLEAN,
+  "latestText"      TEXT,
+  "latestCreatedAt" TIMESTAMPTZ,
+  "totalCount"      BIGINT,
+  "unreadCount"     BIGINT
 )
 LANGUAGE SQL STABLE
 AS $$
   SELECT
-    b.bucket,
-    latest.text               AS latest_text,
-    latest.created_at         AS latest_created_at,
-    COALESCE(counts.total, 0) AS total_count,
-    COALESCE(counts.unread, 0) AS unread_count
-  FROM unnest(ARRAY['tasks','notes']) AS b(bucket)
+    b.slug                    AS bucket,
+    b.label                   AS "bucketLabel",
+    b.color,
+    b.is_system               AS "isSystem",
+    b.is_pinned               AS "isPinned",
+    latest.text               AS "latestText",
+    latest.created_at         AS "latestCreatedAt",
+    COALESCE(counts.total, 0) AS "totalCount",
+    COALESCE(counts.unread, 0) AS "unreadCount"
+  FROM public.buckets b
   LEFT JOIN LATERAL (
     SELECT t.text, t.created_at
     FROM public.thoughts t
-    WHERE t.user_id = auth.uid() AND t.bucket::text = b.bucket
+    WHERE t.user_id = auth.uid() AND t.bucket = b.slug
     ORDER BY t.created_at DESC
     LIMIT 1
   ) latest ON true
@@ -1004,15 +1015,35 @@ AS $$
       COUNT(*) FILTER (
         WHERE t.created_at > COALESCE(
           (SELECT blr.last_read_at FROM public.bucket_last_read blr
-           WHERE blr.user_id = auth.uid() AND blr.bucket = b.bucket),
+           WHERE blr.user_id = auth.uid() AND blr.bucket = b.slug),
           '1970-01-01'::timestamptz
         )
       )::BIGINT AS unread
     FROM public.thoughts t
-    WHERE t.user_id = auth.uid() AND t.bucket::text = b.bucket
+    WHERE t.user_id = auth.uid() AND t.bucket = b.slug
   ) counts ON true
-  ORDER BY latest.created_at DESC NULLS LAST;
+  WHERE b.user_id = auth.uid()
+  ORDER BY b.is_pinned DESC, latest.created_at DESC NULLS LAST;
 $$;
+
+
+-- ── Auto-create default buckets for new users ───────────────────
+
+CREATE OR REPLACE FUNCTION public.create_default_buckets()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.buckets (user_id, slug, label, color, is_system)
+  VALUES
+    (NEW.id, 'tasks', 'Tasks', '#D1FAE5', true),
+    (NEW.id, 'notes', 'Notes to Self', '#FEF3C7', true);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trg_create_default_buckets
+  AFTER INSERT ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.create_default_buckets();
 
 
 -- ── Bump last_activity_at on new group post ──────────────────────

@@ -12,7 +12,7 @@ export function pendingToMessage(p: PendingThought): DisplayMessage {
     id: p.tempId,
     bucket: p.bucket,
     text: p.text,
-    createdAt: p.createdAt,
+    created_at: p.createdAt,
     media_id: p.media_id,
     content_type: p.content_type,
     _pending: p.status === "sending",
