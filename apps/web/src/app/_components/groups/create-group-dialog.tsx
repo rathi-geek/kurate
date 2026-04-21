@@ -81,7 +81,11 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
       // Refresh sidebar groups list
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.list() });
 
-      track("group_created");
+      track("group_created", {
+        group_id: group.id,
+        group_name: trimmedName,
+        has_description: !!description.trim(),
+      });
       onOpenChange(false);
       setName("");
       setDescription("");

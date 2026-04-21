@@ -60,13 +60,6 @@ export function useVaultPreview(config: UseVaultPreviewConfig) {
       // Only act on the most recently sent URL — ignore stale callbacks
       if (result.url !== lastSentUrlRef.current) return;
 
-      config.onTrack?.("vault_link_saved", {
-        content_type: previewMeta?.contentType ?? "article",
-        source: previewMeta?.source ?? null,
-        has_tags: false,
-        is_duplicate: result.status === "duplicate",
-      });
-
       if (result.status === "duplicate") {
         config.onToast?.("Already in your Vault", {
           description: "This link has been saved before.",
@@ -77,7 +70,7 @@ export function useVaultPreview(config: UseVaultPreviewConfig) {
         setPreviewPhase(PreviewPhase.Share);
       }
     },
-    [previewMeta, config],
+    [config],
   );
 
   // Sync extracted metadata into preview state

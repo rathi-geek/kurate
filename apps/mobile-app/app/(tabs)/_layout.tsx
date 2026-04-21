@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Bell, User, Users } from 'lucide-react-native';
+import { Bell, MessageCircle, User, Users } from 'lucide-react-native';
 import BrandArch from '@kurate/icons/brand/brand-arch.svg';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
@@ -10,6 +10,7 @@ import { View } from '@/components/ui/view';
 import { useLocalization } from '@/context';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useGroupUnreadCounts } from '@/hooks/useGroupUnreadCounts';
+import { useDMUnreadCounts } from '@/hooks/useDMUnreadCounts';
 import { useProfile } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/store';
@@ -75,6 +76,7 @@ export default function TabLayout() {
   const userId = useAuthStore(state => state.userId);
   const { unreadCount } = useNotifications(userId);
   const { totalUnread: groupsUnread } = useGroupUnreadCounts(userId ?? '');
+  const { totalDMUnread } = useDMUnreadCounts();
 
   return (
     <Tabs
@@ -106,6 +108,19 @@ export default function TabLayout() {
             <View>
               <Users size={18} color={color} />
               <NotificationBadge count={groupsUnread} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="people"
+        options={{
+          title: t('sidebar.people'),
+          headerShown: false,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <View>
+              <MessageCircle size={18} color={color} />
+              <NotificationBadge count={totalDMUnread} />
             </View>
           ),
         }}

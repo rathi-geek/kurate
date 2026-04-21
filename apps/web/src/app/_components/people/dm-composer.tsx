@@ -15,6 +15,7 @@ import { createClient } from "@/app/_libs/supabase/client";
 import { CloseIcon, SendIcon } from "@/components/icons";
 import { EmojiPicker } from "@/app/_components/shared/emoji-picker";
 import { toast } from "sonner";
+import { track } from "@/app/_libs/utils/analytics";
 
 const supabase = createClient();
 
@@ -160,6 +161,7 @@ export function DmComposer({
 
         resetMetadata();
         detectedUrlRef.current = null;
+        track("dm_message_sent", { message_type: "logged_item", has_text: !!trimmedText.replace(URL_REGEX, "").trim() });
       } else {
         const { error: msgError } = await supabase.from("messages").insert({
           convo_id: convoId,
@@ -169,6 +171,7 @@ export function DmComposer({
           ...(replyTo ? { message_parent_id: replyTo.messageId } : {}),
         });
         if (msgError) { toast.error(t("error_send_message")); return; }
+        track("dm_message_sent", { message_type: "text", has_text: true });
       }
 
       setText("");

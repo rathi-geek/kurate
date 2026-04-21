@@ -127,6 +127,13 @@ export function useVaultComposer(config: UseVaultComposerConfig) {
           });
         }
 
+        platform?.onTrack?.("vault_link_saved", {
+          content_type: preview.previewMeta?.contentType ?? "link",
+          source: preview.previewMeta?.source ?? null,
+          has_tags: ((preview.extractedMeta as ExtractedMetadata | null)?.tags ?? []).length > 0,
+          is_duplicate: false,
+        });
+
         // Clear preview state so input is ready for next URL
         preview.resetPreviewState();
 
@@ -135,6 +142,7 @@ export function useVaultComposer(config: UseVaultComposerConfig) {
             await platform?.pendingDb?.updatePendingLinkStatus(tempId, "confirmed");
           })
           .catch(async () => {
+            platform?.onTrack?.("vault_link_save_failed", { url: effectiveUrl });
             await platform?.pendingDb?.updatePendingLinkStatus(tempId, "failed");
           });
       } else {

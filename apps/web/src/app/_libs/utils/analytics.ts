@@ -3,6 +3,7 @@
 import mixpanel from "mixpanel-browser";
 
 let initialized = false;
+let pendingQueue: Array<{ event: string; props?: Record<string, unknown> }> = [];
 
 function getToken(): string | undefined {
   return process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
@@ -13,6 +14,12 @@ export function initAnalytics() {
   if (!token || initialized) return;
   mixpanel.init(token, { track_pageview: true, persistence: "localStorage" });
   initialized = true;
+
+  // Flush events that arrived before init
+  for (const { event, props } of pendingQueue) {
+    mixpanel.track(event, props);
+  }
+  pendingQueue = [];
 }
 
 export function identifyUser(
@@ -34,6 +41,9 @@ export function resetUser() {
 }
 
 export function track(event: string, props?: Record<string, unknown>) {
-  if (!initialized) return;
+  if (!initialized) {
+    pendingQueue.push({ event, props });
+    return;
+  }
   mixpanel.track(event, props);
 }

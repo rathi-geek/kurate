@@ -129,7 +129,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const cached = readCachedProfile(authUser.id);
         if (cached) setProfile(cached);
         void loadProfile(authUser.id).then(() => { profileLoaded = true; });
-        track("user_logged_in", { method: "google" });
+        track("user_logged_in", {
+          method: "google",
+          user_id: authUser.id,
+          email: authUser.email ?? null,
+          name: authUser.user_metadata?.full_name ?? null,
+        });
       } else if (event === "SIGNED_OUT") {
         profileLoaded = false;
         if (user?.id) clearCachedProfile(user.id);

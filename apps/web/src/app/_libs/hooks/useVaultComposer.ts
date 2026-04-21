@@ -96,6 +96,12 @@ export function useVaultComposer({
           createdAt: new Date().toISOString(),
           status: "sending",
         });
+        track("vault_link_saved", {
+          content_type: previewMeta?.contentType ?? detectContentType(effectiveUrl),
+          source: previewMeta?.source ?? null,
+          has_tags: (extractedMeta?.tags ?? []).length > 0,
+          is_duplicate: false,
+        });
         // Clear preview state so input is ready for next URL
         resetPreviewState();
 
@@ -104,6 +110,7 @@ export function useVaultComposer({
             await db.pending_links.update(tempId, { status: "confirmed" });
           })
           .catch(async () => {
+            track("vault_link_save_failed", { url: effectiveUrl });
             await db.pending_links.update(tempId, { status: "failed" });
           });
       } else {

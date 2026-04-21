@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type SaveItemResult, useExtractMetadata } from "@kurate/hooks";
 import { type ExtractedMeta, PreviewPhase } from "@kurate/types";
 import { toast } from "sonner";
-import { track } from "@/app/_libs/utils/analytics";
 
 export function useVaultPreview(resetInput: () => void) {
   const [previewPhase, setPreviewPhase] = useState<PreviewPhase>(PreviewPhase.Idle);
@@ -47,13 +46,6 @@ export function useVaultPreview(resetInput: () => void) {
       // Only act on the most recently sent URL — ignore stale callbacks
       if (result.url !== lastSentUrlRef.current) return;
 
-      track("vault_link_saved", {
-        content_type: previewMeta?.contentType ?? "article",
-        source: previewMeta?.source ?? null,
-        has_tags: false,
-        is_duplicate: result.status === "duplicate",
-      });
-
       if (result.status === "duplicate") {
         toast("Already in your Vault", { description: "This link has been saved before." });
       } else if (result.status === "saved" && result.item) {
@@ -62,7 +54,7 @@ export function useVaultPreview(resetInput: () => void) {
         setPreviewPhase(PreviewPhase.Share);
       }
     },
-    [previewMeta],
+    [],
   );
 
   // Sync extracted metadata into preview state
