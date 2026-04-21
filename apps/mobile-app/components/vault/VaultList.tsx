@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { View } from '@/components/ui/view';
 import { Spinner } from '@/components/ui/spinner';
 import { useMobileVault } from '@/hooks/useVault';
@@ -73,12 +73,11 @@ export function VaultList({ filters }: VaultListProps) {
 
   if (isLoading) {
     return (
-      <FlatList
+      <FlashList
         data={SKELETON_DATA}
         keyExtractor={item => String(item)}
         renderItem={() => <VaultCardSkeleton />}
         contentContainerStyle={{
-          gap: 12,
           paddingHorizontal: 16,
           paddingBottom: 16,
           paddingTop: 12,
@@ -103,12 +102,11 @@ export function VaultList({ filters }: VaultListProps) {
 
   return (
     <>
-      <FlatList
+      <FlashList
         data={items}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         contentContainerStyle={{
-          gap: 12,
           paddingHorizontal: 16,
           paddingBottom: 16,
           paddingTop: 12,

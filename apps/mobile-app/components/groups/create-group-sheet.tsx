@@ -80,7 +80,8 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
 
       if (groupError || !group) {
         const errMsg = groupError?.message ?? '';
-        const msg = errMsg.toLowerCase().includes('unique') ||
+        const msg =
+          errMsg.toLowerCase().includes('unique') ||
           errMsg.toLowerCase().includes('duplicate')
             ? t('groups.name_taken')
             : errMsg.includes('character varying')

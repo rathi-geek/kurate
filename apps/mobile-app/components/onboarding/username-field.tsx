@@ -43,7 +43,11 @@ export function UsernameField({
           }}
           onBlur={() => {
             const v = username.trim();
-            onErrorChange(v ? (validateUsername(v) ?? null) : t('validation.username_required'));
+            onErrorChange(
+              v
+                ? (validateUsername(v) ?? null)
+                : t('validation.username_required'),
+            );
           }}
           autoCapitalize="none"
           autoCorrect={false}

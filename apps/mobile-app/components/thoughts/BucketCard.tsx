@@ -60,9 +60,11 @@ export function BucketCard({
           )}
         </VStack>
         <VStack className="items-end gap-1">
-          <Text className="text-[10px] text-foreground/30">
-            {formatRelativeTime(latestCreatedAt)}
-          </Text>
+          {latestCreatedAt && (
+            <Text className="text-[10px] text-foreground/30">
+              {formatRelativeTime(latestCreatedAt)}
+            </Text>
+          )}
           <HStack className="items-center gap-1">
             {unreadCount > 0 && (
               <View

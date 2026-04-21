@@ -144,15 +144,26 @@ export default function VaultScreen() {
             hasActiveFilter={activeFilter}
           />
           <View className="flex-1">
-            {vaultTab === VaultTab.LINKS ? (
+            <View
+              style={{
+                display: vaultTab === VaultTab.LINKS ? 'flex' : 'none',
+                flex: 1,
+              }}
+            >
               <VaultList filters={fullFilters} />
-            ) : (
+            </View>
+            <View
+              style={{
+                display: vaultTab === VaultTab.THOUGHTS ? 'flex' : 'none',
+                flex: 1,
+              }}
+            >
               <ThoughtsTabView
                 searchQuery={searchQuery}
                 viewAll={thoughtsViewAll}
                 onViewAllChange={setThoughtsViewAll}
               />
-            )}
+            </View>
           </View>
           {preview.previewPhase !== PreviewPhase.Idle && (
             <LinkPreviewCard
