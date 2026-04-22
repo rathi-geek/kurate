@@ -1,11 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { Tables } from "@kurate/types";
 import { getMediaPublicUrl } from "@/app/_libs/utils/getMediaUrl";
-import { track } from "@/app/_libs/utils/analytics";
 
 export type UserProfile = Pick<
   Tables<"profiles">,
@@ -61,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const userIdRef = useRef<string | null>(null);
   async function loadProfile(userId: string) {
     const supabase = createClient();
     const { data } = await supabase
@@ -103,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const authUser = session?.user ?? null;
       setUser(authUser);
       if (authUser) {
+        userIdRef.current = authUser.id;
         const cached = readCachedProfile(authUser.id);
         if (cached) setProfile(cached);
         void loadProfile(authUser.id).then(() => { profileLoaded = true; });
@@ -126,25 +127,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(authUser);
 
       if (event === "SIGNED_IN" && authUser && !profileLoaded) {
+        userIdRef.current = authUser.id;
         const cached = readCachedProfile(authUser.id);
         if (cached) setProfile(cached);
         void loadProfile(authUser.id).then(() => { profileLoaded = true; });
-        track("user_logged_in", {
-          method: "google",
-          user_id: authUser.id,
-          email: authUser.email ?? null,
-          name: authUser.user_metadata?.full_name ?? null,
-        });
       } else if (event === "SIGNED_OUT") {
         profileLoaded = false;
-        if (user?.id) clearCachedProfile(user.id);
+        if (userIdRef.current) clearCachedProfile(userIdRef.current);
+        userIdRef.current = null;
         setProfile(null);
         setLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function refreshUser() {

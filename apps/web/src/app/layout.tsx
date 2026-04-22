@@ -3,6 +3,8 @@ import "./globals.css";
 import Script from "next/script";
 
 import { QueryProvider } from "@kurate/query";
+import { AnalyticsProvider } from "@/app/_libs/analytics-provider";
+import { AuthProvider } from "@/app/_libs/auth-context";
 import { ProgressBarProvider } from "@/app/_components/progress-bar-provider";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -33,9 +35,13 @@ export default function RootLayout({
         </a>
         <I18nProvider>
           <QueryProvider>
-            <ProgressBarProvider>
-              {children}
-            </ProgressBarProvider>
+            <AuthProvider>
+              <AnalyticsProvider>
+                <ProgressBarProvider>
+                  {children}
+                </ProgressBarProvider>
+              </AnalyticsProvider>
+            </AuthProvider>
             <SonnarToaster />
             {/* <AnimationPreview /> */}
           </QueryProvider>
