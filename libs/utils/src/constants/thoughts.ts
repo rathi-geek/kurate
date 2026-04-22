@@ -91,9 +91,11 @@ export function getBucketDotColor(bgColor: string): string {
   return idx >= 0 ? BUCKET_DOT_PALETTE[idx] : BUCKET_DOT_PALETTE[0];
 }
 
-/** Pick the next color hex for a new bucket based on how many already exist */
-export function nextBucketColor(existingCount: number): string {
-  return BUCKET_COLOR_PALETTE[existingCount % BUCKET_COLOR_PALETTE.length];
+/** Pick the next unused color from the palette based on existing bucket colors */
+export function nextBucketColor(usedColors: string[]): string {
+  const usedSet = new Set(usedColors.map((c) => c.toUpperCase()));
+  const available = BUCKET_COLOR_PALETTE.find((c) => !usedSet.has(c.toUpperCase()));
+  return available ?? BUCKET_COLOR_PALETTE[usedColors.length % BUCKET_COLOR_PALETTE.length];
 }
 
 /** Sort bucket summaries: pinned first, then by most recent message */

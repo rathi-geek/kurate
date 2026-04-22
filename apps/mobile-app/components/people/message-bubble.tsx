@@ -40,7 +40,7 @@ interface MessageBubbleProps {
   isContinuation: boolean;
 }
 
-export function MessageBubble({
+export const MessageBubble = React.memo(function MessageBubble({
   message,
   currentUserId,
   convoId,
@@ -272,4 +272,4 @@ export function MessageBubble({
       </VStack>
     </View>
   );
-}
+});

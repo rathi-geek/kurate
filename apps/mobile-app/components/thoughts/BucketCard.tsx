@@ -55,9 +55,7 @@ export function BucketCard({
             <Text className="font-sans text-sm font-semibold text-foreground">
               {label}
             </Text>
-            {isPinned && (
-              <Pin size={10} className="text-foreground/40" />
-            )}
+            {isPinned && <Pin size={10} className="text-foreground/40" />}
           </HStack>
           {latestText && (
             <Text className="text-xs text-foreground/45" numberOfLines={1}>

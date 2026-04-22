@@ -11,7 +11,11 @@ interface GroupRowProps {
   unreadCount?: number;
 }
 
-export function GroupRow({ group, onPress, unreadCount = 0 }: GroupRowProps) {
+export const GroupRow = React.memo(function GroupRow({
+  group,
+  onPress,
+  unreadCount = 0,
+}: GroupRowProps) {
   return (
     <Pressable
       onPress={() => onPress(group.id)}
@@ -36,4 +40,4 @@ export function GroupRow({ group, onPress, unreadCount = 0 }: GroupRowProps) {
       ) : null}
     </Pressable>
   );
-}
+});

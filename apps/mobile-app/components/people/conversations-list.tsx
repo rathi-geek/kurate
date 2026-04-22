@@ -17,6 +17,10 @@ import { ConversationRow } from '@/components/people/conversation-row';
 import { FindUserSheet } from '@/components/people/find-user-sheet';
 import type { DMConversation } from '@kurate/types';
 
+function ItemSeparator() {
+  return <View className="h-2" />;
+}
+
 export function ConversationsList() {
   const { t } = useLocalization();
   const router = useRouter();
@@ -110,7 +114,7 @@ export function ConversationsList() {
         keyExtractor={item => item.id}
         renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 16 }}
-        ItemSeparatorComponent={() => <View className="h-2" />}
+        ItemSeparatorComponent={ItemSeparator}
         onRefresh={refetch}
         refreshing={false}
       />

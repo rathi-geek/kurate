@@ -32,7 +32,7 @@ const STORAGE_BASE = supabaseUrl
 const avatarUrlFromPath = (path: string | null): string | null =>
   path ? `${STORAGE_BASE}${path}` : null;
 
-export function FeedDropCard({
+export const FeedDropCard = React.memo(function FeedDropCard({
   drop,
   currentRole,
   onDelete,
@@ -163,4 +163,4 @@ export function FeedDropCard({
       />
     </View>
   );
-}
+});

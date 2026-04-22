@@ -14,7 +14,6 @@ import { ArrowRightLeft, Trash2 } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { useLocalization } from '@/context';
 
-
 import type { BucketSummary } from '@kurate/hooks';
 
 interface ThoughtActionSheetProps {

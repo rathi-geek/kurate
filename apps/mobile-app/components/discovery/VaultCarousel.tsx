@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { View } from '@/components/ui/view';
 import { FlashList } from '@shopify/flash-list';
 import { decodeHtmlEntities } from '@kurate/utils';
@@ -13,22 +14,28 @@ function Separator() {
 }
 
 export function VaultCarousel({ items }: VaultCarouselProps) {
+  const renderItem = useCallback(
+    ({ item }: { item: VaultDiscoveryItem }) => (
+      <VaultDiscoveryCard
+        title={decodeHtmlEntities(item.title) ?? null}
+        url={item.url}
+        createdAt={item.created_at}
+      />
+    ),
+    [],
+  );
+
+  const keyExtractor = useCallback((item: VaultDiscoveryItem) => item.id, []);
+
   return (
     <FlashList
       horizontal
       data={items}
-      keyExtractor={item => item.id}
-      estimatedItemSize={176}
+      keyExtractor={keyExtractor}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16 }}
       ItemSeparatorComponent={Separator}
-      renderItem={({ item }) => (
-        <VaultDiscoveryCard
-          title={decodeHtmlEntities(item.title) ?? null}
-          url={item.url}
-          createdAt={item.created_at}
-        />
-      )}
+      renderItem={renderItem}
     />
   );
 }

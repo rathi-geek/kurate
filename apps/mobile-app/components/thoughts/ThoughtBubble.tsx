@@ -44,9 +44,7 @@ export const ThoughtBubble = React.memo(function ThoughtBubble({
         </Text>
         <View className="mt-0.5 flex-row items-center justify-between gap-3">
           {showBucketLabel && bucketLabel && (
-            <Text className="text-[9px] text-foreground/40">
-              {bucketLabel}
-            </Text>
+            <Text className="text-[9px] text-foreground/40">{bucketLabel}</Text>
           )}
           <View className="flex-row items-center gap-1">
             <Text className="text-[9px] text-foreground/40">

@@ -26,7 +26,7 @@ const STORAGE_BASE = supabaseUrl
 const avatarUrlFromPath = (path: string | null): string | null =>
   path ? `${STORAGE_BASE}${path}` : null;
 
-export function CommentBubble({
+export const CommentBubble = React.memo(function CommentBubble({
   comment,
   isOwn,
   showAuthor,
@@ -97,4 +97,4 @@ export function CommentBubble({
       </HStack>
     </View>
   );
-}
+});

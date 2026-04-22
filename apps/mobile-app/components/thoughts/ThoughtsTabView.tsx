@@ -78,8 +78,12 @@ export function ThoughtsTabView({
   const supaConfig = { supabase, userId: userId ?? null };
   const { data: summaries, isLoading: summariesLoading } =
     useBucketSummaries(supaConfig);
-  const { messages: serverMessages, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useThoughts(supaConfig, activeBucket, searchQuery);
+  const {
+    messages: serverMessages,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useThoughts(supaConfig, activeBucket, searchQuery);
   const deleteMutation = useDeleteThought({ supabase });
   const moveMutation = useMoveBucket({ supabase });
   const { markBucketRead } = useBucketLastRead(supaConfig);

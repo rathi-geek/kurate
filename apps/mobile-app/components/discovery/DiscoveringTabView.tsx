@@ -103,6 +103,39 @@ export function DiscoveringTabView() {
     setRefreshing(false);
   }, [feedRefetch, vaultRefetch]);
 
+  const renderItem = useCallback(
+    ({ item }: { item: DiscoveryListItem }) => {
+      switch (item.type) {
+        case 'vault-header':
+          return <SectionDivider label={t('discovery.from_vault')} />;
+        case 'vault-carousel':
+          return <VaultCarousel items={item.items} />;
+        case 'section-header':
+          return <SectionDivider label={item.label} />;
+        case 'drop':
+          return (
+            <View className="px-4 py-2">
+              <FeedDropCard drop={item.drop} onDelete={noopDelete} />
+            </View>
+          );
+        case 'empty':
+          return (
+            <VStack className="flex-1 items-center justify-center gap-2 px-8 py-16">
+              <Text className="text-center font-sans text-sm font-medium text-foreground">
+                {t('discovery.empty_title')}
+              </Text>
+              <Text className="text-center font-sans text-xs text-muted-foreground">
+                {t('discovery.empty_subtitle')}
+              </Text>
+            </VStack>
+          );
+        default:
+          return null;
+      }
+    },
+    [t],
+  );
+
   if (isLoading) {
     return (
       <VStack className="flex-1 gap-4 p-4">
@@ -118,39 +151,10 @@ export function DiscoveringTabView() {
       data={listData}
       keyExtractor={item => item.key}
       getItemType={item => item.type}
-      estimatedItemSize={200}
       refreshing={refreshing}
       onRefresh={handleRefresh}
       contentContainerStyle={{ paddingBottom: 16 }}
-      renderItem={({ item }) => {
-        switch (item.type) {
-          case 'vault-header':
-            return <SectionDivider label={t('discovery.from_vault')} />;
-          case 'vault-carousel':
-            return <VaultCarousel items={item.items} />;
-          case 'section-header':
-            return <SectionDivider label={item.label} />;
-          case 'drop':
-            return (
-              <View className="px-4 py-2">
-                <FeedDropCard drop={item.drop} onDelete={noopDelete} />
-              </View>
-            );
-          case 'empty':
-            return (
-              <VStack className="flex-1 items-center justify-center gap-2 px-8 py-16">
-                <Text className="text-center font-sans text-sm font-medium text-foreground">
-                  {t('discovery.empty_title')}
-                </Text>
-                <Text className="text-center font-sans text-xs text-muted-foreground">
-                  {t('discovery.empty_subtitle')}
-                </Text>
-              </VStack>
-            );
-          default:
-            return null;
-        }
-      }}
+      renderItem={renderItem}
     />
   );
 }

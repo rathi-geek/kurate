@@ -124,8 +124,7 @@ export function BucketOptionsSheet({
                 disabled={loading === 'rename' || !renameText.trim()}
                 className="items-center rounded-xl bg-primary py-3"
                 style={{
-                  opacity:
-                    loading === 'rename' || !renameText.trim() ? 0.5 : 1,
+                  opacity: loading === 'rename' || !renameText.trim() ? 0.5 : 1,
                 }}
               >
                 {loading === 'rename' ? (

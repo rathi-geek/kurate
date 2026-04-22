@@ -1,4 +1,5 @@
-import { AppState, AppStateStatus, FlatList } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
 import { getQuoteHistory, initializeBackgroundTask, Quote } from '@/utils';
@@ -61,8 +62,9 @@ export default function BackgroundTaskScreen() {
       <Text className="text-foreground">
         Quote History length : {quoteHistory.length}
       </Text>
-      <FlatList
+      <FlashList
         data={quoteHistory}
+        keyExtractor={(item: Quote) => item.q}
         renderItem={({ item }: { item: Quote }) => (
           <View className="mb-4 rounded-md p-4">
             <Text className="text-foreground">{item.q}</Text>

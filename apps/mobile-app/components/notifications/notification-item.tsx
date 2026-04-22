@@ -29,7 +29,7 @@ interface NotificationItemProps {
   markRead: (id: string) => Promise<void>;
 }
 
-export function NotificationItem({
+export const NotificationItem = React.memo(function NotificationItem({
   notification,
   markRead,
 }: NotificationItemProps) {
@@ -118,4 +118,4 @@ export function NotificationItem({
       </HStack>
     </Pressable>
   );
-}
+});

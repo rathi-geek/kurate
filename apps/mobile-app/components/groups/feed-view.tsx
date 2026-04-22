@@ -116,8 +116,6 @@ export function FeedView({
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const pendingCount = entries.filter(e => e.kind === 'pending').length;
-
   const renderItem = useCallback(
     ({ item }: { item: GroupFeedEntry }) => (
       <FeedEntryItem
@@ -168,7 +166,6 @@ export function FeedView({
   return (
     <View className="flex-1">
       <FlashList
-        key={`feed-${pendingCount}`}
         ref={listRef}
         data={entries}
         keyExtractor={keyExtractor}

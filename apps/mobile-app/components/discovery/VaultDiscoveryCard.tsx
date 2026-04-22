@@ -1,3 +1,4 @@
+import React from 'react';
 import { Linking } from 'react-native';
 import { Pressable } from '@/components/ui/pressable';
 import { VStack } from '@/components/ui/vstack';
@@ -10,7 +11,7 @@ interface VaultDiscoveryCardProps {
   createdAt: string;
 }
 
-export function VaultDiscoveryCard({
+export const VaultDiscoveryCard = React.memo(function VaultDiscoveryCard({
   title,
   url,
   createdAt,
@@ -60,4 +61,4 @@ export function VaultDiscoveryCard({
       </VStack>
     </Pressable>
   );
-}
+});

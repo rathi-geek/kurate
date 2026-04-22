@@ -25,7 +25,10 @@ const metaOf = (raw: unknown): { source?: string; readTime?: string } => {
   };
 };
 
-export function LibraryCard({ drop, onPress }: LibraryCardProps) {
+export const LibraryCard = React.memo(function LibraryCard({
+  drop,
+  onPress,
+}: LibraryCardProps) {
   const { t } = useLocalization();
   const meta = metaOf(drop.item?.raw_metadata);
 
@@ -98,4 +101,4 @@ export function LibraryCard({ drop, onPress }: LibraryCardProps) {
       </VStack>
     </Pressable>
   );
-}
+});

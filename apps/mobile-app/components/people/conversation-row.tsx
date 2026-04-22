@@ -15,7 +15,7 @@ interface ConversationRowProps {
   onPress: () => void;
 }
 
-export function ConversationRow({
+export const ConversationRow = React.memo(function ConversationRow({
   conversation,
   unreadCount,
   onPress,
@@ -75,4 +75,4 @@ export function ConversationRow({
       </VStack>
     </Pressable>
   );
-}
+});

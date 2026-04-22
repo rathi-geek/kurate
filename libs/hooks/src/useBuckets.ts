@@ -45,7 +45,7 @@ export function useBuckets({ supabase, userId }: UseBucketsConfig) {
       const slug = bucketSlug(label);
       if (buckets.some((b) => b.slug === slug)) throw new Error("BUCKET_NAME_DUPLICATE");
 
-      const color = nextBucketColor(buckets.length);
+      const color = nextBucketColor(buckets.map((b) => b.color));
       const { data, error } = await supabase
         .from("buckets")
         .insert({ user_id: userId, slug, label: label.trim(), color })

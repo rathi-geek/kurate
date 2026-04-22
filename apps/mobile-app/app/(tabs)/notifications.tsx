@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { FlatList } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -123,7 +123,7 @@ export default function NotificationsScreen() {
       ) : notifications.length === 0 ? (
         <EmptyState />
       ) : (
-        <FlatList
+        <FlashList
           data={notifications}
           keyExtractor={keyExtractor}
           renderItem={renderItem}

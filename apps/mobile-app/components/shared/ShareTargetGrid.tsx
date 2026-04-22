@@ -1,5 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, TextInput } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { TextInput } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import FastImage from 'react-native-fast-image';
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
@@ -16,7 +18,7 @@ interface ShareTargetGridProps {
   enabled?: boolean;
 }
 
-function AvatarItem({
+const AvatarItem = React.memo(function AvatarItem({
   item,
   isSelected,
   isShared,
@@ -38,9 +40,9 @@ function AvatarItem({
     >
       <View className="relative">
         {item.avatar_url ? (
-          <Image
+          <FastImage
             source={{ uri: item.avatar_url }}
-            className="h-12 w-12 rounded-full"
+            style={{ width: 48, height: 48, borderRadius: 9999 }}
           />
         ) : (
           <View className="h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -68,7 +70,7 @@ function AvatarItem({
       </Text>
     </Pressable>
   );
-}
+});
 
 export function ShareTargetGrid({
   selectedIds,
@@ -130,7 +132,7 @@ export function ShareTargetGrid({
             : t('vault.share_modal_no_targets')}
         </Text>
       ) : (
-        <FlatList
+        <FlashList
           data={filtered}
           keyExtractor={item => item.id}
           numColumns={4}
