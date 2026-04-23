@@ -79,6 +79,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: true,
       buildNumber: iosBuildNumber,
       bundleIdentifier: iosBundleId,
+      associatedDomains: ['applinks:kurate.co.in'],
       entitlements: {
         'aps-environment': 'production',
       },
@@ -96,6 +97,24 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: '#ffffff',
       },
       googleServicesFile: './google-services.json',
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [
+            { scheme: 'https', host: 'kurate.co.in', pathPrefix: '/groups' },
+            { scheme: 'https', host: 'kurate.co.in', pathPrefix: '/people' },
+            { scheme: 'https', host: 'kurate.co.in', pathPattern: '/home' },
+            { scheme: 'https', host: 'kurate.co.in', pathPattern: '/profile' },
+            {
+              scheme: 'https',
+              host: 'kurate.co.in',
+              pathPattern: '/notifications',
+            },
+          ],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
     },
     web: {
       bundler: 'metro',
