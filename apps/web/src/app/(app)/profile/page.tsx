@@ -1,21 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+
+import { useProfileCounts } from "@kurate/hooks";
+import { ROUTES } from "@kurate/utils";
+
+import { Button } from "@/components/ui/button";
 
 import { ProfileEditModal } from "@/app/_components/profile/ProfileEditModal";
 import { ProfileSkeleton } from "@/app/_components/profile/ProfileSkeleton";
 import { ContentDNA } from "@/app/_components/vault/ContentDNA";
 import { useAuth } from "@/app/_libs/auth-context";
-import { ROUTES } from "@kurate/utils";
-import { useUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { useContentDNA } from "@/app/_libs/hooks/useContentDNA";
+import { useUserInterests } from "@/app/_libs/hooks/useUserInterests";
 import { createClient } from "@/app/_libs/supabase/client";
-import { useTranslations } from "@/i18n/use-translations";
-import { Button } from "@/components/ui/button";
 import { LogOutIcon } from "@/components/icons";
+import { useTranslations } from "@/i18n/use-translations";
 
 const DASH = "—";
 
@@ -25,29 +28,14 @@ export default function ProfilePage() {
   const { user, profile, loading } = useAuth();
   const { data: interests = [] } = useUserInterests(user?.id);
   const { data: contentDNA = [] } = useContentDNA();
+  const supabase = createClient();
+  const { data: counts } = useProfileCounts({ supabase, userId: user?.id ?? null });
   const [editOpen, setEditOpen] = useState(false);
-  const [savedCount, setSavedCount] = useState<number | null>(null);
 
   const handleLogout = useCallback(async () => {
-    const supabase = createClient();
     await supabase.auth.signOut();
     router.push(ROUTES.AUTH.LOGIN);
-  }, [router]);
-
-  useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-
-    async function fetchCounts() {
-      const { count } = await supabase
-        .from("user_logged_items")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id);
-      setSavedCount(count ?? 0);
-    }
-
-    fetchCounts();
-  }, [user]);
+  }, [supabase, router]);
 
   if (loading && !profile) {
     return <ProfileSkeleton />;
@@ -60,11 +48,9 @@ export default function ProfilePage() {
   const avatarLetter = displayName ? displayName[0].toUpperCase() : "?";
 
   const profileStats = [
-    { labelKey: "stat_saved" as const, value: savedCount !== null ? savedCount : DASH },
-    { labelKey: "stat_read" as const, value: DASH },
-    { labelKey: "stat_shared" as const, value: DASH },
-    { labelKey: "stat_following" as const, value: DASH },
-    { labelKey: "stat_trust_score" as const, value: DASH },
+    { labelKey: "stat_saved" as const, value: counts ? counts.saved : DASH },
+    { labelKey: "stat_read" as const, value: counts ? counts.read : DASH },
+    { labelKey: "stat_shared" as const, value: counts ? counts.shared : DASH },
   ];
 
   return (
@@ -123,13 +109,9 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      <ContentDNA interests={contentDNA} totalItems={savedCount ?? 0} />
+      <ContentDNA interests={contentDNA} totalItems={counts?.saved ?? 0} />
 
-      <Button
-        variant="outline"
-        className="text-destructive mt-8 w-full"
-        onClick={handleLogout}
-      >
+      <Button variant="outline" className="text-destructive mt-8 w-full" onClick={handleLogout}>
         <LogOutIcon className="size-4" />
         {t("logout")}
       </Button>

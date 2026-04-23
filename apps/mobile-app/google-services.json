@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1044264660022",
+    "project_id": "kurate-76463",
+    "storage_bucket": "kurate-76463.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1044264660022:android:b1219cb72ff65582893c97",
+        "android_client_info": {
+          "package_name": "in.co.kurate.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBACTlufG7bnxQ2cS6OPy4_loPfQLdFXwo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

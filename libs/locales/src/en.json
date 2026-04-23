@@ -315,7 +315,25 @@
       "interests_label": "What are you into?",
       "show_more": "Show more",
       "show_less": "Show less",
-      "submit": "Get started"
+      "submit": "Get started",
+      "extension": {
+        "installed_title": "You're all set!",
+        "installed_subtitle": "Extension is already installed. Taking you to your vault…",
+        "title": "One last thing",
+        "subtitle": "Save anything from the web with a single click — no copy-pasting needed.",
+        "benefit_1": "Save any page, article, or video in one click",
+        "benefit_2": "Auto-extracts title, image & reading time",
+        "benefit_3": "Stays perfectly synced with your vault",
+        "install_button": "Add to Chrome — it's free",
+        "installing_button": "Waiting for installation…",
+        "skip": "I'll set it up later",
+        "mockup_url": "kurate.co.in",
+        "mockup_name": "Kurate",
+        "mockup_save_label": "Save to your vault",
+        "mockup_saved": "Page saved to your vault ✓",
+        "mockup_save_prompt": "Save current page instantly",
+        "mockup_save_button": "Save to Vault"
+      }
     },
     "signup": {
       "title": "Start reading smarter",
