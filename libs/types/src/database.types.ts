@@ -122,33 +122,46 @@ export type Database = {
       }
       conversation_members: {
         Row: {
+          added_by: string | null
           convo_id: string
           id: string
           joined_at: string
           last_read_at: string | null
+          muted_until: string | null
           role: Database["public"]["Enums"]["role_enum"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          added_by?: string | null
           convo_id: string
           id?: string
           joined_at?: string
           last_read_at?: string | null
+          muted_until?: string | null
           role?: Database["public"]["Enums"]["role_enum"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          added_by?: string | null
           convo_id?: string
           id?: string
           joined_at?: string
           last_read_at?: string | null
+          muted_until?: string | null
           role?: Database["public"]["Enums"]["role_enum"]
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conversation_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conversation_members_convo_id_fkey"
             columns: ["convo_id"]
@@ -981,6 +994,7 @@ export type Database = {
           bookmark_notifications: boolean | null
           co_engagement_notifications: boolean | null
           comment_notifications: boolean | null
+          dm_push_notifications: boolean | null
           email_enabled: boolean | null
           follow_notifications: boolean | null
           id: string
@@ -996,6 +1010,7 @@ export type Database = {
           bookmark_notifications?: boolean | null
           co_engagement_notifications?: boolean | null
           comment_notifications?: boolean | null
+          dm_push_notifications?: boolean | null
           email_enabled?: boolean | null
           follow_notifications?: boolean | null
           id?: string
@@ -1011,6 +1026,7 @@ export type Database = {
           bookmark_notifications?: boolean | null
           co_engagement_notifications?: boolean | null
           comment_notifications?: boolean | null
+          dm_push_notifications?: boolean | null
           email_enabled?: boolean | null
           follow_notifications?: boolean | null
           id?: string
@@ -1726,6 +1742,7 @@ export type Database = {
         Args: { p_convo_id: string; p_user_id: string }
         Returns: undefined
       }
+      notify_via_fcm: { Args: { p_payload: Json }; Returns: undefined }
       text_array_to_string: {
         Args: { arr: string[]; sep: string }
         Returns: string
@@ -1754,6 +1771,8 @@ export type Database = {
         | "also_commented"
         | "must_read_broadcast"
         | "co_engaged"
+        | "group_invite"
+        | "mention"
       message_type_enum: "text" | "logged_item"
       provider_enum: "supabase" | "s3" | "r2" | "do_spaces" | "gcs"
       role_enum: "owner" | "admin" | "member"
@@ -1910,6 +1929,8 @@ export const Constants = {
         "also_commented",
         "must_read_broadcast",
         "co_engaged",
+        "group_invite",
+        "mention",
       ],
       message_type_enum: ["text", "logged_item"],
       provider_enum: ["supabase", "s3", "r2", "do_spaces", "gcs"],

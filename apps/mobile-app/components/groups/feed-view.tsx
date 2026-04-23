@@ -25,6 +25,8 @@ interface FeedViewProps {
   currentRole?: string;
   scrollToDropId?: string | null;
   onScrollComplete?: () => void;
+  openCommentsForDropId?: string | null;
+  onCommentsOpened?: () => void;
 }
 
 export function FeedView({
@@ -32,6 +34,8 @@ export function FeedView({
   currentRole,
   scrollToDropId,
   onScrollComplete,
+  openCommentsForDropId,
+  onCommentsOpened,
 }: FeedViewProps) {
   const { t } = useLocalization();
   const userId = useAuthStore(state => state.userId) ?? '';
@@ -124,9 +128,11 @@ export function FeedView({
         onDelete={deleteDrop}
         onRetry={handleRetry}
         onDismiss={handleDismiss}
+        openCommentsForDropId={openCommentsForDropId}
+        onCommentsOpened={onCommentsOpened}
       />
     ),
-    [currentRole, deleteDrop, handleRetry, handleDismiss],
+    [currentRole, deleteDrop, handleRetry, handleDismiss, openCommentsForDropId, onCommentsOpened],
   );
 
   const keyExtractor = useCallback(

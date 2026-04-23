@@ -269,24 +269,32 @@ CREATE TRIGGER trg_update_reading_time
 -- Notification triggers
 -- ═══════════════════════════════════════════════════════════
 
--- Enable pg_net for async HTTP calls
+-- Enable pg_net for async HTTP calls (Supabase hosted uses 'net' schema)
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
 -- ── Helper: fire FCM edge function asynchronously ─────────
+-- Reads URL and key from Supabase Vault (encrypted secrets).
+-- See 03_seed.sql for setup instructions.
 
--- CREATE OR REPLACE FUNCTION public.notify_via_fcm(p_notification_id UUID)
--- RETURNS VOID AS $$
--- BEGIN
---   PERFORM pg_net.http_post(
---     url     := current_setting('app.supabase_url', true) || '/functions/v1/send-fcm',
---     body    := jsonb_build_object('notification_id', p_notification_id),
---     headers := jsonb_build_object(
---       'Content-Type',  'application/json',
---       'Authorization', 'Bearer ' || current_setting('app.service_role_key', true)
---     )
---   );
--- END;
--- $$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE OR REPLACE FUNCTION public.notify_via_fcm(p_payload JSONB)
+RETURNS VOID AS $$
+DECLARE
+  v_url TEXT;
+  v_key TEXT;
+BEGIN
+  SELECT decrypted_secret INTO v_url FROM vault.decrypted_secrets WHERE name = 'fcm_push_url';
+  SELECT decrypted_secret INTO v_key FROM vault.decrypted_secrets WHERE name = 'service_role_key';
+
+  PERFORM net.http_post(
+    url     := v_url,
+    body    := p_payload,
+    headers := jsonb_build_object(
+      'Content-Type',  'application/json',
+      'Authorization', 'Bearer ' || v_key
+    )
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
 -- ── Like: INSERT ───────────────────────────────────────────
@@ -330,7 +338,11 @@ BEGIN
     VALUES (v_notif_id, NEW.user_id)
     ON CONFLICT DO NOTHING;
 
-    -- PERFORM public.notify_via_fcm(v_notif_id);
+    PERFORM public.notify_via_fcm(jsonb_build_object(
+      'type', 'notification',
+      'notification_id', v_notif_id,
+      'recipient_id', v_recipient
+    ));
   ELSE
     -- Subsequent like: update actor only, no re-push
     INSERT INTO public.notification_actors (notification_id, actor_id)
@@ -426,7 +438,11 @@ BEGIN
     VALUES (v_notif_id, NEW.user_id)
     ON CONFLICT DO NOTHING;
 
-    -- PERFORM public.notify_via_fcm(v_notif_id);
+    PERFORM public.notify_via_fcm(jsonb_build_object(
+      'type', 'notification',
+      'notification_id', v_notif_id,
+      'recipient_id', v_recipient
+    ));
   ELSE
     INSERT INTO public.notification_actors (notification_id, actor_id)
     VALUES (v_notif_id, NEW.user_id)
@@ -485,127 +501,68 @@ CREATE TRIGGER trg_must_read_delete_notification
   FOR EACH ROW EXECUTE FUNCTION public.handle_must_read_delete();
 
 
--- ── Bookmark: INSERT ──────────────────────────────────────
-
-CREATE OR REPLACE FUNCTION public.handle_bookmark_insert()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_recipient          UUID;
-  v_notif_id           UUID;
-  v_bookmark_notifs    BOOLEAN;
-  v_push_enabled       BOOLEAN;
-BEGIN
-  SELECT shared_by INTO v_recipient FROM public.group_posts WHERE id = NEW.group_post_id;
-
-  IF NEW.user_id = v_recipient THEN RETURN NEW; END IF;
-
-  SELECT bookmark_notifications, push_enabled
-    INTO v_bookmark_notifs, v_push_enabled
-    FROM public.notification_preferences
-   WHERE user_id = v_recipient;
-
-  IF v_bookmark_notifs = FALSE THEN RETURN NEW; END IF;
-
-  SELECT id INTO v_notif_id
-    FROM public.notifications
-   WHERE recipient_id = v_recipient
-     AND event_type = 'bookmark'
-     AND event_id = NEW.group_post_id;
-
-  IF v_notif_id IS NULL THEN
-    INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
-    VALUES (v_recipient, NEW.user_id, 'bookmark', NEW.group_post_id, 'saved your post')
-    RETURNING id INTO v_notif_id;
-
-    INSERT INTO public.notification_actors (notification_id, actor_id)
-    VALUES (v_notif_id, NEW.user_id)
-    ON CONFLICT DO NOTHING;
-
-    -- PERFORM public.notify_via_fcm(v_notif_id);
-  ELSE
-    INSERT INTO public.notification_actors (notification_id, actor_id)
-    VALUES (v_notif_id, NEW.user_id)
-    ON CONFLICT DO NOTHING;
-
-    UPDATE public.notifications
-       SET actor_id = NEW.user_id, updated_at = NOW()
-     WHERE id = v_notif_id;
-  END IF;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER trg_bookmark_notification
-  AFTER INSERT ON public.group_posts_bookmarks
-  FOR EACH ROW EXECUTE FUNCTION public.handle_bookmark_insert();
-
-
--- ── Bookmark: DELETE ──────────────────────────────────────
-
-CREATE OR REPLACE FUNCTION public.handle_bookmark_delete()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_recipient UUID;
-  v_notif_id  UUID;
-  v_remaining INTEGER;
-BEGIN
-  SELECT shared_by INTO v_recipient FROM public.group_posts WHERE id = OLD.group_post_id;
-
-  SELECT id INTO v_notif_id
-    FROM public.notifications
-   WHERE recipient_id = v_recipient
-     AND event_type = 'bookmark'
-     AND event_id = OLD.group_post_id;
-
-  IF v_notif_id IS NULL THEN RETURN OLD; END IF;
-
-  DELETE FROM public.notification_actors
-   WHERE notification_id = v_notif_id AND actor_id = OLD.user_id;
-
-  SELECT COUNT(*) INTO v_remaining
-    FROM public.notification_actors
-   WHERE notification_id = v_notif_id;
-
-  IF v_remaining = 0 THEN
-    DELETE FROM public.notifications WHERE id = v_notif_id;
-  END IF;
-
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER trg_bookmark_delete_notification
-  AFTER DELETE ON public.group_posts_bookmarks
-  FOR EACH ROW EXECUTE FUNCTION public.handle_bookmark_delete();
-
-
 -- ── Comment: INSERT (no aggregation) ──────────────────────
 
 CREATE OR REPLACE FUNCTION public.handle_comment_insert()
 RETURNS TRIGGER AS $$
 DECLARE
-  v_recipient        UUID;
-  v_notif_id         UUID;
-  v_comment_notifs   BOOLEAN;
-  v_push_enabled     BOOLEAN;
+  v_recipient          UUID;
+  v_notif_id           UUID;
+  v_comment_notifs     BOOLEAN;
+  v_push_enabled       BOOLEAN;
+  v_mention_handle     TEXT;
+  v_mention_user_id    UUID;
+  v_mention_notif_id   UUID;
+  v_mention_pref       BOOLEAN;
 BEGIN
   SELECT shared_by INTO v_recipient FROM public.group_posts WHERE id = NEW.group_post_id;
 
-  IF NEW.user_id = v_recipient THEN RETURN NEW; END IF;
+  -- Comment notification to post owner
+  IF NEW.user_id != v_recipient THEN
+    SELECT comment_notifications, push_enabled
+      INTO v_comment_notifs, v_push_enabled
+      FROM public.notification_preferences
+     WHERE user_id = v_recipient;
 
-  SELECT comment_notifications, push_enabled
-    INTO v_comment_notifs, v_push_enabled
-    FROM public.notification_preferences
-   WHERE user_id = v_recipient;
+    IF v_comment_notifs IS DISTINCT FROM FALSE THEN
+      INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
+      VALUES (v_recipient, NEW.user_id, 'comment', NEW.group_post_id, 'commented on your post')
+      RETURNING id INTO v_notif_id;
 
-  IF v_comment_notifs = FALSE THEN RETURN NEW; END IF;
+      PERFORM public.notify_via_fcm(jsonb_build_object(
+        'type', 'notification',
+        'notification_id', v_notif_id,
+        'recipient_id', v_recipient
+      ));
+    END IF;
+  END IF;
 
-  INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
-  VALUES (v_recipient, NEW.user_id, 'comment', NEW.group_post_id, 'commented on your post')
-  RETURNING id INTO v_notif_id;
+  -- @mention notifications (backend-ready)
+  FOR v_mention_handle IN
+    SELECT (regexp_matches(NEW.comment_text, '@([a-zA-Z0-9_]+)', 'g'))[1]
+  LOOP
+    SELECT id INTO v_mention_user_id
+      FROM public.profiles
+     WHERE handle = v_mention_handle;
 
-  -- PERFORM public.notify_via_fcm(v_notif_id);
+    IF v_mention_user_id IS NULL THEN CONTINUE; END IF;
+    IF v_mention_user_id = NEW.user_id THEN CONTINUE; END IF;
+    IF v_mention_user_id = v_recipient THEN CONTINUE; END IF;
+
+    SELECT mention_notifications INTO v_mention_pref
+      FROM public.notification_preferences WHERE user_id = v_mention_user_id;
+    IF v_mention_pref = FALSE THEN CONTINUE; END IF;
+
+    INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
+    VALUES (v_mention_user_id, NEW.user_id, 'mention', NEW.group_post_id, 'mentioned you in a comment')
+    RETURNING id INTO v_mention_notif_id;
+
+    PERFORM public.notify_via_fcm(jsonb_build_object(
+      'type', 'notification',
+      'notification_id', v_mention_notif_id,
+      'recipient_id', v_mention_user_id
+    ));
+  END LOOP;
 
   RETURN NEW;
 END;
@@ -712,62 +669,6 @@ AS $$
 $$;
 
 
--- ── New Post: fan-out per group member ─────────────────────
-
--- CREATE OR REPLACE FUNCTION public.handle_new_post_insert()
--- RETURNS TRIGGER AS $$
--- DECLARE
---   v_content_type    TEXT;
---   v_handle          TEXT;
---   v_group_name      TEXT;
---   v_member          RECORD;
---   v_notif_id        UUID;
---   v_new_post_notifs BOOLEAN;
---   v_push_enabled    BOOLEAN;
--- BEGIN
---   SELECT content_type::TEXT INTO v_content_type
---     FROM public.logged_items WHERE id = NEW.logged_item_id;
-
---   SELECT handle INTO v_handle
---     FROM public.profiles WHERE id = NEW.shared_by;
-
---   SELECT group_name INTO v_group_name
---     FROM public.conversations WHERE id = NEW.convo_id;
-
---   FOR v_member IN
---     SELECT user_id FROM public.conversation_members
---      WHERE convo_id = NEW.convo_id AND user_id != NEW.shared_by
---   LOOP
---     SELECT new_post_notifications, push_enabled
---       INTO v_new_post_notifs, v_push_enabled
---       FROM public.notification_preferences
---      WHERE user_id = v_member.user_id;
-
---     IF v_new_post_notifs = FALSE THEN
---       CONTINUE;
---     END IF;
-
---     INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
---     VALUES (
---       v_member.user_id,
---       NEW.shared_by,
---       'new_post',
---       NEW.id,
---       v_handle || ' shared a ' || COALESCE(v_content_type, 'post') || ' in ' || COALESCE(v_group_name, 'your group')
---     )
---     RETURNING id INTO v_notif_id;
-
---     -- PERFORM public.notify_via_fcm(v_notif_id);
---   END LOOP;
-
---   RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- CREATE TRIGGER trg_new_post_notification
---   AFTER INSERT ON public.group_posts
---   FOR EACH ROW EXECUTE FUNCTION public.handle_new_post_insert();
-
 -- ── Helper: get all users who engaged with a post ────────────────────────────
 -- Returns distinct user_ids from likes, must_reads, and comments (not bookmarks — unused in app).
 
@@ -827,6 +728,12 @@ BEGIN
       VALUES (v_member.user_id, NEW.user_id, 'must_read_broadcast', NEW.group_post_id,
               'marked a post as must-read')
       RETURNING id INTO v_notif_id;
+
+      PERFORM public.notify_via_fcm(jsonb_build_object(
+        'type', 'notification',
+        'notification_id', v_notif_id,
+        'recipient_id', v_member.user_id
+      ));
     ELSE
       UPDATE public.notifications
          SET actor_id = NEW.user_id, updated_at = NOW()
@@ -895,6 +802,12 @@ BEGIN
       VALUES (v_recipient, NEW.user_id, 'co_engaged', NEW.group_post_id,
               v_action_label || ' ' || v_owner_name || '''s post')
       RETURNING id INTO v_notif_id;
+
+      PERFORM public.notify_via_fcm(jsonb_build_object(
+        'type', 'notification',
+        'notification_id', v_notif_id,
+        'recipient_id', v_recipient
+      ));
     ELSE
       UPDATE public.notifications
          SET actor_id = NEW.user_id,
@@ -970,6 +883,150 @@ CREATE TRIGGER trg_co_engagement_delete_must_read
 CREATE TRIGGER trg_co_engagement_delete_comment
   AFTER DELETE ON public.group_posts_comments
   FOR EACH ROW EXECUTE FUNCTION public.handle_co_engagement_delete();
+
+
+-- ── New Post: push-only fan-out (no notification row) ─────────────────────────
+
+CREATE OR REPLACE FUNCTION public.handle_new_post_push()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_poster_name     TEXT;
+  v_group_name      TEXT;
+  v_member          RECORD;
+  v_new_post_pref   BOOLEAN;
+BEGIN
+  SELECT COALESCE(
+    NULLIF(TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')), ''),
+    handle, 'Someone'
+  ) INTO v_poster_name FROM public.profiles WHERE id = NEW.shared_by;
+
+  SELECT group_name INTO v_group_name
+    FROM public.conversations WHERE id = NEW.convo_id;
+
+  FOR v_member IN
+    SELECT user_id, muted_until FROM public.conversation_members
+     WHERE convo_id = NEW.convo_id AND user_id != NEW.shared_by
+  LOOP
+    -- Skip if conversation is muted
+    IF v_member.muted_until IS NOT NULL AND v_member.muted_until > NOW() THEN CONTINUE; END IF;
+
+    SELECT new_post_notifications INTO v_new_post_pref
+      FROM public.notification_preferences
+     WHERE user_id = v_member.user_id;
+    IF v_new_post_pref = FALSE THEN CONTINUE; END IF;
+
+    PERFORM public.notify_via_fcm(jsonb_build_object(
+      'type', 'new_post',
+      'recipient_id', v_member.user_id,
+      'convo_id', NEW.convo_id,
+      'poster_name', v_poster_name,
+      'group_name', COALESCE(v_group_name, 'your group')
+    ));
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trg_new_post_push
+  AFTER INSERT ON public.group_posts
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_post_push();
+
+
+-- ── Group Invite: notify when added to a group ────────────────────────────────
+
+CREATE OR REPLACE FUNCTION public.handle_group_invite()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_is_group    BOOLEAN;
+  v_group_name  TEXT;
+  v_adder_name  TEXT;
+  v_notif_id    UUID;
+BEGIN
+  SELECT is_group, group_name INTO v_is_group, v_group_name
+    FROM public.conversations WHERE id = NEW.convo_id;
+
+  IF NOT v_is_group THEN RETURN NEW; END IF;
+  IF NEW.role = 'owner' THEN RETURN NEW; END IF;
+  IF NEW.added_by IS NULL THEN RETURN NEW; END IF;
+
+  SELECT COALESCE(
+    NULLIF(TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')), ''),
+    handle, 'Someone'
+  ) INTO v_adder_name FROM public.profiles WHERE id = NEW.added_by;
+
+  INSERT INTO public.notifications (recipient_id, actor_id, event_type, event_id, message)
+  VALUES (
+    NEW.user_id, NEW.added_by, 'group_invite', NEW.convo_id,
+    v_adder_name || ' added you to ' || COALESCE(v_group_name, 'a group')
+  )
+  RETURNING id INTO v_notif_id;
+
+  PERFORM public.notify_via_fcm(jsonb_build_object(
+    'type', 'notification',
+    'notification_id', v_notif_id,
+    'recipient_id', NEW.user_id
+  ));
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trg_group_invite_notification
+  AFTER INSERT ON public.conversation_members
+  FOR EACH ROW EXECUTE FUNCTION public.handle_group_invite();
+
+
+-- ── DM Message: push-only (no notification row) ──────────────────────────────
+
+CREATE OR REPLACE FUNCTION public.handle_dm_message_push()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_is_group      BOOLEAN;
+  v_sender_name   TEXT;
+  v_recipient_id  UUID;
+  v_dm_push       BOOLEAN;
+  v_muted_until   TIMESTAMPTZ;
+BEGIN
+  SELECT is_group INTO v_is_group FROM public.conversations WHERE id = NEW.convo_id;
+  IF v_is_group THEN RETURN NEW; END IF;
+
+  SELECT COALESCE(
+    NULLIF(TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')), ''),
+    handle, 'Someone'
+  ) INTO v_sender_name FROM public.profiles WHERE id = NEW.sender_id;
+
+  SELECT user_id, muted_until INTO v_recipient_id, v_muted_until
+    FROM public.conversation_members
+   WHERE convo_id = NEW.convo_id AND user_id != NEW.sender_id
+   LIMIT 1;
+
+  IF v_recipient_id IS NULL THEN RETURN NEW; END IF;
+
+  -- Skip if conversation is muted
+  IF v_muted_until IS NOT NULL AND v_muted_until > NOW() THEN RETURN NEW; END IF;
+
+  SELECT dm_push_notifications INTO v_dm_push
+    FROM public.notification_preferences WHERE user_id = v_recipient_id;
+  IF v_dm_push = FALSE THEN RETURN NEW; END IF;
+
+  PERFORM public.notify_via_fcm(jsonb_build_object(
+    'type', 'dm_message',
+    'recipient_id', v_recipient_id,
+    'convo_id', NEW.convo_id,
+    'sender_name', v_sender_name,
+    'message_text', LEFT(NEW.message_text, 100),
+    'sender_id', NEW.sender_id
+  ));
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trg_dm_message_push
+  AFTER INSERT ON public.messages
+  FOR EACH ROW EXECUTE FUNCTION public.handle_dm_message_push();
+
 
 -- ── Bucket summaries for thoughts ────────────────────────────
 -- Returns one row per bucket with latest text, timestamp, total count, and unread count.

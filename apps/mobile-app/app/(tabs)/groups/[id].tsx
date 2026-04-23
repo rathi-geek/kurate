@@ -20,7 +20,11 @@ import { GroupInfoView } from '@/components/groups/group-info-view';
 export default function GroupDetailScreen() {
   const { t } = useLocalization();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, scrollTo, openComments } = useLocalSearchParams<{
+    id: string;
+    scrollTo?: string;
+    openComments?: string;
+  }>();
   const groupId = id ?? '';
 
   const userId = useAuthStore(state => state.userId) ?? '';
@@ -44,7 +48,12 @@ export default function GroupDetailScreen() {
 
   const [view, setView] = useState<GroupView>('feed');
   const [infoOpen, setInfoOpen] = useState(false);
-  const [scrollToDropId, setScrollToDropId] = useState<string | null>(null);
+  const [scrollToDropId, setScrollToDropId] = useState<string | null>(
+    scrollTo ?? null,
+  );
+  const [openCommentsForDropId, setOpenCommentsForDropId] = useState<
+    string | null
+  >(openComments === 'true' && scrollTo ? scrollTo : null);
 
   const handleBack = () => router.back();
 
@@ -109,7 +118,11 @@ export default function GroupDetailScreen() {
             groupId={groupId}
             currentRole={currentRole}
             scrollToDropId={scrollToDropId}
-            onScrollComplete={() => setScrollToDropId(null)}
+            onScrollComplete={() => {
+              setScrollToDropId(null);
+            }}
+            openCommentsForDropId={openCommentsForDropId}
+            onCommentsOpened={() => setOpenCommentsForDropId(null)}
           />
         ) : (
           <LibraryView

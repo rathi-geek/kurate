@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
-import { Image } from 'react-native';
 
+import FastImage from 'react-native-fast-image';
 import { useRouter } from 'expo-router';
 
 import type { Notification } from '@kurate/types';
@@ -22,6 +22,8 @@ const NAVIGABLE_EVENTS = [
   'also_commented',
   'must_read_broadcast',
   'co_engaged',
+  'group_invite',
+  'mention',
 ];
 
 interface NotificationItemProps {
@@ -56,6 +58,12 @@ export const NotificationItem = React.memo(function NotificationItem({
     )
       return;
 
+    // group_invite: event_id is the convo_id directly
+    if (notification.event_type === 'group_invite') {
+      router.push(`/groups/${notification.event_id}`);
+      return;
+    }
+
     const { data } = await supabase
       .from('group_posts')
       .select('convo_id')
@@ -85,10 +93,10 @@ export const NotificationItem = React.memo(function NotificationItem({
         <View className="relative mt-0.5">
           <View className="h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary/10">
             {actor?.avatar_url ? (
-              <Image
+              <FastImage
                 source={{ uri: actor.avatar_url }}
-                className="h-full w-full rounded-full"
-                resizeMode="cover"
+                style={{ width: 36, height: 36, borderRadius: 9999 }}
+                resizeMode={FastImage.resizeMode.cover}
               />
             ) : (
               <Text className="font-sans text-sm font-bold text-primary">

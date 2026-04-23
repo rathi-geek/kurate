@@ -409,7 +409,9 @@
     "event_also_commented": "also commented on this post",
     "event_bookmark": "bookmarked your post",
     "event_follow": "started following you",
-    "event_mention": "mentioned you"
+    "event_mention": "mentioned you in a comment",
+    "event_group_invite": "added you to a group",
+    "event_co_engaged": "also engaged with a post"
   },
   "admin": {
     "nav": {

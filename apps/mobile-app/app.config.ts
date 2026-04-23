@@ -112,6 +112,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
         },
       ],
+      '@react-native-firebase/app',
+      '@react-native-firebase/messaging',
       'expo-router',
       'expo-font',
       'expo-updates',

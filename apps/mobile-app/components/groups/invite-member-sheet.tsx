@@ -150,6 +150,7 @@ export function InviteMemberSheet({
         convo_id: groupId,
         user_id: p.id,
         role,
+        added_by: userId,
       })),
     );
     setAdding(false);

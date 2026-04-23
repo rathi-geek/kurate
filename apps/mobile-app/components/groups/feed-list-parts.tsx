@@ -13,6 +13,8 @@ export interface FeedEntryItemProps {
   onDelete: (dropId: string) => Promise<void> | void;
   onRetry: (tempId: string) => void;
   onDismiss: (tempId: string) => void;
+  openCommentsForDropId?: string | null;
+  onCommentsOpened?: () => void;
 }
 
 export const FeedEntryItem = React.memo(function FeedEntryItem({
@@ -21,6 +23,8 @@ export const FeedEntryItem = React.memo(function FeedEntryItem({
   onDelete,
   onRetry,
   onDismiss,
+  openCommentsForDropId,
+  onCommentsOpened,
 }: FeedEntryItemProps) {
   if (entry.kind === 'pending') {
     return (
@@ -36,6 +40,8 @@ export const FeedEntryItem = React.memo(function FeedEntryItem({
       drop={entry.data}
       currentRole={currentRole}
       onDelete={onDelete}
+      autoOpenComments={openCommentsForDropId === entry.data.id}
+      onCommentsOpened={onCommentsOpened}
     />
   );
 });

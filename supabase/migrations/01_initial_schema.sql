@@ -282,6 +282,8 @@ CREATE TABLE IF NOT EXISTS public.conversation_members (
   joined_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_read_at TIMESTAMPTZ,
+  added_by     UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  muted_until  TIMESTAMPTZ,
   UNIQUE (convo_id, user_id)
 );
 
@@ -1042,7 +1044,7 @@ CREATE POLICY "Users can DELETE own devices"
 
   -- ── Notifications ──────────────────────────────────────────────────
 
-CREATE TYPE entity_type_enum AS ENUM ('like', 'must_read', 'comment', 'new_post', 'streak_reminder', 'weekly_digest', 'bookmark', 'also_must_read', 'also_commented', 'must_read_broadcast', 'co_engaged');
+CREATE TYPE entity_type_enum AS ENUM ('like', 'must_read', 'comment', 'new_post', 'streak_reminder', 'weekly_digest', 'bookmark', 'also_must_read', 'also_commented', 'must_read_broadcast', 'co_engaged', 'group_invite', 'mention');
 
 CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid primary key default gen_random_uuid(),
@@ -1128,6 +1130,7 @@ CREATE POLICY "Users can VIEW own notification actors"
   push_enabled boolean default true,
   email_enabled boolean default false,
   co_engagement_notifications boolean default true,
+  dm_push_notifications boolean default true,
   updated_at timestamp default now()
 );
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert as RNAlert } from 'react-native';
 import { Share2, Trash2 } from 'lucide-react-native';
 import { View } from '@/components/ui/view';
@@ -23,6 +23,8 @@ interface FeedDropCardProps {
   drop: GroupDrop;
   currentRole?: string;
   onDelete: (dropId: string) => Promise<void> | void;
+  autoOpenComments?: boolean;
+  onCommentsOpened?: () => void;
 }
 
 const STORAGE_BASE = supabaseUrl
@@ -36,11 +38,21 @@ export const FeedDropCard = React.memo(function FeedDropCard({
   drop,
   currentRole,
   onDelete,
+  autoOpenComments,
+  onCommentsOpened,
 }: FeedDropCardProps) {
   const { t } = useLocalization();
   const currentUserId = useAuthStore(s => s.userId) ?? '';
   const [shareOpen, setShareOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+
+  // Auto-open comments when triggered from push notification
+  useEffect(() => {
+    if (autoOpenComments) {
+      setCommentsOpen(true);
+      onCommentsOpened?.();
+    }
+  }, [autoOpenComments, onCommentsOpened]);
 
   useRefreshLoggedItem(
     drop.item

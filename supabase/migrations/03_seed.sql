@@ -3,6 +3,34 @@
 -- All seed / reference data
 -- ═══════════════════════════════════════════
 
+-- ═══════════════════════════════════════════
+-- ⚠️  REQUIRED: Vault secrets for push notifications
+-- ═══════════════════════════════════════════
+-- After running migrations (or after db reset), you MUST set these vault secrets
+-- in the Supabase SQL editor. Without them, push notifications will fail.
+--
+-- The notify_via_fcm() function in 02_functions.sql reads these at runtime.
+--
+-- Run these in the SQL editor (replace with real values from your environment):
+--
+--   SELECT vault.create_secret(
+--     'https://<PROJECT_REF>.supabase.co/functions/v1/send-push',
+--     'fcm_push_url'
+--   );
+--
+--   SELECT vault.create_secret(
+--     '<SERVICE_ROLE_KEY>',
+--     'service_role_key'
+--   );
+--
+-- Where to find these values:
+--   PROJECT_REF:      Supabase Dashboard → Project Settings → General → Reference ID
+--   SERVICE_ROLE_KEY: Supabase Dashboard → Project Settings → API → Secret keys → default
+--
+-- Also required (set in Supabase Dashboard → Edge Functions → Secrets):
+--   FCM_SERVICE_ACCOUNT: Firebase Console → Project Settings → Service accounts → Generate new private key
+-- ═══════════════════════════════════════════
+
 
 -- ── Interests ─────────────────────────────────────────────────
 
