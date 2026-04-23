@@ -46,3 +46,6 @@ Thumbs.db
 # Local caches (scaffolding/tools)
 .cache
 .pnpm-store
+
+# Browser extension build
+apps/extension/

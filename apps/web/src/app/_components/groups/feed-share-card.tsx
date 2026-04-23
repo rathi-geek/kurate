@@ -174,7 +174,7 @@ export const FeedShareCard = memo(function FeedShareCard({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="self-center flex items-center gap-2">
           {/* Share — visible when drop has a linked item */}
           {drop.item && (
             <button

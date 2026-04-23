@@ -68,3 +68,5 @@ export type { BucketSummary } from "./useBucketSummaries";
 export { useDeleteThought } from "./useDeleteThought";
 export { useEditThought } from "./useEditThought";
 export { useBucketLastRead } from "./useBucketLastRead";
+export { useProfileCounts } from "./useProfileCounts";
+export type { ProfileCounts } from "./useProfileCounts";

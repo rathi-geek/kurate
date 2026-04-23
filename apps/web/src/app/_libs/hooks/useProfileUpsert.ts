@@ -12,9 +12,10 @@ import type { HandleStatus } from "@/app/_libs/hooks/useUsernameAvailability";
 
 interface UseProfileUpsertOptions {
   onHandleStatusChange: (status: HandleStatus) => void;
+  onSuccess?: (nextUrl: string | null) => void;
 }
 
-export function useProfileUpsert({ onHandleStatusChange }: UseProfileUpsertOptions) {
+export function useProfileUpsert({ onHandleStatusChange, onSuccess }: UseProfileUpsertOptions) {
   const router = useRouter();
   const tV = useTranslations("validation");
   const [loading, setLoading] = useState(false);
@@ -76,7 +77,11 @@ export function useProfileUpsert({ onHandleStatusChange }: UseProfileUpsertOptio
     }
     track("onboarding_completed", { interests_selected: interests.length });
 
-    router.replace(nextUrl ?? ROUTES.APP.HOME);
+    if (onSuccess) {
+      onSuccess(nextUrl);
+    } else {
+      router.replace(nextUrl ?? ROUTES.APP.HOME);
+    }
   }
 
   return { submit, loading, usernameError, setUsernameError };

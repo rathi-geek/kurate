@@ -103,6 +103,10 @@ export default defineBackground(() => {
           return { ok: false, error: 'Untrusted origin' };
         }
 
+        if (message?.type === 'KURATE_PING') {
+          return { ok: true, type: 'KURATE_PONG' };
+        }
+
         if (message?.type !== 'KURATE_AUTH_SESSION') {
           return { ok: false, error: 'Unknown external message' };
         }

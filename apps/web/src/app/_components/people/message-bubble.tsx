@@ -115,8 +115,9 @@ export function MessageBubble({
 
   return (
     <div
+      onMouseLeave={() => setPickerOpen(false)}
       className={`group/msg relative flex gap-2 px-4 ${isContinuation ? "pt-0.5 pb-1" : "py-1"} ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-      <div className={`flex max-w-[75%] flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}>
+      <div className={`flex max-w-[min(75%,360px)] flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}>
         {/* Bubble */}
         <div className="relative" ref={pickerRef}>
           {/* Floating action pill — beside the bubble */}
@@ -212,7 +213,7 @@ export function MessageBubble({
           )}
 
           <div
-            className={`rounded-bubble px-3 py-2 text-sm ${
+            className={`rounded-2xl text-sm overflow-hidden ${
               isOwn
                 ? "bg-primary text-primary-foreground rounded-br-sm"
                 : "bg-surface text-foreground border-border rounded-bl-sm border"
@@ -220,7 +221,7 @@ export function MessageBubble({
             {/* Quoted parent message */}
             {parentMessage && (
               <div
-                className={`mb-2 rounded-lg border-l-2 py-1 pr-1 pl-2 text-[11px] ${
+                className={`mx-3 mt-2 mb-1 rounded-lg border-l-2 py-1 pr-1 pl-2 text-[11px] ${
                   isOwn ? "border-white/40 bg-white/10" : "border-primary/40 bg-background/60"
                 }`}>
                 <p className={`font-semibold ${isOwn ? "text-white/80" : "text-foreground/70"}`}>
@@ -234,21 +235,21 @@ export function MessageBubble({
 
             {/* Note above link (logged_item type) */}
             {message.message_type === "logged_item" && message.message_text && (
-              <p className="mb-2 text-sm">{message.message_text}</p>
+              <p className="px-3 pt-2 pb-1 text-sm">{message.message_text}</p>
             )}
 
-            {/* Link card */}
+            {/* Link card — edge-to-edge, bubble's overflow-hidden clips the corners */}
             {message.message_type === "logged_item" && message.item && (
               <Link
                 href={message.item.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => track("link_opened", { context: "personal_chat" })}
-                className={`block overflow-hidden rounded-card border ${
-                  isOwn ? "border-white/20 bg-white/10" : "border-border bg-background"
+                className={`block ${
+                  isOwn ? "bg-white/10" : "bg-background"
                 } transition-opacity hover:opacity-80`}>
                 {message.item.preview_image_url && (
-                  <span className="relative block h-32 w-full">
+                  <div className="relative aspect-video w-full">
                     <Image
                       src={message.item.preview_image_url}
                       alt={message.item.title ?? ""}
@@ -256,12 +257,12 @@ export function MessageBubble({
                       className="object-cover"
                       sizes="(max-width: 480px) 100vw, 360px"
                     />
-                  </span>
+                  </div>
                 )}
-                <div className="p-2">
+                <div className="px-3 py-2">
                   {message.item.title && (
                     <p
-                      className={`line-clamp-2 text-xs font-medium ${isOwn ? "text-white" : "text-foreground"}`}>
+                      className={`line-clamp-2 text-xs font-semibold leading-snug ${isOwn ? "text-white" : "text-foreground"}`}>
                       {decodeHtmlEntities(message.item.title)}
                     </p>
                   )}
@@ -271,29 +272,32 @@ export function MessageBubble({
                       {decodeHtmlEntities(message.item.description)}
                     </p>
                   )}
-                  <p
-                    className={`mt-1 truncate text-[10px] ${isOwn ? "text-white/50" : "text-muted-foreground/70"}`}>
-                    {(() => { try { return new URL(message.item.url).hostname.replace("www.", ""); } catch { return message.item.url; } })()}
-                  </p>
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <p
+                      className={`truncate text-[10px] ${isOwn ? "text-white/50" : "text-muted-foreground/70"}`}>
+                      {new URL(message.item.url).hostname.replace("www.", "")}
+                    </p>
+                    <span
+                      className={`shrink-0 text-[9px] leading-none ${isOwn ? "text-white/50" : "text-muted-foreground/60"}`}>
+                      {formatTime(message.created_at)}
+                    </span>
+                  </div>
                 </div>
               </Link>
             )}
-            <div className="flex flex-row items-end justify-between gap-2">
-              {/* Plain text */}
-              {message.message_type === "text" && (
-                <p className="leading-none wrap-break-word whitespace-pre-wrap">
+
+            {/* Plain text + timestamp inline at end */}
+            {message.message_type === "text" && (
+              <div className="flex items-end gap-1.5 px-3 py-2">
+                <p className="flex-1 leading-snug wrap-break-word whitespace-pre-wrap">
                   {message.message_text}
                 </p>
-              )}
-
-              {/* Timestamp — inside pill, bottom-right like WhatsApp */}
-              <div className="flex justify-end">
                 <span
-                  className={`text-[9px] leading-none ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>
+                  className={`shrink-0 text-[9px] leading-none ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>
                   {formatTime(message.created_at)}
                 </span>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

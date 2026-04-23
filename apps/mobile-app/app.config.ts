@@ -36,6 +36,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const androidPackage = process.env.ANDROID_PACKAGE || 'in.co.kurate.app';
   const scheme = 'kurate';
 
+  const expoOwner = process.env.EXPO_OWNER ?? 'admin_nksqr';
+
   const extra: AppExtra = { appEnv };
 
   if (process.env.EXPO_PUBLIC_API_URL) {
@@ -46,15 +48,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   extra.googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
   extra.googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
   extra.eas = {
-    projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? '',
+    projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? 'e02eb9c0-0871-4b33-8c2f-bc05baf22998',
   };
-  if (process.env.EXPO_OWNER) {
-    extra.owner = process.env.EXPO_OWNER;
-  }
+  extra.owner = expoOwner;
 
   return {
     ...config,
-    owner: process.env.EXPO_OWNER,
+    owner: expoOwner,
     name,
     slug,
     version,
@@ -86,6 +86,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ITSAppUsesNonExemptEncryption: false,
         UIBackgroundModes: ['remote-notification'],
       },
+      googleServicesFile: './GoogleService-Info.plist',
     },
     android: {
       versionCode: androidVersionCode,
@@ -94,6 +95,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
       },
+      googleServicesFile: './google-services.json',
     },
     web: {
       bundler: 'metro',
@@ -116,6 +118,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       'expo-web-browser',
       'expo-background-task',
       'expo-apple-authentication',
+      '@react-native-firebase/app',
+      '@react-native-firebase/crashlytics',
     ],
     experiments: {
       typedRoutes: true,
