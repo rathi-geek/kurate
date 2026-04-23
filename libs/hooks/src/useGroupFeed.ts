@@ -226,7 +226,7 @@ export function useGroupFeed(
         "postgres_changes",
         { event: "*", schema: "public", table: "group_posts_likes" },
         (payload) => {
-          const row = (payload.new ?? payload.old) as { group_post_id?: string };
+          const row = (payload.eventType === "DELETE" ? payload.old : payload.new) as { group_post_id?: string };
           if (!row?.group_post_id) return;
           if (new Set(postIdsRef.current).has(row.group_post_id))
             void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });
@@ -237,7 +237,7 @@ export function useGroupFeed(
         "postgres_changes",
         { event: "*", schema: "public", table: "group_posts_must_reads" },
         (payload) => {
-          const row = (payload.new ?? payload.old) as { group_post_id?: string };
+          const row = (payload.eventType === "DELETE" ? payload.old : payload.new) as { group_post_id?: string };
           if (!row?.group_post_id) return;
           if (new Set(postIdsRef.current).has(row.group_post_id))
             void queryClient.invalidateQueries({ queryKey: queryKeys.groups.feed(groupId) });

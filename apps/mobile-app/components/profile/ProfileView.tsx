@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { Alert, Image, ScrollView } from 'react-native';
 import { LogOut } from 'lucide-react-native';
+import { useProfileCounts } from '@kurate/hooks';
 
 import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
@@ -25,20 +26,12 @@ interface ProfileViewProps {
 
 function ProfileStats({ userId }: { userId: string }) {
   const { t } = useLocalization();
-  const [savedCount, setSavedCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    supabase
-      .from('user_logged_items')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .then(({ count }) => setSavedCount(count ?? 0));
-  }, [userId]);
+  const { data: counts } = useProfileCounts({ supabase, userId });
 
   const stats = [
-    { key: 'stat_saved', value: savedCount !== null ? savedCount : DASH },
-    { key: 'stat_read', value: DASH },
-    { key: 'stat_shared', value: DASH },
+    { key: 'stat_saved', value: counts ? counts.saved : DASH },
+    { key: 'stat_read', value: counts ? counts.read : DASH },
+    { key: 'stat_shared', value: counts ? counts.shared : DASH },
     { key: 'stat_following', value: DASH },
     { key: 'stat_trust_score', value: DASH },
   ];

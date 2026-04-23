@@ -32,6 +32,7 @@ export const queryKeys = {
     all: ["user"] as const,
     profile: (id: string) => ["user", "profile", id] as const,
     interests: (id: string) => ["user", "interests", id] as const,
+    profileCounts: (id: string) => ["user", "profileCounts", id] as const,
   },
 
   // ─── Groups ───────────────────────────────────────────────────────
