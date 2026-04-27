@@ -35,7 +35,7 @@ const AvatarItem = React.memo(function AvatarItem({
     <Pressable
       onPress={onPress}
       disabled={isShared}
-      className="w-[25%] items-center py-2"
+      className=" items-center py-2"
       style={{ opacity: isShared ? 0.6 : 1 }}
     >
       <View className="relative">
@@ -63,7 +63,7 @@ const AvatarItem = React.memo(function AvatarItem({
         )}
       </View>
       <Text
-        className="mt-1 max-w-[80px] text-center text-xs text-foreground"
+        className="mt-1  text-center text-xs text-foreground"
         numberOfLines={1}
       >
         {item.name}
@@ -102,7 +102,7 @@ export function ShareTargetGrid({
 
   if (isLoading) {
     return (
-      <View className="flex-row flex-wrap gap-3 px-4 py-3">
+      <View className="flex-row flex-wrap gap-3 py-3">
         {Array.from({ length: 8 }).map((_, i) => (
           <View key={i} className="items-center gap-1">
             <View className="h-12 w-12 rounded-full bg-muted opacity-60" />
@@ -114,7 +114,7 @@ export function ShareTargetGrid({
   }
 
   return (
-    <View>
+    <View className="flex-1 ">
       <View className="mx-4 mb-2 flex-row items-center gap-2 rounded-lg border border-border px-3 py-1.5">
         <Search size={14} className="text-muted-foreground" />
         <TextInput
@@ -144,7 +144,6 @@ export function ShareTargetGrid({
               onPress={() => handleToggle(item.id)}
             />
           )}
-          contentContainerStyle={{ paddingHorizontal: 8 }}
           scrollEnabled={false}
         />
       )}

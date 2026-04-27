@@ -65,7 +65,7 @@ export default function RootLayout() {
     <AppThemeProvider>
       <Providers>
         <StatusBar style="auto" />
-        <NetworkBanner />
+        {/* <NetworkBanner /> */}
         <RootLayoutNav />
         {showSplash && <AnimatedSplash onFinish={handleSplashFinish} />}
       </Providers>

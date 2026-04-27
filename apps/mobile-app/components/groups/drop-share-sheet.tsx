@@ -83,8 +83,8 @@ export function DropShareSheet({
       onDismiss={handleDismiss}
     >
       <BottomSheetView>
-        <VStack className="gap-3 pb-8 pt-2">
-          <Text className="px-4 font-sans text-lg font-semibold text-foreground">
+        <VStack className=" gap-3  pb-8 pt-2">
+          <Text className=" mx-3 font-sans   text-lg font-semibold text-foreground">
             {t('vault.share_modal_title')}
           </Text>
           <ShareTargetGrid
@@ -93,17 +93,16 @@ export function DropShareSheet({
             alreadySharedIds={alreadySharedIds}
             enabled={open}
           />
-          <View className="mx-4">
-            <Button
-              onPress={handleShare}
-              disabled={selectedIds.size === 0 || shareMutation.isPending}
-            >
-              <ButtonText>
-                {t('vault.share_modal_share_selected')}
-                {selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
-              </ButtonText>
-            </Button>
-          </View>
+          <Button
+            onPress={handleShare}
+            disabled={selectedIds.size === 0 || shareMutation.isPending}
+            className="mx-3"
+          >
+            <ButtonText>
+              {t('vault.share_modal_share_selected')}
+              {selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
+            </ButtonText>
+          </Button>
         </VStack>
       </BottomSheetView>
     </BottomSheet>
