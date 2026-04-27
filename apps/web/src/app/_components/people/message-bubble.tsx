@@ -12,17 +12,6 @@ import { decodeHtmlEntities, EMOJI_ROWS } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 import type { DMMessage } from "@kurate/types";
 import { PencilIcon, ReplyIcon, SmileIcon, TrashIcon } from "@/components/icons";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import { toast } from "sonner";
 import { track } from "@/app/_libs/utils/analytics";
@@ -41,6 +30,7 @@ interface MessageBubbleProps {
   allMessages?: DMMessage[];
   onReply?: (msg: DMMessage) => void;
   onEdit?: (msg: DMMessage) => void;
+  isEditing?: boolean;
   isContinuation?: boolean;
 }
 
@@ -51,6 +41,7 @@ export function MessageBubble({
   allMessages = [],
   onReply,
   onEdit,
+  isEditing = false,
   isContinuation = false,
 }: MessageBubbleProps) {
   const t = useTranslations("people");
@@ -120,72 +111,63 @@ export function MessageBubble({
       <div className={`flex max-w-[min(75%,360px)] flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}>
         {/* Bubble */}
         <div className="relative" ref={pickerRef}>
-          {/* Floating action pill — beside the bubble */}
-          <div
-            className={`border-border/50 absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border bg-card px-2 py-1 opacity-0 shadow-md transition-opacity group-hover/msg:opacity-100 ${
-              isOwn ? "right-full mr-1.5" : "left-full ml-1.5"
-            }`}>
-            {/* React button — opens emoji picker */}
-            <button
-              type="button"
-              onClick={() => setPickerOpen((o) => !o)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={t("bubble_react_aria")}>
-              <SmileIcon className="h-4 w-4" />
-            </button>
-
-            <div className="bg-border/60 mx-0.5 h-4 w-px" />
-
-            {/* Reply button — available for all messages */}
-            {onReply && (
+          {/* Floating action pill — beside the bubble, hidden while editing */}
+          {!isEditing && (
+            <div
+              className={`border-border/50 absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border bg-card px-2 py-1 opacity-0 shadow-md transition-opacity group-hover/msg:opacity-100 ${
+                isOwn ? "right-full mr-1.5" : "left-full ml-1.5"
+              }`}>
+              {/* React button — opens emoji picker */}
               <button
                 type="button"
-                onClick={() => onReply(message)}
+                onClick={() => setPickerOpen((o) => !o)}
                 className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={t("bubble_reply_aria")}>
-                <ReplyIcon className="h-[15px] w-[15px]" />
+                aria-label={t("bubble_react_aria")}>
+                <SmileIcon className="h-4 w-4" />
               </button>
-            )}
 
-            {/* Edit button — own text messages only */}
-            {isOwn && message.message_type === "text" && onEdit && (
-              <>
-                <div className="bg-border/60 mx-0.5 h-4 w-px" />
+              <div className="bg-border/60 mx-0.5 h-4 w-px" />
+
+              {/* Reply button — available for all messages */}
+              {onReply && (
                 <button
                   type="button"
-                  onClick={() => onEdit(message)}
+                  onClick={() => onReply(message)}
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Edit message">
-                  <PencilIcon className="h-3 w-3" />
+                  aria-label={t("bubble_reply_aria")}>
+                  <ReplyIcon className="h-[15px] w-[15px]" />
                 </button>
-              </>
-            )}
+              )}
 
-            {/* Delete button — own messages only */}
-            {isOwn && (
-              <AlertDialog>
-                <div className="bg-border/60 mx-0.5 h-4 w-px" />
-                <AlertDialogTrigger asChild>
+              {/* Edit button — own text messages only */}
+              {isOwn && message.message_type === "text" && onEdit && (
+                <>
+                  <div className="bg-border/60 mx-0.5 h-4 w-px" />
                   <button
                     type="button"
+                    onClick={() => onEdit(message)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Edit message">
+                    <PencilIcon className="h-3 w-3" />
+                  </button>
+                </>
+              )}
+
+              {/* Delete button — own messages only */}
+              {isOwn && (
+                <>
+                  <div className="bg-border/60 mx-0.5 h-4 w-px" />
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete()}
                     className="text-muted-foreground hover:text-destructive transition-colors"
                     aria-label={t("bubble_delete_aria")}>
                     <TrashIcon className="h-3 w-3" />
                   </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t("delete_confirm_title")}</AlertDialogTitle>
-                    <AlertDialogDescription>{t("delete_confirm_description")}</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t("delete_confirm_cancel")}</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => void handleDelete()}>{t("delete_confirm_action")}</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Emoji picker panel — beside the bubble, top-aligned to avoid clipping near top of chat */}
           {pickerOpen && (

@@ -45,6 +45,7 @@ export interface CommentItemProps {
   onEditStart: (id: string, text: string) => void;
   onDelete: (id: string) => void;
   onReply?: (id: string, authorName: string, text: string) => void;
+  isEditing?: boolean;
   isContinuation?: boolean;
   spacing?: "none" | "compact" | "normal";
   allComments?: DropComment[];
@@ -56,6 +57,7 @@ export function CommentItem({
   onEditStart,
   onDelete,
   onReply,
+  isEditing = false,
   isContinuation = false,
   spacing = "none",
   allComments = [],
@@ -72,8 +74,8 @@ export function CommentItem({
     : undefined;
   const quotedText = parentComment?.comment_text;
 
-  /* Actions shown on hover, outside the bubble */
-  const actions = (
+  /* Actions shown on hover, outside the bubble — hidden while any comment is being edited */
+  const actions = isEditing ? null : (
     <div className="flex shrink-0 items-center gap-1 self-center opacity-0 transition-opacity group-hover/comment:opacity-100">
       {onReply && (
         <button

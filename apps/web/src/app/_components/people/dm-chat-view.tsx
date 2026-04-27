@@ -200,6 +200,7 @@ export function DmChatView({ convoId }: DmChatViewProps) {
             allMessages={messages}
             onReply={handleReply}
             onEdit={handleEdit}
+            isEditing={editingMessage !== null}
             isContinuation={index > 0 && messages[index - 1]?.sender_id === msg.sender_id}
           />
         ))}

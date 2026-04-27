@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/use-translations";
 
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,6 +18,7 @@ import { queryKeys } from "@kurate/query";
 import { ROUTES } from "@kurate/utils";
 import { createClient } from "@/app/_libs/supabase/client";
 import { track } from "@/app/_libs/utils/analytics";
+import { cn } from "@/app/_libs/utils/cn";
 
 const supabase = createClient();
 
@@ -32,19 +35,29 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [descError, setDescError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
+    const trimmedDesc = description.trim();
+    let hasError = false;
+
     if (!trimmedName) return;
     if (trimmedName.length > 50) {
-      setError(tV("group_name_too_long", { max: 50 }));
-      return;
+      setNameError(tV("group_name_too_long", { max: 50 }));
+      hasError = true;
     }
+    if (trimmedDesc.length > 200) {
+      setDescError(tV("group_desc_too_long", { max: 200 }));
+      hasError = true;
+    }
+    if (hasError) return;
 
     setIsSubmitting(true);
-    setError(null);
+    setNameError(null);
+    setDescError(null);
 
     try {
       const {
@@ -89,14 +102,16 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
       onOpenChange(false);
       setName("");
       setDescription("");
+      setNameError(null);
+      setDescError(null);
 
       router.push(ROUTES.APP.GROUP_INVITE_FLOW(group.id));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("character varying")) {
-        setError(tV("group_name_too_long", { max: 50 }));
+        setNameError(tV("group_name_too_long", { max: 50 }));
       } else {
-        setError(msg || t("error_generic"));
+        toast.error(msg || t("error_generic"));
       }
     } finally {
       setIsSubmitting(false);
@@ -119,11 +134,13 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
               id="group-name"
               value={name}
               maxLength={50}
-              onChange={(e) => { setName(e.target.value); setError(null); }}
+              onChange={(e) => { setName(e.target.value); setNameError(null); }}
               placeholder={t("create_name_placeholder")}
+              className={nameError ? "border-destructive" : ""}
               autoFocus
               required
             />
+            {nameError && <p className="text-destructive text-xs">{nameError}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -134,14 +151,14 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
             <Textarea
               id="group-desc"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              maxLength={200}
+              onChange={(e) => { setDescription(e.target.value); setDescError(null); }}
               placeholder={t("create_desc_placeholder")}
               rows={2}
-              className="resize-none"
+              className={cn("resize-none", descError && "border-destructive")}
             />
+            {descError && <p className="text-destructive text-xs">{descError}</p>}
           </div>
-
-          {error && <p className="text-error-foreground text-xs">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button

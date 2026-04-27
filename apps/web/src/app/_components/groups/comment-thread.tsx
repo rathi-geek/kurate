@@ -152,6 +152,7 @@ export function CommentThread({
                   currentUserId={currentUserId}
                   isContinuation={isContinuation}
                   spacing={spacing}
+                  isEditing={editingComment !== null}
                   onEditStart={(id, text) => setEditingComment({ id, text })}
                   onDelete={(id) => deleteComment(id, currentUserId)}
                   onReply={(id, authorName, text) => setReplyingTo({ id, authorName, text })}

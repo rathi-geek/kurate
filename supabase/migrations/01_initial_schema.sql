@@ -390,7 +390,7 @@ CREATE TABLE IF NOT EXISTS public.messages (
   message_type   message_type_enum DEFAULT 'text',
   message_text   VARCHAR(500) NOT NULL,
   logged_item_id UUID DEFAULT NULL REFERENCES public.logged_items(id) ON DELETE SET NULL,
-  message_parent_id UUID DEFAULT NULL REFERENCES public.messages(id),
+  message_parent_id UUID DEFAULT NULL REFERENCES public.messages(id) ON DELETE SET NULL,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -608,7 +608,7 @@ CREATE TABLE IF NOT EXISTS public.group_posts_comments (
   group_post_id     UUID NOT NULL REFERENCES public.group_posts(id) ON DELETE CASCADE,
   user_id           UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   comment_text      VARCHAR(500) NOT NULL,
-  parent_comment_id UUID DEFAULT null REFERENCES public.group_posts_comments(id),
+  parent_comment_id UUID DEFAULT null REFERENCES public.group_posts_comments(id) ON DELETE SET NULL,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

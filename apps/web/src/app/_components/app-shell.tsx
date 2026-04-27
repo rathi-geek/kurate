@@ -8,12 +8,12 @@ import { queryKeys } from "@kurate/query";
 import { ROUTES } from "@kurate/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useIsMobile } from "@/hooks/use-mobile";
+// import { useIsMobile } from "@/hooks/use-mobile";
 
 import { AppSidebar } from "@/app/_components/sidebar";
 import { GroupsPanel } from "@/app/_components/sidebar/GroupsPanel";
-import { MobileBottomTab } from "@/app/_components/sidebar/mobile-bottom-tab";
 import { PeoplePanel } from "@/app/_components/sidebar/PeoplePanel";
+import { MobileBottomTab } from "@/app/_components/sidebar/mobile-bottom-tab";
 import { useAuth } from "@/app/_libs/auth-context";
 import { useDMConversations } from "@/app/_libs/hooks/useDMConversations";
 import { fetchGroupFeedPage } from "@/app/_libs/hooks/useGroupFeed";
@@ -29,14 +29,16 @@ import { fetchGroupDetail } from "@/app/_libs/utils/fetchGroupDetail";
 import { fetchUserGroups } from "@/app/_libs/utils/fetchUserGroups";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const isMobile = useIsMobile();
+  // const isMobile = useIsMobile();
   const router = useRouter();
   const pathname = usePathname();
   const { user, profile, loading } = useAuth();
   const [sidebarOverrides, setSidebarOverrides] = useState<SidebarOverrides>({});
   const [activePanel, setActivePanel] = useState<"people" | "groups" | null>(null);
 
-  useEffect(() => { setActivePanel(null); }, [pathname]);
+  useEffect(() => {
+    setActivePanel(null);
+  }, [pathname]);
 
   const userId = user?.id ?? null;
   const userEmail = user?.email ?? "";
@@ -153,33 +155,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.push(ROUTES.AUTH.LOGIN);
   }, [router]);
 
-  if (isMobile) {
-    return (
-      <div className="bg-background flex h-screen flex-col items-center justify-center px-8 text-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-muted-foreground mb-6"
-          aria-hidden="true">
-          <rect x="2" y="3" width="20" height="14" rx="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
-        </svg>
-        <h1 className="text-foreground mb-2 text-xl font-semibold">Desktop Only</h1>
-        <p className="text-muted-foreground max-w-xs text-sm">
-          Kurate is optimized for desktop browsers. Please visit us on a laptop or desktop computer
-          for the best experience.
-        </p>
-      </div>
-    );
-  }
+  // if (isMobile) {
+  //   return (
+  //     <div className="bg-background flex h-screen flex-col items-center justify-center px-8 text-center">
+  //       <svg
+  //         xmlns="http://www.w3.org/2000/svg"
+  //         width="48"
+  //         height="48"
+  //         viewBox="0 0 24 24"
+  //         fill="none"
+  //         stroke="currentColor"
+  //         strokeWidth="1.5"
+  //         strokeLinecap="round"
+  //         strokeLinejoin="round"
+  //         className="text-muted-foreground mb-6"
+  //         aria-hidden="true">
+  //         <rect x="2" y="3" width="20" height="14" rx="2" />
+  //         <line x1="8" y1="21" x2="16" y2="21" />
+  //         <line x1="12" y1="17" x2="12" y2="21" />
+  //       </svg>
+  //       <h1 className="text-foreground mb-2 text-xl font-semibold">Desktop Only</h1>
+  //       <p className="text-muted-foreground max-w-xs text-sm">
+  //         Kurate is optimized for desktop browsers. Please visit us on a laptop or desktop computer
+  //         for the best experience.
+  //       </p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <SidebarOverridesProvider setOverrides={setSidebarOverrides}>
@@ -207,12 +209,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       {activePanel === "people" && (
-        <div className="fixed inset-0 z-20 overflow-y-auto bg-background pb-16 sm:hidden">
+        <div className="bg-background fixed inset-0 z-20 overflow-y-auto pb-16 sm:hidden">
           <PeoplePanel userId={userId} conversations={conversations} isLoading={false} />
         </div>
       )}
       {activePanel === "groups" && (
-        <div className="fixed inset-0 z-20 overflow-y-auto bg-background pb-16 sm:hidden">
+        <div className="bg-background fixed inset-0 z-20 overflow-y-auto pb-16 sm:hidden">
           <GroupsPanel />
         </div>
       )}

@@ -77,10 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           about: data.about,
           is_onboarded: data.is_onboarded,
           avatar_url: (data.avatar as { file_path: string; bucket_name: string } | null)?.file_path
-            ? getMediaPublicUrl(
+            ? `${getMediaPublicUrl(
                 (data.avatar as { file_path: string; bucket_name: string }).bucket_name,
                 (data.avatar as { file_path: string; bucket_name: string }).file_path,
-              )
+              )}?t=${Date.now()}`
             : null,
         }
       : null;
