@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import Link from "next/link";
 
@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
-import { BrandArch, BrandConcentricArch, BrandStar, BrandSunburst } from "@/components/brand";
+import { BrandConcentricArch } from "@/components/brand";
 import { useTranslations } from "@/i18n/use-translations";
 
 const fadeUp = {
@@ -36,30 +36,16 @@ const LOGOS = [
   "Readwise",
 ];
 
-const FEATURE_KEYS = [
-  { icon: "arch", bg: "bg-teal/20", titleKey: "feature_1_title", descKey: "feature_1_desc" },
-  { icon: "star", bg: "bg-slate-subtle", titleKey: "feature_2_title", descKey: "feature_2_desc" },
-  { icon: "sunburst", bg: "bg-accent", titleKey: "feature_3_title", descKey: "feature_3_desc" },
-] as const;
-
 export default function LandingPage() {
   const prefersReducedMotion = useSafeReducedMotion();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
   const t = useTranslations("landing");
   const tNav = useTranslations("nav");
   const tApp = useTranslations("app");
 
   return (
     <div className="bg-cream text-ink min-h-screen">
-      {/* Announcement Banner */}
-      <div className="bg-teal px-4 py-3 text-center text-sm font-medium text-white">
-        {t("announcement")}{" "}
-        <Link href={ROUTES.AUTH.LOGIN} className="font-semibold underline hover:opacity-80">
-          {t("join_now")}
-        </Link>
-      </div>
-
       {/* Nav */}
       <nav
         aria-label="Main navigation"
@@ -76,17 +62,6 @@ export default function LandingPage() {
             className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
             {tNav("product")}
           </Link>
-          <Link
-            href={ROUTES.ABOUT as ComponentProps<typeof Link>["href"]}
-            className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
-            {tNav("about")}
-          </Link>
-          <Link
-            href={ROUTES.BLOG as ComponentProps<typeof Link>["href"]}
-            className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
-            {tNav("blog")}
-          </Link>
-
           <Button asChild size="sm">
             <Link href={ROUTES.APP.HOME}>{t("get_started")}</Link>
           </Button>
@@ -109,7 +84,7 @@ export default function LandingPage() {
               animate={prefersReducedMotion ? undefined : "visible"}
               variants={fadeUp}
               transition={{ type: "spring", stiffness: 260, damping: 25 }}
-              className="text-ink mb-6 font-serif text-5xl font-normal tracking-[-0.02em] md:text-7xl">
+              className="text-ink mb-6 font-serif text-4xl font-normal tracking-[-0.02em] md:text-6xl">
               <span className="italic">{t("hero_title")}</span>
             </motion.h1>
             <motion.p
@@ -135,33 +110,7 @@ export default function LandingPage() {
               animate={prefersReducedMotion ? undefined : "visible"}
               variants={fadeUp}
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.45 }}
-              role="button"
-              tabIndex={0}
-              aria-label={isPlaying ? "Pause video" : "Play video"}
-              onClick={() => {
-                if (videoRef.current) {
-                  if (isPlaying) {
-                    videoRef.current.pause();
-                  } else {
-                    videoRef.current.play();
-                  }
-                  setIsPlaying(!isPlaying);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === " " || e.key === "Enter") {
-                  e.preventDefault();
-                  if (videoRef.current) {
-                    if (isPlaying) {
-                      videoRef.current.pause();
-                    } else {
-                      videoRef.current.play();
-                    }
-                    setIsPlaying(!isPlaying);
-                  }
-                }
-              }}
-              className="group rounded-card relative mx-auto mt-12 w-full max-w-4xl cursor-pointer overflow-hidden bg-black shadow-2xl">
+              className="group rounded-card relative mx-auto mt-12 w-full max-w-4xl overflow-hidden bg-black shadow-2xl">
               <video
                 ref={videoRef}
                 autoPlay
@@ -175,39 +124,86 @@ export default function LandingPage() {
                   type="video/mp4"
                 />
               </video>
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">
-                  {isPlaying ? (
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-                      <rect x="3" y="2" width="4" height="12" rx="1" />
-                      <rect x="9" y="2" width="4" height="12" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M4 2.5v11l9-5.5L4 2.5z" />
-                    </svg>
-                  )}
-                </div>
-              </div>
+              <button
+                onClick={() => {
+                  if (videoRef.current) {
+                    const newMuted = !isMuted;
+                    videoRef.current.muted = newMuted;
+                    setIsMuted(newMuted);
+                  }
+                }}
+                aria-label={isMuted ? "Unmute video" : "Mute video"}
+                className="absolute right-3 bottom-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                {isMuted ? (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </svg>
+                ) : (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  </svg>
+                )}
+              </button>
             </motion.div>
           </motion.div>
         </section>
-        {/* Dark Showcase */}
-        <section className="bg-muted px-6 py-16 md:py-20">
+
+        {/* Vault Showcase */}
+        <section id="features" className="bg-muted px-6 py-16 md:py-20">
           <div className="container-page flex flex-col items-center gap-10 md:flex-row md:gap-[60px]">
             <div className="flex-1">
-              <div className="mb-7 flex gap-2">
-                {([t("platform_web"), t("platform_ios"), t("platform_android")] as const).map(
-                  (p) => (
-                    <span
-                      key={p}
-                      className="border-ink/[0.08] text-ink flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-sans text-sm font-medium">
-                      <div className="bg-ink h-1.5 w-1.5 rounded-full" /> {p}
-                    </span>
-                  ),
-                )}
+              <div className="mb-7 flex flex-wrap gap-2">
+                {(["Web", "Extension"] as const).map((p) => (
+                  <span
+                    key={p}
+                    className="border-ink/[0.08] text-ink flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-sans text-sm font-medium">
+                    <div className="bg-ink h-1.5 w-1.5 rounded-full" />
+                    {p}
+                  </span>
+                ))}
+                <span className="border-ink/[0.08] text-ink/40 flex items-center gap-2 rounded-full border border-dashed px-3.5 py-1.5 font-sans text-sm">
+                  {/* Apple / iOS */}
+                  <svg
+                    aria-hidden="true"
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="currentColor">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                  </svg>
+                  {/* Android */}
+                  <svg
+                    aria-hidden="true"
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="currentColor">
+                    <path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5S11 23.33 11 22.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5S22 17.33 22 16.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-5.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.96 1.23 13 1 12 1c-1.04 0-2 .23-2.84.63L7.68.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31C6.97 3.26 6 5.01 6 7h12c0-1.99-.97-3.75-2.47-4.84zM10 5H9V4h1v1zm5 0h-1V4h1v1z" />
+                  </svg>
+                  <span className="font-sans text-xs italic">Mobile app coming soon</span>
+                </span>
               </div>
               <h2 className="text-ink mb-5 font-serif text-3xl font-normal md:text-5xl">
                 {t("save_title")}
@@ -215,11 +211,6 @@ export default function LandingPage() {
               <p className="text-ink/75 mb-8 max-w-[400px] font-sans text-base leading-[1.7]">
                 {t("save_description")}
               </p>
-              <Button asChild variant="outline">
-                <Link href={ROUTES.DEMO as ComponentProps<typeof Link>["href"]}>
-                  {t("watch_in_action")}
-                </Link>
-              </Button>
             </div>
 
             {/* Phone mockup */}
@@ -254,8 +245,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
         {/* Logo Ticker */}
-        <div aria-hidden="true" className="bg-teal overflow-hidden py-5">
+        {/* <div aria-hidden="true" className="bg-teal overflow-hidden py-5">
           <div className="flex" style={{ animation: "marquee 20s linear infinite" }}>
             {[...LOGOS, ...LOGOS].map((l, i) => (
               <span
@@ -265,123 +257,12 @@ export default function LandingPage() {
               </span>
             ))}
           </div>
-        </div>
-        {/* Features */}
-        <section id="features" aria-labelledby="features-heading" className="bg-cream px-6 py-20">
-          <div className="container-page mb-[60px] text-center">
-            <h2
-              id="features-heading"
-              className="text-ink mb-4 font-serif text-3xl font-normal md:text-4xl">
-              {t("proof_title")}
-            </h2>
-            <p className="text-ink/75 mx-auto max-w-[520px] font-sans text-base leading-[1.7]">
-              {t("proof_subtitle")}
-            </p>
-          </div>
-          <div className="container-page flex flex-col gap-6 md:flex-row">
-            {FEATURE_KEYS.map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
-                whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={prefersReducedMotion ? undefined : { y: -6 }}
-                className="bg-muted rounded-card border-ink/[0.06] flex-1 border p-7">
-                <div
-                  aria-hidden="true"
-                  className={`h-11 w-11 ${feature.bg} rounded-card mb-4 flex items-center justify-center`}>
-                  {feature.icon === "arch" && <BrandArch s={22} c="#1A1A1A" />}
-                  {feature.icon === "star" && <BrandStar s={20} c="#1A1A1A" />}
-                  {feature.icon === "sunburst" && <BrandSunburst s={22} c="#1A1A1A" />}
-                </div>
-                <h3 className="text-ink mb-2 font-sans text-lg font-bold">{t(feature.titleKey)}</h3>
-                <p className="text-ink/70 font-sans text-sm leading-relaxed">
-                  {t(feature.descKey)}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section aria-labelledby="cta-heading" className="bg-cream px-6 py-20">
-          <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.97 }}
-            whileInView={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 25 }}
-            viewport={{ once: true }}
-            className="container-content border-ink/[0.08] rounded-card relative overflow-hidden border-2 p-8 text-center md:p-12"
-            style={{ animation: "ctaBreathe 3s ease-in-out infinite" }}>
-            <div className="relative z-10">
-              <p className="text-ink/70 mb-2 font-sans text-sm">{t("cta_ready")}</p>
-              <h2
-                id="cta-heading"
-                className="text-ink mb-8 font-serif text-2xl font-normal md:text-4xl">
-                <span className="italic">{t("cta_title_italic")}</span> {t("cta_title_rest")}
-              </h2>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button asChild size="lg">
-                  <Link href={ROUTES.AUTH.LOGIN}>{t("get_started")}</Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href={ROUTES.AUTH.LOGIN}>{t("log_in")}</Link>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        </section>
+        </div> */}
       </main>
 
       {/* Footer */}
       <footer className="border-ink/[0.06] bg-cream border-t px-6 py-12">
         <div className="container-page">
-          <div className="mb-[60px] flex flex-row items-start justify-evenly">
-            {[
-              {
-                titleKey: "footer_company" as const,
-                linkKeys: [
-                  "footer_about",
-                  "footer_careers",
-                  "footer_blog",
-                  "footer_press",
-                ] as const,
-              },
-              {
-                titleKey: "footer_product" as const,
-                linkKeys: [
-                  "footer_features",
-                  "footer_pricing",
-                  "footer_extension",
-                  "footer_mobile_app",
-                ] as const,
-              },
-              {
-                titleKey: "footer_resources" as const,
-                linkKeys: [
-                  "footer_help",
-                  "footer_community",
-                  "footer_privacy",
-                  "footer_terms",
-                ] as const,
-              },
-            ].map((col, i) => (
-              <div key={i} className="text-center">
-                <h4 className="text-ink/60 mb-2.5 font-serif text-sm font-normal italic md:mb-4 md:text-lg">
-                  {t(col.titleKey)}
-                </h4>
-                {col.linkKeys.map((key) => (
-                  <Link
-                    key={key}
-                    href={ROUTES.HOME}
-                    className="text-ink/75 hover:text-ink block py-0.5 font-sans text-xs transition-colors md:py-1 md:text-sm">
-                    {t(key)}
-                  </Link>
-                ))}
-              </div>
-            ))}
-          </div>
-
           <div className="mb-10 flex items-center justify-center gap-5">
             <BrandConcentricArch s={80} className="text-ink" />
             <span className="text-ink font-sans text-5xl leading-none font-black tracking-[-0.04em] md:text-7xl">
@@ -392,14 +273,16 @@ export default function LandingPage() {
           <div className="border-ink/[0.06] flex flex-col items-center justify-between gap-4 border-t pt-5 md:flex-row">
             <span className="text-ink/55 font-sans text-sm">{t("copyright")}</span>
             <div className="flex items-center gap-3">
-              {[t("terms"), t("privacy"), t("data_controls")].map((label) => (
-                <Link
-                  key={label}
-                  href={ROUTES.HOME}
-                  className="text-ink/55 hover:text-ink/75 font-sans text-sm transition-colors">
-                  {label}
-                </Link>
-              ))}
+              <Link
+                href={ROUTES.PRIVACY}
+                className="text-ink/55 hover:text-ink/75 font-sans text-sm transition-colors">
+                {t("privacy")}
+              </Link>
+              <Link
+                href="/privacy#contact"
+                className="text-ink/55 hover:text-ink/75 font-sans text-sm transition-colors">
+                {t("footer_help")}
+              </Link>
             </div>
           </div>
         </div>
