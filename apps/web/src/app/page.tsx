@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Link from "next/link";
 
@@ -10,7 +10,8 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
 import { useSafeReducedMotion } from "@/app/_libs/hooks/useSafeReducedMotion";
-import { BrandArch, BrandConcentricArch, BrandStar, BrandSunburst } from "@/components/brand";
+import { BrandConcentricArch } from "@/components/brand";
+import { AndroidIcon, AppleIcon, VolumeOffIcon, VolumeOnIcon } from "@/components/icons";
 import { useTranslations } from "@/i18n/use-translations";
 
 const fadeUp = {
@@ -36,30 +37,41 @@ const LOGOS = [
   "Readwise",
 ];
 
-const FEATURE_KEYS = [
-  { icon: "arch", bg: "bg-teal/20", titleKey: "feature_1_title", descKey: "feature_1_desc" },
-  { icon: "star", bg: "bg-slate-subtle", titleKey: "feature_2_title", descKey: "feature_2_desc" },
-  { icon: "sunburst", bg: "bg-accent", titleKey: "feature_3_title", descKey: "feature_3_desc" },
-] as const;
-
 export default function LandingPage() {
   const prefersReducedMotion = useSafeReducedMotion();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const [autoplayFailed, setAutoplayFailed] = useState(false);
+
   const t = useTranslations("landing");
   const tNav = useTranslations("nav");
   const tApp = useTranslations("app");
 
+  useEffect(() => {
+    const attemptAutoplay = async () => {
+      if (!videoRef.current) return;
+
+      // Try unmuted first
+      videoRef.current.muted = false;
+      try {
+        await videoRef.current.play();
+        setIsMuted(false);
+      } catch (err) {
+        // Blocked - fallback to muted
+        videoRef.current.muted = true;
+        await videoRef.current.play();
+        setAutoplayFailed(true);
+
+        // Hide hint after 5 seconds
+        setTimeout(() => setAutoplayFailed(false), 5000);
+      }
+    };
+
+    attemptAutoplay();
+  }, []);
+
   return (
     <div className="bg-cream text-ink min-h-screen">
-      {/* Announcement Banner */}
-      <div className="bg-teal px-4 py-3 text-center text-sm font-medium text-white">
-        {t("announcement")}{" "}
-        <Link href={ROUTES.AUTH.LOGIN} className="font-semibold underline hover:opacity-80">
-          {t("join_now")}
-        </Link>
-      </div>
-
       {/* Nav */}
       <nav
         aria-label="Main navigation"
@@ -76,17 +88,6 @@ export default function LandingPage() {
             className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
             {tNav("product")}
           </Link>
-          <Link
-            href={ROUTES.ABOUT as ComponentProps<typeof Link>["href"]}
-            className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
-            {tNav("about")}
-          </Link>
-          <Link
-            href={ROUTES.BLOG as ComponentProps<typeof Link>["href"]}
-            className="text-ink/75 hover:text-ink hidden font-sans text-sm font-medium transition-opacity md:inline">
-            {tNav("blog")}
-          </Link>
-
           <Button asChild size="sm">
             <Link href={ROUTES.APP.HOME}>{t("get_started")}</Link>
           </Button>
@@ -109,7 +110,7 @@ export default function LandingPage() {
               animate={prefersReducedMotion ? undefined : "visible"}
               variants={fadeUp}
               transition={{ type: "spring", stiffness: 260, damping: 25 }}
-              className="text-ink mb-6 font-serif text-5xl font-normal tracking-[-0.02em] md:text-7xl">
+              className="text-ink mb-6 font-serif text-4xl font-normal tracking-[-0.02em] md:text-6xl">
               <span className="italic">{t("hero_title")}</span>
             </motion.h1>
             <motion.p
@@ -135,79 +136,59 @@ export default function LandingPage() {
               animate={prefersReducedMotion ? undefined : "visible"}
               variants={fadeUp}
               transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.45 }}
-              role="button"
-              tabIndex={0}
-              aria-label={isPlaying ? "Pause video" : "Play video"}
-              onClick={() => {
-                if (videoRef.current) {
-                  if (isPlaying) {
-                    videoRef.current.pause();
-                  } else {
-                    videoRef.current.play();
-                  }
-                  setIsPlaying(!isPlaying);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === " " || e.key === "Enter") {
-                  e.preventDefault();
-                  if (videoRef.current) {
-                    if (isPlaying) {
-                      videoRef.current.pause();
-                    } else {
-                      videoRef.current.play();
-                    }
-                    setIsPlaying(!isPlaying);
-                  }
-                }
-              }}
-              className="group rounded-card relative mx-auto mt-12 w-full max-w-4xl cursor-pointer overflow-hidden bg-black shadow-2xl">
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                className="block w-full">
+              className="group rounded-card relative mx-auto mt-12 w-full max-w-4xl overflow-hidden bg-black shadow-2xl">
+              <video ref={videoRef} loop playsInline preload="auto" className="block w-full">
                 <source
                   src="https://eavlskuuyzzttyqsfsqc.supabase.co/storage/v1/object/public/assets/WhatsApp%20Video%202026-04-09%20at%2020.09.04.mp4"
                   type="video/mp4"
                 />
               </video>
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">
-                  {isPlaying ? (
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-                      <rect x="3" y="2" width="4" height="12" rx="1" />
-                      <rect x="9" y="2" width="4" height="12" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M4 2.5v11l9-5.5L4 2.5z" />
-                    </svg>
-                  )}
-                </div>
-              </div>
+              <button
+                onClick={() => {
+                  if (videoRef.current) {
+                    const newMuted = !isMuted;
+                    videoRef.current.muted = newMuted;
+                    setIsMuted(newMuted);
+                    setAutoplayFailed(false);
+                  }
+                }}
+                aria-label={isMuted ? "Unmute video" : "Mute video"}
+                className={`absolute right-3 bottom-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-opacity ${
+                  autoplayFailed ? "animate-pulse opacity-100" : "opacity-0 group-hover:opacity-100"
+                }`}>
+                {isMuted ? (
+                  <VolumeOffIcon className="h-4 w-4" />
+                ) : (
+                  <VolumeOnIcon className="h-4 w-4" />
+                )}
+                {autoplayFailed && (
+                  <span className="absolute -top-10 right-0 rounded-md bg-black/90 px-2.5 py-1.5 text-xs whitespace-nowrap text-white shadow-lg">
+                    Tap for sound
+                  </span>
+                )}
+              </button>
             </motion.div>
           </motion.div>
         </section>
-        {/* Dark Showcase */}
-        <section className="bg-muted px-6 py-16 md:py-20">
-          <div className="container-page flex flex-col items-center gap-10 md:flex-row md:gap-[60px]">
+
+        {/* Vault Showcase */}
+        <section id="features" className="bg-muted px-6 py-16 md:py-20">
+          <div className="container-page flex flex-col items-center gap-10 md:flex-row md:justify-between">
             <div className="flex-1">
-              <div className="mb-7 flex gap-2">
-                {([t("platform_web"), t("platform_ios"), t("platform_android")] as const).map(
-                  (p) => (
-                    <span
-                      key={p}
-                      className="border-ink/[0.08] text-ink flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-sans text-sm font-medium">
-                      <div className="bg-ink h-1.5 w-1.5 rounded-full" /> {p}
-                    </span>
-                  ),
-                )}
+              <div className="mb-7 flex flex-wrap gap-2">
+                {(["Web", "Extension"] as const).map((p) => (
+                  <span
+                    key={p}
+                    className="border-ink/[0.08] text-ink flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-sans text-sm font-medium">
+                    <div className="bg-ink h-1.5 w-1.5 rounded-full" />
+                    {p}
+                  </span>
+                ))}
+                <span className="border-ink/[0.08] text-ink/40 flex items-center gap-2 rounded-full border border-dashed px-3.5 py-1.5 font-sans text-sm">
+                  <AppleIcon className="h-3 w-3" />
+                  <AndroidIcon className="h-3 w-3" />
+                  <span className="font-sans text-xs italic">Mobile app coming soon</span>
+                </span>
               </div>
               <h2 className="text-ink mb-5 font-serif text-3xl font-normal md:text-5xl">
                 {t("save_title")}
@@ -215,15 +196,10 @@ export default function LandingPage() {
               <p className="text-ink/75 mb-8 max-w-[400px] font-sans text-base leading-[1.7]">
                 {t("save_description")}
               </p>
-              <Button asChild variant="outline">
-                <Link href={ROUTES.DEMO as ComponentProps<typeof Link>["href"]}>
-                  {t("watch_in_action")}
-                </Link>
-              </Button>
             </div>
 
             {/* Phone mockup */}
-            <div aria-hidden="true" className="flex flex-1 justify-center">
+            <div aria-hidden="true" className="flex justify-center">
               <div className="bg-ink rounded-card border-border h-[400px] w-[220px] overflow-hidden border-2 shadow-xl">
                 <div className="p-4 pt-10">
                   <div className="mb-3 font-sans text-xs font-bold tracking-[0.08em] text-white/40 uppercase">
@@ -254,8 +230,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
         {/* Logo Ticker */}
-        <div aria-hidden="true" className="bg-teal overflow-hidden py-5">
+        {/* <div aria-hidden="true" className="bg-teal overflow-hidden py-5">
           <div className="flex" style={{ animation: "marquee 20s linear infinite" }}>
             {[...LOGOS, ...LOGOS].map((l, i) => (
               <span
@@ -265,126 +242,15 @@ export default function LandingPage() {
               </span>
             ))}
           </div>
-        </div>
-        {/* Features */}
-        <section id="features" aria-labelledby="features-heading" className="bg-cream px-6 py-20">
-          <div className="container-page mb-[60px] text-center">
-            <h2
-              id="features-heading"
-              className="text-ink mb-4 font-serif text-3xl font-normal md:text-4xl">
-              {t("proof_title")}
-            </h2>
-            <p className="text-ink/75 mx-auto max-w-[520px] font-sans text-base leading-[1.7]">
-              {t("proof_subtitle")}
-            </p>
-          </div>
-          <div className="container-page flex flex-col gap-6 md:flex-row">
-            {FEATURE_KEYS.map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
-                whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 260, damping: 25, delay: i * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={prefersReducedMotion ? undefined : { y: -6 }}
-                className="bg-muted rounded-card border-ink/[0.06] flex-1 border p-7">
-                <div
-                  aria-hidden="true"
-                  className={`h-11 w-11 ${feature.bg} rounded-card mb-4 flex items-center justify-center`}>
-                  {feature.icon === "arch" && <BrandArch s={22} c="#1A1A1A" />}
-                  {feature.icon === "star" && <BrandStar s={20} c="#1A1A1A" />}
-                  {feature.icon === "sunburst" && <BrandSunburst s={22} c="#1A1A1A" />}
-                </div>
-                <h3 className="text-ink mb-2 font-sans text-lg font-bold">{t(feature.titleKey)}</h3>
-                <p className="text-ink/70 font-sans text-sm leading-relaxed">
-                  {t(feature.descKey)}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section aria-labelledby="cta-heading" className="bg-cream px-6 py-20">
-          <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.97 }}
-            whileInView={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 25 }}
-            viewport={{ once: true }}
-            className="container-content border-ink/[0.08] rounded-card relative overflow-hidden border-2 p-8 text-center md:p-12"
-            style={{ animation: "ctaBreathe 3s ease-in-out infinite" }}>
-            <div className="relative z-10">
-              <p className="text-ink/70 mb-2 font-sans text-sm">{t("cta_ready")}</p>
-              <h2
-                id="cta-heading"
-                className="text-ink mb-8 font-serif text-2xl font-normal md:text-4xl">
-                <span className="italic">{t("cta_title_italic")}</span> {t("cta_title_rest")}
-              </h2>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button asChild size="lg">
-                  <Link href={ROUTES.AUTH.LOGIN}>{t("get_started")}</Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href={ROUTES.AUTH.LOGIN}>{t("log_in")}</Link>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        </section>
+        </div> */}
       </main>
 
       {/* Footer */}
       <footer className="border-ink/[0.06] bg-cream border-t px-6 py-12">
         <div className="container-page">
-          <div className="mb-[60px] flex flex-row items-start justify-evenly">
-            {[
-              {
-                titleKey: "footer_company" as const,
-                linkKeys: [
-                  "footer_about",
-                  "footer_careers",
-                  "footer_blog",
-                  "footer_press",
-                ] as const,
-              },
-              {
-                titleKey: "footer_product" as const,
-                linkKeys: [
-                  "footer_features",
-                  "footer_pricing",
-                  "footer_extension",
-                  "footer_mobile_app",
-                ] as const,
-              },
-              {
-                titleKey: "footer_resources" as const,
-                linkKeys: [
-                  "footer_help",
-                  "footer_community",
-                  "footer_privacy",
-                  "footer_terms",
-                ] as const,
-              },
-            ].map((col, i) => (
-              <div key={i} className="text-center">
-                <h4 className="text-ink/60 mb-2.5 font-serif text-sm font-normal italic md:mb-4 md:text-lg">
-                  {t(col.titleKey)}
-                </h4>
-                {col.linkKeys.map((key) => (
-                  <Link
-                    key={key}
-                    href={ROUTES.HOME}
-                    className="text-ink/75 hover:text-ink block py-0.5 font-sans text-xs transition-colors md:py-1 md:text-sm">
-                    {t(key)}
-                  </Link>
-                ))}
-              </div>
-            ))}
-          </div>
-
           <div className="mb-10 flex items-center justify-center gap-5">
-            <BrandConcentricArch s={80} className="text-ink" />
-            <span className="text-ink font-sans text-5xl leading-none font-black tracking-[-0.04em] md:text-7xl">
+            <BrandConcentricArch s={68} className="text-ink" />
+            <span className="text-ink font-sans text-5xl leading-none font-black tracking-[-0.04em] md:text-6xl">
               {tApp("name")}
             </span>
           </div>
@@ -392,14 +258,16 @@ export default function LandingPage() {
           <div className="border-ink/[0.06] flex flex-col items-center justify-between gap-4 border-t pt-5 md:flex-row">
             <span className="text-ink/55 font-sans text-sm">{t("copyright")}</span>
             <div className="flex items-center gap-3">
-              {[t("terms"), t("privacy"), t("data_controls")].map((label) => (
-                <Link
-                  key={label}
-                  href={ROUTES.HOME}
-                  className="text-ink/55 hover:text-ink/75 font-sans text-sm transition-colors">
-                  {label}
-                </Link>
-              ))}
+              <Link
+                href={ROUTES.PRIVACY}
+                className="text-ink/55 hover:text-ink/75 font-sans text-sm transition-colors">
+                {t("privacy")}
+              </Link>
+              <Link
+                href="/privacy#contact"
+                className="text-ink/55 hover:text-ink/75 font-sans text-sm transition-colors">
+                {t("footer_help")}
+              </Link>
             </div>
           </div>
         </div>
