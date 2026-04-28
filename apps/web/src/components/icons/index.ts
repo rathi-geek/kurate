@@ -1,3 +1,5 @@
+export { AndroidIcon } from "./android-icon";
+export { AppleIcon } from "./apple-icon";
 export { ArrowRightLeftIcon } from "./arrow-right-left-icon";
 export { ApplePodcastsIcon } from "./apple-podcasts-icon";
 export { BellIcon } from "./bell-icon";
@@ -38,4 +40,6 @@ export { SendIcon } from "./send-icon";
 export { StarIcon } from "./star-icon";
 export { PenLineIcon } from "./pen-line-icon";
 export { UserXIcon } from "./user-x-icon";
+export { VolumeOffIcon } from "./volume-off-icon";
+export { VolumeOnIcon } from "./volume-on-icon";
 export { IconName } from "./types";
