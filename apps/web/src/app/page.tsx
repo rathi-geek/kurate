@@ -24,19 +24,6 @@ const staggerContainer = {
   visible: { transition: { staggerChildren: 0.15 } },
 };
 
-const LOGOS = [
-  "Product Hunt",
-  "Hacker News",
-  "Indie Hackers",
-  "Substack",
-  "Every",
-  "Stratechery",
-  "The Verge",
-  "Wired",
-  "Arc",
-  "Readwise",
-];
-
 export default function LandingPage() {
   const prefersReducedMotion = useSafeReducedMotion();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -56,7 +43,8 @@ export default function LandingPage() {
       try {
         await videoRef.current.play();
         setIsMuted(false);
-      } catch (err) {
+      } catch (err: unknown) {
+        console.error(err);
         // Blocked - fallback to muted
         videoRef.current.muted = true;
         await videoRef.current.play();
