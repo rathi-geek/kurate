@@ -20,7 +20,7 @@ export function VaultErrorState({ onRetry }: VaultErrorStateProps) {
     <motion.div
       className="flex min-h-[240px] flex-col items-center justify-center"
       initial={prefersReducedMotion ? false : "hidden"}
-      animate={prefersReducedMotion ? undefined : "visible"}
+      animate="visible"
       variants={fadeUp as Variants}
     >
       <ExclamationCircleIcon className="size-6 text-destructive/60" />

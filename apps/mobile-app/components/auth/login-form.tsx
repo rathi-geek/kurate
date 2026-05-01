@@ -10,6 +10,7 @@ import AppleIcon from '@kurate/icons/platform/apple.svg';
 import { BrandLogo } from '@/components/brand/brand-logo';
 
 import { useLoginAuth } from '@/hooks/useLoginAuth';
+
 import { MagicLinkForm } from './magic-link-form';
 
 export function LoginForm() {

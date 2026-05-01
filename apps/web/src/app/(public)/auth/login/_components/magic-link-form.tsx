@@ -46,7 +46,7 @@ export function MagicLinkForm({
         <motion.form
           key="magic-form"
           initial={prefersReducedMotion ? false : "hidden"}
-          animate={prefersReducedMotion ? undefined : "visible"}
+          animate="visible"
           exit={prefersReducedMotion ? undefined : "exit"}
           variants={fadeUpLeft}
           onSubmit={onSubmit}
@@ -74,7 +74,7 @@ export function MagicLinkForm({
         <motion.div
           key="magic-sent"
           initial={prefersReducedMotion ? false : "hidden"}
-          animate={prefersReducedMotion ? undefined : "visible"}
+          animate="visible"
           variants={fadeUpLeft}>
           <h3 className="mb-1.5 font-serif text-xl font-normal">{t("magic_link_sent_title")}</h3>
           <p className="text-muted-foreground font-sans text-sm">

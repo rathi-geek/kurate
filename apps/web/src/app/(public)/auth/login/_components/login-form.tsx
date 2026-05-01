@@ -36,7 +36,7 @@ export function LoginForm() {
   const mp = (custom: number) => ({
     custom,
     initial: prefersReducedMotion ? false : ("hidden" as const),
-    animate: prefersReducedMotion ? undefined : ("visible" as const),
+    animate: "visible" as const,
     variants: fadeUp as Variants,
   });
 

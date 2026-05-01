@@ -64,7 +64,7 @@ export function VaultEmptyState({ onExplore, variant = "default", filters }: Vau
     <motion.div
       className="flex min-h-0 flex-1 flex-col items-center justify-center py-10"
       initial={prefersReducedMotion ? false : "hidden"}
-      animate={prefersReducedMotion ? undefined : "visible"}
+      animate="visible"
       variants={fadeUp as Variants}>
       <BrandArch s={56} className="text-muted-foreground/30 mb-5" />
       <h2 className="text-foreground px-4 text-center font-serif text-lg font-bold">
